@@ -1,0 +1,32 @@
+# Node / Hardhat
+node_modules/
+cache/
+artifacts/
+typechain-types/
+coverage/
+coverage.json
+.hh-cache/
+.npm-cache/
+
+# Legacy folder (pre-root move)
+Proper/node_modules/
+Proper/cache/
+Proper/artifacts/
+Proper/typechain-types/
+Proper/coverage/
+Proper/coverage.json
+Proper/.hh-cache/
+Proper/.npm-cache/
+
+# Logs / OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+
+# Local analysis artifacts (optional; keep out of repo by default)
+github_overlap_*
+github_union_*
