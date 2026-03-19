@@ -6,6 +6,26 @@
 
 ---
 
+## Quickstart
+
+Prereqs: Node.js + npm.
+
+Windows PowerShell note: if `npm` is blocked by script execution policy, use `npm.cmd` instead.
+
+```bash
+npm.cmd ci
+npm.cmd run compile
+npm.cmd test
+```
+
+Generate Merkle roots + proofs (internal tooling):
+
+```bash
+npm.cmd run merkle:allocations -- --in allocations.json --out merkle.json
+```
+
+---
+
 ## What This Is
 
 Pharmacy Benefit Managers (PBMs) negotiate billions in drug rebates annually from manufacturers. Most of it never reaches the independent pharmacies or patients it was negotiated for. There is currently no mechanism — legal, regulatory, or technical — that makes the flow of that money permanently visible.
