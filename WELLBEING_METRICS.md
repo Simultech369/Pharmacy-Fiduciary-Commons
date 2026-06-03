@@ -1,6 +1,8 @@
-# Wellbeing Metrics & Accountability
+# Wellbeing Metrics & Accountability (Single Source of Truth)
 
-This document defines the metrics discipline for the Fiduciary Rebate Commons. The goal is to prioritize actual human health access, pharmacy resilience, and ecological resource efficiency over financial scale, total volume, or treasury TVL (Total Value Locked).
+> [!IMPORTANT]
+> **This document is the canonical definition of success for the Fiduciary Rebate Commons.**
+> Success is measured strictly by actual human health access, pharmacy stabilization, and resource-efficiency outcomes. We explicitly reject financial scale, transaction volume, or treasury TVL (Total Value Locked) as metrics of success. TVL is a liability; well-being is the asset.
 
 ---
 
@@ -18,7 +20,7 @@ These metrics quantify the direct preventative and stabilizing impact of the reb
 
 ## 2. Pharmacy Resilience Metrics
 
-Independent pharmacies are the critical physical infrastructure of the health commons. These metrics track their operational viability and protection from extractive PBM behaviors.
+Independent pharmacies are the critical physical infrastructure of the health commons. These metrics track their operational viability and protection from extractive behaviors.
 
 | Metric | Definition | Target / Benchmark | Adjudication Method |
 | :--- | :--- | :--- | :--- |
@@ -30,9 +32,9 @@ Independent pharmacies are the critical physical infrastructure of the health co
 
 ## 3. Transparency & Omissions Visibility
 
-Accountability requires making extraction visible. These metrics track PBM non-participation and omission frequencies.
+Accountability requires making extraction visible. These metrics track non-participation and omission frequencies.
 
-- **Omitted Surplus Volume**: Estimated dollar amount of rebate surplus retained by PBMs due to non-participation, calculated via public dispensing price benchmarks.
+- **Omitted Surplus Volume**: Estimated dollar amount of rebate surplus retained by third-party intermediaries due to non-participation, calculated via public dispensing price benchmarks.
 - **Omission Ledger Accuracy**: Factual consistency of deposit timestamps and root data entries, checked each epoch.
 - **Disputed Omissions Rate**: Ratio of validated on-chain exclusion disputes (`flagExclusion`) successfully resolved to `RELEASE_TO_PHARMACY` vs. dismissed, measuring Merkle root accuracy.
 
@@ -60,3 +62,25 @@ As defined in the [Patient Fund Policy](file:///C:/Users/Josh/.gemini/antigravit
 5. **Safe Disposal Compliance**: Rate of patient participation in pharmacy-hosted take-back programs.
 6. **Low-Waste Refill Logistics**: Share of recurring prescriptions dispensed via multi-month or low-packaging options.
 7. **Disaster-Resilient Access**: Percentage of matching funds pre-allocated to emergency off-grid backup systems for temperature-sensitive medication storage.
+
+---
+
+## 6. Anti-Capture & Trust Signals
+
+These metrics evaluate the systemic defenses against capture, fraud, or administrative corruption.
+
+| Metric | Definition | Target / Benchmark | Adjudication Method |
+| :--- | :--- | :--- | :--- |
+| **Appeals Process Fairness** | Time to resolve sanction appeals via the `appealSanction` registry, ensuring due process. | 100% of appeals resolved or addressed within the 14-day window. | Event logs matching `SanctionAppealed` to `SanctionUpdated` timestamps. |
+| **Sanctions Overturned Rate** | Percentage of appeals resulting in the removal of sanctions, indicating corrective oversight. | N/A (tracked for baseline transparency). | Ratio of status changes from `true` to `false` in `SanctionUpdated` records. |
+| **Sybil Incident Containment** | Number of matching allocation profiles flagged and blocked due to credential/identity verification failure. | Zero unmitigated Sybil incidents. | Council fraud audit logs cross-referenced with denied proposal registrations. |
+
+---
+
+## 7. Public Dashboard Requirements
+
+To make omissions, flows, and ecological outcomes instantly visible, an off-chain public dashboard must display:
+- **Ledger of Omissions**: Live grid showing expected vs. recorded rebate deposits per PBM/quarter.
+- **Treasury Cashflows**: Real-time inflow, epoch escrow vaults, and patient fund matching balances.
+- **Resilience Impact**: Active counter of pharmacies supported and estimated patients assisted.
+- **Ecological Receipts**: Verifiable disposal manifests and delivery optimization carbon logs.

@@ -984,7 +984,9 @@ contract PBMRebateTreasury is
     }
 
     /**
-     * @notice Updates the patient fund claim basis points.
+     * @notice Updates the patient fund claim basis points (safeguarded).
+     * @dev    Must be executed by EXECUTOR_ROLE via TimelockController.
+     *         Enforces safety boundaries: new value must be between 5% (500 BP) and 30% (3000 BP).
      * @param newBP The new basis points value.
      */
     function updatePatientClaimBP(uint256 newBP)
@@ -996,7 +998,9 @@ contract PBMRebateTreasury is
     }
 
     /**
-     * @notice Updates the governance reserve deposit basis points.
+     * @notice Updates the governance reserve deposit basis points (downward-ratchet cap).
+     * @dev    Must be executed by EXECUTOR_ROLE via TimelockController.
+     *         Enforces safety cap limit: new value cannot exceed 5% (500 BP).
      * @param newBP The new basis points value.
      */
     function updateGovernanceBP(uint256 newBP)

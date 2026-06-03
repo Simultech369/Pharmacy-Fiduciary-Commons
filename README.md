@@ -2,7 +2,9 @@
 
 **On-chain rebate transparency for independent pharmacies and patients.**
 
-> ⚠️ **This contract has not yet been audited. Do not deploy with real funds until a formal audit is complete.**
+> [!CAUTION]
+> ### ⚠️ NOT AUDITED — DO NOT USE REAL FUNDS YET
+> **This contract has NOT yet been audited by an independent security firm. Do NOT deploy, deposit, or route real capital to this treasury on mainnet until a formal cryptographic and safety audit has been completed and published.**
 
 ---
 
@@ -23,6 +25,12 @@ Generate Merkle roots + proofs (internal tooling):
 ```bash
 npm.cmd run merkle:allocations -- --in allocations.json --out merkle.json
 ```
+
+---
+
+## How This Fits the Bigger Picture
+
+The Pharmacy Fiduciary Commons serves as the first live, structural mechanism operating under the judgment loop of [Dizzy the Polymath](file:///C:/Users/Josh/.gemini/antigravity/scratch/Dizzy-the-Polymath/README.md). It instantiates the **Wellbeing Commons Kernel** by routing corporate PBM surplus away from extraction and directly toward the community's preventative health floor. Off-chain arbitration, design constraints, and ethical drift checks are evaluated using Dizzy's [LEGAL-GUARDRAILS.md](file:///C:/Users/Josh/.gemini/antigravity/scratch/Dizzy-the-Polymath/LEGAL-GUARDRAILS.md) and [MECHANISM_SIEVE.md](file:///C:/Users/Josh/.gemini/antigravity/scratch/Dizzy-the-Polymath/MECHANISM_SIEVE.md) worksheets.
 
 ---
 

@@ -30,7 +30,27 @@ To prevent centralized control, the Patient Fund is allocated via a participator
 
 ---
 
-## 4. Ecological & Resource Efficiency Primitives
+## 4. Anti-Sybil and Identity Requirements
+
+Quadratic Funding matching is highly vulnerable to Sybil attacks (fake identity generation to distort match ratios). To protect the pool, the following identity checks apply to voting/proposal support:
+- **Verifiable Pharmacy/Advocate Credentials**: All voting entities must present a verifiable credential indicating active licensing, community advocate status, or verified enrollment in a local health access program.
+- **Unique Patient Attestations**: Patient voters must present a unique cryptographically signed attestation (e.g. proof of unique patient ID or advocate attestation) without revealing medical history.
+- **Dispensing Receipt Matching**: Votes may be weighted or validated by matching them to verified dispensing receipt hashes from the Omission Ledger, ensuring that participation is linked to real, physical health-access interactions.
+
+---
+
+## 5. Prohibited Uses
+
+To protect the legitimacy and fiduciary integrity of the commons, the Patient Fund is subject to strict spending exclusions. **Under no circumstances shall fund assets be used for:**
+- **Lobbying and Political Activity**: Direct or indirect funding of political campaigns, candidate PACs, or government lobbying.
+- **Administrative Salaries**: Executive compensation or staff payroll for Council operations (these are strictly capped and funded separately under the 1% Governance Reserve).
+- **Marketing and Promotion**: Brand advertising, corporate public relations, or promotional campaigns.
+- **Speculative Investments**: Yield-farming, lending protocols, highly volatile tokens, or other speculative financial instruments. All assets must remain in stable coins (DAI/USDC) or cash-equivalent vaults.
+- **Rebate Arbitrage**: Buying back debt or engaging in transactional rebate extraction schemes.
+
+---
+
+## 6. Ecological & Resource Efficiency Primitives
 
 Projects must align with resource-efficient, low-waste health access. Eligible projects include:
 * **Medication Waste Reduction**: Digital tracking and exchange systems to prevent shelf expiration and recover unopened medications.

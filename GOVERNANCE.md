@@ -29,11 +29,12 @@ The Council is a 3/5 multisig address (e.g., Gnosis Safe) representing the trust
 
 ---
 
-## 4. Council Selection and Removal
+## 4. Council Selection, Removal & Patient Voice
 
-* **Selection**: Signers are elected from community health organizers, independent pharmacy cooperative representatives, and public health advocates.
-* **Removal**: A signer may be removed or replaced via a 3/5 vote of the remaining Council members, or by an automatic trigger if a conflict of interest is breached.
-* **DEFAULT_ADMIN_ROLE**: Enforced on-chain to allow signer rotation as keys expire or rotate.
+* **Annual Nominations**: Signers are elected from community health organizers, independent pharmacy cooperative representatives, and patient advocacy groups. Nominations are held annually.
+* **Patient Voice & Nominations**: Any verified participant pharmacy or patient advocate group can nominate a candidate.
+* **Removal Petition Threshold**: If a Council member is suspected of negligence, conflict of interest, or capture, a public petition signed by **at least 10% of active participant pharmacies and patients** (based on unique claimant addresses over the last 4 epochs) forces an on-chain signer replacement vote.
+* **Signer Rotation**: Enforced on-chain using the `DEFAULT_ADMIN_ROLE` to rotate keys as signers change or keys expire.
 
 ---
 
@@ -60,7 +61,20 @@ The Council is a 3/5 multisig address (e.g., Gnosis Safe) representing the trust
 
 ---
 
-## 8. Sanctions & Appeals
+## 8. Sanctions, Appeals Timeline & Evidence Window
 
 * **Sanctions**: Applied only for verified double-claiming, fake dispensing records, or Sybil behavior. All sanctions are reason-coded and logged publicly on-chain via the `SanctionUpdated` event.
-* **Appeals**: Any sanctioned pharmacy may register an appeal directly on-chain using the `appealSanction(string reason)` function. This emits a `SanctionAppealed` event, forcing the Council to review the sanction within 14 days and publish an audit report.
+* **Appeals Timeline**:
+  - Any sanctioned pharmacy may register an appeal directly on-chain using the `appealSanction(string reason)` function.
+  - The Council has a **strict 14-day window** from the `SanctionAppealed` block timestamp to review the submitted evidence.
+  - The Council must issue a public summary of findings and either sustain or lift the sanction (`updateSanction(account, false, "Appeal approved")`) before the 14 days expire.
+* **Public Evidence Window**: The appeal case, relevant dispensing records, and the Council's final justification summary must be published to the public dashboard within 7 days of resolution, keeping all enforcement actions fully legible and contestable.
+
+---
+
+## 9. Nested Enterprises (Dizzy as Judgment Layer)
+
+Following Ostrom's Principle of Nested Enterprises, the Pharmacy Fiduciary Commons is a bounded treasury layer, but it does not attempt to solve all cognitive or ideological disputes within its own smart contract code.
+- **Arbitration Layer**: *Dizzy the Polymath* functions as the off-chain judgment and arbitration layer.
+- **Escalation Path**: If a dispute between the Council and a participant pharmacy remains unresolved after the 14-day window, or if a conflict of interest claim is made against the Council, the parties may escalate the case to the Dizzy agent framework.
+- **Judgment Outputs**: Dizzy evaluates the claim against the `LEGAL-GUARDRAILS` and the `MECHANISM_SIEVE` to output a structured recommendation. The Council is expected to align on-chain votes with Dizzy's findings to preserve institutional legitimacy.
