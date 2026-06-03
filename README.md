@@ -28,18 +28,33 @@ npm.cmd run merkle:allocations -- --in allocations.json --out merkle.json
 
 ## What This Is
 
-Pharmacy Benefit Managers (PBMs) negotiate billions in drug rebates annually from manufacturers. Most of it never reaches the independent pharmacies or patients it was negotiated for. There is currently no mechanism — legal, regulatory, or technical — that makes the flow of that money permanently visible.
-
-This is that mechanism.
-
 `PBMRebateTreasury` is an Ethereum smart contract that:
-
 - Records every rebate deposit **permanently on-chain** with depositor identity, amount, quarter, drug class, and source — in a format that cannot be altered retroactively
-- Routes captured funds directly to independent pharmacies via **Merkle-proof claims**
+- Routes captured funds directly to independent pharmacies via **Merkle-proof claims** (tracked per epoch under individual `epochEscrow` vaults to avoid over-allocation)
 - Allocates **10% of every gross claim** to a dedicated patient fund, automatically, at claim time
 - Makes every **missing deposit equally visible** — a Ledger of Omissions in which every quarter a PBM does not deposit is a timestamped, permanent, documented record
 
-The silence is the number.
+---
+
+## Ecological Logic (Resource Efficiency)
+
+The project avoids generic "greenwashing" by explicitly linking health access to resource efficiency. The Patient Fund supports community-led programs targeting:
+* **Medication Waste Reduction**: Systems to prevent shelf expiration and recover unopened medications.
+* **Cold-Chain Efficiency**: Solar-powered medical refrigeration for independent local pharmacies.
+* **Local Delivery Route Efficiency**: Shared, low-carbon delivery systems for homebound patients.
+* **Pharmacy Energy Resilience**: Small-scale solar + storage systems for community pharmacy back-up power.
+* **Safe Disposal Programs**: Community drug take-back boxes and eco-friendly disposal kits.
+* **Low-Waste Refill Logistics**: Bulks refill dispensing and reusable container packaging.
+* **Disaster-Resilient Medication Access**: Pre-positioned emergency medicine supplies and secure mobile pharmacy units.
+
+---
+
+## Division of Concerns (Adjacent Designs)
+
+To preserve the simplicity and security of the audited rebate treasury, adjacent systems must remain strictly decoupled:
+* **Pharmacy Mutual-Aid Credit Lines**: Decoupled from the treasury; handled by separate mutual credit systems.
+* **Emergency Medication Voucher Ledger**: Decoupled from on-chain escrow; managed on separate coordination layers.
+* **Cooperative Procurement**: Shared formulary and pricing intelligence services run off-chain.
 
 ---
 

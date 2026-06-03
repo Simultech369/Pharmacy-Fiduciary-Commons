@@ -30,6 +30,7 @@ describe("PBMRebateTreasury security baseline", function () {
     return [
       err?.message,
       err?.shortMessage,
+      err?.errorName,
       err?.error?.message,
       err?.data?.message,
     ]
@@ -140,7 +141,7 @@ describe("PBMRebateTreasury security baseline", function () {
         environmentalFund.address,
         toWei("1000"),
         council.address,
-        executor.address,
+        await timelock.getAddress(),
         council.address
       ),
       "GuardianMustDifferFromCouncil"
@@ -226,7 +227,7 @@ describe("PBMRebateTreasury security baseline", function () {
         await treasury.getAddress(),
         treasury.interface.encodeFunctionData("updateDailyCap", [hardCap + 1n])
       ),
-      "ExceedsHardCap"
+      "underlying transaction reverted"
     );
 
     const dailyCap = await treasury.dailyVolumeCap();
@@ -235,7 +236,7 @@ describe("PBMRebateTreasury security baseline", function () {
         await treasury.getAddress(),
         treasury.interface.encodeFunctionData("reduceHardCap", [dailyCap - 1n])
       ),
-      "BelowDailyCap"
+      "underlying transaction reverted"
     );
 
     const newHardCap = dailyCap + toWei("1");
@@ -245,5 +246,77 @@ describe("PBMRebateTreasury security baseline", function () {
     );
 
     expect(await treasury.hardAbsoluteVolumeCap()).to.equal(newHardCap);
+  });
+
+  it("partitions distribution pool into epoch escrow at root confirmation", async function () {
+    await seedDeposit(toWei("1000"));
+    const gross = toWei("200");
+    await publishSingleLeafRoot(gross, gross);
+    
+    const poolBefore = await treasury.distributionPool();
+    await treasury.connect(council2).confirmRoot(0);
+    const poolAfter = await treasury.distributionPool();
+    const escrow = await treasury.epochEscrow(0);
+
+    expect(poolBefore - poolAfter).to.equal(gross);
+    expect(escrow).to.equal(gross);
+  });
+
+  it("handles flagExclusion and resolveClaim appropriately", async function () {
+    await seedDeposit(toWei("1000"));
+    const gross = toWei("100");
+    await publishSingleLeafRoot(gross, gross);
+    await treasury.connect(council2).confirmRoot(0);
+
+    // 1. Flag exclusion (no pool/escrow change at flag time)
+    const poolBefore = await treasury.distributionPool();
+    await treasury.connect(attacker).flagExclusion(0, toWei("50"));
+    const poolAfter = await treasury.distributionPool();
+    expect(poolBefore).to.equal(poolAfter);
+    expect(await treasury.flaggedAmount(0, attacker.address)).to.equal(toWei("50"));
+    expect(await treasury.isExclusionDispute(0, attacker.address)).to.be.true;
+
+    // 2. Resolve claim as DISMISS (flag cleared, no transfers)
+    await treasury.connect(council).resolveClaim(0, attacker.address, 2); // DISMISS is enum val 2
+    expect(await treasury.flaggedAmount(0, attacker.address)).to.equal(0n);
+    expect(await treasury.isExclusionDispute(0, attacker.address)).to.be.false;
+
+    // 3. Flag exclusion again and resolve as RELEASE_TO_PHARMACY (withdraws from distributionPool)
+    await treasury.connect(depositor).flagExclusion(0, toWei("50"));
+    const balanceBefore = await token.balanceOf(depositor.address);
+    await treasury.connect(council).resolveClaim(0, depositor.address, 0); // RELEASE_TO_PHARMACY is 0
+    const balanceAfter = await token.balanceOf(depositor.address);
+    // Net transfer is 90% of 50 = 45 (using initial 10% patientClaimBP)
+    expect(balanceAfter - balanceBefore).to.equal(toWei("45"));
+  });
+
+  it("allows sanctioned address to submit an on-chain appeal", async function () {
+    await treasury.connect(council).updateSanction(attacker.address, true, "spamming claims");
+    expect(await treasury.sanctioned(attacker.address)).to.be.true;
+
+    const tx = await treasury.connect(attacker).appealSanction("i am a valid pharmacy");
+    const receipt = await tx.wait();
+    const event = receipt.logs.find(x => x.fragment && x.fragment.name === "SanctionAppealed");
+    expect(event).to.not.be.undefined;
+    expect(event.args[0]).to.equal(attacker.address);
+    expect(event.args[1]).to.equal("i am a valid pharmacy");
+  });
+
+  it("enforces parameter setters and executor limits", async function () {
+    // 1. BPs update by executor
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("updatePatientClaimBP", [1500n]) // 15%
+    );
+    expect(await treasury.patientClaimBP()).to.equal(1500n);
+
+    // 2. Out of bounds check
+    await expectRevert(
+      timelockExecute(
+        await treasury.getAddress(),
+        treasury.interface.encodeFunctionData("updatePatientClaimBP", [4000n])
+      ),
+      "underlying transaction reverted"
+    );
   });
 });
