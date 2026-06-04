@@ -50,21 +50,28 @@ const PB_ABI = [
   "function roundProjects(uint256 roundId, uint256 projectId) view returns (string title, address recipient, uint256 voteCount, bool active)"
 ];
 
-async function main() {
+async function main(opts = {}) {
   const args = parseArgs(process.argv.slice(2));
 
-  if (!args.exporter) {
+  const exporterAddress = opts.exporter || args.exporter;
+  const rpcUrl = opts.rpc || args.rpc;
+  const treasuryAddress = opts.treasury || args.treasury;
+  const pbAddress = opts.pb || args.pb;
+  const merklePathInput = opts.merkle || args.merkle;
+  const outPathInput = opts.out || args.out;
+
+  if (!exporterAddress) {
     usage();
     process.exitCode = 1;
     return;
   }
 
-  const exporter = ethers.getAddress(args.exporter);
+  const exporter = ethers.getAddress(exporterAddress);
   console.log(`Starting portability export for participant: ${exporter}`);
 
-  const provider = new ethers.JsonRpcProvider(args.rpc);
-  const treasury = new ethers.Contract(args.treasury, TREASURY_ABI, provider);
-  const pb = new ethers.Contract(args.pb, PB_ABI, provider);
+  const provider = opts.provider || new ethers.JsonRpcProvider(rpcUrl);
+  const treasury = new ethers.Contract(treasuryAddress, TREASURY_ABI, provider);
+  const pb = new ethers.Contract(pbAddress, PB_ABI, provider);
 
   // 1. Fetch claims from PBMRebateTreasury Claimed events
   console.log("Fetching claimed events...");
@@ -136,7 +143,7 @@ async function main() {
   // 2. Fetch Merkle Proofs from local Merkle tree allocations file
   console.log("Reading Merkle allocations file...");
   const merkleProofs = [];
-  const merklePath = path.resolve(process.cwd(), args.merkle);
+  const merklePath = path.resolve(process.cwd(), merklePathInput);
   if (fs.existsSync(merklePath)) {
     try {
       const merkleData = JSON.parse(fs.readFileSync(merklePath, "utf8"));
@@ -159,7 +166,7 @@ async function main() {
       console.log("Warning: Failed to parse Merkle allocations file:", err.message);
     }
   } else {
-    console.log(`Warning: Merkle tree file not found at ${args.merkle}. Skipping proof export.`);
+    console.log(`Warning: Merkle tree file not found at ${merklePathInput}. Skipping proof export.`);
   }
 
   // 3. Fetch Votes from PatientFundParticipatoryBudgeting VoteCast events
@@ -233,8 +240,8 @@ async function main() {
   const outputJson = JSON.stringify(payload, null, 2);
 
   // Write payload
-  const outPath = args.out
-    ? path.resolve(process.cwd(), args.out)
+  const outPath = outPathInput
+    ? path.resolve(process.cwd(), outPathInput)
     : path.resolve(process.cwd(), "exports", `${exporter}.json`);
 
   fs.mkdirSync(path.dirname(outPath), { recursive: true });

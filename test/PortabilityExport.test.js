@@ -112,43 +112,20 @@ describe("Portability Export Tool", function () {
     };
     fs.writeFileSync(merklePath, JSON.stringify(mockMerkle, null, 2), "utf8");
 
-    // 6. Set up process args and run export script main
+    // 6. Run export script passing the Hardhat provider and paths directly in the options
     const outputPath = path.resolve(process.cwd(), "test-export-out.json");
     fs.rmSync(outputPath, { force: true });
 
-    const originalArgv = process.argv;
-    process.argv = [
-      "node",
-      "scripts/export-portability.js",
-      "--exporter",
-      pharmacy.address,
-      "--rpc",
-      "http://127.0.0.1:8545", // provider connects locally
-      "--pb",
-      await pb.getAddress(),
-      "--treasury",
-      await treasury.getAddress(),
-      "--merkle",
-      merklePath,
-      "--out",
-      outputPath
-    ];
-
-    // We override provider call logic inside main block since ethers fetches via provider.
-    // Ethers JsonRpcProvider connects via network in tests using the hardhat provider.
-    const ethersLib = require("ethers");
-    const originalJsonRpcProvider = ethersLib.JsonRpcProvider;
-    ethersLib.JsonRpcProvider = class MockJsonRpcProvider {
-      constructor() {
-        return ethers.provider; // Redirect RPC requests to the Hardhat in-memory provider
-      }
-    };
-
     try {
-      await main();
+      await main({
+        exporter: pharmacy.address,
+        provider: ethers.provider,
+        pb: await pb.getAddress(),
+        treasury: await treasury.getAddress(),
+        merkle: merklePath,
+        out: outputPath
+      });
     } finally {
-      ethersLib.JsonRpcProvider = originalJsonRpcProvider;
-      process.argv = originalArgv;
       fs.rmSync(merklePath, { force: true });
     }
 
