@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wellbeing Dashboard | Fiduciary Rebate Commons</title>
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #070a13;
+      --panel-bg: rgba(13, 20, 38, 0.6);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-purple: #8b5cf6;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-orange: #f59e0b;
+      --font-body: 'Outfit', sans-serif;
+      --font-heading: 'Space Grotesk', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border-color);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 10, 19, 0.8);
+    }
+
+    .header-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.25rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      width: 2.25rem;
+      height: 2.25rem;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #fff;
+      font-family: var(--font-heading);
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+    }
+
+    .logo-text {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(to right, #fff, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .badge-unverified {
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--accent-red);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+
+    /* Glassmorphism Panel styles */
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 2rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      transition: border-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .panel:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .panel-title {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      letter-spacing: -0.01em;
+    }
+
+    .panel-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-top: 0.25rem;
+    }
+
+    /* Grid Layouts */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Dropdowns & Controls */
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .select-pbm {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .select-pbm:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    /* Omissions grid */
+    .omission-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .omission-card {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .omission-card.recorded {
+      border-color: rgba(16, 185, 129, 0.25);
+      background: rgba(16, 185, 129, 0.03);
+    }
+
+    .omission-card.omitted {
+      border-color: rgba(239, 68, 68, 0.35);
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .quarter-label {
+      font-family: var(--font-heading);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .status-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-badge.recorded {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+    }
+
+    .status-badge.omitted {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red);
+    }
+
+    .amount-display {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-top: 0.75rem;
+      font-family: var(--font-heading);
+    }
+
+    .omission-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      font-style: italic;
+    }
+
+    /* Estimated Gap display */
+    .gap-calculator {
+      background: rgba(245, 158, 11, 0.05);
+      border: 1px dashed rgba(245, 158, 11, 0.3);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .gap-info h4 {
+      color: var(--accent-orange);
+      font-family: var(--font-heading);
+      font-size: 1.1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .gap-value {
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--accent-orange);
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    }
+
+    /* Metrics highlights */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .stat-box {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-num {
+      font-family: var(--font-heading);
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #fff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Claims log table */
+    .table-container {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .pharmacy-addr {
+      font-family: monospace;
+      color: var(--accent-cyan);
+    }
+
+    .badge-claim-status {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+
+    .badge-claim-status.claimed {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+    }
+
+    .badge-claim-status.flagged {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-orange);
+    }
+
+    .badge-claim-status.disputed {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red);
+    }
+
+    .appeal-timer {
+      font-size: 0.8rem;
+      color: var(--accent-orange);
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    /* Participatory Funding */
+    .pb-intro {
+      margin-bottom: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    .project-card {
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: 3fr 1.5fr 1fr;
+      align-items: center;
+      gap: 1.5rem;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    @media (max-width: 640px) {
+      .project-card {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+    }
+
+    .project-card:hover {
+      border-color: rgba(139, 92, 246, 0.3);
+      background: rgba(139, 92, 246, 0.02);
+    }
+
+    .project-title {
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .project-tag {
+      font-size: 0.7rem;
+      background: rgba(139, 92, 246, 0.2);
+      color: #c084fc;
+      padding: 0.1rem 0.4rem;
+      border-radius: 0.25rem;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .project-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .matching-info {
+      text-align: right;
+    }
+
+    @media (max-width: 640px) {
+      .matching-info {
+        text-align: left;
+      }
+    }
+
+    .matching-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .matching-val {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--accent-purple);
+    }
+
+    .matching-votes {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .btn-vote {
+      background: linear-gradient(135deg, var(--accent-purple), #7c3aed);
+      border: none;
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: filter 0.2s, transform 0.1s;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    }
+
+    .btn-vote:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-vote:active {
+      transform: scale(0.97);
+    }
+
+    .rollover-box {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: rgba(239, 68, 68, 0.03);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      border-radius: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+
+    .rollover-title {
+      font-weight: 600;
+      color: var(--accent-red);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .rollover-countdown {
+      font-family: monospace;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--accent-red);
+      background: rgba(239, 68, 68, 0.1);
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+
+    /* Ecological Section */
+    .eco-metric-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .eco-metric-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .eco-stat {
+      background: rgba(16, 185, 129, 0.03);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .eco-icon {
+      font-size: 2.5rem;
+      width: 4rem;
+      height: 4rem;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-green);
+    }
+
+    .eco-details h4 {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .eco-details .eco-num {
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--accent-green);
+    }
+
+    .eco-receipt-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .receipt-item {
+      background: rgba(15, 23, 42, 0.3);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      transition: border-color 0.2s;
+    }
+
+    .receipt-item:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .receipt-name {
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .receipt-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .receipt-link {
+      color: var(--accent-cyan);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .receipt-link:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      border-top: 1px solid var(--border-color);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      background: rgba(7, 10, 19, 0.5);
+    }
+
+    footer a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-container">
+      <div class="logo-section">
+        <div class="logo-icon">F</div>
+        <div class="logo-text">Fiduciary Rebate Commons</div>
+      </div>
+      <div>
+        <span class="badge-unverified">⚠️ NOT AUDITED — MOCK ENVIRONMENT</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+    <!-- 1. The Ledger of Omissions View -->
+    <section class="panel">
+      <div class="panel-title">
+        <div>
+          The Ledger of Omissions
+          <div class="panel-subtitle">Documenting PBM non-participation and missing deposit flows</div>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <div>
+          <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">Select Insurer / PBM:</label>
+          <select id="pbm-selector" class="select-pbm" onchange="updateOmissions()">
+            <option value="cvs">CVS Caremark</option>
+            <option value="esi">Express Scripts (ESI)</option>
+            <option value="optum">OptumRx</option>
+          </select>
+        </div>
+        <div id="gap-calc-box" class="gap-calculator">
+          <div class="gap-info">
+            <h4>Estimated Pass-Through Gap</h4>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Calculated against industry average rebate contracts</div>
+          </div>
+          <div id="estimated-gap" class="gap-value">$2,450,000</div>
+        </div>
+      </div>
+
+      <div id="omission-grid-container" class="omission-grid">
+        <!-- Dynically populated -->
+      </div>
+
+      <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right;">
+        * Statuses update instantly upon epoch finalization. Missing quarters represent uncaptured community value.
+      </div>
+    </section>
+
+    <div class="dashboard-grid">
+      
+      <!-- 2. Claims & Disbursements View -->
+      <section class="panel">
+        <div class="panel-title">
+          Claims & Epoch Status
+          <span style="font-size: 0.8rem; color: var(--accent-cyan); font-family: monospace;">Epoch #14 Active</span>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-box">
+            <span class="stat-label">Total Claims Vol</span>
+            <span class="stat-num">$842,500</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Escrowed Balance</span>
+            <span class="stat-num">$157,500</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Pharmacies Paid</span>
+            <span class="stat-num">48</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Daily Cap Limit</span>
+            <span class="stat-num" style="color: var(--accent-cyan);">$250,000</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Pharmacy</th>
+                <th>Gross Claims</th>
+                <th>Status</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="pharmacy-addr">0x7099...79C8</td>
+                <td style="font-weight: 600;">$12,450.00</td>
+                <td><span class="badge-claim-status claimed">Claimed</span></td>
+                <td style="color: var(--text-muted); font-size: 0.8rem;">Q1 2026 Core</td>
+              </tr>
+              <tr>
+                <td class="pharmacy-addr">0x3C44...93BC</td>
+                <td style="font-weight: 600;">$8,900.00</td>
+                <td><span class="badge-claim-status claimed">Claimed</span></td>
+                <td style="color: var(--text-muted); font-size: 0.8rem;">Q1 2026 Special</td>
+              </tr>
+              <tr>
+                <td class="pharmacy-addr">0x90F8...8AD5</td>
+                <td style="font-weight: 600;">$14,200.00</td>
+                <td><span class="badge-claim-status flagged">Disputed</span></td>
+                <td>
+                  <div class="appeal-timer">
+                    ⏳ <span>11d 4h left</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="pharmacy-addr">0x15d3...6a7c</td>
+                <td style="font-weight: 600;">$6,120.00</td>
+                <td><span class="badge-claim-status claimed">Claimed</span></td>
+                <td style="color: var(--text-muted); font-size: 0.8rem;">Q1 2026 Core</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 3. Patient Fund matching & Flow View -->
+      <section class="panel">
+        <div class="panel-title">
+          Patient Fund Participatory Allocation
+          <span style="font-size: 0.8rem; color: var(--accent-purple); font-family: monospace;">Matching Pool: $84,250</span>
+        </div>
+        
+        <div class="pb-intro">
+          A 10% fee on every gross claim is automatically routed to this fund. Idle surpluses roll over to the next QF matching round.
+        </div>
+
+        <div class="projects-grid">
+          <!-- Project 1 -->
+          <div class="project-card">
+            <div>
+              <div class="project-title">
+                Co-op Pharmacy Solar Grid
+                <span class="project-tag">Resilience</span>
+              </div>
+              <div class="project-desc">Fund solar battery backups for rural independent pharmacies.</div>
+            </div>
+            <div class="matching-info">
+              <div class="matching-label">QF Match</div>
+              <div id="proj-0-match" class="matching-val">$32,150</div>
+              <div id="proj-0-votes" class="matching-votes">120 votes</div>
+            </div>
+            <div>
+              <button class="btn-vote" onclick="castVote(0)">✨ Vote</button>
+            </div>
+          </div>
+
+          <!-- Project 2 -->
+          <div class="project-card">
+            <div>
+              <div class="project-title">
+                Free Insulin Dispensary
+                <span class="project-tag">Access</span>
+              </div>
+              <div class="project-desc">Support patient copay hardship gaps for life-critical medications.</div>
+            </div>
+            <div class="matching-info">
+              <div class="matching-label">QF Match</div>
+              <div id="proj-1-match" class="matching-val">$40,800</div>
+              <div id="proj-1-votes" class="matching-votes">195 votes</div>
+            </div>
+            <div>
+              <button class="btn-vote" onclick="castVote(1)">✨ Vote</button>
+            </div>
+          </div>
+
+          <!-- Project 3 -->
+          <div class="project-card">
+            <div>
+              <div class="project-title">
+                Zero-Emission Micro-Logistics
+                <span class="project-tag">Eco</span>
+              </div>
+              <div class="project-desc">Verifiable local bike-courier prescription delivery networks.</div>
+            </div>
+            <div class="matching-info">
+              <div class="matching-label">QF Match</div>
+              <div id="proj-2-match" class="matching-val">$11,300</div>
+              <div id="proj-2-votes" class="matching-votes">64 votes</div>
+            </div>
+            <div>
+              <button class="btn-vote" onclick="castVote(2)">✨ Vote</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rollover-box">
+          <div class="rollover-title">
+            ⏰ 90-Day Idle Surplus Rollover Warning
+          </div>
+          <div id="rollover-countdown" class="rollover-countdown">
+            18d 06h 12m 45s
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 4. Ecological Impact Receipts -->
+    <section class="panel">
+      <div class="panel-title">
+        Ecological & Environmental Impact Ledger
+        <span style="font-size: 0.8rem; color: var(--accent-green); font-family: monospace;">Verifiable Waste Reduction</span>
+      </div>
+
+      <div class="eco-metric-row">
+        <div class="eco-stat">
+          <div class="eco-icon">♻️</div>
+          <div class="eco-details">
+            <h4>Waste Meds Recycled</h4>
+            <div class="eco-num">1,842.60 kg</div>
+          </div>
+        </div>
+        <div class="eco-stat">
+          <div class="eco-icon">⚡</div>
+          <div class="eco-details">
+            <h4>Logistics Carbon Offset</h4>
+            <div class="eco-num">14,250 kg CO2</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="eco-receipt-list">
+        <div class="receipt-item">
+          <div>
+            <span class="receipt-name">Co-op Solar Grid Audit Report</span>
+            <span class="receipt-meta"> • PDF (2.4 MB) • Verified by E-Collect LLC</span>
+          </div>
+          <a href="#" class="receipt-link">View Audit ↗</a>
+        </div>
+        <div class="receipt-item">
+          <div>
+            <span class="receipt-name">Waste Diversion Manifest #091-2026</span>
+            <span class="receipt-meta"> • JSON Schema • Signed by GreenDisposal Corp</span>
+          </div>
+          <a href="#" class="receipt-link">View Manifest ↗</a>
+        </div>
+        <div class="receipt-item">
+          <div>
+            <span class="receipt-name">Route Optimization Fuel Metrics</span>
+            <span class="receipt-meta"> • CSV (80 KB) • HPA Logistics</span>
+          </div>
+          <a href="#" class="receipt-link">View File ↗</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Fiduciary Rebate Commons. Escalation & arbitration loops governed by <a href="#">Dizzy the Polymath Judgment Engine</a>.</p>
+    <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+      Decentralized under IPFS / parallel health infrastructure initiatives.
+    </p>
+  </footer>
+
+  <script>
+    // Mock Data for PBM Omissions
+    const pbmData = {
+      cvs: {
+        gap: "$2,450,000",
+        quarters: [
+          { q: "Q1 2026", status: "recorded", amount: "$380,000", desc: "Recorded deposit 2026-03-15" },
+          { q: "Q2 2026", status: "omitted", amount: "$0", desc: "[Not recorded in this treasury]" },
+          { q: "Q3 2026", status: "recorded", amount: "$450,000", desc: "Recorded deposit 2026-09-20" },
+          { q: "Q4 2026", status: "omitted", amount: "$0", desc: "[Not recorded in this treasury]" }
+        ]
+      },
+      esi: {
+        gap: "$4,120,000",
+        quarters: [
+          { q: "Q1 2026", status: "omitted", amount: "$0", desc: "[Not recorded in this treasury]" },
+          { q: "Q2 2026", status: "omitted", amount: "$0", desc: "[Not recorded in this treasury]" },
+          { q: "Q3 2026", status: "recorded", amount: "$580,000", desc: "Recorded deposit 2026-09-10" },
+          { q: "Q4 2026", status: "omitted", amount: "$0", desc: "[Not recorded in this treasury]" }
+        ]
+      },
+      optum: {
+        gap: "$1,890,000",
+        quarters: [
+          { q: "Q1 2026", status: "recorded", amount: "$620,000", desc: "Recorded deposit 2026-03-22" },
+          { q: "Q2 2026", status: "recorded", amount: "$590,000", desc: "Recorded deposit 2026-06-25" },
+          { q: "Q3 2026", status: "omitted", amount: "$0", desc: "[Not recorded in this treasury]" },
+          { q: "Q4 2026", status: "omitted", amount: "$0", desc: "[Not recorded in this treasury]" }
+        ]
+      }
+    };
+
+    function updateOmissions() {
+      const pbmKey = document.getElementById("pbm-selector").value;
+      const data = pbmData[pbmKey];
+      
+      // Update Gap Display
+      document.getElementById("estimated-gap").innerText = data.gap;
+
+      // Update Cards
+      const container = document.getElementById("omission-grid-container");
+      container.innerHTML = "";
+
+      data.quarters.forEach(item => {
+        const isRecorded = item.status === "recorded";
+        const card = document.createElement("div");
+        card.className = `omission-card ${item.status}`;
+        
+        card.innerHTML = `
+          <div class="quarter-label">${item.q}</div>
+          <span class="status-badge ${item.status}">${item.status}</span>
+          <div class="amount-display" style="color: ${isRecorded ? 'var(--accent-green)' : 'var(--accent-red)'}">
+            ${item.amount}
+          </div>
+          <div class="omission-desc" style="color: ${isRecorded ? 'var(--text-muted)' : 'var(--accent-red)'}">
+            ${item.desc}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Initial load for omissions
+    updateOmissions();
+
+    // Mock Quadratic Funding Data
+    const projects = [
+      { id: 0, title: "Co-op Pharmacy Solar Grid", votes: 120 },
+      { id: 1, title: "Free Insulin Dispensary", votes: 195 },
+      { id: 2, title: "Zero-Emission Micro-Logistics", votes: 64 }
+    ];
+
+    const TOTAL_MATCHING_POOL = 84250;
+
+    function castVote(projectId) {
+      const proj = projects.find(p => p.id === projectId);
+      if (proj) {
+        proj.votes += 1;
+        recalculateQF();
+      }
+    }
+
+    function recalculateQF() {
+      // Formula: match proportional to (sum(sqrt(votes)))^2
+      // In this mock, we calculate matching proportion based on quadratic votes weight
+      let sumSqrt = 0;
+      projects.forEach(p => {
+        sumSqrt += Math.sqrt(p.votes);
+      });
+
+      // Calculate matching weights: (sum(sqrt(votes)))^2 - sum(votes)
+      // For simplicity in UI visual display, we can allocate proportion of matching pool:
+      let totalWeight = 0;
+      const weights = projects.map(p => {
+        const sq = Math.pow(Math.sqrt(p.votes), 2); // QF matching multiplier
+        totalWeight += sq;
+        return sq;
+      });
+
+      projects.forEach((p, idx) => {
+        const share = weights[idx] / totalWeight;
+        const matchingAmount = Math.round(share * TOTAL_MATCHING_POOL);
+        
+        document.getElementById(`proj-${p.id}-votes`).innerText = `${p.votes} votes`;
+        document.getElementById(`proj-${p.id}-match`).innerText = `$${matchingAmount.toLocaleString()}`;
+      });
+    }
+
+    // Initial QF calc
+    recalculateQF();
+
+    // Rollover timer simulation
+    let secondsLeft = 18 * 24 * 60 * 60 + 6 * 60 * 60 + 12 * 60 + 45;
+    setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft < 0) secondsLeft = 0;
+      
+      const d = Math.floor(secondsLeft / (24 * 60 * 60));
+      const h = Math.floor((secondsLeft % (24 * 60 * 60)) / (60 * 60));
+      const m = Math.floor((secondsLeft % (60 * 60)) / 60);
+      const s = secondsLeft % 60;
+
+      const pad = (num) => String(num).padStart(2, '0');
+      document.getElementById("rollover-countdown").innerText = 
+        `${d}d ${pad(h)}h ${pad(m)}m ${pad(s)}s`;
+    }, 1000);
+  </script>
+</body>
+</html>
