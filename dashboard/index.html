@@ -659,8 +659,9 @@
         <div class="logo-icon">F</div>
         <div class="logo-text">Fiduciary Rebate Commons</div>
       </div>
-      <div>
-        <span class="badge-unverified">⚠️ NOT AUDITED — MOCK ENVIRONMENT</span>
+      <div style="display: flex; gap: 1rem; align-items: center;">
+        <span id="mock-badge" class="badge-unverified">⚠️ NOT AUDITED — MOCK ENVIRONMENT</span>
+        <button id="btn-connect" class="btn-vote" style="background: linear-gradient(135deg, var(--accent-blue), #1d4ed8); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); font-size: 0.85rem; padding: 0.4rem 1rem;">🔌 Connect Wallet</button>
       </div>
     </div>
   </header>
@@ -784,6 +785,17 @@
         
         <div class="pb-intro">
           A 10% fee on every gross claim is automatically routed to this fund. Idle surpluses roll over to the next QF matching round.
+        </div>
+
+        <div id="voter-reg-box" class="gap-calculator" style="margin-bottom: 1.5rem; background: rgba(59, 130, 246, 0.03); border-color: rgba(59, 130, 246, 0.15);">
+          <div class="gap-info">
+            <h4 style="color: var(--accent-blue);">Advocate Voter Registration Status</h4>
+            <div id="voter-status" style="font-size: 0.85rem; color: var(--text-muted);">Disconnected. Please connect wallet.</div>
+          </div>
+          <div id="voter-reg-action" style="display: flex; gap: 0.5rem; align-items: center;">
+            <input type="text" id="input-signature" placeholder="Paste relayer signature (0x...)" class="select-pbm" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; width: 260px; display: none;">
+            <button id="btn-register" class="btn-vote" style="display: none; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); font-size: 0.8rem; padding: 0.4rem 0.8rem; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);">Register Voter</button>
+          </div>
         </div>
 
         <div class="projects-grid">
@@ -981,7 +993,7 @@
     updateOmissions();
 
     // Mock Quadratic Funding Data
-    const projects = [
+    window.projects = [
       { id: 0, title: "Co-op Pharmacy Solar Grid", votes: 120 },
       { id: 1, title: "Free Insulin Dispensary", votes: 195 },
       { id: 2, title: "Zero-Emission Micro-Logistics", votes: 64 }
@@ -989,42 +1001,43 @@
 
     const TOTAL_MATCHING_POOL = 84250;
 
-    function castVote(projectId) {
-      const proj = projects.find(p => p.id === projectId);
+    // Make castVote global
+    window.castVote = function(projectId) {
+      const proj = window.projects.find(p => p.id === projectId);
       if (proj) {
         proj.votes += 1;
-        recalculateQF();
+        window.recalculateQF();
       }
-    }
+    };
 
-    function recalculateQF() {
+    window.recalculateQF = function() {
       // Formula: match proportional to (sum(sqrt(votes)))^2
       // In this mock, we calculate matching proportion based on quadratic votes weight
       let sumSqrt = 0;
-      projects.forEach(p => {
+      window.projects.forEach(p => {
         sumSqrt += Math.sqrt(p.votes);
       });
 
       // Calculate matching weights: (sum(sqrt(votes)))^2 - sum(votes)
       // For simplicity in UI visual display, we can allocate proportion of matching pool:
       let totalWeight = 0;
-      const weights = projects.map(p => {
+      const weights = window.projects.map(p => {
         const sq = Math.pow(Math.sqrt(p.votes), 2); // QF matching multiplier
         totalWeight += sq;
         return sq;
       });
 
-      projects.forEach((p, idx) => {
+      window.projects.forEach((p, idx) => {
         const share = weights[idx] / totalWeight;
         const matchingAmount = Math.round(share * TOTAL_MATCHING_POOL);
         
         document.getElementById(`proj-${p.id}-votes`).innerText = `${p.votes} votes`;
         document.getElementById(`proj-${p.id}-match`).innerText = `$${matchingAmount.toLocaleString()}`;
       });
-    }
+    };
 
     // Initial QF calc
-    recalculateQF();
+    window.recalculateQF();
 
     // Rollover timer simulation
     let secondsLeft = 18 * 24 * 60 * 60 + 6 * 60 * 60 + 12 * 60 + 45;
@@ -1042,5 +1055,7 @@
         `${d}d ${pad(h)}h ${pad(m)}m ${pad(s)}s`;
     }, 1000);
   </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <script src="./web3_integration.js"></script>
 </body>
 </html>

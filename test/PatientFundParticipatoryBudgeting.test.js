@@ -176,4 +176,68 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(balanceAfter - balanceBefore).to.equal(toWei("10000"));
     });
   });
+
+  describe("Voter Self-Registration via Relayer Signature", function () {
+    let relayer;
+    let voter;
+
+    beforeEach(async function () {
+      const signers = await ethers.getSigners();
+      relayer = signers[8]; // Assign a specific signer as the relayer
+      voter = signers[4];
+      
+      await pb.connect(council).startRound(toWei("10000"));
+      await pb.connect(council).setRelayerVerifier(relayer.address);
+    });
+
+    it("allows a voter to self-register with a valid relayer signature", async function () {
+      const messageHash = ethers.solidityPackedKeccak256(
+        ["uint256", "address", "address"],
+        [1n, voter.address, await pb.getAddress()]
+      );
+      const messageHashBytes = ethers.toBeArray(messageHash);
+      const signature = await relayer.signMessage(messageHashBytes);
+
+      await pb.connect(voter).registerVoterWithSignature(1n, voter.address, signature);
+      expect(await pb.registeredVoters(1n, voter.address)).to.be.true;
+    });
+
+    it("reverts if the signature is invalid or signed by an unauthorized key", async function () {
+      const messageHash = ethers.solidityPackedKeccak256(
+        ["uint256", "address", "address"],
+        [1n, voter.address, await pb.getAddress()]
+      );
+      const messageHashBytes = ethers.toBeArray(messageHash);
+      
+      // Signed by attacker instead of relayer
+      const invalidSignature = await attacker.signMessage(messageHashBytes);
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(1n, voter.address, invalidSignature),
+        "Unauthorized"
+      );
+    });
+
+    it("prevents signature replay across different voters or rounds", async function () {
+      const messageHash = ethers.solidityPackedKeccak256(
+        ["uint256", "address", "address"],
+        [1n, voter.address, await pb.getAddress()]
+      );
+      const messageHashBytes = ethers.toBeArray(messageHash);
+      const signature = await relayer.signMessage(messageHashBytes);
+
+      // Attempt to register another voter address using the same signature
+      const otherVoter = voters[1];
+      await expectRevert(
+        pb.connect(otherVoter).registerVoterWithSignature(1n, otherVoter.address, signature),
+        "Unauthorized"
+      );
+
+      // Attempt to register on a different round using the same signature
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(2n, voter.address, signature),
+        "WrongRoundState"
+      );
+    });
+  });
 });

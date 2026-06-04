@@ -26,6 +26,16 @@ describe("PBMRebateTreasury security baseline", function () {
     return ethers.keccak256(ethers.solidityPacked(["bytes32"], [inner]));
   }
 
+  function makeTwoLeafTree(addrA, amountA, capA, addrB, amountB, capB) {
+    const leafA = merkleLeaf(addrA, amountA, capA);
+    const leafB = merkleLeaf(addrB, amountB, capB);
+    const sorted = [leafA, leafB].sort();
+    const root = ethers.keccak256(ethers.solidityPacked(["bytes32", "bytes32"], [sorted[0], sorted[1]]));
+    const proofA = sorted[0] === leafA ? [sorted[1]] : [sorted[0]];
+    const proofB = sorted[0] === leafB ? [sorted[1]] : [sorted[0]];
+    return { root, leafA, leafB, proofA, proofB };
+  }
+
   function errorText(err) {
     return [
       err?.message,
@@ -318,5 +328,75 @@ describe("PBMRebateTreasury security baseline", function () {
       ),
       "underlying transaction reverted"
     );
+  });
+
+  it("EXPLOIT PoC: locks dismissed dispute funds permanently if recall happens first", async function () {
+    // 1. Setup deposits
+    await seedDeposit(toWei("1000"));
+
+    // 2. Deploy a 2-leaf Merkle root
+    // Leaf 1: pharmacy (80)
+    // Leaf 2: council2 (20)
+    // Total Root Amount = 100
+    const amtA = toWei("80");
+    const amtB = toWei("20");
+    const { root, proofA } = makeTwoLeafTree(
+      pharmacy.address, amtA, amtA,
+      council2.address, amtB, amtB
+    );
+
+    const councilRole = await treasury.councilRole();
+    await treasury.connect(council).grantRole(councilRole, council2.address);
+
+    await treasury.connect(council).proposeRoot(root, toWei("100"));
+    await treasury.connect(council2).confirmRoot(0);
+
+    // Initial escrow should be 100
+    expect(await treasury.epochEscrow(0)).to.equal(toWei("100"));
+
+    // 3. Pharmacy flags a dispute of its 80 tokens allocation
+    await treasury.connect(pharmacy).flagClaim(0, amtA, amtA, proofA);
+
+    // Escrow should decrease by 80 to 20
+    expect(await treasury.epochEscrow(0)).to.equal(toWei("20"));
+    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(amtA);
+
+    // 4. Finalize epoch 0
+    const minDuration = 24 * 60 * 60; // 1 day
+    await ethers.provider.send("evm_increaseTime", [minDuration]);
+    await ethers.provider.send("evm_mine", []);
+
+    await treasury.connect(council).finalizeEpoch();
+    expect(await treasury.currentEpoch()).to.equal(1n);
+
+    // 5. 30 days pass (RECALL_DELAY)
+    const recallDelay = 30 * 24 * 60 * 60;
+    await ethers.provider.send("evm_increaseTime", [recallDelay]);
+    await ethers.provider.send("evm_mine", []);
+
+    // 6. Council recalls unclaimed funds from epoch 0 (the remaining 20 tokens)
+    const patientBefore = await token.balanceOf(patientFund.address);
+    await treasury.connect(council).recallUnclaimed(0);
+    const patientAfter = await token.balanceOf(patientFund.address);
+
+    expect(patientAfter - patientBefore).to.equal(amtB); // 20 tokens recalled
+    expect(await treasury.epochRecalled(0)).to.be.true;
+    expect(await treasury.epochEscrow(0)).to.equal(0n);
+
+    // 7. Council resolves the dispute as DISMISS (returning 80 tokens to escrow)
+    await treasury.connect(council).resolveClaim(0, pharmacy.address, 2); // 2 is DISMISS
+
+    // 80 tokens are now returned to escrow
+    expect(await treasury.epochEscrow(0)).to.equal(amtA);
+    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(0n);
+
+    // 8. Trying to recall these funds again fails because epochRecalled[0] is true!
+    await expectRevert(
+      treasury.connect(council).recallUnclaimed(0),
+      "AlreadyRecalled"
+    );
+
+    // The funds are now permanently stuck in the contract's epochEscrow[0]!
+    expect(await treasury.epochEscrow(0)).to.equal(amtA);
   });
 });
