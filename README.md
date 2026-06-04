@@ -30,7 +30,7 @@ npm.cmd run merkle:allocations -- --in allocations.json --out merkle.json
 
 ## How This Fits the Bigger Picture
 
-The Pharmacy Fiduciary Commons serves as the first live, structural mechanism operating under the judgment loop of [Dizzy the Polymath](file:///C:/Users/Josh/.gemini/antigravity/scratch/Dizzy-the-Polymath/README.md). It instantiates the **Wellbeing Commons Kernel** by routing corporate PBM surplus away from extraction and directly toward the community's preventative health floor. Off-chain arbitration, design constraints, and ethical drift checks are evaluated using Dizzy's [LEGAL-GUARDRAILS.md](file:///C:/Users/Josh/.gemini/antigravity/scratch/Dizzy-the-Polymath/LEGAL-GUARDRAILS.md) and [MECHANISM_SIEVE.md](file:///C:/Users/Josh/.gemini/antigravity/scratch/Dizzy-the-Polymath/MECHANISM_SIEVE.md) worksheets.
+The Pharmacy Fiduciary Commons is designed as a structural mechanism for routing corporate PBM surplus away from extraction and toward the community's preventative health floor. Off-chain arbitration, design constraints, and ethical drift checks should remain portable, reviewable, and independent of any single local workspace.
 
 ---
 
@@ -52,7 +52,7 @@ The project avoids generic "greenwashing" by explicitly linking health access to
 * **Local Delivery Route Efficiency**: Shared, low-carbon delivery systems for homebound patients.
 * **Pharmacy Energy Resilience**: Small-scale solar + storage systems for community pharmacy back-up power.
 * **Safe Disposal Programs**: Community drug take-back boxes and eco-friendly disposal kits.
-* **Low-Waste Refill Logistics**: Bulks refill dispensing and reusable container packaging.
+* **Low-Waste Refill Logistics**: Bulk refill dispensing and reusable container packaging.
 * **Disaster-Resilient Medication Access**: Pre-positioned emergency medicine supplies and secure mobile pharmacy units.
 
 ---
