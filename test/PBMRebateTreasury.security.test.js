@@ -330,7 +330,7 @@ describe("PBMRebateTreasury security baseline", function () {
     );
   });
 
-  it("EXPLOIT PoC: locks dismissed dispute funds permanently if recall happens first", async function () {
+  it("resolves dismissed dispute by sending funds to patientFund if recall has already occurred", async function () {
     // 1. Setup deposits
     await seedDeposit(toWei("1000"));
 
@@ -383,20 +383,39 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(await treasury.epochRecalled(0)).to.be.true;
     expect(await treasury.epochEscrow(0)).to.equal(0n);
 
-    // 7. Council resolves the dispute as DISMISS (returning 80 tokens to escrow)
+    // 7. Council resolves the dispute as DISMISS
+    // Instead of locking, it should directly transfer the 80 tokens to the patientFund.
+    const patientBeforeDismiss = await token.balanceOf(patientFund.address);
+    await treasury.connect(council).resolveClaim(0, pharmacy.address, 2); // 2 is DISMISS
+    const patientAfterDismiss = await token.balanceOf(patientFund.address);
+
+    // The patientFund should receive the 80 tokens directly
+    expect(patientAfterDismiss - patientBeforeDismiss).to.equal(amtA);
+
+    // Escrow should remain 0, and flaggedAmount cleared
+    expect(await treasury.epochEscrow(0)).to.equal(0n);
+    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(0n);
+  });
+
+  it("frees volume caps and updates claimed totals when a dispute is dismissed in the active epoch", async function () {
+    await seedDeposit(toWei("1000"));
+    const gross = toWei("100");
+    const leaf = await publishSingleLeafRoot(gross, gross);
+    await treasury.connect(council2).confirmRoot(0);
+
+    // Flag the claim
+    await treasury.connect(pharmacy).flagClaim(0, gross, gross, []);
+
+    // Caps and totals should be updated as if claimed
+    expect(await treasury.epochVolume()).to.equal(gross);
+    expect(await treasury.epochClaimedTotal(0)).to.equal(gross);
+
+    // Dismiss the claim
     await treasury.connect(council).resolveClaim(0, pharmacy.address, 2); // 2 is DISMISS
 
-    // 80 tokens are now returned to escrow
-    expect(await treasury.epochEscrow(0)).to.equal(amtA);
-    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(0n);
-
-    // 8. Trying to recall these funds again fails because epochRecalled[0] is true!
-    await expectRevert(
-      treasury.connect(council).recallUnclaimed(0),
-      "AlreadyRecalled"
-    );
-
-    // The funds are now permanently stuck in the contract's epochEscrow[0]!
-    expect(await treasury.epochEscrow(0)).to.equal(amtA);
+    // epochVolume and epochClaimedTotal should be reset to 0
+    expect(await treasury.epochVolume()).to.equal(0n);
+    expect(await treasury.epochClaimedTotal(0)).to.equal(0n);
+    expect(await treasury.epochEscrow(0)).to.equal(gross); // returned to escrow
   });
 });

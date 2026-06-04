@@ -846,9 +846,22 @@ contract PBMRebateTreasury is
                 emit ClaimResolved(epoch, pharmacy, amount, resolution);
                 token.safeTransfer(patientFund, amount);
             } else { // DISMISS
-                // Return funds back to epochEscrow
-                epochEscrow[epoch] += amount;
-                emit ClaimResolved(epoch, pharmacy, amount, resolution);
+                // Correct volume and claimed total metrics to free volume caps
+                epochClaimedTotal[epoch] -= amount;
+                if (epoch == currentEpoch) {
+                    epochVolume -= amount;
+                }
+
+                if (epochRecalled[epoch]) {
+                    // Unclaimed funds have already been recalled.
+                    // Directly send this dismissed amount to the patientFund to prevent permanent locking.
+                    emit ClaimResolved(epoch, pharmacy, amount, resolution);
+                    token.safeTransfer(patientFund, amount);
+                } else {
+                    // Return funds back to epochEscrow
+                    epochEscrow[epoch] += amount;
+                    emit ClaimResolved(epoch, pharmacy, amount, resolution);
+                }
             }
         }
     }
