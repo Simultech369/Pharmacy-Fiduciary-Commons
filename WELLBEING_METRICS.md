@@ -1,86 +1,45 @@
-# Wellbeing Metrics & Accountability (Single Source of Truth)
-
-> [!IMPORTANT]
-> **This document is the canonical definition of success for the Fiduciary Rebate Commons.**
-> Success is measured strictly by actual human health access, pharmacy stabilization, and resource-efficiency outcomes. We explicitly reject financial scale, transaction volume, or treasury TVL (Total Value Locked) as metrics of success. TVL is a liability; well-being is the asset.
+# WELLBEING_METRICS.md
+Calculation rules, audit thresholds, and triggers for surplus allocations in the Pharmacy Fiduciary Commons.
 
 ---
 
-## 1. Core Health Access Metrics
+## 1. Metric Framework
 
-These metrics quantify the direct preventative and stabilizing impact of the rebate commons on patient well-being and access legibility.
+Rather than evaluating the system using financial abstractions (like token price, total value locked, or transactional volume), the commons evaluates itself using concrete wellbeing metrics.
 
-| Metric | Definition | Target / Benchmark | Adjudication Method |
-| :--- | :--- | :--- | :--- |
-| **Patients Assisted** | Number of unique patients receiving direct co-pay assistance, preventative care support, or matching patient fund subsidies. | Maximize coverage in designated care deserts. | Audited claim logs matched to patient fund disbursements. |
-| **Access Gaps Closed** | Number of pharmacy care-deserts (regions with zero independent pharmacies within a 10-mile radius) resolved or stabilized. | Zero care-desert growth; stabilization of at-risk pharmacies. | Public geographic access mapping cross-referenced with active pharmacies. |
-| **Preventative Care Rate** | Percentage of matches/disbursements directed to chronic disease prevention (e.g. insulin, cardiovascular care) vs. downstream crisis intervention. | > 70% preventative allocation. | Categorized match allocations under the participatory matching rounds. |
+Surplus allocations are routed strictly to reduce precarity and lower the cost of essential maintenance and preventative care.
 
 ---
 
-## 2. Pharmacy Resilience Metrics
+## 2. Calculation Rules
 
-Independent pharmacies are the critical physical infrastructure of the health commons. These metrics track their operational viability and protection from extractive behaviors.
+### Patient Fund Matching Ratio ($R_m$)
+The proportion of community funds routed to patient health projects vs. administrative fees.
 
-| Metric | Definition | Target / Benchmark | Adjudication Method |
-| :--- | :--- | :--- | :--- |
-| **Pharmacies Supported** | Number of unique independent pharmacies receiving rebate distributions and matched match funds per epoch. | Growth or stability in participant count. | Validated Merkle claims and matching participant registrations. |
-| **Surplus Retention Rate** | Percentage of the total rebate surplus retained by local pharmacies and patients vs. captured by intermediate brokers. | > 99% retained locally (90/10 split on claimed rebates). | On-chain audit of treasury inflow vs. final pharmacy payout. |
-| **Dispute Resolution Speed** | Average time (in days) to resolve `flagExclusion` root omission disputes and normal claim challenges. | < 14 days from dispute filing to Council resolution. | Epoch contract timestamps comparing `flagClaim`/`flagExclusion` to `resolveClaim`. |
+$$R_m = \frac{\sum Payouts_{\text{health}}}{\sum Fees_{\text{admin}}}$$
 
----
+### Cooperative Procurement Savings ($S_{coop}$)
+The percentage discount achieved by purchasing drugs through the cooperative procurement layer (P-02) compared to PBM wholesale pricing.
 
-## 3. Transparency & Omissions Visibility
-
-Accountability requires making extraction visible. These metrics track non-participation and omission frequencies.
-
-- **Omitted Surplus Volume**: Estimated dollar amount of rebate surplus retained by third-party intermediaries due to non-participation, calculated via public dispensing price benchmarks.
-- **Omission Ledger Accuracy**: Factual consistency of deposit timestamps and root data entries, checked each epoch.
-- **Disputed Omissions Rate**: Ratio of validated on-chain exclusion disputes (`flagExclusion`) successfully resolved to `RELEASE_TO_PHARMACY` vs. dismissed, measuring Merkle root accuracy.
+$$S_{coop} = 1 - \frac{\sum Cost_{\text{cooperative}}}{\sum Cost_{\text{wholesale}}}$$
 
 ---
 
-## 4. Operational Overhead & Admin Ratio
+## 3. Mathematical Audit Thresholds
 
-To prevent the commons from becoming a self-serving administration or manager-heavy structure, we enforce a strict overhead cap.
+To maintain an anti-extractive operational posture, the system enforces the following mathematical constraints:
 
-- **Administrative Ratio**:
-  $$\text{Admin Ratio} = \frac{\text{Governance Payouts}}{\text{Total Rebates Distributed}} \times 100$$
-  - **Hard Cap**: Enforced by the smart contract's `governanceBP` (maximum 5% parameter limit, default 1%).
-  - **Target**: < 2% of total rebate volume directed to Council/governance operations.
-
----
-
-## 5. Preventative Ecological Metrics
-
-As defined in the [Patient Fund Policy](file:///C:/Users/Josh/.gemini/antigravity/scratch/Pharmacy-Fiduciary-Commons/PATIENT_FUND_POLICY.md), ecological and resource-efficiency metrics are mapped directly to matching eligibility:
-
-1. **Medication Waste Reduction**: Volume/weight of unused or expired medications diverted from municipal waste streams via verified disposal and low-waste logistics.
-2. **Cold-Chain Efficiency**: Percentage of refrigerated shipments using reusable, high-efficiency insulation packages vs. single-use styrofoam.
-3. **Local Route Optimization**: Estimated carbon reduction achieved through coordinated local medication deliveries and route-efficiency algorithms.
-4. **Pharmacy Energy Resilience**: Share of participant pharmacies powered by local solar, wind, or high-efficiency microgrids.
-5. **Safe Disposal Compliance**: Rate of patient participation in pharmacy-hosted take-back programs.
-6. **Low-Waste Refill Logistics**: Share of recurring prescriptions dispensed via multi-month or low-packaging options.
-7. **Disaster-Resilient Access**: Percentage of matching funds pre-allocated to emergency off-grid backup systems for temperature-sensitive medication storage.
+- **Administrative Capture Limit**: The total amount of captured fees diverted to administrative maintenance or hosting costs must never exceed **15%** of the total matching pool in any given epoch.
+  $$Fees_{\text{admin}} \leq 0.15 \times Pool_{\text{matching}}$$
+- **Minimum Drug Discount Spread**: The average discount achieved across key index drugs (e.g. Lipitor, Crestor) must remain at or above **10%** relative to local PBM pharmacy pricing.
+  $$S_{coop} \geq 0.10$$
 
 ---
 
-## 6. Anti-Capture & Trust Signals
+## 4. Automated Review Triggers
 
-These metrics evaluate the systemic defenses against capture, fraud, or administrative corruption.
+If any of the following triggers are tripped, the system pauses automatic surplus allocations and flags an epoch exception:
 
-| Metric | Definition | Target / Benchmark | Adjudication Method |
-| :--- | :--- | :--- | :--- |
-| **Appeals Process Fairness** | Time to resolve sanction appeals via the `appealSanction` registry, ensuring due process. | 100% of appeals resolved or addressed within the 14-day window. | Event logs matching `SanctionAppealed` to `SanctionUpdated` timestamps. |
-| **Sanctions Overturned Rate** | Percentage of appeals resulting in the removal of sanctions, indicating corrective oversight. | N/A (tracked for baseline transparency). | Ratio of status changes from `true` to `false` in `SanctionUpdated` records. |
-| **Sybil Incident Containment** | Number of matching allocation profiles flagged and blocked due to credential/identity verification failure. | Zero unmitigated Sybil incidents. | Council fraud audit logs cross-referenced with denied proposal registrations. |
-
----
-
-## 7. Public Dashboard Requirements
-
-To make omissions, flows, and ecological outcomes instantly visible, an off-chain public dashboard must display:
-- **Ledger of Omissions**: Live grid showing expected vs. recorded rebate deposits per PBM/quarter.
-- **Treasury Cashflows**: Real-time inflow, epoch escrow vaults, and patient fund matching balances.
-- **Resilience Impact**: Active counter of pharmacies supported and estimated patients assisted.
-- **Ecological Receipts**: Verifiable disposal manifests and delivery optimization carbon logs.
+1. **Admin Overhead Exception**: If $Fees_{\text{admin}} > 15\%$ for a finalized epoch, the contract will refuse matching round distributions until the council logs a manual adjustment or executes a fee-reduction patch.
+2. **Savings Dispersion Drop**: If the cooperative savings spread ($S_{coop}$) falls below **10%** for 3 consecutive epochs, the system triggers a mandatory review loop in Dizzy to evaluate wholesale catalog pricing lists and flag potential cartel pricing.
+3. **Sybil Vote Concentration**: If any project receives more than **80%** of its votes from accounts registered within the same 24-hour window, the voting round is put on hold to investigate voter credential collusion.
