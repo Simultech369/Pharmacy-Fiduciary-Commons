@@ -1,0 +1,89 @@
+{
+  "generatedAt": "2026-06-04T03:33:38.400Z",
+  "dispersion": [
+    [
+      "00002-8215-01",
+      "Humalog (Insulin Lispro) 100 U/mL",
+      "$210.00",
+      "$205.00",
+      "$208.00",
+      "$5.00",
+      "CardinalHealth ($205.00)"
+    ],
+    [
+      "00069-4200-30",
+      "Lipitor (Atorvastatin Calcium) 20mg",
+      "$14.00",
+      "$16.00",
+      "$15.00",
+      "$2.00",
+      "McKesson ($14.00)"
+    ],
+    [
+      "00074-6347-02",
+      "Humira Pen (Adalimumab) 40mg/0.8mL",
+      "$3100.00",
+      "$3050.00",
+      "$3080.00",
+      "$50.00",
+      "CardinalHealth ($3050.00)"
+    ],
+    [
+      "00310-6120-30",
+      "Crestor (Rosuvastatin Calcium) 10mg",
+      "$28.00",
+      "$24.00",
+      "$26.00",
+      "$4.00",
+      "CardinalHealth ($24.00)"
+    ]
+  ],
+  "exclusions": [
+    [
+      "CVS Caremark",
+      "00074-6347-02",
+      "Humira Pen (Adalimumab) 40mg/0.8mL"
+    ],
+    [
+      "Express Scripts (ESI)",
+      "00002-8215-01",
+      "Humalog (Insulin Lispro) 100 U/mL"
+    ]
+  ],
+  "totals": {
+    "decoupledTotal": 15345,
+    "coopTotal": 14949,
+    "savingsTotal": 396,
+    "savingsPercent": 2.5806451612903225
+  },
+  "pharmacySummary": [
+    [
+      "Community Rx",
+      "$5660.00",
+      "$5576.00",
+      "$84.00",
+      "1.48%"
+    ],
+    [
+      "Wellness Corner Pharmacy",
+      "$2325.00",
+      "$2160.00",
+      "$165.00",
+      "7.10%"
+    ],
+    [
+      "Metro Health Drugs",
+      "$7360.00",
+      "$7213.00",
+      "$147.00",
+      "2.00%"
+    ],
+    [
+      "TOTAL COOPERATIVE",
+      "$15345.00",
+      "$14949.00",
+      "$396.00",
+      "2.58%"
+    ]
+  ]
+}

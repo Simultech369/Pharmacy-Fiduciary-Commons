@@ -1,0 +1,32 @@
+{
+  "wholesalers": {
+    "McKesson": {
+      "00002-8215-01": { "unitCost": 210.0, "bulkDiscounts": [] },
+      "00069-4200-30": { "unitCost": 14.0, "bulkDiscounts": [{ "minQty": 100, "discountBP": 1500 }] },
+      "00074-6347-02": { "unitCost": 3100.0, "bulkDiscounts": [] },
+      "00310-6120-30": { "unitCost": 28.0, "bulkDiscounts": [] }
+    },
+    "CardinalHealth": {
+      "00002-8215-01": { "unitCost": 205.0, "bulkDiscounts": [] },
+      "00069-4200-30": { "unitCost": 16.0, "bulkDiscounts": [] },
+      "00074-6347-02": { "unitCost": 3050.0, "bulkDiscounts": [{ "minQty": 5, "discountBP": 500 }] },
+      "00310-6120-30": { "unitCost": 24.0, "bulkDiscounts": [{ "minQty": 50, "discountBP": 1000 }] }
+    },
+    "AmerisourceBergen": {
+      "00002-8215-01": { "unitCost": 208.0, "bulkDiscounts": [] },
+      "00069-4200-30": { "unitCost": 15.0, "bulkDiscounts": [] },
+      "00074-6347-02": { "unitCost": 3080.0, "bulkDiscounts": [] },
+      "00310-6120-30": { "unitCost": 26.0, "bulkDiscounts": [] }
+    }
+  },
+  "drugs": {
+    "00002-8215-01": { "name": "Humalog (Insulin Lispro) 100 U/mL", "packageSize": 5 },
+    "00069-4200-30": { "name": "Lipitor (Atorvastatin Calcium) 20mg", "packageSize": 30 },
+    "00074-6347-02": { "name": "Humira Pen (Adalimumab) 40mg/0.8mL", "packageSize": 2 },
+    "00310-6120-30": { "name": "Crestor (Rosuvastatin Calcium) 10mg", "packageSize": 30 }
+  },
+  "pbmExclusions": {
+    "CVS Caremark": ["00074-6347-02"],
+    "Express Scripts (ESI)": ["00002-8215-01"]
+  }
+}
