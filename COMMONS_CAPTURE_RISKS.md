@@ -39,3 +39,7 @@ This document tracks, assesses, and outlines mitigations for the structural capt
 ## 9. Over-Centralized Merkle Root Authority
 * **Risk**: A single off-chain script creates the Merkle root, making the system dependent on one computer or developer.
 * **Mitigation**: Open-source the root generation scripts. Require at least two separate Council members to independently run the generator and confirm the root matches on-chain before co-signing (`proposeRoot` and `confirmRoot` distinct signer requirement).
+
+## 10. Relayer Verifier Trust Root
+* **Risk**: The participatory budgeting self-registration flow depends on a Council-selected `relayerVerifier`. If that key is compromised or operated without transparent eligibility rules, it can register ineligible voters or exclude eligible advocates.
+* **Mitigation**: Treat the verifier as a bounded testnet/prototype trust root until it has key rotation, public eligibility criteria, signed credential provenance, and an appeal path. Council should rotate the verifier immediately after suspected compromise.

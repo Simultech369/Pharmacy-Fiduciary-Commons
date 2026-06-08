@@ -15,9 +15,15 @@ const PB_ABI = [
 ];
 
 const CREDIT_ABI = [
-  "function participants(address) view returns (uint256 creditLimit, bool registered)",
-  "function getBalance(address) view returns (int256)"
+  "function registered(address) view returns (bool)",
+  "function creditLimits(address) view returns (uint256)",
+  "function balances(address) view returns (int256)"
 ];
+
+const EXPECTED_CHAIN_IDS = new Set([
+  31337, // Hardhat local
+  1337
+]);
 
 let provider = null;
 let signer = null;
@@ -81,11 +87,28 @@ async function connectWallet() {
 async function setupWeb3Connection(account) {
   signer = await provider.getSigner();
   userAddress = account.address;
-  isWeb3Connected = true;
+
+  const network = await provider.getNetwork();
+  const chainId = Number(network.chainId);
+  if (!EXPECTED_CHAIN_IDS.has(chainId)) {
+    showConnectionWarning(`Wallet connected to unsupported chain ${chainId}. Use the local/test Hardhat network.`);
+    return;
+  }
+
+  const [pbCode, creditCode] = await Promise.all([
+    provider.getCode(PB_CONTRACT_ADDRESS),
+    provider.getCode(MUTUAL_CREDIT_ADDRESS)
+  ]);
+
+  if (pbCode === "0x" || creditCode === "0x") {
+    showConnectionWarning("Wallet connected, but expected local/test contracts are not deployed on this chain.");
+    return;
+  }
 
   // Initialize contracts
   pbContract = new ethers.Contract(PB_CONTRACT_ADDRESS, PB_ABI, signer);
   creditContract = new ethers.Contract(MUTUAL_CREDIT_ADDRESS, CREDIT_ABI, signer);
+  isWeb3Connected = true;
 
   // Update UI Elements
   const btnConnect = document.getElementById("btn-connect");
@@ -97,7 +120,7 @@ async function setupWeb3Connection(account) {
 
   const mockBadge = document.getElementById("mock-badge");
   if (mockBadge) {
-    mockBadge.innerText = "🌐 LIVE TESTNET WORKSPACE";
+    mockBadge.innerText = "LIVE LOCAL/TEST CONTRACTS - NOT AUDITED";
     mockBadge.className = "status-badge recorded";
     mockBadge.style.animation = "none";
   }
@@ -106,6 +129,29 @@ async function setupWeb3Connection(account) {
 
   // Fetch live state from contracts
   await fetchLiveState();
+}
+
+function showConnectionWarning(message) {
+  isWeb3Connected = false;
+  const btnConnect = document.getElementById("btn-connect");
+  if (btnConnect) {
+    btnConnect.innerText = `Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+  }
+
+  const mockBadge = document.getElementById("mock-badge");
+  if (mockBadge) {
+    mockBadge.innerText = "NOT AUDITED - VERIFY TEST NETWORK";
+    mockBadge.className = "badge-unverified";
+    mockBadge.style.animation = "";
+  }
+
+  const voterStatus = document.getElementById("voter-status");
+  if (voterStatus) {
+    voterStatus.innerText = message;
+    voterStatus.style.color = "var(--accent-red)";
+  }
+
+  console.warn(message);
 }
 
 async function fetchLiveState() {
@@ -120,13 +166,14 @@ async function fetchLiveState() {
 
     // 3. Query Mutual Credit limits & balance
     try {
-      const balance = await creditContract.getBalance(userAddress);
-      const participant = await creditContract.participants(userAddress);
+      const balance = await creditContract.balances(userAddress);
+      const registered = await creditContract.registered(userAddress);
+      const creditLimit = await creditContract.creditLimits(userAddress);
       
       const formatBal = (Number(balance) / 1e18).toFixed(2);
-      const formatLimit = (Number(participant.creditLimit) / 1e18).toFixed(2);
+      const formatLimit = (Number(creditLimit) / 1e18).toFixed(2);
       
-      console.log(`Mutual Credit balance: ${formatBal}, limit: ${formatLimit}`);
+      console.log(`Mutual Credit registered: ${registered}, balance: ${formatBal}, limit: ${formatLimit}`);
       // If we had display boxes for specific user balances in dashboard, we could update them here.
     } catch (err) {
       console.log("Could not query mutual credit limits for user address:", err.message);

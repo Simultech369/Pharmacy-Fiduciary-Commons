@@ -27,6 +27,11 @@ Thumbs.db
 .env
 .env.*
 
+# Private key material
+tools/credentials/issuer_private.key
+*.private.key
+*.secret.key
+
 # Local analysis artifacts (optional; keep out of repo by default)
 github_overlap_*
 github_union_*

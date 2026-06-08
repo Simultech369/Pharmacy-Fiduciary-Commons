@@ -1,0 +1,18 @@
+# Default ownership for all repo changes.
+* @Simultech369
+
+# High-risk surfaces should always receive maintainer review.
+/contracts/ @Simultech369
+/scripts/ @Simultech369
+/tools/ @Simultech369
+/dashboard/ @Simultech369
+/hardhat.config.js @Simultech369
+/package.json @Simultech369
+/package-lock.json @Simultech369
+
+# Governance, security, and deployment posture.
+/SECURITY.md @Simultech369
+/PRODUCTION_READINESS_CHECKLIST.md @Simultech369
+/COMMONS_CAPTURE_RISKS.md @Simultech369
+/GOVERNANCE.md @Simultech369
+/PORTABILITY.md @Simultech369

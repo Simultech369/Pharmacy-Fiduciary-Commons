@@ -5,6 +5,13 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const TRUSTED_ISSUER_KEYS = new Map([
+  [
+    "did:web:fiduciarycommons.org#key-1",
+    "0b9b0733bd3a155204cb3b7b132df36e401b9d3393796c319cc91e1308b19a44"
+  ]
+]);
+
 function usage() {
   console.log(`
 Usage:
@@ -60,8 +67,8 @@ async function main() {
     const privPath = path.join(outDir, "issuer_private.key");
     const pubPath = path.join(outDir, "issuer_public.key");
 
-    fs.writeFileSync(privPath, privateKey);
-    fs.writeFileSync(pubPath, publicKey);
+    fs.writeFileSync(privPath, privateKey, { mode: 0o600 });
+    fs.writeFileSync(pubPath, publicKey, { mode: 0o644 });
 
     console.log("Keys generated successfully:");
     console.log(`  Private Key: ${privPath}`);
@@ -136,6 +143,21 @@ async function main() {
     }
 
     const signatureHex = vc.proof.proofValue;
+    const verificationMethod = vc.proof.verificationMethod;
+    const trustedFingerprint = TRUSTED_ISSUER_KEYS.get(verificationMethod);
+
+    if (!trustedFingerprint) {
+      console.error(`Verification Failed: Untrusted verification method '${verificationMethod}'.`);
+      process.exitCode = 1;
+      return;
+    }
+
+    const suppliedFingerprint = crypto.createHash("sha256").update(publicKeyPem).digest("hex");
+    if (suppliedFingerprint !== trustedFingerprint) {
+      console.error("Verification Failed: Supplied public key does not match the pinned issuer key.");
+      process.exitCode = 1;
+      return;
+    }
     
     // To verify, we strip the signature and check the payload
     const vcToVerify = { ...vc };

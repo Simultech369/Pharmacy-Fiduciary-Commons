@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -13,6 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 contract PatientFundParticipatoryBudgeting is AccessControl {
     using SafeERC20 for IERC20;
+    using ECDSA for bytes32;
 
     bytes32 public constant COUNCIL_ROLE = keccak256("COUNCIL_ROLE");
 
@@ -132,33 +134,16 @@ contract PatientFundParticipatoryBudgeting is AccessControl {
 
     function registerVoterWithSignature(uint256 roundId, address voter, bytes calldata signature) external {
         if (voter == address(0)) revert InvalidAddress();
+        if (msg.sender != voter) revert Unauthorized();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
         if (relayerVerifier == address(0)) revert InvalidAddress();
 
         bytes32 messageHash = keccak256(abi.encodePacked(roundId, voter, address(this)));
-        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash));
-
-        address signer = recoverSigner(ethSignedMessageHash, signature);
+        address signer = messageHash.toEthSignedMessageHash().recover(signature);
         if (signer != relayerVerifier) revert Unauthorized();
 
         registeredVoters[roundId][voter] = true;
         emit VoterRegistered(roundId, voter, true);
-    }
-
-    function recoverSigner(bytes32 _ethSignedMessageHash, bytes memory _signature) internal pure returns (address) {
-        if (_signature.length != 65) revert InvalidAddress();
-
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        assembly {
-            r := mload(add(_signature, 32))
-            s := mload(add(_signature, 64))
-            v := byte(0, mload(add(_signature, 96)))
-        }
-
-        return ecrecover(_ethSignedMessageHash, v, r, s);
     }
 
     function registerProject(uint256 roundId, string calldata title, address recipient) external onlyRole(COUNCIL_ROLE) {

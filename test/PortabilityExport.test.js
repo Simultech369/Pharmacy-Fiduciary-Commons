@@ -3,6 +3,7 @@ const { ethers } = require("hardhat");
 const fs = require("node:fs");
 const path = require("node:path");
 const { main } = require("../scripts/export-portability");
+const { verifyPayload } = require("../scripts/verify-export");
 
 describe("Portability Export Tool", function () {
   const toWei = (value) => ethers.parseEther(value);
@@ -145,8 +146,9 @@ describe("Portability Export Tool", function () {
     expect(c.claimId).to.equal(`claim-0-${pharmacy.address}`);
     expect(c.patientId).to.equal("patient-epoch-0");
     expect(c.pharmacyAddress).to.equal(pharmacy.address);
-    expect(c.ndc).to.equal("99999-999-99");
+    expect(c.ndc).to.equal("unavailable-off-chain");
     expect(c.quantity).to.equal(1);
+    expect(c.metadataProvenance).to.equal("synthetic-placeholder");
     expect(c.status).to.equal("resolved");
     expect(c.transactionHash).to.equal(claimReceipt.hash);
 
@@ -156,6 +158,9 @@ describe("Portability Export Tool", function () {
     expect(p.claimRoot).to.equal(leaf);
     expect(p.proof).to.deep.equal([]);
     expect(p.leafIndex).to.equal(0);
+    expect(p.pharmacy).to.equal(pharmacy.address);
+    expect(p.grossAmount).to.equal(gross.toString());
+    expect(p.eligibleCap).to.equal(gross.toString());
     expect(p.blockNumber).to.equal(claimReceipt.blockNumber);
 
     // Validate votes array
@@ -171,5 +176,15 @@ describe("Portability Export Tool", function () {
     expect(payload.receipts).to.have.lengthOf(2);
     expect(payload.receipts[0].hash).to.equal(claimReceipt.hash);
     expect(payload.receipts[1].hash).to.equal(voteTx.hash);
+
+    const verification = verifyPayload(payload);
+    expect(verification.ok).to.be.true;
+    expect(verification.errors).to.deep.equal([]);
+
+    const tampered = structuredClone(payload);
+    tampered.merkle_proofs[0].eligibleCap = toWei("101").toString();
+    const tamperedVerification = verifyPayload(tampered);
+    expect(tamperedVerification.ok).to.be.false;
+    expect(tamperedVerification.errors.join(" | ")).to.contain("does not verify");
   });
 });

@@ -119,8 +119,9 @@ async function main(opts = {}) {
       claimId,
       patientId: `patient-epoch-${epoch.toString()}`,
       pharmacyAddress: pharmacy,
-      ndc: "99999-999-99", // placeholder as NDC is off-chain metadata
+      ndc: "unavailable-off-chain",
       quantity: 1,
+      metadataProvenance: "synthetic-placeholder",
       claimedAt,
       status,
       transactionHash: event.transactionHash
@@ -158,6 +159,9 @@ async function main(opts = {}) {
           claimRoot: root,
           proof: entry.proof,
           leafIndex: entry.index,
+          pharmacy: ethers.getAddress(entry.pharmacy),
+          grossAmount: entry.grossAmount.toString(),
+          eligibleCap: entry.eligibleCap.toString(),
           blockNumber
         });
         console.log("✅ Found Merkle proof allocation entry.");
@@ -254,6 +258,7 @@ async function main(opts = {}) {
   console.log(`Proofs:      ${merkleProofs.length}`);
   console.log(`Votes:       ${votes.length}`);
   console.log(`Receipts:    ${receipts.length}`);
+  console.log(`Note:        Off-chain clinical fields marked synthetic-placeholder unless independently supplied.`);
   console.log(`==================================================\n`);
 }
 

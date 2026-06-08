@@ -6,10 +6,11 @@ import { ethers } from "ethers";
 function usage() {
   console.log(`
 Usage:
-  node scripts/register-voter-relayer.mjs --credential <vc_json_file> --voter <ethereum_address> --round <id> --contract <address> --key <relayer_eth_private_key> --issuer-key <issuer_public_key_file>
+  RELAYER_PRIVATE_KEY=<relayer_eth_private_key> node scripts/register-voter-relayer.mjs --credential <vc_json_file> --voter <ethereum_address> --round <id> --contract <address> --issuer-key <issuer_public_key_file>
+  node scripts/register-voter-relayer.mjs --credential <vc_json_file> --voter <ethereum_address> --round <id> --contract <address> --key-file <relayer_private_key_file> --issuer-key <issuer_public_key_file>
 
 Example:
-  node scripts/register-voter-relayer.mjs --credential tools/credentials/signed_pharmacy.json --voter 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 --round 1 --contract 0x5FbDB2315678afecb367f032d93F642f64180aa3 --key 0xdbda86d13026623617161352d0b904d989441113b52d0b904d989441113b52d0 --issuer-key tools/credentials/issuer_public.key
+  RELAYER_PRIVATE_KEY=0x... node scripts/register-voter-relayer.mjs --credential tools/credentials/signed_pharmacy.json --voter 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 --round 1 --contract 0x5FbDB2315678afecb367f032d93F642f64180aa3 --issuer-key tools/credentials/issuer_public.key
 `);
 }
 
@@ -49,8 +50,10 @@ async function main() {
   const voterAddr = args["voter"];
   const roundIdRaw = args["round"];
   const contractAddr = args["contract"];
-  const relayerPrivateKey = args["key"];
+  const relayerKeyFile = args["key-file"];
   const issuerKeyFile = args["issuer-key"];
+  const relayerPrivateKey = process.env.RELAYER_PRIVATE_KEY
+    || (relayerKeyFile ? fs.readFileSync(path.resolve(process.cwd(), relayerKeyFile), "utf8").trim() : "");
 
   if (!credFile || !voterAddr || !roundIdRaw || !contractAddr || !relayerPrivateKey || !issuerKeyFile) {
     usage();

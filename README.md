@@ -1,10 +1,39 @@
 # Pharmacy Fiduciary Commons
 
-**On-chain rebate transparency for independent pharmacies and patients.**
+<div align="center">
+
+**On-chain rebate transparency infrastructure for independent pharmacies and patient funds.**
+
+![CI](https://github.com/Simultech369/Pharmacy-Fiduciary-Commons/actions/workflows/test.yml/badge.svg)
+![Tests](https://img.shields.io/badge/local%20tests-40%20passing-16a34a?style=for-the-badge)
+![Audit](https://img.shields.io/badge/audit-not%20audited-dc2626?style=for-the-badge)
+![Mainnet](https://img.shields.io/badge/mainnet-not%20deployed-6b7280?style=for-the-badge)
+![Solidity](https://img.shields.io/badge/solidity-0.8.20-363636?style=for-the-badge&logo=solidity)
+![Node](https://img.shields.io/badge/node-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)
+
+</div>
 
 > [!CAUTION]
-> ### ⚠️ NOT AUDITED — DO NOT USE REAL FUNDS YET
-> **This contract has NOT yet been audited by an independent security firm. Do NOT deploy, deposit, or route real capital to this treasury on mainnet until a formal cryptographic and safety audit has been completed and published.**
+> **NOT AUDITED - DO NOT USE REAL FUNDS YET**
+>
+> This repository is a working local/testnet prototype. Do not deploy, deposit, or route real capital to this treasury on mainnet until an independent security audit has been completed and published.
+
+---
+
+## What Runs Today
+
+| Surface | Status |
+|---------|--------|
+| `PBMRebateTreasury` | Working Solidity contract with epoch escrow, Merkle claims, dispute handling, sanctions, recall, pause, and cap controls |
+| `PatientFundParticipatoryBudgeting` | Working patient-fund voting prototype with council registration and relayer-assisted voter self-registration |
+| `PharmacyMutualCredit` | Working decoupled mutual-credit and voucher prototype with issuer credit-limit enforcement |
+| Tests | `40 passing` via `npm.cmd test` |
+| Dashboard | Static prototype with local/test Web3 integration guardrails |
+| Merkle tooling | Allocation root/proof generator |
+| Portability export | Prototype JSON export plus local verifier for claims, proofs, votes, and receipts |
+| Mainnet | Not deployed |
+| External audit | Pending |
 
 ---
 
@@ -20,151 +49,136 @@ npm.cmd run compile
 npm.cmd test
 ```
 
-Generate Merkle roots + proofs (internal tooling):
+Generate Merkle roots and proofs:
 
 ```bash
 npm.cmd run merkle:allocations -- --in allocations.json --out merkle.json
 ```
 
+Run the portability export prototype:
+
+```bash
+node scripts/export-portability.js --exporter <participant_address>
+```
+
+Verify a portability export:
+
+```bash
+npm.cmd run verify:export -- --file exports/<participant_address>.json
+```
+
 ---
 
-## How This Fits the Bigger Picture
+## Architecture
 
-The Pharmacy Fiduciary Commons is designed as a structural mechanism for routing corporate PBM surplus away from extraction and toward the community's preventative health floor. Off-chain arbitration, design constraints, and ethical drift checks should remain portable, reviewable, and independent of any single local workspace.
+```mermaid
+flowchart LR
+  Depositor["PBM / depositor"] --> Treasury["PBMRebateTreasury"]
+  Council["Council multisig"] --> Treasury
+  Guardian["Guardian"] --> Treasury
+  Timelock["Timelock executor"] --> Treasury
+  Treasury --> Pharmacy["Independent pharmacy claims"]
+  Treasury --> PatientFund["Patient fund"]
+  PatientFund --> PB["Participatory budgeting"]
+  PB --> Projects["Community health projects"]
+  MutualCredit["PharmacyMutualCredit"] -. decoupled .-> Pharmacy
+  Dashboard["Dashboard prototype"] --> Treasury
+  Dashboard --> PB
+  Dashboard --> MutualCredit
+  Export["Portability export"] --> Treasury
+  Export --> PB
+```
 
 ---
 
 ## What This Is
 
 `PBMRebateTreasury` is an Ethereum smart contract that:
-- Records every rebate deposit **permanently on-chain** with depositor identity, amount, quarter, drug class, and source — in a format that cannot be altered retroactively
-- Routes captured funds directly to independent pharmacies via **Merkle-proof claims** (tracked per epoch under individual `epochEscrow` vaults to avoid over-allocation)
-- Allocates **10% of every gross claim** to a dedicated patient fund, automatically, at claim time
-- Makes every **missing deposit equally visible** — a Ledger of Omissions in which every quarter a PBM does not deposit is a timestamped, permanent, documented record
+
+- records rebate deposits on-chain with depositor identity, amount, quarter, drug class, and source;
+- routes captured funds to independent pharmacies through Merkle-proof claims;
+- allocates 10% of every gross claim to a dedicated patient fund at claim time;
+- makes missing deposits visible through a Ledger of Omissions;
+- separates treasury custody from adjacent prototypes such as mutual credit, vouchers, dashboard tooling, and participatory budgeting.
+
+This is infrastructure for transparent rebate pass-through. It is not legal, financial, medical, or investment advice.
 
 ---
 
-## Ecological Logic (Resource Efficiency)
+## Core Lifecycle
 
-The project avoids generic "greenwashing" by explicitly linking health access to resource efficiency. The Patient Fund supports community-led programs targeting:
-* **Medication Waste Reduction**: Systems to prevent shelf expiration and recover unopened medications.
-* **Cold-Chain Efficiency**: Solar-powered medical refrigeration for independent local pharmacies.
-* **Local Delivery Route Efficiency**: Shared, low-carbon delivery systems for homebound patients.
-* **Pharmacy Energy Resilience**: Small-scale solar + storage systems for community pharmacy back-up power.
-* **Safe Disposal Programs**: Community drug take-back boxes and eco-friendly disposal kits.
-* **Low-Waste Refill Logistics**: Bulk refill dispensing and reusable container packaging.
-* **Disaster-Resilient Medication Access**: Pre-positioned emergency medicine supplies and secure mobile pharmacy units.
+1. PBM or depositor calls `depositRebate()`.
+2. Council member calls `proposeRoot()` for the current epoch.
+3. A second distinct council member calls `confirmRoot()`.
+4. Pharmacies claim with Merkle proofs through `claim()` or `claimBatch()`.
+5. Council calls `finalizeEpoch()` to close the epoch.
+6. After the 30-day `RECALL_DELAY`, unclaimed funds can be recalled to `patientFund`.
 
 ---
 
-## Division of Concerns (Adjacent Designs)
+## Treasury Buckets
 
-To preserve the simplicity and security of the audited rebate treasury, adjacent systems must remain strictly decoupled:
-* **Pharmacy Mutual-Aid Credit Lines**: Decoupled from the treasury; handled by separate mutual credit systems.
-* **Emergency Medication Voucher Ledger**: Decoupled from on-chain escrow; managed on separate coordination layers.
-* **Cooperative Procurement**: Shared formulary and pricing intelligence services run off-chain.
-
----
-
-## Background
-
-California SB 41 (signed October 2025, effective January 2026) mandates 100% rebate pass-through — but explicitly exempts Taft-Hartley self-insured union plans, which cover tens of millions of American workers. The FTC's January 2025 report documented $7.3 billion in excess PBM revenue. Federal law currently requires nothing comparable to SB 41 for these plans.
-
-The gap is not in the law. It is in the infrastructure. This contract is that infrastructure.
-
-DOL CAR 2025-01 (May 2025) formally removed the prior "extreme care" standard for cryptocurrency in ERISA plans. Stablecoins (DAI, USDC) are now evaluated under the standard prudent process applicable to any asset class.
-
----
-
-## Contract Architecture
-
-### Treasury Buckets (split at deposit)
 | Bucket | Allocation | Purpose |
-|--------|-----------|---------|
-| Distribution Pool | 99% | Pharmacy Merkle claims |
-| Governance Reserve | 1% | Council operations (EXECUTOR_ROLE access only) |
+|--------|------------|---------|
+| Distribution pool | 99% | Pharmacy Merkle claims |
+| Governance reserve | 1% | Council operations through `EXECUTOR_ROLE` |
 
-### Patient Fund (allocated at claim time)
+## Patient Fund
+
 | Source | Amount |
 |--------|--------|
 | Every gross claim | 10% routed to `patientFund` |
-| Unclaimed epoch funds after 30-day recall delay | 100% to `patientFund` |
-| Non-payout token sweeps | 100% to `patientFund` |
+| Unclaimed epoch funds after recall delay | 100% routed to `patientFund` |
+| Non-payout token sweeps | 100% routed to `patientFund` |
 
-### Roles
+## Roles
+
 | Role | Holder | Permissions |
 |------|--------|-------------|
 | `COUNCIL_ROLE` | 3/5 Gnosis Safe | Epoch management, root co-sign, recall, sanctions, unpause |
-| `EXECUTOR_ROLE` | TimelockController | Cap changes, governance reserve withdrawal, env fund update |
-| `GUARDIAN_ROLE` | Separate fast-response address | Emergency pause only — cannot unpause, cannot access funds |
+| `EXECUTOR_ROLE` | TimelockController | Cap changes, governance reserve withdrawal, environment fund update |
+| `GUARDIAN_ROLE` | Separate fast-response address | Emergency pause only; cannot unpause or access funds |
 
-### Core Lifecycle
-1. PBM (or any party) calls `depositRebate()` — funds enter escrow, source logged permanently
-2. Council member calls `proposeRoot()` — Merkle root proposed for current epoch
-3. Second distinct council member calls `confirmRoot()` — root goes live (co-sign gate)
-4. Pharmacies (or delegated claims agent) call `claim()` or `claimBatch()` (array compatibility wrapper — enforces exactly one entry)
-5. Council calls `finalizeEpoch()` to close epoch and open the next
-6. After 30-day `RECALL_DELAY`, unclaimed funds recalled to `patientFund`
+---
 
-### Security Properties
-- Hard cap enforced at root proposal and claim (monotonic decrease only — ratchet)
-- Daily cap enforced at root proposal and claim
-- Root total enforced at claim
-- Per-pharmacy cap enforced via Merkle leaf encoding
-- Double-hash leaf construction (second-preimage protection)
-- Root publication requires co-sign from two **distinct** `COUNCIL_ROLE` members
-- Daily cap bounded by hard cap at all times
-- Recall only after `RECALL_DELAY`, only unclaimed amount, sent to `patientFund`
-- Payout token cannot be swept
-- Non-payout tokens swept to `patientFund` (not general fund)
-- `GUARDIAN_ROLE` is a separate address from `COUNCIL_ROLE`
-- `flagClaim` requires a valid Merkle proof — pool-locking griefing prevented
-- `flagClaim` increments `epochClaimedTotal`, `epochVolume`, and sets `hasClaimed` — caps and recall math fully consistent on disputed epochs
-- Sanctioned addresses cannot flag claims — pool-locking via dispute prevented
-- Open dispute flag blocks `claim()` — no parallel claim and dispute on same epoch
-- ETH rejected via `receive()` and `fallback()` with typed custom errors throughout — no string reverts
-- No upgradeability
+## Security Properties
+
+- Hard cap enforced at root proposal and claim.
+- Daily cap enforced at root proposal and claim.
+- Root total enforced at claim.
+- Per-pharmacy cap enforced through Merkle leaf encoding.
+- Double-hash leaf construction for second-preimage protection.
+- Root publication requires two distinct `COUNCIL_ROLE` members.
+- Daily cap remains bounded by hard cap.
+- Recall only after `RECALL_DELAY`, only for unclaimed amount, sent to `patientFund`.
+- Payout token cannot be swept.
+- Non-payout tokens are swept to `patientFund`, not a general fund.
+- `GUARDIAN_ROLE` is separate from `COUNCIL_ROLE`.
+- `flagClaim` requires a valid Merkle proof.
+- Disputed active-epoch claims update cap and recall accounting consistently.
+- Sanctioned addresses cannot flag claims.
+- Open dispute flag blocks a parallel claim on the same epoch.
+- ETH is rejected through `receive()` and `fallback()`.
+- No upgradeability.
 
 ---
 
 ## Merkle Leaf Encoding
 
 ```solidity
-// Double-hash — second-preimage protection
-// abi.encodePacked is safe here: all fields are fixed-size (address + uint256 + uint256)
+// Double-hash leaf. abi.encodePacked is safe here because all fields are fixed-size.
 bytes32 leaf = keccak256(
     bytes.concat(keccak256(abi.encodePacked(pharmacy, grossAmount, eligibleCap)))
 );
 ```
 
 Each leaf encodes:
-- `pharmacy` — claimant address
-- `grossAmount` — gross allocation this epoch (patient share drawn from this)
-- `eligibleCap` — per-pharmacy maximum enforced on-chain
 
-> **Off-chain tooling note:** Merkle tree generators and proof scripts **must** use `encodePacked` (not `encode`) when hashing leaves, or proofs will be invalid on-chain.
+- `pharmacy`: claimant address
+- `grossAmount`: gross allocation for this epoch
+- `eligibleCap`: per-pharmacy maximum enforced on-chain
 
----
-
-## Dependencies
-
-```
-@openzeppelin/contracts ^4.x
-  - token/ERC20/utils/SafeERC20
-  - token/ERC20/IERC20
-  - security/ReentrancyGuard
-  - security/Pausable
-  - access/AccessControlEnumerable
-  - utils/cryptography/MerkleProof
-```
-
----
-
-## Canonical Source
-
-The canonical contract source is:
-
-- `contracts/PBMRebateTreasury.sol`
+> Off-chain tooling must use `encodePacked`, not `encode`, when hashing leaves.
 
 ---
 
@@ -172,98 +186,109 @@ The canonical contract source is:
 
 ```solidity
 constructor(
-    address _token,             // DAI or USDC contract address
-    address _patientFund,       // Immutable — receives patient allocations
-    address _environmentalFund, // Receives accidentally sent ETH
-    uint256 _initialDailyCap,   // Starting daily volume cap (hardCap = dailyCap * 10)
-    address _council,           // 3/5 Gnosis Safe — COUNCIL_ROLE + DEFAULT_ADMIN_ROLE
-    address _executor,          // TimelockController — EXECUTOR_ROLE
-    address _guardian           // Separate address — GUARDIAN_ROLE only, must != _council
+    address _token,
+    address _patientFund,
+    address _environmentalFund,
+    uint256 _initialDailyCap,
+    address _council,
+    address _executor,
+    address _guardian
 )
 ```
 
-> **Before deploying to mainnet:**
-> - Complete a formal security audit
-> - Configure a 3/5 Gnosis Safe for `_council`
-> - Deploy and configure a `TimelockController` for `_executor`
-> - Confirm `_guardian` is a separate, dedicated address
-> - Verify all addresses on the target network
+Before mainnet deployment:
+
+- complete a formal security audit;
+- configure a 3/5 Gnosis Safe for `_council`;
+- deploy and configure a `TimelockController` for `_executor`;
+- confirm `_guardian` is separate from council;
+- verify every address on the target network.
 
 ---
 
-## TimelockController deployment (Hardhat)
+## Deployment Script
 
-This repo includes a convenience script that deploys a `TimelockController` and then deploys `PBMRebateTreasury` with the timelock address wired in as `_executor`:
+This repo includes a convenience Hardhat script:
 
-`scripts/deploy-timelock-and-treasury.js`
+```text
+scripts/deploy-timelock-and-treasury.js
+```
 
 Required environment variables:
+
 - `TOKEN`
 - `PATIENT_FUND`
 - `ENVIRONMENTAL_FUND`
-- `INITIAL_DAILY_CAP` (integer string, token base units)
+- `INITIAL_DAILY_CAP`
 - `COUNCIL`
 - `GUARDIAN`
 
-Optional timelock configuration:
-- `TIMELOCK_MIN_DELAY_SECONDS` (default: 172800 / 2 days)
-- `TIMELOCK_PROPOSERS` (comma-separated; default: `COUNCIL`)
-- `TIMELOCK_EXECUTORS` (comma-separated; default: `0x0000000000000000000000000000000000000000` = anyone can execute)
-- `TIMELOCK_ADMIN` (default: `COUNCIL`)
+Optional timelock variables:
+
+- `TIMELOCK_MIN_DELAY_SECONDS`
+- `TIMELOCK_PROPOSERS`
+- `TIMELOCK_EXECUTORS`
+- `TIMELOCK_ADMIN`
 
 ---
 
-## Audit Status
+## Audit And Production Status
 
-| Status | Detail |
-|--------|--------|
-| ✅ Internal review complete | Architecture and security properties reviewed by contract author |
-| ⏳ External audit | Pending — budgeted for pre-mainnet deployment |
-| ❌ Mainnet deployment | Not yet deployed — do not use with real funds |
-
-Audit inquiries: open an issue or see contact below.
+| Item | Status |
+|------|--------|
+| Internal review | Complete enough for prototype iteration |
+| External audit | Pending |
+| Mainnet deployment | Not deployed |
+| Production frontend build | Pending |
+| Database/API/RLS surface | Not present yet |
+| Production readiness checklist | See `PRODUCTION_READINESS_CHECKLIST.md` |
+| Mechanism coverage | See `MECHANISM_COVERAGE.md` |
+| Security reporting | See `SECURITY.md` |
 
 ---
 
-## Project Status
+## Adjacent Designs
 
-| Component | Status |
-|-----------|--------|
-| Smart contract | ✅ Complete |
-| Public dashboard (epochStats / Ledger of Omissions) | 🔨 In development |
-| Merkle tree generator + proof tooling | 🔨 In development |
-| ERISA counsel review of model procurement clause | ⏳ Pending funding |
-| Mainnet deployment | ⏳ Pending audit |
+To preserve treasury simplicity, these systems are intentionally decoupled:
+
+- `PatientFundParticipatoryBudgeting`: patient-fund project allocation prototype.
+- `PharmacyMutualCredit`: mutual-credit and emergency voucher prototype.
+- `tools/credentials`: credential issuance and verification prototype.
+- `scripts/export-portability.js`: portability export prototype.
+- `dashboard/`: static dashboard and local/test Web3 prototype.
+
+---
+
+## Background
+
+The project is motivated by rebate pass-through gaps affecting independent pharmacies and patient access. Policy references in this repository are context for the model, not legal conclusions. Any procurement clause, ERISA-facing language, deployment plan, or real-funds workflow requires qualified legal review.
 
 ---
 
 ## Contributing
 
-This is an open-source public goods project. Contributions welcome — particularly:
+Contributions are welcome, especially:
 
-- Merkle tree generation tooling (JavaScript / Python)
-- Dashboard frontend
-- Test suite expansion
-- Documentation improvements
+- test suite expansion;
+- dashboard hardening and accessibility;
+- Merkle and portability tooling;
+- documentation cleanup;
+- security review.
 
-Open an issue to discuss before submitting a large PR.
+Open an issue before submitting a large PR.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](./LICENSE)
+MIT. See [LICENSE](./LICENSE).
 
 ---
 
 ## Mission
 
-Independent pharmacies serve the communities that large chains abandon. They dispense prescriptions on thin margins, absorb retroactive clawbacks they cannot audit, and have no ledger to point to when the numbers don't add up.
+Independent pharmacies serve communities that large chains abandon. They dispense prescriptions on thin margins, absorb clawbacks they cannot audit, and often lack a durable ledger to point to when the numbers do not add up.
 
-This contract is that ledger.
+This repository explores that ledger.
 
-Every deposit is permanent. Every omission is equally permanent. PBM silence is the evidence.
-
----
-
-*This repository does not constitute legal, financial, or investment advice. All procurement clause language referenced in project documentation requires review by qualified ERISA counsel before use in any plan document or RFP.*
+Every deposit is permanent. Every omission is visible. The machine comes first; the mission can stand on it.

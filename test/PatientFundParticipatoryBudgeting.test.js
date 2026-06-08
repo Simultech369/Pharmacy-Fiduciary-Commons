@@ -239,5 +239,54 @@ describe("PatientFundParticipatoryBudgeting", function () {
         "WrongRoundState"
       );
     });
+
+    it("requires the signed voter to submit the self-registration transaction", async function () {
+      const messageHash = ethers.solidityPackedKeccak256(
+        ["uint256", "address", "address"],
+        [1n, voter.address, await pb.getAddress()]
+      );
+      const messageHashBytes = ethers.toBeArray(messageHash);
+      const signature = await relayer.signMessage(messageHashBytes);
+
+      await expectRevert(
+        pb.connect(attacker).registerVoterWithSignature(1n, voter.address, signature),
+        "Unauthorized"
+      );
+    });
+
+    it("rejects invalid-v and high-s relayer signatures", async function () {
+      const messageHash = ethers.solidityPackedKeccak256(
+        ["uint256", "address", "address"],
+        [1n, voter.address, await pb.getAddress()]
+      );
+      const messageHashBytes = ethers.toBeArray(messageHash);
+      const signature = await relayer.signMessage(messageHashBytes);
+      const parsed = ethers.Signature.from(signature);
+
+      const invalidVSignature = ethers.hexlify(ethers.concat([
+        ethers.getBytes(parsed.r),
+        ethers.getBytes(parsed.s),
+        Uint8Array.from([1])
+      ]));
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(1n, voter.address, invalidVSignature),
+        "ECDSA: invalid signature"
+      );
+
+      const curveOrder = BigInt("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
+      const highS = ethers.toBeHex(curveOrder - BigInt(parsed.s), 32);
+      const flippedV = parsed.v === 27 ? 28 : 27;
+      const highSSignature = ethers.hexlify(ethers.concat([
+        ethers.getBytes(parsed.r),
+        ethers.getBytes(highS),
+        Uint8Array.from([flippedV])
+      ]));
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(1n, voter.address, highSSignature),
+        "ECDSA: invalid signature"
+      );
+    });
   });
 });

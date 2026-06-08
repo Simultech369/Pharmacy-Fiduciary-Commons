@@ -9,6 +9,7 @@
     "test:security": "hardhat test test/PBMRebateTreasury.security.test.js",
     "deploy:timelock": "hardhat run scripts/deploy-timelock-and-treasury.js",
     "verify:contracts": "hardhat run scripts/verify-contracts.js",
+    "verify:export": "node scripts/verify-export.js",
     "merkle:allocations": "node tools/merkle/allocations.js"
   },
   "keywords": [],

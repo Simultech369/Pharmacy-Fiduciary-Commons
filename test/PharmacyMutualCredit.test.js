@@ -80,8 +80,16 @@ describe("PharmacyMutualCredit", function () {
     });
 
     it("allows council to authorize voucher issuers", async function () {
+      await credit.connect(council).registerParticipant(advocate.address, 500n);
       await credit.connect(council).updateIssuerStatus(advocate.address, true);
       expect(await credit.authorizedIssuers(advocate.address)).to.be.true;
+    });
+
+    it("requires voucher issuers to be registered before authorization", async function () {
+      await expectRevert(
+        credit.connect(council).updateIssuerStatus(advocate.address, true),
+        "NotRegistered"
+      );
     });
   });
 
@@ -131,6 +139,7 @@ describe("PharmacyMutualCredit", function () {
 
     beforeEach(async function () {
       await credit.connect(council).registerParticipant(pharmacyA.address, 500n);
+      await credit.connect(council).registerParticipant(advocate.address, 200n);
       await credit.connect(council).updateIssuerStatus(advocate.address, true);
 
       voucherId = ethers.keccak256(ethers.toUtf8Bytes("voucher-001"));
@@ -157,6 +166,26 @@ describe("PharmacyMutualCredit", function () {
 
       const redeemedV = await credit.vouchers(voucherId);
       expect(redeemedV.redeemed).to.be.true;
+    });
+
+    it("reverts voucher redemption that would exceed issuer credit limit", async function () {
+      const largeVoucherId = ethers.keccak256(ethers.toUtf8Bytes("voucher-large"));
+      await credit.connect(advocate).createVoucher(largeVoucherId, 250n, expiry);
+
+      await expectRevert(
+        credit.connect(pharmacyA).redeemVoucher(largeVoucherId),
+        "CreditLimitExceeded"
+      );
+    });
+
+    it("requires voucher creators to be authorized registered participants", async function () {
+      const attackerVoucherId = ethers.keccak256(ethers.toUtf8Bytes("voucher-attacker"));
+
+      await credit.connect(council).registerParticipant(attacker.address, 200n);
+      await expectRevert(
+        credit.connect(attacker).createVoucher(attackerVoucherId, amount, expiry),
+        "Unauthorized"
+      );
     });
 
     it("reverts redemption of expired vouchers", async function () {

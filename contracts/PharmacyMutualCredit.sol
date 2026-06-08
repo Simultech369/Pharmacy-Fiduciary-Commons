@@ -96,6 +96,7 @@ contract PharmacyMutualCredit is AccessControl {
         onlyRole(COUNCIL_ROLE)
     {
         if (issuer == address(0)) revert InvalidAddress();
+        if (!registered[issuer]) revert NotRegistered();
         
         authorizedIssuers[issuer] = status;
         emit IssuerStatusUpdated(issuer, status);
@@ -133,7 +134,8 @@ contract PharmacyMutualCredit is AccessControl {
      * @notice Registers a new voucher that can be redeemed at a pharmacy.
      */
     function createVoucher(bytes32 voucherId, uint256 amount, uint256 expiry) external {
-        if (!registered[msg.sender] && !authorizedIssuers[msg.sender]) revert Unauthorized();
+        if (!registered[msg.sender]) revert NotRegistered();
+        if (!authorizedIssuers[msg.sender]) revert Unauthorized();
         if (vouchers[voucherId].issuer != address(0)) revert AlreadyRegistered();
         if (amount == 0) revert ZeroAmount();
         if (expiry <= block.timestamp) revert VoucherExpired();
@@ -163,12 +165,11 @@ contract PharmacyMutualCredit is AccessControl {
         address issuer = v.issuer;
         uint256 amount = v.amount;
 
-        // Verify the issuer has sufficient credit lines if they are a registered participant
-        if (registered[issuer]) {
-            int256 creditLimitVal = int256(creditLimits[issuer]);
-            if (balances[issuer] - int256(amount) < -creditLimitVal) {
-                revert CreditLimitExceeded();
-            }
+        if (!registered[issuer]) revert NotRegistered();
+
+        int256 creditLimitVal = int256(creditLimits[issuer]);
+        if (balances[issuer] - int256(amount) < -creditLimitVal) {
+            revert CreditLimitExceeded();
         }
 
         v.redeemed = true;
