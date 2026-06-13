@@ -26,8 +26,10 @@ Coverage levels:
 | Epoch finalization supports payout tokens with different decimals | Contract-enforced + tested | Constructor-configured `minimumEpochVolume` and six-decimal token regression test | Deployment must express thresholds in token base units |
 | Disputed dismissed claims do not poison caps or lock recalled funds | Contract-enforced + tested | `resolveClaim` and security tests | Keep as regression test in CI |
 | Root-exclusion payouts cannot bypass single-party governance or epoch caps | Contract-enforced + tested | `approveExclusionClaim`, `resolveClaim`, and security tests | Add evidence-hash provenance for off-chain review packets |
+| Exclusion remediation cannot consume ordinary distribution liquidity | Contract-enforced + tested | `fundExclusionRemediation`, `exclusionRemediationReserve`, and security tests | Define an operational reserve-funding target before deployment |
 | Exclusion payouts cannot distort root-unclaimed reporting | Contract-enforced + tested | `epochRootClaimedTotal`, `epochExclusionPaidTotal`, `epochAccounting`, and security tests | Surface the provenance-aware fields in any future dashboard |
 | Issued vouchers reserve mutual-credit capacity until redemption or expiry cleanup | Contract-enforced + tested | `reservedVoucherCredit`, `releaseExpiredVoucher`, transfer and limit-update checks | Add operational monitoring for expired reservations awaiting cleanup |
+| Voucher IDs cannot be stolen and redeemed by another participant | Contract-enforced + tested | Recipient stored in `Voucher`; `redeemVoucher` requires the intended recipient | Add cancellation and reissuance only if real workflows require it |
 
 ## Governance And Trust Roots
 

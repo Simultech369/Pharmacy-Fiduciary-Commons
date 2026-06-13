@@ -48,7 +48,7 @@ The Council is a 3/5 multisig address (e.g., Gnosis Safe) representing the trust
 ## 6. How Evidence is Reviewed
 
 * **Root Generation**: Off-chain Merkle tree generators use validated dispensing reports (NCPDP standards) to calculate allocations.
-* **Exclusion Auditing**: When an exclusion dispute is flagged (`flagExclusion`), the pharmacy must submit verifiable dispensing data to the Council audit board. The Council checks this evidence against the epoch's deposited rebate files, the root confirmer independently approves any proposed payout, and the Council then executes or dismisses the resolution.
+* **Exclusion Auditing**: When an exclusion dispute is flagged (`flagExclusion`), the pharmacy must submit verifiable dispensing data to the Council audit board. The Council checks this evidence against the epoch's deposited rebate files, the root confirmer independently approves any proposed payout, and the Council then executes or dismisses the resolution. Approved payouts draw only from the explicitly funded exclusion-remediation reserve, never from root escrow or future distribution liquidity.
 * **Audit Transparency**: All audited dispensing data summaries and matching rebate deposits are published under structural transparency guidelines on the public dashboard.
 
 ---

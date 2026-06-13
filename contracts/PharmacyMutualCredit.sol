@@ -15,6 +15,7 @@ contract PharmacyMutualCredit is AccessControl {
 
     struct Voucher {
         address issuer;
+        address recipient;
         uint256 amount;
         bool redeemed;
         uint256 expiry;
@@ -43,7 +44,7 @@ contract PharmacyMutualCredit is AccessControl {
     event CreditLimitUpdated(address indexed participant, uint256 newLimit);
     event IssuerStatusUpdated(address indexed issuer, bool status);
     event CreditTransferred(address indexed sender, address indexed recipient, uint256 amount);
-    event VoucherCreated(bytes32 indexed voucherId, address indexed issuer, uint256 amount, uint256 expiry);
+    event VoucherCreated(bytes32 indexed voucherId, address indexed issuer, address indexed recipient, uint256 amount, uint256 expiry);
     event VoucherRedeemed(bytes32 indexed voucherId, address indexed redeemer, address indexed issuer, uint256 amount);
     event VoucherReservationReleased(bytes32 indexed voucherId, address indexed issuer, uint256 amount);
 
@@ -137,9 +138,11 @@ contract PharmacyMutualCredit is AccessControl {
     /**
      * @notice Registers a new voucher that can be redeemed at a pharmacy.
      */
-    function createVoucher(bytes32 voucherId, uint256 amount, uint256 expiry) external {
+    function createVoucher(bytes32 voucherId, address recipient, uint256 amount, uint256 expiry) external {
         if (!registered[msg.sender]) revert NotRegistered();
         if (!authorizedIssuers[msg.sender]) revert Unauthorized();
+        if (recipient == address(0)) revert InvalidAddress();
+        if (!registered[recipient]) revert NotRegistered();
         if (vouchers[voucherId].issuer != address(0)) revert AlreadyRegistered();
         if (amount == 0) revert ZeroAmount();
         if (expiry <= block.timestamp) revert VoucherExpired();
@@ -148,12 +151,13 @@ contract PharmacyMutualCredit is AccessControl {
         reservedVoucherCredit[msg.sender] += amount;
         vouchers[voucherId] = Voucher({
             issuer: msg.sender,
+            recipient: recipient,
             amount: amount,
             redeemed: false,
             expiry: expiry
         });
 
-        emit VoucherCreated(voucherId, msg.sender, amount, expiry);
+        emit VoucherCreated(voucherId, msg.sender, recipient, amount, expiry);
     }
 
     /**
@@ -168,6 +172,7 @@ contract PharmacyMutualCredit is AccessControl {
         if (v.redeemed) revert VoucherAlreadyRedeemed();
         if (block.timestamp > v.expiry) revert VoucherExpired();
         if (voucherReservationReleased[voucherId]) revert VoucherExpired();
+        if (msg.sender != v.recipient) revert Unauthorized();
 
         address issuer = v.issuer;
         uint256 amount = v.amount;

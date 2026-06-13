@@ -149,11 +149,12 @@ describe("PharmacyMutualCredit", function () {
     });
 
     it("allows authorized issuer to create and pharmacy to redeem voucher", async function () {
-      await credit.connect(advocate).createVoucher(voucherId, amount, expiry);
+      await credit.connect(advocate).createVoucher(voucherId, pharmacyA.address, amount, expiry);
 
       // Verify voucher stats
       const v = await credit.vouchers(voucherId);
       expect(v.issuer).to.equal(advocate.address);
+      expect(v.recipient).to.equal(pharmacyA.address);
       expect(v.amount).to.equal(amount);
       expect(v.redeemed).to.be.false;
       expect(await credit.reservedVoucherCredit(advocate.address)).to.equal(amount);
@@ -173,13 +174,13 @@ describe("PharmacyMutualCredit", function () {
     it("rejects voucher issuance that would exceed issuer credit capacity", async function () {
       const largeVoucherId = ethers.keccak256(ethers.toUtf8Bytes("voucher-large"));
       await expectRevert(
-        credit.connect(advocate).createVoucher(largeVoucherId, 250n, expiry),
+        credit.connect(advocate).createVoucher(largeVoucherId, pharmacyA.address, 250n, expiry),
         "CreditLimitExceeded"
       );
     });
 
     it("protects reserved vouchers from later transfers and limit reductions", async function () {
-      await credit.connect(advocate).createVoucher(voucherId, 150n, expiry);
+      await credit.connect(advocate).createVoucher(voucherId, pharmacyA.address, 150n, expiry);
 
       await expectRevert(
         credit.connect(advocate).transferCredit(pharmacyA.address, 51n),
@@ -198,7 +199,7 @@ describe("PharmacyMutualCredit", function () {
     });
 
     it("releases expired voucher reservations exactly once", async function () {
-      await credit.connect(advocate).createVoucher(voucherId, amount, expiry);
+      await credit.connect(advocate).createVoucher(voucherId, pharmacyA.address, amount, expiry);
       await ethers.provider.send("evm_setNextBlockTimestamp", [Number(expiry + 1n)]);
       await ethers.provider.send("evm_mine", []);
 
@@ -216,7 +217,7 @@ describe("PharmacyMutualCredit", function () {
 
       await credit.connect(council).registerParticipant(attacker.address, 200n);
       await expectRevert(
-        credit.connect(attacker).createVoucher(attackerVoucherId, amount, expiry),
+        credit.connect(attacker).createVoucher(attackerVoucherId, pharmacyA.address, amount, expiry),
         "Unauthorized"
       );
     });
@@ -225,7 +226,7 @@ describe("PharmacyMutualCredit", function () {
       const expiredTime = BigInt(Math.floor(Date.now() / 1000)) - 10n;
       const expiredId = ethers.keccak256(ethers.toUtf8Bytes("voucher-expired"));
 
-      await credit.connect(advocate).createVoucher(expiredId, amount, expiry);
+      await credit.connect(advocate).createVoucher(expiredId, pharmacyA.address, amount, expiry);
       
       // Fast forward EVM time to expire voucher
       await ethers.provider.send("evm_increaseTime", [3610]);
@@ -238,13 +239,27 @@ describe("PharmacyMutualCredit", function () {
     });
 
     it("reverts double spend of a voucher", async function () {
-      await credit.connect(advocate).createVoucher(voucherId, amount, expiry);
+      await credit.connect(advocate).createVoucher(voucherId, pharmacyA.address, amount, expiry);
       await credit.connect(pharmacyA).redeemVoucher(voucherId);
 
       await expectRevert(
         credit.connect(pharmacyA).redeemVoucher(voucherId),
         "VoucherAlreadyRedeemed"
       );
+    });
+
+    it("binds voucher redemption to the intended registered recipient", async function () {
+      await credit.connect(council).registerParticipant(pharmacyB.address, 500n);
+      await credit.connect(advocate).createVoucher(voucherId, pharmacyA.address, amount, expiry);
+
+      await expectRevert(
+        credit.connect(pharmacyB).redeemVoucher(voucherId),
+        "Unauthorized"
+      );
+
+      await credit.connect(pharmacyA).redeemVoucher(voucherId);
+      expect(await credit.balances(pharmacyA.address)).to.equal(amount);
+      expect(await credit.balances(pharmacyB.address)).to.equal(0n);
     });
   });
 });

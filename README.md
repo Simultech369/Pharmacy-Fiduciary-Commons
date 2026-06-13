@@ -5,7 +5,7 @@
 **On-chain rebate transparency infrastructure for independent pharmacies and patient funds.**
 
 ![CI](https://github.com/Simultech369/Pharmacy-Fiduciary-Commons/actions/workflows/test.yml/badge.svg)
-![Tests](https://img.shields.io/badge/local%20tests-62%20passing-16a34a?style=for-the-badge)
+![Tests](https://img.shields.io/badge/local%20tests-64%20passing-16a34a?style=for-the-badge)
 ![Audit](https://img.shields.io/badge/audit-not%20audited-dc2626?style=for-the-badge)
 ![Mainnet](https://img.shields.io/badge/mainnet-not%20deployed-6b7280?style=for-the-badge)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.20-363636?style=for-the-badge&logo=solidity)
@@ -27,8 +27,8 @@
 |---------|--------|
 | `PBMRebateTreasury` | Working Solidity contract with epoch escrow, Merkle claims, dispute handling, sanctions, recall, pause, and cap controls |
 | `PatientFundParticipatoryBudgeting` | Working patient-fund voting prototype with council registration and relayer-assisted voter self-registration |
-| `PharmacyMutualCredit` | Working decoupled mutual-credit and voucher prototype with issuer credit-limit enforcement |
-| Tests | `62 passing` via `npm.cmd test` |
+| `PharmacyMutualCredit` | Working decoupled mutual-credit prototype with reserved-capacity, recipient-bound vouchers |
+| Tests | `64 passing` via `npm.cmd test` |
 | Dashboard | Static prototype with local/test Web3 integration guardrails |
 | Merkle tooling | Allocation root/proof generator |
 | Portability export | Prototype JSON export plus local verifier for claims, proofs, votes, and receipts |
@@ -160,6 +160,7 @@ This is infrastructure for transparent rebate pass-through. It is not legal, fin
 - `flagClaim` requires a valid Merkle proof.
 - Disputed active-epoch claims update cap and recall accounting consistently.
 - Root-exclusion payouts require independent confirmer approval and remain bounded by epoch caps.
+- Root-exclusion payouts use a separately funded remediation reserve and cannot consume root or future distribution liquidity.
 - Root-backed claims, exclusion payouts, and escrow-backed unclaimed balances are reported separately.
 - Dismissed exclusion claims cannot redirect unreserved treasury funds as a penalty.
 - Sanctioned addresses cannot flag claims.
@@ -261,6 +262,7 @@ Optional timelock variables:
 | Mechanism coverage | See `MECHANISM_COVERAGE.md` |
 | Security reporting | See `SECURITY.md` |
 | Open product decisions | See `OPEN_DESIGN_DECISIONS.md` |
+| Implemented design decisions | See `DESIGN_DECISIONS.md` |
 
 ---
 
@@ -269,7 +271,7 @@ Optional timelock variables:
 To preserve treasury simplicity, these systems are intentionally decoupled:
 
 - `PatientFundParticipatoryBudgeting`: patient-fund project allocation prototype.
-- `PharmacyMutualCredit`: mutual-credit and emergency voucher prototype.
+- `PharmacyMutualCredit`: mutual-credit and recipient-bound emergency voucher prototype.
 - `tools/credentials`: credential issuance and verification prototype with wallet binding, expiry, and local revocation checks.
 - `scripts/export-portability.js`: portability export prototype.
 - `dashboard/`: static dashboard and local/test Web3 prototype; omission examples use provenance-labeled synthetic organizations rather than claims about real PBMs.

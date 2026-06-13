@@ -441,6 +441,8 @@ describe("PBMRebateTreasury security baseline", function () {
 
     // 4. The configured confirmer approves, then council releases the bounded claim.
     await treasury.connect(council2).approveExclusionClaim(0, depositor.address);
+    await token.connect(depositor).approve(await treasury.getAddress(), toWei("50"));
+    await treasury.connect(depositor).fundExclusionRemediation(toWei("50"));
     const balanceBefore = await token.balanceOf(depositor.address);
     await treasury.connect(council).resolveClaim(0, depositor.address, 0); // RELEASE_TO_PHARMACY is 0
     const balanceAfter = await token.balanceOf(depositor.address);
@@ -475,6 +477,8 @@ describe("PBMRebateTreasury security baseline", function () {
 
     await treasury.connect(attacker).flagExclusion(0, gross);
     await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
+    await token.connect(depositor).approve(await treasury.getAddress(), gross);
+    await treasury.connect(depositor).fundExclusionRemediation(gross);
     await treasury.connect(council).resolveClaim(0, attacker.address, 0);
 
     expect(await treasury.epochClaimedTotal(0)).to.equal(gross);
@@ -498,6 +502,8 @@ describe("PBMRebateTreasury security baseline", function () {
 
     await treasury.connect(attacker).flagExclusion(0, toWei("200"));
     await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
+    await token.connect(depositor).approve(await treasury.getAddress(), toWei("200"));
+    await treasury.connect(depositor).fundExclusionRemediation(toWei("200"));
 
     await expectRevert(
       treasury.connect(council).resolveClaim(0, attacker.address, 0),
@@ -509,6 +515,32 @@ describe("PBMRebateTreasury security baseline", function () {
     );
 
     expect(await treasury.flaggedAmount(0, attacker.address)).to.equal(toWei("200"));
+  });
+
+  it("funds exclusion remediation explicitly without consuming future distribution liquidity", async function () {
+    await seedDeposit(toWei("1000"));
+    const gross = toWei("100");
+    await publishSingleLeafRoot(gross, gross);
+    await treasury.connect(council2).confirmRoot(0);
+
+    await treasury.connect(attacker).flagExclusion(0, toWei("50"));
+    await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
+    const distributionBefore = await treasury.distributionPool();
+
+    await expectRevert(
+      treasury.connect(council).resolveClaim(0, attacker.address, 0),
+      "InsufficientExclusionReserve"
+    );
+
+    await token.connect(depositor).approve(await treasury.getAddress(), toWei("50"));
+    await treasury.connect(depositor).fundExclusionRemediation(toWei("50"));
+    expect(await treasury.exclusionRemediationReserve()).to.equal(toWei("50"));
+
+    await treasury.connect(council).resolveClaim(0, attacker.address, 0);
+
+    expect(await treasury.exclusionRemediationReserve()).to.equal(0n);
+    expect(await treasury.distributionPool()).to.equal(distributionBefore);
+    expect(await treasury.epochEscrow(0)).to.equal(gross);
   });
 
   it("allows sanctioned address to submit an on-chain appeal", async function () {

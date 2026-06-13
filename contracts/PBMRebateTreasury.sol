@@ -106,6 +106,7 @@ contract PBMRebateTreasury is
     error InvalidRoot();
     error ZeroTotal();
     error InsufficientDistributionPool();
+    error InsufficientExclusionReserve();
     error WrongEpoch();
     error NoPendingRoot();
     error ProposalExpired();
@@ -213,6 +214,10 @@ contract PBMRebateTreasury is
     /// @notice Council operational reserve - gas, legal, admin.
     ///         Withdrawable only by EXECUTOR_ROLE.
     uint256 public governanceReserve;
+
+    /// @notice Explicitly funded reserve for approved root-exclusion remediation.
+    ///         This reserve cannot be sourced from root distribution liquidity.
+    uint256 public exclusionRemediationReserve;
 
     // =========================================================
     // CAPS
@@ -378,6 +383,7 @@ contract PBMRebateTreasury is
     );
 
     event GovernanceReserveWithdrawn(address indexed recipient, uint256 amount);
+    event ExclusionRemediationFunded(address indexed funder, uint256 amount);
 
     event Sweep(address indexed tokenAddr, address indexed recipient, uint256 amount);
     event EnvironmentalFundUpdated(address indexed oldFund, address indexed newFund);
@@ -512,6 +518,22 @@ contract PBMRebateTreasury is
         }));
 
         emit RebateDeposited(depositId, msg.sender, amount, forDistribution, forGovernance, source);
+    }
+
+    /**
+     * @notice Funds the dedicated reserve used only for approved root-exclusion claims.
+     * @dev This is separate from rebate deposits so remediation cannot consume
+     *      liquidity intended for current or future Merkle roots.
+     */
+    function fundExclusionRemediation(uint256 amount)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        if (amount == 0) revert ZeroAmount();
+        token.safeTransferFrom(msg.sender, address(this), amount);
+        exclusionRemediationReserve += amount;
+        emit ExclusionRemediationFunded(msg.sender, amount);
     }
 
     // =========================================================
@@ -799,7 +821,7 @@ contract PBMRebateTreasury is
     /**
      * @notice Pharmacy flags a dispute for exclusion from the Merkle root.
      * @dev    Does not require a Merkle proof since the pharmacy is claiming they were omitted.
-     *         No funds are locked from distributionPool at flag time.
+     *         No funds are locked from the remediation reserve at flag time.
      *         A root confirmer must approve before council can release funds, and the payout
      *         remains bounded by epoch volume caps at resolution time.
      *         Sets hasClaimed to true to prevent double-dipping or regular claims on the same epoch.
@@ -829,7 +851,7 @@ contract PBMRebateTreasury is
 
     /**
      * @notice Independently approves a root-exclusion claim for council resolution.
-     * @dev Approval does not transfer or reserve funds. Caps and pool availability are
+     * @dev Approval does not transfer or reserve funds. Caps and reserve availability are
      *      enforced again when the council resolves the claim.
      */
     function approveExclusionClaim(uint256 epoch, address pharmacy)
@@ -877,7 +899,7 @@ contract PBMRebateTreasury is
             uint256 newEpochTotal = epochClaimedTotal[epoch] + amount;
             if (newEpochTotal > dailyVolumeCap)        revert DailyCapExceeded();
             if (newEpochTotal > hardAbsoluteVolumeCap) revert HardCapExceeded();
-            if (distributionPool < amount)             revert InsufficientDistributionPool();
+            if (exclusionRemediationReserve < amount)  revert InsufficientExclusionReserve();
         }
 
         // Effects first
@@ -890,7 +912,7 @@ contract PBMRebateTreasury is
         // Interactions after state is settled
         if (isExclusion) {
             if (resolution == DisputeResolution.RELEASE_TO_PHARMACY) {
-                distributionPool -= amount;
+                exclusionRemediationReserve -= amount;
                 epochClaimedTotal[epoch] += amount;
                 epochExclusionPaidTotal[epoch] += amount;
                 pharmacyClaimedThisEpoch[epoch][pharmacy] += amount;
