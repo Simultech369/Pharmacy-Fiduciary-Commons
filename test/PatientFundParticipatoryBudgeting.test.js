@@ -90,6 +90,20 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(p.active).to.be.true;
     });
 
+    it("caps projects so round finalization remains executable", async function () {
+      await pb.connect(council).startRound(toWei("10000"));
+      const maxProjects = await pb.MAX_PROJECTS_PER_ROUND();
+      for (let i = 0n; i < maxProjects; i++) {
+        await pb.connect(council).registerProject(1n, `Project ${i}`, recipientA.address);
+      }
+
+      await expectRevert(
+        pb.connect(council).registerProject(1n, "Project over limit", recipientB.address),
+        "ProjectLimitReached"
+      );
+      expect((await pb.rounds(1n)).projectCount).to.equal(maxProjects);
+    });
+
     it("allows council to register voters in batch", async function () {
       await pb.connect(council).startRound(toWei("10000"));
       const voterAddrs = voters.map(v => v.address);
@@ -101,7 +115,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
     });
   });
 
-  describe("Quadratic Voting & Payout Distribution", function () {
+  describe("Squared Vote Weight & Payout Distribution", function () {
     beforeEach(async function () {
       await pb.connect(council).startRound(toWei("10000"));
       await pb.connect(council).registerProject(1n, "Project Solar", recipientA.address); // Project 0
@@ -132,7 +146,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
       );
     });
 
-    it("calculates matching distribution proportionally (Quadratic Funding)", async function () {
+    it("calculates matching distribution using squared vote weights", async function () {
       // Project 0 (Solar) gets 4 unique votes: voter 0, 1, 2, 3
       await pb.connect(voters[0]).castVote(1n, 0n);
       await pb.connect(voters[1]).castVote(1n, 0n);
@@ -180,6 +194,8 @@ describe("PatientFundParticipatoryBudgeting", function () {
   describe("Voter Self-Registration via Relayer Signature", function () {
     let relayer;
     let voter;
+    const credentialHash = ethers.keccak256(ethers.toUtf8Bytes("test-credential"));
+    const policyVersion = ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v1"));
 
     beforeEach(async function () {
       const signers = await ethers.getSigners();
@@ -190,77 +206,126 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await pb.connect(council).setRelayerVerifier(relayer.address);
     });
 
-    it("allows a voter to self-register with a valid relayer signature", async function () {
-      const messageHash = ethers.solidityPackedKeccak256(
-        ["uint256", "address", "address"],
-        [1n, voter.address, await pb.getAddress()]
-      );
-      const messageHashBytes = ethers.toBeArray(messageHash);
-      const signature = await relayer.signMessage(messageHashBytes);
+    async function registrationTypedData(targetVoter = voter, roundId = 1n, deadline) {
+      const nonce = await pb.registrationNonces(roundId, targetVoter.address);
+      const { chainId } = await ethers.provider.getNetwork();
+      return {
+        domain: {
+          name: "Pharmacy Fiduciary Commons",
+          version: "1",
+          chainId,
+          verifyingContract: await pb.getAddress()
+        },
+        types: {
+          VoterRegistration: [
+            { name: "roundId", type: "uint256" },
+            { name: "voter", type: "address" },
+            { name: "nonce", type: "uint256" },
+            { name: "credentialHash", type: "bytes32" },
+            { name: "policyVersion", type: "bytes32" },
+            { name: "deadline", type: "uint256" }
+          ]
+        },
+        value: { roundId, voter: targetVoter.address, nonce, credentialHash, policyVersion, deadline }
+      };
+    }
 
-      await pb.connect(voter).registerVoterWithSignature(1n, voter.address, signature);
+    async function authorizationDeadline(offset = 3600n) {
+      const block = await ethers.provider.getBlock("latest");
+      return BigInt(block.timestamp) + offset;
+    }
+
+    async function signRegistration(targetVoter = voter, roundId = 1n, deadline) {
+      const expiresAt = deadline ?? await authorizationDeadline();
+      const typedData = await registrationTypedData(targetVoter, roundId, expiresAt);
+      const signature = await relayer.signTypedData(typedData.domain, typedData.types, typedData.value);
+      return { signature, deadline: expiresAt };
+    }
+
+    it("allows a voter to self-register with a valid relayer signature", async function () {
+      const { signature, deadline } = await signRegistration();
+
+      await pb.connect(voter).registerVoterWithSignature(
+        1n, voter.address, credentialHash, policyVersion, deadline, signature
+      );
       expect(await pb.registeredVoters(1n, voter.address)).to.be.true;
+      expect(await pb.registrationNonces(1n, voter.address)).to.equal(1n);
+    });
+
+    it("consumes relayer signatures and invalidates outstanding signatures on council revocation", async function () {
+      const consumed = await signRegistration();
+      await pb.connect(voter).registerVoterWithSignature(
+        1n, voter.address, credentialHash, policyVersion, consumed.deadline, consumed.signature
+      );
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(
+          1n, voter.address, credentialHash, policyVersion, consumed.deadline, consumed.signature
+        ),
+        "Unauthorized"
+      );
+
+      const outstanding = await signRegistration();
+      await pb.connect(council).registerVoter(1n, voter.address, false);
+      expect(await pb.registeredVoters(1n, voter.address)).to.be.false;
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(
+          1n, voter.address, credentialHash, policyVersion, outstanding.deadline, outstanding.signature
+        ),
+        "Unauthorized"
+      );
     });
 
     it("reverts if the signature is invalid or signed by an unauthorized key", async function () {
-      const messageHash = ethers.solidityPackedKeccak256(
-        ["uint256", "address", "address"],
-        [1n, voter.address, await pb.getAddress()]
+      const deadline = await authorizationDeadline();
+      const typedData = await registrationTypedData(voter, 1n, deadline);
+      const invalidSignature = await attacker.signTypedData(
+        typedData.domain, typedData.types, typedData.value
       );
-      const messageHashBytes = ethers.toBeArray(messageHash);
-      
-      // Signed by attacker instead of relayer
-      const invalidSignature = await attacker.signMessage(messageHashBytes);
 
       await expectRevert(
-        pb.connect(voter).registerVoterWithSignature(1n, voter.address, invalidSignature),
+        pb.connect(voter).registerVoterWithSignature(
+          1n, voter.address, credentialHash, policyVersion, deadline, invalidSignature
+        ),
         "Unauthorized"
       );
     });
 
     it("prevents signature replay across different voters or rounds", async function () {
-      const messageHash = ethers.solidityPackedKeccak256(
-        ["uint256", "address", "address"],
-        [1n, voter.address, await pb.getAddress()]
-      );
-      const messageHashBytes = ethers.toBeArray(messageHash);
-      const signature = await relayer.signMessage(messageHashBytes);
+      const { signature, deadline } = await signRegistration();
 
       // Attempt to register another voter address using the same signature
       const otherVoter = voters[1];
       await expectRevert(
-        pb.connect(otherVoter).registerVoterWithSignature(1n, otherVoter.address, signature),
+        pb.connect(otherVoter).registerVoterWithSignature(
+          1n, otherVoter.address, credentialHash, policyVersion, deadline, signature
+        ),
         "Unauthorized"
       );
 
       // Attempt to register on a different round using the same signature
       await expectRevert(
-        pb.connect(voter).registerVoterWithSignature(2n, voter.address, signature),
+        pb.connect(voter).registerVoterWithSignature(
+          2n, voter.address, credentialHash, policyVersion, deadline, signature
+        ),
         "WrongRoundState"
       );
     });
 
     it("requires the signed voter to submit the self-registration transaction", async function () {
-      const messageHash = ethers.solidityPackedKeccak256(
-        ["uint256", "address", "address"],
-        [1n, voter.address, await pb.getAddress()]
-      );
-      const messageHashBytes = ethers.toBeArray(messageHash);
-      const signature = await relayer.signMessage(messageHashBytes);
+      const { signature, deadline } = await signRegistration();
 
       await expectRevert(
-        pb.connect(attacker).registerVoterWithSignature(1n, voter.address, signature),
+        pb.connect(attacker).registerVoterWithSignature(
+          1n, voter.address, credentialHash, policyVersion, deadline, signature
+        ),
         "Unauthorized"
       );
     });
 
     it("rejects invalid-v and high-s relayer signatures", async function () {
-      const messageHash = ethers.solidityPackedKeccak256(
-        ["uint256", "address", "address"],
-        [1n, voter.address, await pb.getAddress()]
-      );
-      const messageHashBytes = ethers.toBeArray(messageHash);
-      const signature = await relayer.signMessage(messageHashBytes);
+      const { signature, deadline } = await signRegistration();
       const parsed = ethers.Signature.from(signature);
 
       const invalidVSignature = ethers.hexlify(ethers.concat([
@@ -270,7 +335,9 @@ describe("PatientFundParticipatoryBudgeting", function () {
       ]));
 
       await expectRevert(
-        pb.connect(voter).registerVoterWithSignature(1n, voter.address, invalidVSignature),
+        pb.connect(voter).registerVoterWithSignature(
+          1n, voter.address, credentialHash, policyVersion, deadline, invalidVSignature
+        ),
         "ECDSA: invalid signature"
       );
 
@@ -284,8 +351,70 @@ describe("PatientFundParticipatoryBudgeting", function () {
       ]));
 
       await expectRevert(
-        pb.connect(voter).registerVoterWithSignature(1n, voter.address, highSSignature),
+        pb.connect(voter).registerVoterWithSignature(
+          1n, voter.address, credentialHash, policyVersion, deadline, highSSignature
+        ),
         "ECDSA: invalid signature"
+      );
+    });
+
+    it("rejects expired or metadata-tampered registration authorizations", async function () {
+      const deadline = await authorizationDeadline(10n);
+      const { signature } = await signRegistration(voter, 1n, deadline);
+
+      await ethers.provider.send("evm_setNextBlockTimestamp", [Number(deadline + 1n)]);
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(
+          1n, voter.address, credentialHash, policyVersion, deadline, signature
+        ),
+        "AuthorizationExpired"
+      );
+
+      const fresh = await signRegistration();
+      const differentCredential = ethers.keccak256(ethers.toUtf8Bytes("different-credential"));
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(
+          1n, voter.address, differentCredential, policyVersion, fresh.deadline, fresh.signature
+        ),
+        "Unauthorized"
+      );
+    });
+
+    it("rejects verifier-signed authorizations from an unsupported policy version", async function () {
+      const deadline = await authorizationDeadline();
+      const unsupportedPolicy = ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v2"));
+      const nonce = await pb.registrationNonces(1n, voter.address);
+      const { chainId } = await ethers.provider.getNetwork();
+      const domain = {
+        name: "Pharmacy Fiduciary Commons",
+        version: "1",
+        chainId,
+        verifyingContract: await pb.getAddress()
+      };
+      const types = {
+        VoterRegistration: [
+          { name: "roundId", type: "uint256" },
+          { name: "voter", type: "address" },
+          { name: "nonce", type: "uint256" },
+          { name: "credentialHash", type: "bytes32" },
+          { name: "policyVersion", type: "bytes32" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+      const signature = await relayer.signTypedData(domain, types, {
+        roundId: 1n,
+        voter: voter.address,
+        nonce,
+        credentialHash,
+        policyVersion: unsupportedPolicy,
+        deadline
+      });
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(
+          1n, voter.address, credentialHash, unsupportedPolicy, deadline, signature
+        ),
+        "UnsupportedCredentialPolicy"
       );
     });
   });

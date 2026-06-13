@@ -16,16 +16,15 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *         auditable, ungameable, and publicly verifiable.
  *
  * @dev    Designed to sit behind a TimelockController (EXECUTOR_ROLE) for
- *         sensitive parameter changes. COUNCIL_ROLE is a 3/5 Gnosis Safe.
+ *         sensitive parameter changes. COUNCIL_ROLE is a 3/5 Gnosis Safe and
+ *         ROOT_CONFIRMER_ROLE is held by a separate Safe or governance address.
  *         GUARDIAN_ROLE is a separate faster-response address for emergency pause.
  *
- *         ACCESS CONTROL NOTE: DEFAULT_ADMIN_ROLE is intentionally granted to
- *         the _council (Gnosis Safe) so that role membership can be updated if
- *         signers rotate. This is a deliberate governance decision - the council
- *         Safe is the trust root. Mitigated by: (a) council is a 3/5 multisig,
- *         (b) EXECUTOR_ROLE is a TimelockController adding time-delay on
- *         parameter changes, (c) GUARDIAN_ROLE is a separate address that can
- *         pause faster than any multisig action.
+ *         ACCESS CONTROL NOTE: DEFAULT_ADMIN_ROLE is granted to the council Safe
+ *         for council and guardian membership. EXECUTOR_ROLE is self-administered
+ *         by the TimelockController, and it administers ROOT_CONFIRMER_ROLE.
+ *         Council and root-confirmer membership are mutually exclusive on every
+ *         role grant, preserving separate proposal and approval trust roots.
  *
  * MISSION:
  * Pharmacy Benefit Managers (PBMs) negotiate rebates from drug manufacturers
@@ -37,9 +36,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  *
  * LIFECYCLE:
  * 1. PBM (or any party) calls depositRebate() - funds enter escrow, source logged forever.
- * 2. Council proposes Merkle root via proposeRoot() - requires co-sign from second
- *    council member before going live. This is the highest-stakes action.
- * 3. Second council member calls confirmRoot() - root becomes active.
+ * 2. Council proposes Merkle root via proposeRoot().
+ * 3. A separately configured root confirmer calls confirmRoot() - root becomes active.
  * 4. Pharmacies (or delegated claims agent) call claim() or claimBatch().
  * 5. Council calls finalizeEpoch() to close epoch and open the next.
  * 6. After RECALL_DELAY, unclaimed funds recalled to patientFund.
@@ -58,7 +56,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  * - Pharmacies may flag a disputed claim via flagClaim().
  * - A valid Merkle proof must be supplied at flag time - griefing protection.
  * - Disputed amount is held in reserve in flaggedAmount[epoch][pharmacy].
- * - Council resolves via resolveClaim() - releases to pharmacy or patientFund.
+ * - Council resolves proof-backed disputes via resolveClaim().
+ * - Root-exclusion payouts additionally require ROOT_CONFIRMER_ROLE approval and cap checks.
  *
  * SECURITY PROPERTIES:
  * - Hard cap enforced at root proposal + claim
@@ -66,7 +65,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  * - Root total enforced at claim
  * - Per-pharmacy cap enforced at claim via Merkle leaf encoding
  * - Double-hash leaf (second-preimage protection)
- * - Root publication requires co-sign from two distinct COUNCIL_ROLE members
+ * - Root publication requires separate council proposal and confirmer approval
  * - Hard cap monotonic decrease only (ratchet)
  * - Daily cap bounded by hard cap
  * - Recall only after RECALL_DELAY, only unclaimed amount, sent to patientFund
@@ -109,7 +108,6 @@ contract PBMRebateTreasury is
     error InsufficientDistributionPool();
     error WrongEpoch();
     error NoPendingRoot();
-    error ProposerCannotConfirm();
     error ProposalExpired();
     error NotExpired();
     error CanOnlyReduce();
@@ -138,7 +136,13 @@ contract PBMRebateTreasury is
     error EpochTooShort();
     error EpochVolumeTooLow();
     error GuardianMustDifferFromCouncil();
+    error RootConfirmerMustDifferFromCouncil();
     error NotSanctioned();
+    error ExclusionApprovalRequired();
+    error NotExclusionDispute();
+    error InvalidExclusionResolution();
+    error MinimumEpochVolumeExceedsDailyCap();
+    error GovernanceRoleSeparationViolation();
 
     // =========================================================
     // ROLES
@@ -149,6 +153,9 @@ contract PBMRebateTreasury is
 
     /// @notice TimelockController - sensitive parameter changes (caps, env fund).
     bytes32 private constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
+
+    /// @notice Separate Safe or governance address that confirms council root proposals.
+    bytes32 private constant ROOT_CONFIRMER_ROLE = keccak256("ROOT_CONFIRMER_ROLE");
 
     /// @notice Separate fast-response address - emergency pause only.
     ///         Cannot unpause. Cannot publish roots. Cannot access funds.
@@ -168,7 +175,8 @@ contract PBMRebateTreasury is
     uint256 public patientClaimBP = 1_000;
 
     uint256 private constant MIN_EPOCH_DURATION = 1 days;
-    uint256 private constant MIN_EPOCH_VOLUME   = 1e18;
+    /// @notice Minimum gross claim volume required to finalize an epoch, in token base units.
+    uint256 public immutable minimumEpochVolume;
 
     /// @notice Minimum delay after root publish before council may recall unclaimed funds.
     uint256 private constant RECALL_DELAY = 30 days;
@@ -241,6 +249,12 @@ contract PBMRebateTreasury is
     /// @notice Total tokens successfully claimed in each epoch.
     mapping(uint256 => uint256) public epochClaimedTotal;
 
+    /// @notice Root-backed claims consumed from epoch escrow, including proof-backed disputes.
+    mapping(uint256 => uint256) public epochRootClaimedTotal;
+
+    /// @notice Approved root-exclusion payouts funded outside the epoch's root escrow.
+    mapping(uint256 => uint256) public epochExclusionPaidTotal;
+
     /// @notice Whether unclaimed funds for an epoch have been recalled.
     mapping(uint256 => bool)    public epochRecalled;
 
@@ -270,7 +284,7 @@ contract PBMRebateTreasury is
         uint256 proposedAt;
     }
 
-    /// @notice Proposed root awaiting second council co-sign. One pending root per epoch.
+    /// @notice Proposed root awaiting independent confirmer approval. One pending root per epoch.
     mapping(uint256 => PendingRoot) public pendingRoot;
 
     // =========================================================
@@ -280,6 +294,9 @@ contract PBMRebateTreasury is
     /// @notice Amount held in reserve for disputed claims.
     ///         flaggedAmount[epoch][pharmacy] > 0 means a dispute is open.
     mapping(uint256 => mapping(address => uint256)) public flaggedAmount;
+
+    /// @notice Independent approval required before an exclusion dispute can receive funds.
+    mapping(uint256 => mapping(address => bool)) public exclusionApproved;
 
     enum DisputeResolution { RELEASE_TO_PHARMACY, SEND_TO_PATIENT_FUND, DISMISS }
 
@@ -352,6 +369,7 @@ contract PBMRebateTreasury is
     event EpochRecalled(uint256 indexed epoch, uint256 amount);
 
     event ClaimFlagged(uint256 indexed epoch, address indexed pharmacy, uint256 amount);
+    event ExclusionClaimApproved(uint256 indexed epoch, address indexed pharmacy, uint256 amount, address approver);
     event ClaimResolved(
         uint256 indexed epoch,
         address indexed pharmacy,
@@ -374,18 +392,21 @@ contract PBMRebateTreasury is
      * @param _patientFund       Immutable patient access fund address.
      * @param _environmentalFund Receives accidentally sent ETH.
      * @param _initialDailyCap   Starting daily volume cap (hard cap set to 10x).
+     * @param _minimumEpochVolume Minimum claimed volume required to finalize, in token base units.
      * @param _council           3/5 Gnosis Safe - receives COUNCIL_ROLE and DEFAULT_ADMIN_ROLE.
+     * @param _rootConfirmer     Separate Safe or governance address that confirms roots.
      * @param _executor          TimelockController - receives EXECUTOR_ROLE.
      * @param _guardian          Separate fast-response EOA or 2/3 Safe - GUARDIAN_ROLE only.
-     * @dev  GUARDIAN_ROLE must be a different address from _council.
-     *       This separation is the point - guardian can pause faster than multisig.
+     * @dev  GUARDIAN_ROLE and ROOT_CONFIRMER_ROLE must be held separately from council.
      */
     constructor(
         address _token,
         address _patientFund,
         address _environmentalFund,
         uint256 _initialDailyCap,
+        uint256 _minimumEpochVolume,
         address _council,
+        address _rootConfirmer,
         address _executor,
         address _guardian
     ) {
@@ -393,10 +414,14 @@ contract PBMRebateTreasury is
         if (_patientFund       == address(0)) revert InvalidAddress();
         if (_environmentalFund == address(0)) revert InvalidAddress();
         if (_council           == address(0)) revert InvalidAddress();
+        if (_rootConfirmer     == address(0)) revert InvalidAddress();
         if (_executor          == address(0)) revert InvalidAddress();
         if (_guardian          == address(0)) revert InvalidAddress();
         if (_guardian          == _council)   revert GuardianMustDifferFromCouncil();
         if (_initialDailyCap   == 0)          revert ZeroCap();
+        if (_minimumEpochVolume == 0)         revert ZeroAmount();
+        if (_minimumEpochVolume > _initialDailyCap) revert MinimumEpochVolumeExceedsDailyCap();
+        if (_rootConfirmer     == _council)   revert RootConfirmerMustDifferFromCouncil();
 
         token             = IERC20(_token);
         patientFund       = _patientFund;
@@ -404,15 +429,33 @@ contract PBMRebateTreasury is
 
         dailyVolumeCap        = _initialDailyCap;
         hardAbsoluteVolumeCap = _initialDailyCap * 10;
+        minimumEpochVolume    = _minimumEpochVolume;
 
         epochStartTimestamp = block.timestamp;
 
+        _setRoleAdmin(EXECUTOR_ROLE, EXECUTOR_ROLE);
+        _setRoleAdmin(ROOT_CONFIRMER_ROLE, EXECUTOR_ROLE);
         _grantRole(DEFAULT_ADMIN_ROLE, _council);
         _grantRole(COUNCIL_ROLE,       _council);
+        _grantRole(ROOT_CONFIRMER_ROLE, _rootConfirmer);
         _grantRole(EXECUTOR_ROLE,      _executor);
         _grantRole(GUARDIAN_ROLE,      _guardian);
 
         emit EpochStarted(currentEpoch, block.timestamp);
+    }
+
+    /**
+     * @dev Keeps root proposal and confirmation authority mutually exclusive across
+     *      constructor setup and all future AccessControl role rotations.
+     */
+    function _grantRole(bytes32 role, address account) internal override {
+        if (
+            (role == ROOT_CONFIRMER_ROLE && hasRole(COUNCIL_ROLE, account)) ||
+            (role == COUNCIL_ROLE && hasRole(ROOT_CONFIRMER_ROLE, account))
+        ) {
+            revert GovernanceRoleSeparationViolation();
+        }
+        super._grantRole(role, account);
     }
 
     receive()  external payable { revert ETHNotAccepted(); }
@@ -519,8 +562,8 @@ contract PBMRebateTreasury is
     }
 
     /**
-     * @notice Second council member confirms a pending root, making it live.
-     * @dev    Confirmer must be a different address from the proposer.
+     * @notice Separate root confirmer approves a pending root, making it live.
+     * @dev    The confirmer role is configured independently from the council.
      *         Proposal must not have expired.
      *         Once confirmed, root is immutable for this epoch.
      *         Caps and pool balance are re-verified at confirmation time.
@@ -529,14 +572,13 @@ contract PBMRebateTreasury is
      */
     function confirmRoot(uint256 epoch)
         external
-        onlyRole(COUNCIL_ROLE)
+        onlyRole(ROOT_CONFIRMER_ROLE)
         whenNotPaused
     {
         if (epoch != currentEpoch) revert WrongEpoch();
 
         PendingRoot storage pr = pendingRoot[epoch];
         if (pr.proposedAt == 0)            revert NoPendingRoot();
-        if (pr.proposer == msg.sender)     revert ProposerCannotConfirm();
         if (block.timestamp > pr.proposedAt + ROOT_PROPOSAL_EXPIRY) revert ProposalExpired();
         if (epochMerkleRoot[epoch] != bytes32(0)) revert RootAlreadyLive();
 
@@ -584,7 +626,7 @@ contract PBMRebateTreasury is
      *         `amount`      - gross allocation this epoch.
      *         `eligibleCap` - per-pharmacy maximum; enforced on-chain.
      *         Claimant receives amount * 90%. Patient fund receives 10%.
-     *         Draws from distributionPool - not from the raw contract balance.
+     *         Draws from the current epoch's confirmed escrow - not from the raw contract balance.
      *
      * @param amount      Gross allocated amount.
      * @param eligibleCap Per-pharmacy cap encoded in the Merkle leaf.
@@ -675,6 +717,7 @@ contract PBMRebateTreasury is
         pharmacyClaimedThisEpoch[epoch][claimant] += amount;
         epochVolume                                 = newVolume;
         epochClaimedTotal[epoch]                  += amount;
+        epochRootClaimedTotal[epoch]              += amount;
         epochEscrow[epoch]                         -= amount;
 
         uint256 patientShare  = (amount * patientClaimBP) / BP_DENOM;
@@ -746,6 +789,7 @@ contract PBMRebateTreasury is
         pharmacyClaimedThisEpoch[epoch][msg.sender] += amount;
         epochVolume                                   = newVolume;
         epochClaimedTotal[epoch]                    += amount;
+        epochRootClaimedTotal[epoch]                += amount;
         flaggedAmount[epoch][msg.sender]             = amount;
         epochEscrow[epoch]                           -= amount;
 
@@ -756,7 +800,8 @@ contract PBMRebateTreasury is
      * @notice Pharmacy flags a dispute for exclusion from the Merkle root.
      * @dev    Does not require a Merkle proof since the pharmacy is claiming they were omitted.
      *         No funds are locked from distributionPool at flag time.
-     *         If the council approves the claim, the funds are drawn from distributionPool at resolution time.
+     *         A root confirmer must approve before council can release funds, and the payout
+     *         remains bounded by epoch volume caps at resolution time.
      *         Sets hasClaimed to true to prevent double-dipping or regular claims on the same epoch.
      *
      * @param epoch  The epoch being disputed (must be currentEpoch).
@@ -771,6 +816,9 @@ contract PBMRebateTreasury is
         if (hasClaimed[epoch][msg.sender])         revert AlreadyClaimed();
         if (flaggedAmount[epoch][msg.sender] != 0) revert AlreadyFlagged();
         if (amount == 0)                           revert ZeroAmount();
+        if (epochMerkleRoot[epoch] == bytes32(0))  revert NoRootForEpoch();
+        if (amount > dailyVolumeCap)               revert DailyCapExceeded();
+        if (amount > hardAbsoluteVolumeCap)        revert HardCapExceeded();
 
         hasClaimed[epoch][msg.sender]         = true;
         flaggedAmount[epoch][msg.sender]      = amount;
@@ -780,11 +828,29 @@ contract PBMRebateTreasury is
     }
 
     /**
+     * @notice Independently approves a root-exclusion claim for council resolution.
+     * @dev Approval does not transfer or reserve funds. Caps and pool availability are
+     *      enforced again when the council resolves the claim.
+     */
+    function approveExclusionClaim(uint256 epoch, address pharmacy)
+        external
+        onlyRole(ROOT_CONFIRMER_ROLE)
+    {
+        uint256 amount = flaggedAmount[epoch][pharmacy];
+        if (amount == 0) revert NoFlaggedClaim();
+        if (!isExclusionDispute[epoch][pharmacy]) revert NotExclusionDispute();
+
+        exclusionApproved[epoch][pharmacy] = true;
+        emit ExclusionClaimApproved(epoch, pharmacy, amount, msg.sender);
+    }
+
+    /**
      * @notice Council resolves a flagged dispute.
      * @dev    Transfers are done after state updates and event emission to follow
      *         checks-effects-interactions. nonReentrant guards external calls.
      *         RELEASE_TO_PHARMACY: net-of-patient-share paid to pharmacy.
-     *         SEND_TO_PATIENT_FUND: full amount sent to patientFund as invalid-flag penalty.
+     *         SEND_TO_PATIENT_FUND applies only to proof-backed claims whose funds were reserved.
+     *         Exclusion disputes may be released or dismissed, but cannot create a treasury-funded penalty.
      *
      * @param epoch      The epoch of the dispute.
      * @param pharmacy   The pharmacy whose dispute to resolve.
@@ -804,18 +870,33 @@ contract PBMRebateTreasury is
 
         bool isExclusion = isExclusionDispute[epoch][pharmacy];
 
+        if (isExclusion && resolution != DisputeResolution.DISMISS) {
+            if (!exclusionApproved[epoch][pharmacy]) revert ExclusionApprovalRequired();
+            if (resolution == DisputeResolution.SEND_TO_PATIENT_FUND) revert InvalidExclusionResolution();
+
+            uint256 newEpochTotal = epochClaimedTotal[epoch] + amount;
+            if (newEpochTotal > dailyVolumeCap)        revert DailyCapExceeded();
+            if (newEpochTotal > hardAbsoluteVolumeCap) revert HardCapExceeded();
+            if (distributionPool < amount)             revert InsufficientDistributionPool();
+        }
+
         // Effects first
         flaggedAmount[epoch][pharmacy] = 0;
         if (isExclusion) {
             isExclusionDispute[epoch][pharmacy] = false;
+            exclusionApproved[epoch][pharmacy] = false;
         }
 
         // Interactions after state is settled
         if (isExclusion) {
             if (resolution == DisputeResolution.RELEASE_TO_PHARMACY) {
-                if (distributionPool < amount) revert InsufficientDistributionPool();
                 distributionPool -= amount;
                 epochClaimedTotal[epoch] += amount;
+                epochExclusionPaidTotal[epoch] += amount;
+                pharmacyClaimedThisEpoch[epoch][pharmacy] += amount;
+                if (epoch == currentEpoch) {
+                    epochVolume += amount;
+                }
 
                 uint256 patientShare  = (amount * patientClaimBP) / BP_DENOM;
                 uint256 netToPharmacy = amount - patientShare;
@@ -823,13 +904,6 @@ contract PBMRebateTreasury is
                 emit ClaimResolved(epoch, pharmacy, amount, resolution);
                 token.safeTransfer(patientFund, patientShare);
                 token.safeTransfer(pharmacy,    netToPharmacy);
-            } else if (resolution == DisputeResolution.SEND_TO_PATIENT_FUND) {
-                if (distributionPool < amount) revert InsufficientDistributionPool();
-                distributionPool -= amount;
-                epochClaimedTotal[epoch] += amount;
-
-                emit ClaimResolved(epoch, pharmacy, amount, resolution);
-                token.safeTransfer(patientFund, amount);
             } else { // DISMISS
                 emit ClaimResolved(epoch, pharmacy, amount, resolution);
                 // No funds were locked, so no transfer occurs
@@ -848,6 +922,8 @@ contract PBMRebateTreasury is
             } else { // DISMISS
                 // Correct volume and claimed total metrics to free volume caps
                 epochClaimedTotal[epoch] -= amount;
+                epochRootClaimedTotal[epoch] -= amount;
+                pharmacyClaimedThisEpoch[epoch][pharmacy] -= amount;
                 if (epoch == currentEpoch) {
                     epochVolume -= amount;
                 }
@@ -882,7 +958,7 @@ contract PBMRebateTreasury is
         uint256 epoch = currentEpoch;
         if (epochMerkleRoot[epoch] == bytes32(0)) revert NoRootPublished();
         if (block.timestamp < epochStartTimestamp + MIN_EPOCH_DURATION) revert EpochTooShort();
-        if (epochVolume < MIN_EPOCH_VOLUME) revert EpochVolumeTooLow();
+        if (epochVolume < minimumEpochVolume) revert EpochVolumeTooLow();
 
         emit EpochFinalized(epoch, epochVolume, epochEscrow[epoch], block.timestamp);
 
@@ -988,6 +1064,7 @@ contract PBMRebateTreasury is
         onlyRole(EXECUTOR_ROLE)
     {
         if (newCap == 0)                    revert ZeroCap();
+        if (newCap < minimumEpochVolume)    revert MinimumEpochVolumeExceedsDailyCap();
         if (newCap > hardAbsoluteVolumeCap) revert ExceedsHardCap();
 
         uint256 oldCap = dailyVolumeCap;
@@ -1115,10 +1192,7 @@ contract PBMRebateTreasury is
         view
         returns (uint256)
     {
-        uint256 allocated = epochRootTotal[epoch];
-        uint256 claimed   = epochClaimedTotal[epoch];
-        if (allocated <= claimed) return 0;
-        return allocated - claimed;
+        return epochEscrow[epoch];
     }
 
     /// @notice Whether a past epoch is eligible for recall.
@@ -1136,7 +1210,7 @@ contract PBMRebateTreasury is
         if (publishedAt == 0)        return false;
         if (block.timestamp < publishedAt + RECALL_DELAY) return false;
 
-        return epochRootTotal[epoch] > epochClaimedTotal[epoch];
+        return epochEscrow[epoch] > 0;
     }
 
     /// @notice Full epoch summary - dashboard and journalist friendly.
@@ -1153,10 +1227,29 @@ contract PBMRebateTreasury is
         )
     {
         rootTotal   = epochRootTotal[epoch];
-        claimed     = epochClaimedTotal[epoch];
-        unclaimed   = rootTotal > claimed ? rootTotal - claimed : 0;
+        claimed     = epochRootClaimedTotal[epoch];
+        unclaimed   = epochEscrow[epoch];
         recalled    = epochRecalled[epoch];
         publishedAt = epochPublishedTimestamp[epoch];
+    }
+
+    /// @notice Provenance-aware epoch accounting for dashboards and watchdogs.
+    function epochAccounting(uint256 epoch)
+        external
+        view
+        returns (
+            uint256 rootAllocated,
+            uint256 rootClaimed,
+            uint256 exclusionPaid,
+            uint256 escrowUnclaimed,
+            uint256 totalClaimed
+        )
+    {
+        rootAllocated   = epochRootTotal[epoch];
+        rootClaimed     = epochRootClaimedTotal[epoch];
+        exclusionPaid   = epochExclusionPaidTotal[epoch];
+        escrowUnclaimed = epochEscrow[epoch];
+        totalClaimed    = epochClaimedTotal[epoch];
     }
 
     /// @notice How much a pharmacy has claimed in a given epoch.
@@ -1243,6 +1336,7 @@ contract PBMRebateTreasury is
 
     /// @notice Returns the COUNCIL_ROLE identifier.
     function councilRole()   external pure returns (bytes32) { return COUNCIL_ROLE; }
+    function rootConfirmerRole() external pure returns (bytes32) { return ROOT_CONFIRMER_ROLE; }
 
     /// @notice Returns the EXECUTOR_ROLE identifier.
     function executorRole()  external pure returns (bytes32) { return EXECUTOR_ROLE; }

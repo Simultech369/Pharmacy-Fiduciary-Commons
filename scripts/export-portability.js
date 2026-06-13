@@ -42,7 +42,8 @@ function parseArgs(argv) {
 // Contract ABIs
 const TREASURY_ABI = [
   "event Claimed(uint256 indexed epoch, address indexed pharmacy, uint256 grossAmount, uint256 netToPharmacy, uint256 patientShare)",
-  "function isExclusionDispute(uint256 epoch, address pharmacy) view returns (bool)"
+  "function isExclusionDispute(uint256 epoch, address pharmacy) view returns (bool)",
+  "function epochMerkleRoot(uint256 epoch) view returns (bytes32)"
 ];
 
 const PB_ABI = [
@@ -72,6 +73,7 @@ async function main(opts = {}) {
   const provider = opts.provider || new ethers.JsonRpcProvider(rpcUrl);
   const treasury = new ethers.Contract(treasuryAddress, TREASURY_ABI, provider);
   const pb = new ethers.Contract(pbAddress, PB_ABI, provider);
+  const network = await provider.getNetwork();
 
   // 1. Fetch claims from PBMRebateTreasury Claimed events
   console.log("Fetching claimed events...");
@@ -131,6 +133,11 @@ async function main(opts = {}) {
       receiptId: `receipt-${event.transactionHash}`,
       hash: event.transactionHash,
       signature: txSignature,
+      chainId: network.chainId.toString(),
+      contractAddress: ethers.getAddress(treasuryAddress),
+      blockNumber: event.blockNumber,
+      blockHash: event.blockHash,
+      logIndex: event.index,
       details: {
         type: "Claimed",
         epoch: Number(epoch),
@@ -222,6 +229,11 @@ async function main(opts = {}) {
       receiptId: `receipt-${event.transactionHash}`,
       hash: event.transactionHash,
       signature: txSignature,
+      chainId: network.chainId.toString(),
+      contractAddress: ethers.getAddress(pbAddress),
+      blockNumber: event.blockNumber,
+      blockHash: event.blockHash,
+      logIndex: event.index,
       details: {
         type: "VoteCast",
         roundId: Number(roundId),
@@ -235,6 +247,11 @@ async function main(opts = {}) {
   const payload = {
     exporter,
     exported_at: new Date().toISOString(),
+    chain: {
+      chainId: network.chainId.toString(),
+      treasuryAddress: ethers.getAddress(treasuryAddress),
+      participatoryBudgetingAddress: ethers.getAddress(pbAddress)
+    },
     claims,
     merkle_proofs: merkleProofs,
     votes,

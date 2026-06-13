@@ -2,6 +2,8 @@
 
 This table maps major project claims to the part of the repository that actually enforces or supports them. Its purpose is to keep doctrine, documentation, and runtime behavior from drifting apart.
 
+Unresolved economic and trust-model choices are tracked in `OPEN_DESIGN_DECISIONS.md`; current runtime behavior should not be mistaken for final policy.
+
 Coverage levels:
 
 - **Contract-enforced**: enforced directly by Solidity code.
@@ -21,17 +23,23 @@ Coverage levels:
 | Patient fund receives 10% of gross claims | Contract-enforced | `PBMRebateTreasury.claim` routes patient share | Add dashboard visibility for patient-fund inflows |
 | Unclaimed epoch funds can be recalled to patient fund | Contract-enforced | `recallUnclaimed` | Add release/demo scenario showing recall lifecycle |
 | Daily/hard volume caps reduce treasury blast radius | Contract-enforced | `dailyVolumeCap`, `hardAbsoluteVolumeCap`, `reduceHardCap`, `updateDailyCap` | Add operator-facing simulator before root confirmation |
+| Epoch finalization supports payout tokens with different decimals | Contract-enforced + tested | Constructor-configured `minimumEpochVolume` and six-decimal token regression test | Deployment must express thresholds in token base units |
 | Disputed dismissed claims do not poison caps or lock recalled funds | Contract-enforced + tested | `resolveClaim` and security tests | Keep as regression test in CI |
+| Root-exclusion payouts cannot bypass single-party governance or epoch caps | Contract-enforced + tested | `approveExclusionClaim`, `resolveClaim`, and security tests | Add evidence-hash provenance for off-chain review packets |
+| Exclusion payouts cannot distort root-unclaimed reporting | Contract-enforced + tested | `epochRootClaimedTotal`, `epochExclusionPaidTotal`, `epochAccounting`, and security tests | Surface the provenance-aware fields in any future dashboard |
+| Issued vouchers reserve mutual-credit capacity until redemption or expiry cleanup | Contract-enforced + tested | `reservedVoucherCredit`, `releaseExpiredVoucher`, transfer and limit-update checks | Add operational monitoring for expired reservations awaiting cleanup |
 
 ## Governance And Trust Roots
 
 | Claim | Current Coverage | Evidence | Gap / Next Step |
 |-------|------------------|----------|-----------------|
-| Council controls high-stakes operations | Contract-enforced | `COUNCIL_ROLE` gates root, recall, sanctions, unpause | Document real Safe setup before deployment |
+| Root publication has durable proposal and approval trust roots | Contract-enforced + tested | `COUNCIL_ROLE` proposes; `ROOT_CONFIRMER_ROLE` confirms; mutual exclusion is enforced during role grants; confirmer rotation is timelocked | Rehearse Safe and timelock rotation before deployment |
+| Council controls operational governance | Contract-enforced | `COUNCIL_ROLE` gates recall, sanctions, unpause, and root proposals | Document real Safe setup before deployment |
 | Executor/timelock controls cap and reserve changes | Contract-enforced | `EXECUTOR_ROLE` gates cap and reserve functions | Add deploy verification checklist for executor address |
 | Guardian can pause but not unpause | Contract-enforced | guardian/council role split | Add emergency runbook |
 | Dizzy is an arbitration/judgment layer | Docs-only | `GOVERNANCE.md` | Reframe as advisory unless evidence packet, versioned prompt, appeal path, and council ratification exist |
 | Relayer verifier enables voter self-registration | Contract-enforced but centralized | `relayerVerifier`, `registerVoterWithSignature` | Add verifier rotation/runbook and eligibility policy |
+| Relayer authorizations cannot be replayed after use or council revocation | Contract-enforced + tested | chain-bound registration nonce in `PatientFundParticipatoryBudgeting` | Add operator tooling to query nonce automatically from the target chain |
 
 ## Dashboard And Public Legibility
 
@@ -49,7 +57,7 @@ Coverage levels:
 | Participant data can be exported as JSON | Script-enforced | `scripts/export-portability.js` | Add full chain/RPC event reconciliation |
 | Exported Merkle proof material can be checked locally | Script-enforced + tested | `scripts/verify-export.js` | Include chain ID, contract addresses, block range, and root event references |
 | Exported clinical placeholders are not represented as real records | Script-enforced + tested | `metadataProvenance: "synthetic-placeholder"` | Extend schema to separate on-chain and off-chain fields |
-| Credential signatures are verified against a known issuer key | Script-enforced | `tools/credentials/credentials.mjs` pins issuer key fingerprint | Replace static pin with DID/key registry once real issuer process exists |
+| Voter credentials are bound to a trusted issuer, wallet, type, active status, expiry, and revocation registry | Script-enforced + tested | shared `credential-policy.mjs`, voter relayer, and credential policy tests | Replace static pin and local revocation file with a governed DID/key registry |
 | Private key material is kept out of Git | Git hygiene + script-supported | `.gitignore`, `0o600` private-key writes | Add secret scanning in CI |
 
 ## Production Readiness

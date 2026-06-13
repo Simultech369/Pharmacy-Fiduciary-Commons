@@ -3,20 +3,28 @@ pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title  PatientFundParticipatoryBudgeting
  * @author Pharmacy Fiduciary Commons
- * @notice Governs the allocation of the Patient Fund matching pool using Quadratic Funding.
- *         Sybil-resistant voting enables community members to vote on local health projects.
+ * @notice Governs the allocation of the Patient Fund matching pool using squared vote weights.
+ *         Credential-gated voting enables community members to vote on local health projects.
  */
-contract PatientFundParticipatoryBudgeting is AccessControl {
+contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
     using SafeERC20 for IERC20;
     using ECDSA for bytes32;
 
     bytes32 public constant COUNCIL_ROLE = keccak256("COUNCIL_ROLE");
+    uint256 public constant MAX_PROJECTS_PER_ROUND = 50;
+    bytes32 public constant REGISTRATION_TYPEHASH = keccak256(
+        "VoterRegistration(uint256 roundId,address voter,uint256 nonce,bytes32 credentialHash,bytes32 policyVersion,uint256 deadline)"
+    );
+    bytes32 public constant ACCEPTED_CREDENTIAL_POLICY_VERSION = keccak256(
+        "fiduciary-credential-policy-v1"
+    );
 
     enum RoundState { Inactive, Active, Finalized }
 
@@ -49,6 +57,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl {
     // roundId => voter => projectId => hasVoted
     mapping(uint256 => mapping(address => mapping(uint256 => bool))) public hasVoted;
 
+    // roundId => voter => next relayer authorization nonce
+    mapping(uint256 => mapping(address => uint256)) public registrationNonces;
+
     // =========================================================
     // EVENTS
     // =========================================================
@@ -56,6 +67,13 @@ contract PatientFundParticipatoryBudgeting is AccessControl {
     event RoundFinalized(uint256 indexed roundId, uint256 totalWeight);
     event ProjectRegistered(uint256 indexed roundId, uint256 indexed projectId, string title, address recipient);
     event VoterRegistered(uint256 indexed roundId, address indexed voter, bool status);
+    event RegistrationAuthorizationUsed(
+        uint256 indexed roundId,
+        address indexed voter,
+        bytes32 indexed credentialHash,
+        bytes32 policyVersion,
+        uint256 deadline
+    );
     event VoteCast(uint256 indexed roundId, uint256 indexed projectId, address indexed voter);
     event MatchDistributed(uint256 indexed roundId, uint256 indexed projectId, address indexed recipient, uint256 amount);
     event RelayerVerifierUpdated(address indexed newVerifier);
@@ -72,11 +90,17 @@ contract PatientFundParticipatoryBudgeting is AccessControl {
     error Unauthorized();
     error WrongRoundState();
     error ArrayEmpty();
+    error AuthorizationExpired();
+    error InvalidAuthorizationMetadata();
+    error UnsupportedCredentialPolicy();
+    error ProjectLimitReached();
 
     // =========================================================
     // CONSTRUCTOR
     // =========================================================
-    constructor(address _token, address _council) {
+    constructor(address _token, address _council)
+        EIP712("Pharmacy Fiduciary Commons", "1")
+    {
         if (_token == address(0)) revert InvalidAddress();
         if (_council == address(0)) revert InvalidAddress();
 
@@ -117,6 +141,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl {
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
 
         registeredVoters[roundId][voter] = status;
+        registrationNonces[roundId][voter] += 1;
         emit VoterRegistered(roundId, voter, status);
     }
 
@@ -128,22 +153,52 @@ contract PatientFundParticipatoryBudgeting is AccessControl {
             address voter = voters[i];
             if (voter == address(0)) revert InvalidAddress();
             registeredVoters[roundId][voter] = true;
+            registrationNonces[roundId][voter] += 1;
             emit VoterRegistered(roundId, voter, true);
         }
     }
 
-    function registerVoterWithSignature(uint256 roundId, address voter, bytes calldata signature) external {
+    function registerVoterWithSignature(
+        uint256 roundId,
+        address voter,
+        bytes32 credentialHash,
+        bytes32 policyVersion,
+        uint256 deadline,
+        bytes calldata signature
+    ) external {
         if (voter == address(0)) revert InvalidAddress();
         if (msg.sender != voter) revert Unauthorized();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
         if (relayerVerifier == address(0)) revert InvalidAddress();
+        if (credentialHash == bytes32(0) || policyVersion == bytes32(0)) {
+            revert InvalidAuthorizationMetadata();
+        }
+        if (policyVersion != ACCEPTED_CREDENTIAL_POLICY_VERSION) {
+            revert UnsupportedCredentialPolicy();
+        }
+        if (block.timestamp > deadline) revert AuthorizationExpired();
 
-        bytes32 messageHash = keccak256(abi.encodePacked(roundId, voter, address(this)));
-        address signer = messageHash.toEthSignedMessageHash().recover(signature);
+        // EIP-712 binds the authorization to this deployment and chain through the
+        // domain separator while keeping the policy fields readable to wallets.
+        uint256 nonce = registrationNonces[roundId][voter];
+        bytes32 structHash = keccak256(
+            abi.encode(
+                REGISTRATION_TYPEHASH,
+                roundId,
+                voter,
+                nonce,
+                credentialHash,
+                policyVersion,
+                deadline
+            )
+        );
+        address signer = _hashTypedDataV4(structHash).recover(signature);
         if (signer != relayerVerifier) revert Unauthorized();
 
+        registrationNonces[roundId][voter] = nonce + 1;
         registeredVoters[roundId][voter] = true;
         emit VoterRegistered(roundId, voter, true);
+        emit RegistrationAuthorizationUsed(roundId, voter, credentialHash, policyVersion, deadline);
     }
 
     function registerProject(uint256 roundId, string calldata title, address recipient) external onlyRole(COUNCIL_ROLE) {
@@ -152,6 +207,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl {
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
 
         Round storage r = rounds[roundId];
+        if (r.projectCount >= MAX_PROJECTS_PER_ROUND) revert ProjectLimitReached();
         uint256 projectId = r.projectCount;
 
         roundProjects[roundId][projectId] = Project({
@@ -188,11 +244,11 @@ contract PatientFundParticipatoryBudgeting is AccessControl {
     }
 
     // =========================================================
-    // FINALIZATION & PROPORTIONAL QF PAYOUT
+    // FINALIZATION & SQUARED VOTE-WEIGHT PAYOUT
     // =========================================================
 
     /**
-     * @notice Finalizes the voting round, calculates quadratic weights, and distributes matching pool.
+     * @notice Finalizes the voting round, calculates squared vote weights, and distributes matching pool.
      * @dev    Weight of project i is (votes_i)^2. Proportional share is Weight_i / TotalWeight.
      *         If totalWeight is 0, the matching pool is returned to the council address to prevent locking.
      */
@@ -207,7 +263,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl {
         uint256[] memory weights = new uint256[](count);
         for (uint256 i = 0; i < count; i++) {
             uint256 votes = roundProjects[roundId][i].voteCount;
-            uint256 weight = votes * votes; // QF weight
+            uint256 weight = votes * votes;
             weights[i] = weight;
             totalWeight += weight;
         }

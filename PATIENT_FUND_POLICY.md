@@ -19,20 +19,20 @@ The Patient Fund accumulates resources from:
 
 ---
 
-## 3. Participatory Budgeting & Quadratic Funding (QF)
+## 3. Participatory Budgeting & Squared Vote Weighting
 
 To prevent centralized control, the Patient Fund is allocated via a participatory matching model:
 * **Submissions**: Pharmacies, community organizations, and patients submit local projects, medication needs, or service expansions.
-* **Small-Dollar Voting**: Community members vote on proposed projects using small-dollar contributions or verifiable credentials.
-* **Quadratic Matching**: The Patient Fund acts as a matching pool that amplifies projects based on the *number* of unique supporters rather than the amount of money raised.
+* **Credential-Gated Voting**: Registered community members cast one vote per project.
+* **Squared Vote Weighting**: The prototype allocates the matching pool in proportion to each project's squared vote count. It is not canonical contribution-based quadratic funding.
 * **Council Role**: The Council acts strictly as an eligibility and fraud gate (e.g., verifying that a project does not violate medical safety laws). The Council cannot direct matching funds or override community votes.
-* **Deadlines & Circulation**: Unallocated funds cannot accumulate indefinitely. Idle funds beyond 90 days are automatically rolled into the next PB/QF round.
+* **Deadlines & Circulation**: Automatic 90-day rollover is a policy target, not current contract behavior. The prototype currently requires council finalization of each active round.
 
 ---
 
 ## 4. Anti-Sybil and Identity Requirements
 
-Quadratic Funding matching is highly vulnerable to Sybil attacks (fake identity generation to distort match ratios). To protect the pool, the following identity checks apply to voting/proposal support:
+Squared vote weighting is vulnerable to Sybil attacks because fake identities can distort project vote counts. The prototype therefore applies the following identity checks to voting eligibility:
 - **Verifiable Pharmacy/Advocate Credentials**: All voting entities must present a verifiable credential indicating active licensing, community advocate status, or verified enrollment in a local health access program.
 - **Unique Patient Attestations**: Patient voters must present a unique cryptographically signed attestation (e.g. proof of unique patient ID or advocate attestation) without revealing medical history.
 - **Dispensing Receipt Matching**: Votes may be weighted or validated by matching them to verified dispensing receipt hashes from the Omission Ledger, ensuring that participation is linked to real, physical health-access interactions.

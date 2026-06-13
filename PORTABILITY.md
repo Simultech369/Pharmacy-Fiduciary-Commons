@@ -4,9 +4,9 @@ Data portability specifications and export schemas for the Pharmacy Fiduciary Co
 ---
 
 ## 1. Overview
-To prevent lock-in and ensure participant exit rights as defined in [CONSTITUTION.md](file:///C:/Users/Josh/.gemini/antigravity/scratch/Dizzy-the-Polymath/CONSTITUTION.md), any pharmacy, patient, or advocate participating in the commons must be able to export their full ledger records in a structured, machine-readable format.
+To prevent lock-in and support participant exit rights, any pharmacy, patient, or advocate participating in the commons must be able to export their full ledger records in a structured, machine-readable format.
 
-The primary export format is JSON. Every export must carry cryptographic proof of provenance, linking it back to the on-chain smart contract state.
+The primary export format is JSON. Exports include chain, contract, block, transaction, event-log, and Merkle-root provenance. Offline verification checks structure and Merkle mathematics; authoritative provenance verification requires `scripts/verify-export.js --rpc <url>` against the intended chain.
 
 ---
 

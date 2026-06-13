@@ -90,9 +90,6 @@ describe("PBMRebateTreasury security baseline", function () {
   }
 
   async function publishSingleLeafRoot(grossAmount, eligibleCap) {
-    const councilRole = await treasury.councilRole();
-    await treasury.connect(council).grantRole(councilRole, council2.address);
-
     const leaf = merkleLeaf(pharmacy.address, grossAmount, eligibleCap);
     await treasury.connect(council).proposeRoot(leaf, grossAmount);
     return leaf;
@@ -133,7 +130,9 @@ describe("PBMRebateTreasury security baseline", function () {
       patientFund.address,
       environmentalFund.address,
       toWei("1000"),
+      toWei("1"),
       council.address,
+      council2.address,
       await timelock.getAddress(),
       guardian.address
     );
@@ -150,12 +149,88 @@ describe("PBMRebateTreasury security baseline", function () {
         patientFund.address,
         environmentalFund.address,
         toWei("1000"),
+        toWei("1"),
         council.address,
+        council2.address,
         await timelock.getAddress(),
         council.address
       ),
       "GuardianMustDifferFromCouncil"
     );
+  });
+
+  it("rejects constructor setup when root confirmer equals council", async function () {
+    const Treasury = await ethers.getContractFactory("PBMRebateTreasury");
+    await expectRevert(
+      Treasury.deploy(
+        await token.getAddress(),
+        patientFund.address,
+        environmentalFund.address,
+        toWei("1000"),
+        toWei("1"),
+        council.address,
+        council.address,
+        await timelock.getAddress(),
+        guardian.address
+      ),
+      "RootConfirmerMustDifferFromCouncil"
+    );
+  });
+
+  it("rejects a minimum epoch volume above the initial daily cap", async function () {
+    const Treasury = await ethers.getContractFactory("PBMRebateTreasury");
+    await expectRevert(
+      Treasury.deploy(
+        await token.getAddress(),
+        patientFund.address,
+        environmentalFund.address,
+        toWei("1000"),
+        toWei("1001"),
+        council.address,
+        council2.address,
+        await timelock.getAddress(),
+        guardian.address
+      ),
+      "MinimumEpochVolumeExceedsDailyCap"
+    );
+  });
+
+  it("finalizes realistic epochs for a six-decimal payout token", async function () {
+    const usdcUnits = (value) => ethers.parseUnits(value, 6);
+    const MockUSDC = await ethers.getContractFactory("MockERC20Decimals");
+    const usdc = await MockUSDC.deploy("Mock USDC", "mUSDC", 6);
+    await usdc.waitForDeployment();
+
+    const Treasury = await ethers.getContractFactory("PBMRebateTreasury");
+    const usdcTreasury = await Treasury.deploy(
+      await usdc.getAddress(),
+      patientFund.address,
+      environmentalFund.address,
+      usdcUnits("1000"),
+      usdcUnits("1"),
+      council.address,
+      council2.address,
+      await timelock.getAddress(),
+      guardian.address
+    );
+    await usdcTreasury.waitForDeployment();
+
+    await usdc.mint(depositor.address, usdcUnits("100"));
+    await usdc.connect(depositor).approve(await usdcTreasury.getAddress(), usdcUnits("100"));
+    await usdcTreasury.connect(depositor).depositRebate(usdcUnits("100"), "USDC epoch");
+
+    const gross = usdcUnits("1");
+    const leaf = merkleLeaf(pharmacy.address, gross, gross);
+    await usdcTreasury.connect(council).proposeRoot(leaf, gross);
+    await usdcTreasury.connect(council2).confirmRoot(0);
+    await usdcTreasury.connect(pharmacy).claim(gross, gross, []);
+
+    await ethers.provider.send("evm_increaseTime", [24 * 60 * 60]);
+    await ethers.provider.send("evm_mine", []);
+    await usdcTreasury.connect(council).finalizeEpoch();
+
+    expect(await usdcTreasury.currentEpoch()).to.equal(1n);
+    expect(await usdcTreasury.minimumEpochVolume()).to.equal(usdcUnits("1"));
   });
 
   it("splits deposits 99 percent distribution and 1 percent governance", async function () {
@@ -166,7 +241,7 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(await treasury.totalRebateDeposited()).to.equal(toWei("1000"));
   });
 
-  it("requires root co-sign from a distinct council member", async function () {
+  it("requires root approval from the separately configured confirmer", async function () {
     await seedDeposit(toWei("1000"));
 
     const gross = toWei("100");
@@ -174,13 +249,67 @@ describe("PBMRebateTreasury security baseline", function () {
 
     await expectRevert(
       treasury.connect(council).confirmRoot(0),
-      "ProposerCannotConfirm"
+      "AccessControl"
     );
 
     await treasury.connect(council2).confirmRoot(0);
 
     expect(await treasury.epochRootTotal(0)).to.equal(gross);
     expect(await treasury.epochMerkleRoot(0)).to.not.equal(ethers.ZeroHash);
+  });
+
+  it("prevents council from granting itself root confirmation authority", async function () {
+    const rootConfirmerRole = await treasury.rootConfirmerRole();
+
+    await expectRevert(
+      treasury.connect(council).grantRole(rootConfirmerRole, council.address),
+      "AccessControl"
+    );
+
+    await expectRevert(
+      treasury.connect(council2).grantRole(rootConfirmerRole, council.address),
+      "AccessControl"
+    );
+  });
+
+  it("preserves council/confirmer separation during timelocked role rotation", async function () {
+    const councilRole = await treasury.councilRole();
+    const rootConfirmerRole = await treasury.rootConfirmerRole();
+    const executorRole = await treasury.executorRole();
+
+    await expectRevert(
+      treasury.connect(council).grantRole(councilRole, council2.address),
+      "GovernanceRoleSeparationViolation"
+    );
+    await expectRevert(
+      treasury.connect(council).grantRole(executorRole, council.address),
+      "AccessControl"
+    );
+    await expectRevert(
+      timelockExecute(
+        await treasury.getAddress(),
+        treasury.interface.encodeFunctionData("grantRole", [rootConfirmerRole, council.address])
+      ),
+      "underlying transaction reverted"
+    );
+
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("grantRole", [rootConfirmerRole, attacker.address])
+    );
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("revokeRole", [rootConfirmerRole, council2.address])
+    );
+
+    expect(await treasury.hasRole(rootConfirmerRole, attacker.address)).to.be.true;
+    expect(await treasury.hasRole(rootConfirmerRole, council2.address)).to.be.false;
+
+    await seedDeposit(toWei("1000"));
+    const gross = toWei("100");
+    await publishSingleLeafRoot(gross, gross);
+    await treasury.connect(attacker).confirmRoot(0);
+    expect(await treasury.epochRootTotal(0)).to.equal(gross);
   });
 
   it("routes claims 90/10 and blocks double claim", async function () {
@@ -244,6 +373,14 @@ describe("PBMRebateTreasury security baseline", function () {
     await expectRevert(
       timelockExecute(
         await treasury.getAddress(),
+        treasury.interface.encodeFunctionData("updateDailyCap", [toWei("0.5")])
+      ),
+      "underlying transaction reverted"
+    );
+
+    await expectRevert(
+      timelockExecute(
+        await treasury.getAddress(),
         treasury.interface.encodeFunctionData("reduceHardCap", [dailyCap - 1n])
       ),
       "underlying transaction reverted"
@@ -291,13 +428,87 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(await treasury.flaggedAmount(0, attacker.address)).to.equal(0n);
     expect(await treasury.isExclusionDispute(0, attacker.address)).to.be.false;
 
-    // 3. Flag exclusion again and resolve as RELEASE_TO_PHARMACY (withdraws from distributionPool)
+    // 3. Flag exclusion again; council cannot pay it without independent approval.
     await treasury.connect(depositor).flagExclusion(0, toWei("50"));
+    await expectRevert(
+      treasury.connect(council).resolveClaim(0, depositor.address, 0),
+      "ExclusionApprovalRequired"
+    );
+    await expectRevert(
+      treasury.connect(council).approveExclusionClaim(0, depositor.address),
+      "AccessControl"
+    );
+
+    // 4. The configured confirmer approves, then council releases the bounded claim.
+    await treasury.connect(council2).approveExclusionClaim(0, depositor.address);
     const balanceBefore = await token.balanceOf(depositor.address);
     await treasury.connect(council).resolveClaim(0, depositor.address, 0); // RELEASE_TO_PHARMACY is 0
     const balanceAfter = await token.balanceOf(depositor.address);
     // Net transfer is 90% of 50 = 45 (using initial 10% patientClaimBP)
     expect(balanceAfter - balanceBefore).to.equal(toWei("45"));
+    expect(await treasury.epochVolume()).to.equal(toWei("50"));
+    expect(await treasury.epochClaimedTotal(0)).to.equal(toWei("50"));
+    expect(await treasury.epochRootClaimedTotal(0)).to.equal(0n);
+    expect(await treasury.epochExclusionPaidTotal(0)).to.equal(toWei("50"));
+    expect(await treasury.unclaimedForEpoch(0)).to.equal(gross);
+    expect(await treasury.epochEscrow(0)).to.equal(gross);
+
+    const accounting = await treasury.epochAccounting(0);
+    expect(accounting.rootAllocated).to.equal(gross);
+    expect(accounting.rootClaimed).to.equal(0n);
+    expect(accounting.exclusionPaid).to.equal(toWei("50"));
+    expect(accounting.escrowUnclaimed).to.equal(gross);
+    expect(accounting.totalClaimed).to.equal(toWei("50"));
+    expect(await token.balanceOf(await treasury.getAddress())).to.equal(
+      (await treasury.distributionPool()) +
+      (await treasury.governanceReserve()) +
+      (await treasury.epochEscrow(0))
+    );
+    expect(await treasury.exclusionApproved(0, depositor.address)).to.be.false;
+  });
+
+  it("keeps root unclaimed reporting independent from exclusion payouts", async function () {
+    await seedDeposit(toWei("1000"));
+    const gross = toWei("100");
+    await publishSingleLeafRoot(gross, gross);
+    await treasury.connect(council2).confirmRoot(0);
+
+    await treasury.connect(attacker).flagExclusion(0, gross);
+    await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
+    await treasury.connect(council).resolveClaim(0, attacker.address, 0);
+
+    expect(await treasury.epochClaimedTotal(0)).to.equal(gross);
+    expect(await treasury.epochRootClaimedTotal(0)).to.equal(0n);
+    expect(await treasury.epochExclusionPaidTotal(0)).to.equal(gross);
+    expect(await treasury.epochEscrow(0)).to.equal(gross);
+    expect(await treasury.unclaimedForEpoch(0)).to.equal(gross);
+
+    const stats = await treasury.epochStats(0);
+    expect(stats.rootTotal).to.equal(gross);
+    expect(stats.claimed).to.equal(0n);
+    expect(stats.unclaimed).to.equal(gross);
+  });
+
+  it("rejects exclusion claims that exceed epoch caps or request a treasury-funded penalty", async function () {
+    await seedDeposit(toWei("2000"));
+    const gross = toWei("900");
+    await publishSingleLeafRoot(gross, gross);
+    await treasury.connect(council2).confirmRoot(0);
+    await treasury.connect(pharmacy).claim(gross, gross, []);
+
+    await treasury.connect(attacker).flagExclusion(0, toWei("200"));
+    await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
+
+    await expectRevert(
+      treasury.connect(council).resolveClaim(0, attacker.address, 0),
+      "DailyCapExceeded"
+    );
+    await expectRevert(
+      treasury.connect(council).resolveClaim(0, attacker.address, 1),
+      "InvalidExclusionResolution"
+    );
+
+    expect(await treasury.flaggedAmount(0, attacker.address)).to.equal(toWei("200"));
   });
 
   it("allows sanctioned address to submit an on-chain appeal", async function () {
@@ -344,9 +555,6 @@ describe("PBMRebateTreasury security baseline", function () {
       pharmacy.address, amtA, amtA,
       council2.address, amtB, amtB
     );
-
-    const councilRole = await treasury.councilRole();
-    await treasury.connect(council).grantRole(councilRole, council2.address);
 
     await treasury.connect(council).proposeRoot(root, toWei("100"));
     await treasury.connect(council2).confirmRoot(0);
@@ -416,6 +624,12 @@ describe("PBMRebateTreasury security baseline", function () {
     // epochVolume and epochClaimedTotal should be reset to 0
     expect(await treasury.epochVolume()).to.equal(0n);
     expect(await treasury.epochClaimedTotal(0)).to.equal(0n);
+    expect(await treasury.pharmacyClaimedThisEpoch(0, pharmacy.address)).to.equal(0n);
     expect(await treasury.epochEscrow(0)).to.equal(gross); // returned to escrow
+    expect(await token.balanceOf(await treasury.getAddress())).to.equal(
+      (await treasury.distributionPool()) +
+      (await treasury.governanceReserve()) +
+      (await treasury.epochEscrow(0))
+    );
   });
 });

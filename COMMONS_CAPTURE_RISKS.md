@@ -18,7 +18,7 @@ This document tracks, assesses, and outlines mitigations for the structural capt
 
 ## 4. Patient-Fund Favoritism
 * **Risk**: Council members or donors direct Patient Fund grants to friendly projects or affiliated organizations.
-* **Mitigation**: Remove Council discretion over funding direction. The Council acts only as an eligibility/fraud gate. Actual allocations must be determined by community small-dollar votes amplified by Quadratic Funding (QF) matching.
+* **Mitigation**: Remove Council discretion over funding direction. The Council acts only as an eligibility/fraud gate. The current prototype uses credential-gated votes with squared vote-count weighting; canonical contribution-based QF remains a future redesign.
 
 ## 5. Donor Capture
 * **Risk**: Large depositors or philanthropic donors demand governance control or custom allocation rules in exchange for funding the treasury.
@@ -32,9 +32,9 @@ This document tracks, assesses, and outlines mitigations for the structural capt
 * **Risk**: The project team optimizes for total value locked (TVL) or deposit volume, shifting focus from pharmacy health to speculative growth (startup logic).
 * **Mitigation**: Gating rules require that the dashboard prioritizes metrics such as: patient assistance delivered, number of independent pharmacies supported, and regional access gaps closed.
 
-## 8. Quadratic Funding Sybil Attacks
-* **Risk**: Attackers create multiple fake patient accounts to vote on projects, artificially inflating matching ratios in QF rounds.
-* **Mitigation**: Require proof-of-humanity credentials (e.g. Gitcoin Passport, local community verification) to vote in matching rounds, and apply math-based Sybil dampening (like Connection-Oriented Cluster Matching) to the matching algorithm.
+## 8. Participatory Voting Sybil Attacks
+* **Risk**: Attackers create multiple fake patient accounts to vote on projects, artificially inflating squared vote weights.
+* **Mitigation**: Require verifiable eligibility credentials to vote. Any future contribution-based QF design should add purpose-built Sybil dampening and independent evaluation before deployment.
 
 ## 9. Over-Centralized Merkle Root Authority
 * **Risk**: A single off-chain script creates the Merkle root, making the system dependent on one computer or developer.
@@ -42,4 +42,4 @@ This document tracks, assesses, and outlines mitigations for the structural capt
 
 ## 10. Relayer Verifier Trust Root
 * **Risk**: The participatory budgeting self-registration flow depends on a Council-selected `relayerVerifier`. If that key is compromised or operated without transparent eligibility rules, it can register ineligible voters or exclude eligible advocates.
-* **Mitigation**: Treat the verifier as a bounded testnet/prototype trust root until it has key rotation, public eligibility criteria, signed credential provenance, and an appeal path. Council should rotate the verifier immediately after suspected compromise.
+* **Mitigation**: Treat the verifier as a bounded testnet/prototype trust root. Current tooling pins issuer provenance, binds credentials to wallets, checks type/status/expiry/revocation, and uses consumed on-chain nonces. Production still requires governed key rotation, public eligibility criteria, durable revocation publication, and an appeal path. Council should rotate the verifier immediately after suspected compromise.

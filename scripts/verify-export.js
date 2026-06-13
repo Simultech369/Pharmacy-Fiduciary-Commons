@@ -5,7 +5,7 @@ const { ethers } = require("ethers");
 function usage() {
   console.log(`
 Usage:
-  node scripts/verify-export.js --file <export_json_file>
+  node scripts/verify-export.js --file <export_json_file> [--rpc <url>] [--confirmations <count>]
 `);
 }
 
@@ -149,6 +149,95 @@ function verifyPayload(payload) {
   return { ok: errors.length === 0, errors, warnings };
 }
 
+const TREASURY_ABI = [
+  "event Claimed(uint256 indexed epoch, address indexed pharmacy, uint256 grossAmount, uint256 netToPharmacy, uint256 patientShare)",
+  "function epochMerkleRoot(uint256 epoch) view returns (bytes32)"
+];
+const PB_ABI = [
+  "event VoteCast(uint256 indexed roundId, uint256 indexed projectId, address indexed voter)"
+];
+
+async function verifyPayloadOnChain(payload, options = {}) {
+  const errors = [];
+  const warnings = [];
+  const provider = options.provider || new ethers.JsonRpcProvider(options.rpc);
+  const confirmations = Number(options.confirmations ?? 1);
+  const network = await provider.getNetwork();
+  const latestBlock = await provider.getBlockNumber();
+
+  if (!payload.chain || BigInt(payload.chain.chainId) !== network.chainId) {
+    fail(errors, "Export chainId does not match the connected network.");
+    return { ok: false, errors, warnings };
+  }
+
+  let treasuryAddress;
+  let pbAddress;
+  try {
+    treasuryAddress = ethers.getAddress(payload.chain.treasuryAddress);
+    pbAddress = ethers.getAddress(payload.chain.participatoryBudgetingAddress);
+  } catch {
+    return { ok: false, errors: ["Export contains invalid contract provenance addresses."], warnings };
+  }
+
+  const treasuryInterface = new ethers.Interface(TREASURY_ABI);
+  const pbInterface = new ethers.Interface(PB_ABI);
+  const treasury = new ethers.Contract(treasuryAddress, TREASURY_ABI, provider);
+
+  for (const exportedReceipt of payload.receipts) {
+    const receipt = await provider.getTransactionReceipt(exportedReceipt.hash);
+    if (!receipt) {
+      fail(errors, `Transaction ${exportedReceipt.hash} does not exist on the connected chain.`);
+      continue;
+    }
+    if (receipt.status !== 1) fail(errors, `Transaction ${exportedReceipt.hash} was not successful.`);
+    if (receipt.blockHash.toLowerCase() !== String(exportedReceipt.blockHash).toLowerCase()) {
+      fail(errors, `Transaction ${exportedReceipt.hash} block hash does not match export provenance.`);
+    }
+    if (latestBlock - receipt.blockNumber + 1 < confirmations) {
+      fail(errors, `Transaction ${exportedReceipt.hash} lacks ${confirmations} confirmations.`);
+    }
+
+    const expectedAddress = exportedReceipt.details?.type === "Claimed" ? treasuryAddress : pbAddress;
+    if (ethers.getAddress(exportedReceipt.contractAddress) !== expectedAddress) {
+      fail(errors, `Transaction ${exportedReceipt.hash} has the wrong exported contract address.`);
+      continue;
+    }
+
+    const log = receipt.logs.find(item =>
+      item.index === exportedReceipt.logIndex && ethers.getAddress(item.address) === expectedAddress
+    );
+    if (!log) {
+      fail(errors, `Transaction ${exportedReceipt.hash} is missing the exported event log.`);
+      continue;
+    }
+
+    try {
+      const parsed = (expectedAddress === treasuryAddress ? treasuryInterface : pbInterface).parseLog(log);
+      if (parsed.name !== exportedReceipt.details.type) {
+        fail(errors, `Transaction ${exportedReceipt.hash} event type does not match export.`);
+      } else if (parsed.name === "Claimed") {
+        const claim = payload.claims.find(item => item.transactionHash.toLowerCase() === exportedReceipt.hash.toLowerCase());
+        if (!claim || ethers.getAddress(parsed.args.pharmacy) !== ethers.getAddress(claim.pharmacyAddress)) {
+          fail(errors, `Transaction ${exportedReceipt.hash} claim participant does not match the on-chain event.`);
+        }
+        const proof = payload.merkle_proofs.find(item => Number(item.blockNumber) === receipt.blockNumber);
+        if (proof) {
+          const onChainRoot = await treasury.epochMerkleRoot(parsed.args.epoch);
+          if (onChainRoot.toLowerCase() !== proof.claimRoot.toLowerCase()) {
+            fail(errors, `Epoch ${parsed.args.epoch} Merkle root does not match the confirmed on-chain root.`);
+          }
+        }
+      } else if (parsed.name === "VoteCast" && ethers.getAddress(parsed.args.voter) !== ethers.getAddress(payload.exporter)) {
+        fail(errors, `Transaction ${exportedReceipt.hash} voter does not match exporter.`);
+      }
+    } catch (err) {
+      fail(errors, `Transaction ${exportedReceipt.hash} event could not be decoded: ${err.message}`);
+    }
+  }
+
+  return { ok: errors.length === 0, errors, warnings };
+}
+
 async function main(opts = {}) {
   const args = parseArgs(process.argv.slice(2));
   const filePath = opts.file || args.file;
@@ -161,6 +250,19 @@ async function main(opts = {}) {
 
   const payload = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), filePath), "utf8"));
   const result = verifyPayload(payload);
+
+  if (result.ok && (opts.provider || opts.rpc || args.rpc)) {
+    const chainResult = await verifyPayloadOnChain(payload, {
+      provider: opts.provider,
+      rpc: opts.rpc || args.rpc,
+      confirmations: opts.confirmations || args.confirmations
+    });
+    result.ok = chainResult.ok;
+    result.errors.push(...chainResult.errors);
+    result.warnings.push(...chainResult.warnings);
+  } else if (result.ok) {
+    result.warnings.push("Offline mode verifies structure and Merkle math only; use --rpc for chain provenance.");
+  }
 
   if (result.ok) {
     console.log("Portability export verification passed.");
@@ -188,5 +290,6 @@ module.exports = {
   processProof,
   verifyPayload,
   verifyMerkleProof,
+  verifyPayloadOnChain,
   main
 };

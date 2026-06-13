@@ -26,17 +26,22 @@ async function main() {
   const patientFund = requireEnv("PATIENT_FUND");
   const environmentalFund = requireEnv("ENVIRONMENTAL_FUND");
   const council = requireEnv("COUNCIL");
+  const rootConfirmer = requireEnv("ROOT_CONFIRMER");
   const guardian = requireEnv("GUARDIAN");
 
   const initialDailyCap = BigInt(process.env.INITIAL_DAILY_CAP ?? "0");
   if (initialDailyCap === 0n) {
     throw new Error("INITIAL_DAILY_CAP must be a non-zero integer.");
   }
+  const minimumEpochVolume = BigInt(process.env.MINIMUM_EPOCH_VOLUME ?? "0");
+  if (minimumEpochVolume === 0n) {
+    throw new Error("MINIMUM_EPOCH_VOLUME must be a non-zero integer in token base units.");
+  }
 
   const minDelaySeconds = BigInt(process.env.TIMELOCK_MIN_DELAY_SECONDS ?? "172800");
   const timelockProposers = parseAddressList(process.env.TIMELOCK_PROPOSERS ?? council);
   const timelockExecutors = parseAddressList(process.env.TIMELOCK_EXECUTORS ?? hre.ethers.ZeroAddress);
-  const timelockAdmin = process.env.TIMELOCK_ADMIN ?? council;
+  const timelockAdmin = requireEnv("TIMELOCK_ADMIN");
 
   console.log("Verifying TimelockController at:", timelockAddress);
   try {
@@ -63,7 +68,9 @@ async function main() {
         patientFund,
         environmentalFund,
         initialDailyCap.toString(),
+        minimumEpochVolume.toString(),
         council,
+        rootConfirmer,
         timelockAddress,
         guardian,
       ],

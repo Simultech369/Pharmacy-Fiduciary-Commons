@@ -156,6 +156,7 @@ describe("PharmacyMutualCredit", function () {
       expect(v.issuer).to.equal(advocate.address);
       expect(v.amount).to.equal(amount);
       expect(v.redeemed).to.be.false;
+      expect(await credit.reservedVoucherCredit(advocate.address)).to.equal(amount);
 
       // Pharmacy A redeems voucher
       await credit.connect(pharmacyA).redeemVoucher(voucherId);
@@ -163,18 +164,50 @@ describe("PharmacyMutualCredit", function () {
       // Check balance updates (Advocate goes to -150, Pharmacy A goes to +150)
       expect(await credit.balances(advocate.address)).to.equal(-150n);
       expect(await credit.balances(pharmacyA.address)).to.equal(150n);
+      expect(await credit.reservedVoucherCredit(advocate.address)).to.equal(0n);
 
       const redeemedV = await credit.vouchers(voucherId);
       expect(redeemedV.redeemed).to.be.true;
     });
 
-    it("reverts voucher redemption that would exceed issuer credit limit", async function () {
+    it("rejects voucher issuance that would exceed issuer credit capacity", async function () {
       const largeVoucherId = ethers.keccak256(ethers.toUtf8Bytes("voucher-large"));
-      await credit.connect(advocate).createVoucher(largeVoucherId, 250n, expiry);
+      await expectRevert(
+        credit.connect(advocate).createVoucher(largeVoucherId, 250n, expiry),
+        "CreditLimitExceeded"
+      );
+    });
+
+    it("protects reserved vouchers from later transfers and limit reductions", async function () {
+      await credit.connect(advocate).createVoucher(voucherId, 150n, expiry);
 
       await expectRevert(
-        credit.connect(pharmacyA).redeemVoucher(largeVoucherId),
+        credit.connect(advocate).transferCredit(pharmacyA.address, 51n),
         "CreditLimitExceeded"
+      );
+      await credit.connect(advocate).transferCredit(pharmacyA.address, 50n);
+
+      await expectRevert(
+        credit.connect(council).updateCreditLimit(advocate.address, 199n),
+        "CreditLimitExceeded"
+      );
+
+      await credit.connect(pharmacyA).redeemVoucher(voucherId);
+      expect(await credit.balances(advocate.address)).to.equal(-200n);
+      expect(await credit.balances(pharmacyA.address)).to.equal(200n);
+    });
+
+    it("releases expired voucher reservations exactly once", async function () {
+      await credit.connect(advocate).createVoucher(voucherId, amount, expiry);
+      await ethers.provider.send("evm_setNextBlockTimestamp", [Number(expiry + 1n)]);
+      await ethers.provider.send("evm_mine", []);
+
+      await credit.connect(attacker).releaseExpiredVoucher(voucherId);
+      expect(await credit.reservedVoucherCredit(advocate.address)).to.equal(0n);
+
+      await expectRevert(
+        credit.connect(attacker).releaseExpiredVoucher(voucherId),
+        "VoucherExpired"
       );
     });
 

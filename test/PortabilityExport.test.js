@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const fs = require("node:fs");
 const path = require("node:path");
 const { main } = require("../scripts/export-portability");
-const { verifyPayload } = require("../scripts/verify-export");
+const { verifyPayload, verifyPayloadOnChain } = require("../scripts/verify-export");
 
 describe("Portability Export Tool", function () {
   const toWei = (value) => ethers.parseEther(value);
@@ -53,7 +53,9 @@ describe("Portability Export Tool", function () {
       patientFund.address,
       environmentalFund.address,
       toWei("1000"),
+      toWei("1"),
       council.address,
+      council2.address,
       await timelock.getAddress(),
       guardian.address
     );
@@ -79,8 +81,6 @@ describe("Portability Export Tool", function () {
 
     // 2. Set up Merkle root on PBMRebateTreasury
     const leaf = merkleLeaf(pharmacy.address, gross, gross);
-    const councilRole = await treasury.councilRole();
-    await treasury.connect(council).grantRole(councilRole, council2.address);
     await treasury.connect(council).proposeRoot(leaf, gross);
     await treasury.connect(council2).confirmRoot(0);
 
@@ -139,6 +139,9 @@ describe("Portability Export Tool", function () {
     expect(payload.exporter).to.equal(pharmacy.address);
     expect(payload.exported_at).to.not.be.undefined;
     expect(new Date(payload.exported_at).toString()).to.not.equal("Invalid Date");
+    expect(payload.chain.chainId).to.equal("31337");
+    expect(payload.chain.treasuryAddress).to.equal(await treasury.getAddress());
+    expect(payload.chain.participatoryBudgetingAddress).to.equal(await pb.getAddress());
 
     // Validate claims array
     expect(payload.claims).to.have.lengthOf(1);
@@ -176,6 +179,8 @@ describe("Portability Export Tool", function () {
     expect(payload.receipts).to.have.lengthOf(2);
     expect(payload.receipts[0].hash).to.equal(claimReceipt.hash);
     expect(payload.receipts[1].hash).to.equal(voteTx.hash);
+    expect(payload.receipts[0].blockHash).to.equal(claimReceipt.blockHash);
+    expect(payload.receipts[0].contractAddress).to.equal(await treasury.getAddress());
 
     const verification = verifyPayload(payload);
     expect(verification.ok).to.be.true;
@@ -186,5 +191,14 @@ describe("Portability Export Tool", function () {
     const tamperedVerification = verifyPayload(tampered);
     expect(tamperedVerification.ok).to.be.false;
     expect(tamperedVerification.errors.join(" | ")).to.contain("does not verify");
+
+    const chainVerification = await verifyPayloadOnChain(payload, { provider: ethers.provider });
+    expect(chainVerification.ok).to.be.true;
+
+    const fabricated = structuredClone(payload);
+    fabricated.receipts[0].blockHash = ethers.ZeroHash;
+    const fabricatedVerification = await verifyPayloadOnChain(fabricated, { provider: ethers.provider });
+    expect(fabricatedVerification.ok).to.be.false;
+    expect(fabricatedVerification.errors.join(" | ")).to.contain("block hash does not match");
   });
 });

@@ -5,7 +5,7 @@
 **On-chain rebate transparency infrastructure for independent pharmacies and patient funds.**
 
 ![CI](https://github.com/Simultech369/Pharmacy-Fiduciary-Commons/actions/workflows/test.yml/badge.svg)
-![Tests](https://img.shields.io/badge/local%20tests-40%20passing-16a34a?style=for-the-badge)
+![Tests](https://img.shields.io/badge/local%20tests-62%20passing-16a34a?style=for-the-badge)
 ![Audit](https://img.shields.io/badge/audit-not%20audited-dc2626?style=for-the-badge)
 ![Mainnet](https://img.shields.io/badge/mainnet-not%20deployed-6b7280?style=for-the-badge)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.20-363636?style=for-the-badge&logo=solidity)
@@ -28,7 +28,7 @@
 | `PBMRebateTreasury` | Working Solidity contract with epoch escrow, Merkle claims, dispute handling, sanctions, recall, pause, and cap controls |
 | `PatientFundParticipatoryBudgeting` | Working patient-fund voting prototype with council registration and relayer-assisted voter self-registration |
 | `PharmacyMutualCredit` | Working decoupled mutual-credit and voucher prototype with issuer credit-limit enforcement |
-| Tests | `40 passing` via `npm.cmd test` |
+| Tests | `62 passing` via `npm.cmd test` |
 | Dashboard | Static prototype with local/test Web3 integration guardrails |
 | Merkle tooling | Allocation root/proof generator |
 | Portability export | Prototype JSON export plus local verifier for claims, proofs, votes, and receipts |
@@ -108,8 +108,8 @@ This is infrastructure for transparent rebate pass-through. It is not legal, fin
 ## Core Lifecycle
 
 1. PBM or depositor calls `depositRebate()`.
-2. Council member calls `proposeRoot()` for the current epoch.
-3. A second distinct council member calls `confirmRoot()`.
+2. The council Safe calls `proposeRoot()` for the current epoch.
+3. A separately configured root-confirmer Safe calls `confirmRoot()`.
 4. Pharmacies claim with Merkle proofs through `claim()` or `claimBatch()`.
 5. Council calls `finalizeEpoch()` to close the epoch.
 6. After the 30-day `RECALL_DELAY`, unclaimed funds can be recalled to `patientFund`.
@@ -135,8 +135,9 @@ This is infrastructure for transparent rebate pass-through. It is not legal, fin
 
 | Role | Holder | Permissions |
 |------|--------|-------------|
-| `COUNCIL_ROLE` | 3/5 Gnosis Safe | Epoch management, root co-sign, recall, sanctions, unpause |
-| `EXECUTOR_ROLE` | TimelockController | Cap changes, governance reserve withdrawal, environment fund update |
+| `COUNCIL_ROLE` | 3/5 Gnosis Safe | Epoch management, root proposal, recall, sanctions, unpause |
+| `ROOT_CONFIRMER_ROLE` | Separate Safe or governance address | Independently confirms proposed Merkle roots; rotation is timelocked |
+| `EXECUTOR_ROLE` | TimelockController | Cap changes, governance reserve withdrawal, environment fund update, confirmer rotation |
 | `GUARDIAN_ROLE` | Separate fast-response address | Emergency pause only; cannot unpause or access funds |
 
 ---
@@ -148,7 +149,9 @@ This is infrastructure for transparent rebate pass-through. It is not legal, fin
 - Root total enforced at claim.
 - Per-pharmacy cap enforced through Merkle leaf encoding.
 - Double-hash leaf construction for second-preimage protection.
-- Root publication requires two distinct `COUNCIL_ROLE` members.
+- Root publication requires proposal by `COUNCIL_ROLE` and approval by a separately configured `ROOT_CONFIRMER_ROLE`.
+- Council and root-confirmer membership are mutually exclusive, including future role rotations.
+- `EXECUTOR_ROLE` and `ROOT_CONFIRMER_ROLE` administration is controlled by the timelock rather than council default administration.
 - Daily cap remains bounded by hard cap.
 - Recall only after `RECALL_DELAY`, only for unclaimed amount, sent to `patientFund`.
 - Payout token cannot be swept.
@@ -156,6 +159,9 @@ This is infrastructure for transparent rebate pass-through. It is not legal, fin
 - `GUARDIAN_ROLE` is separate from `COUNCIL_ROLE`.
 - `flagClaim` requires a valid Merkle proof.
 - Disputed active-epoch claims update cap and recall accounting consistently.
+- Root-exclusion payouts require independent confirmer approval and remain bounded by epoch caps.
+- Root-backed claims, exclusion payouts, and escrow-backed unclaimed balances are reported separately.
+- Dismissed exclusion claims cannot redirect unreserved treasury funds as a penalty.
 - Sanctioned addresses cannot flag claims.
 - Open dispute flag blocks a parallel claim on the same epoch.
 - ETH is rejected through `receive()` and `fallback()`.
@@ -190,7 +196,9 @@ constructor(
     address _patientFund,
     address _environmentalFund,
     uint256 _initialDailyCap,
+    uint256 _minimumEpochVolume,
     address _council,
+    address _rootConfirmer,
     address _executor,
     address _guardian
 )
@@ -200,9 +208,11 @@ Before mainnet deployment:
 
 - complete a formal security audit;
 - configure a 3/5 Gnosis Safe for `_council`;
+- configure a separate Safe or governance address for `_rootConfirmer`;
 - deploy and configure a `TimelockController` for `_executor`;
 - confirm `_guardian` is separate from council;
 - verify every address on the target network.
+- set `_initialDailyCap` and `_minimumEpochVolume` in the payout token's smallest units (for example, six-decimal units for USDC).
 
 ---
 
@@ -220,15 +230,21 @@ Required environment variables:
 - `PATIENT_FUND`
 - `ENVIRONMENTAL_FUND`
 - `INITIAL_DAILY_CAP`
+- `MINIMUM_EPOCH_VOLUME`
 - `COUNCIL`
+- `ROOT_CONFIRMER`
 - `GUARDIAN`
+
+Required timelock setup variable:
+
+- `TIMELOCK_ADMIN` - explicit temporary or retained admin; never defaults silently to council
 
 Optional timelock variables:
 
 - `TIMELOCK_MIN_DELAY_SECONDS`
 - `TIMELOCK_PROPOSERS`
 - `TIMELOCK_EXECUTORS`
-- `TIMELOCK_ADMIN`
+- `RENOUNCE_TIMELOCK_ADMIN=true` - supported only when `TIMELOCK_ADMIN` is the deployer; removes the temporary human admin after deployment checks
 
 ---
 
@@ -244,6 +260,7 @@ Optional timelock variables:
 | Production readiness checklist | See `PRODUCTION_READINESS_CHECKLIST.md` |
 | Mechanism coverage | See `MECHANISM_COVERAGE.md` |
 | Security reporting | See `SECURITY.md` |
+| Open product decisions | See `OPEN_DESIGN_DECISIONS.md` |
 
 ---
 
@@ -253,9 +270,9 @@ To preserve treasury simplicity, these systems are intentionally decoupled:
 
 - `PatientFundParticipatoryBudgeting`: patient-fund project allocation prototype.
 - `PharmacyMutualCredit`: mutual-credit and emergency voucher prototype.
-- `tools/credentials`: credential issuance and verification prototype.
+- `tools/credentials`: credential issuance and verification prototype with wallet binding, expiry, and local revocation checks.
 - `scripts/export-portability.js`: portability export prototype.
-- `dashboard/`: static dashboard and local/test Web3 prototype.
+- `dashboard/`: static dashboard and local/test Web3 prototype; omission examples use provenance-labeled synthetic organizations rather than claims about real PBMs.
 
 ---
 

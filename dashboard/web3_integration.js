@@ -11,7 +11,7 @@ const PB_ABI = [
   "function roundProjects(uint256, uint256) view returns (string title, address recipient, uint256 voteCount, bool active)",
   "function registeredVoters(uint256, address) view returns (bool)",
   "function castVote(uint256 roundId, uint256 projectId) external",
-  "function registerVoterWithSignature(uint256 roundId, address voter, bytes calldata signature) external"
+  "function registerVoterWithSignature(uint256 roundId, address voter, bytes32 credentialHash, bytes32 policyVersion, uint256 deadline, bytes calldata signature) external"
 ];
 
 const CREDIT_ABI = [
@@ -120,7 +120,7 @@ async function setupWeb3Connection(account) {
 
   const mockBadge = document.getElementById("mock-badge");
   if (mockBadge) {
-    mockBadge.innerText = "LIVE LOCAL/TEST CONTRACTS - NOT AUDITED";
+    mockBadge.innerText = "LOCAL CONTRACTS CONNECTED - STATIC PANELS REMAIN DEMO DATA";
     mockBadge.className = "status-badge recorded";
     mockBadge.style.animation = "none";
   }
@@ -230,7 +230,7 @@ async function loadProjectsFromContract() {
         title: p.title,
         votes: p.voteCount
       }));
-      window.recalculateQF();
+      window.recalculateMatching();
     }
   } catch (err) {
     console.error("Error loading projects from contract:", err);
@@ -240,15 +240,25 @@ async function loadProjectsFromContract() {
 async function registerWithSignature() {
   const inputSig = document.getElementById("input-signature");
   if (!inputSig || !inputSig.value.trim()) {
-    alert("Please paste a valid relayer signature first.");
+    alert("Please paste a valid registration authorization first.");
     return;
   }
 
-  const signature = inputSig.value.trim();
-
   try {
+    const authorization = JSON.parse(inputSig.value.trim());
+    const { credentialHash, policyVersion, deadline, signature } = authorization;
+    if (!credentialHash || !policyVersion || !deadline || !signature) {
+      throw new Error("Authorization must include credentialHash, policyVersion, deadline, and signature.");
+    }
     console.log(`Submitting voter self-registration transaction for round ${activeRoundId}...`);
-    const tx = await pbContract.registerVoterWithSignature(activeRoundId, userAddress, signature);
+    const tx = await pbContract.registerVoterWithSignature(
+      activeRoundId,
+      userAddress,
+      credentialHash,
+      policyVersion,
+      deadline,
+      signature
+    );
     alert("Self-registration transaction sent. Waiting for confirmation...");
     await tx.wait();
     alert("Voter registered successfully!");
@@ -274,7 +284,7 @@ window.castVote = async function(projectId) {
       const proj = window.projects.find(p => p.id === projectId);
       if (proj) {
         proj.votes += 1;
-        window.recalculateQF();
+        window.recalculateMatching();
       }
     }
     return;

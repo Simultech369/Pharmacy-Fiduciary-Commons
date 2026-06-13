@@ -187,12 +187,29 @@
       font-size: 1rem;
       font-weight: 500;
       cursor: pointer;
-      outline: none;
+      outline: 2px solid transparent;
       transition: border-color 0.2s;
     }
 
     .select-pbm:focus {
       border-color: var(--accent-cyan);
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    a:focus-visible {
+      outline: 3px solid var(--accent-cyan);
+      outline-offset: 3px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
     }
 
     /* Omissions grid */
@@ -669,7 +686,7 @@
   <main>
     
     <!-- 1. The Ledger of Omissions View -->
-    <section class="panel">
+    <section class="panel" data-provenance="synthetic-fixture">
       <div class="panel-title">
         <div>
           The Ledger of Omissions
@@ -679,17 +696,17 @@
 
       <div class="control-row">
         <div>
-          <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">Select Insurer / PBM:</label>
+          <label for="pbm-selector" style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">Select synthetic PBM fixture:</label>
           <select id="pbm-selector" class="select-pbm" onchange="updateOmissions()">
-            <option value="cvs">CVS Caremark</option>
-            <option value="esi">Express Scripts (ESI)</option>
-            <option value="optum">OptumRx</option>
+            <option value="northstar">Northstar Benefit Services</option>
+            <option value="harbor">Harbor Claims Cooperative</option>
+            <option value="summit">Summit Rx Administration</option>
           </select>
         </div>
         <div id="gap-calc-box" class="gap-calculator">
           <div class="gap-info">
             <h4>Estimated Pass-Through Gap</h4>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">Calculated against industry average rebate contracts</div>
+            <div id="gap-provenance" style="font-size: 0.75rem; color: var(--text-muted);">Synthetic fixture; not an estimate about a real company</div>
           </div>
           <div id="estimated-gap" class="gap-value">$2,450,000</div>
         </div>
@@ -700,17 +717,17 @@
       </div>
 
       <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right;">
-        * Statuses update instantly upon epoch finalization. Missing quarters represent uncaptured community value.
+        * Synthetic demonstration data only. Named-party claims require verified source and methodology metadata.
       </div>
     </section>
 
     <div class="dashboard-grid">
       
       <!-- 2. Claims & Disbursements View -->
-      <section class="panel">
+      <section class="panel" data-provenance="synthetic-fixture">
         <div class="panel-title">
-          Claims & Epoch Status
-          <span style="font-size: 0.8rem; color: var(--accent-cyan); font-family: monospace;">Epoch #14 Active</span>
+          Synthetic Claims Scenario
+          <span class="badge-unverified">DEMO DATA - NOT CHAIN STATE</span>
         </div>
 
         <div class="stats-row">
@@ -780,20 +797,21 @@
       <section class="panel">
         <div class="panel-title">
           Patient Fund Participatory Allocation
-          <span style="font-size: 0.8rem; color: var(--accent-purple); font-family: monospace;">Matching Pool: $84,250</span>
+          <span class="badge-unverified">PROJECT CARDS ARE SYNTHETIC</span>
         </div>
         
         <div class="pb-intro">
-          A 10% fee on every gross claim is automatically routed to this fund. Idle surpluses roll over to the next QF matching round.
+          A 10% share of every gross claim is routed to this fund. This prototype distributes configured round pools using squared vote weights.
         </div>
 
         <div id="voter-reg-box" class="gap-calculator" style="margin-bottom: 1.5rem; background: rgba(59, 130, 246, 0.03); border-color: rgba(59, 130, 246, 0.15);">
           <div class="gap-info">
             <h4 style="color: var(--accent-blue);">Advocate Voter Registration Status</h4>
-            <div id="voter-status" style="font-size: 0.85rem; color: var(--text-muted);">Disconnected. Please connect wallet.</div>
+            <div id="voter-status" role="status" aria-live="polite" style="font-size: 0.85rem; color: var(--text-muted);">Disconnected. Please connect wallet.</div>
           </div>
           <div id="voter-reg-action" style="display: flex; gap: 0.5rem; align-items: center;">
-            <input type="text" id="input-signature" placeholder="Paste relayer signature (0x...)" class="select-pbm" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; width: 260px; display: none;">
+            <label for="input-signature" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0);">Registration authorization JSON</label>
+            <input type="text" id="input-signature" aria-label="Registration authorization JSON" placeholder="Paste registration authorization JSON" class="select-pbm" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; width: 260px; display: none;">
             <button id="btn-register" class="btn-vote" style="display: none; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); font-size: 0.8rem; padding: 0.4rem 0.8rem; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);">Register Voter</button>
           </div>
         </div>
@@ -809,7 +827,7 @@
               <div class="project-desc">Fund solar battery backups for rural independent pharmacies.</div>
             </div>
             <div class="matching-info">
-              <div class="matching-label">QF Match</div>
+              <div class="matching-label">Squared-Weight Match</div>
               <div id="proj-0-match" class="matching-val">$32,150</div>
               <div id="proj-0-votes" class="matching-votes">120 votes</div>
             </div>
@@ -828,7 +846,7 @@
               <div class="project-desc">Support patient copay hardship gaps for life-critical medications.</div>
             </div>
             <div class="matching-info">
-              <div class="matching-label">QF Match</div>
+              <div class="matching-label">Squared-Weight Match</div>
               <div id="proj-1-match" class="matching-val">$40,800</div>
               <div id="proj-1-votes" class="matching-votes">195 votes</div>
             </div>
@@ -847,7 +865,7 @@
               <div class="project-desc">Verifiable local bike-courier prescription delivery networks.</div>
             </div>
             <div class="matching-info">
-              <div class="matching-label">QF Match</div>
+              <div class="matching-label">Squared-Weight Match</div>
               <div id="proj-2-match" class="matching-val">$11,300</div>
               <div id="proj-2-votes" class="matching-votes">64 votes</div>
             </div>
@@ -862,33 +880,33 @@
             ⏰ 90-Day Idle Surplus Rollover Warning
           </div>
           <div id="rollover-countdown" class="rollover-countdown">
-            18d 06h 12m 45s
+            Not implemented in the current contract
           </div>
         </div>
       </section>
 
     </div>
 
-    <!-- 4. Ecological Impact Receipts -->
-    <section class="panel">
+    <!-- 4. Synthetic evidence integration scenario -->
+    <section class="panel" data-provenance="synthetic-fixture">
       <div class="panel-title">
-        Ecological & Environmental Impact Ledger
-        <span style="font-size: 0.8rem; color: var(--accent-green); font-family: monospace;">Verifiable Waste Reduction</span>
+        Synthetic Environmental Evidence Scenario
+        <span class="badge-unverified">DEMO DATA - NOT VERIFIED</span>
       </div>
 
       <div class="eco-metric-row">
         <div class="eco-stat">
           <div class="eco-icon">♻️</div>
           <div class="eco-details">
-            <h4>Waste Meds Recycled</h4>
-            <div class="eco-num">1,842.60 kg</div>
+            <h4>Example Waste Metric</h4>
+            <div class="eco-num">Demo only</div>
           </div>
         </div>
         <div class="eco-stat">
           <div class="eco-icon">⚡</div>
           <div class="eco-details">
-            <h4>Logistics Carbon Offset</h4>
-            <div class="eco-num">14,250 kg CO2</div>
+            <h4>Example Logistics Metric</h4>
+            <div class="eco-num">Demo only</div>
           </div>
         </div>
       </div>
@@ -896,24 +914,24 @@
       <div class="eco-receipt-list">
         <div class="receipt-item">
           <div>
-            <span class="receipt-name">Co-op Solar Grid Audit Report</span>
-            <span class="receipt-meta"> • PDF (2.4 MB) • Verified by E-Collect LLC</span>
+            <span class="receipt-name">Placeholder audit artifact</span>
+            <span class="receipt-meta"> • Synthetic fixture • No external verifier</span>
           </div>
-          <a href="#" class="receipt-link">View Audit ↗</a>
+          <span class="receipt-meta">No artifact available</span>
         </div>
         <div class="receipt-item">
           <div>
-            <span class="receipt-name">Waste Diversion Manifest #091-2026</span>
-            <span class="receipt-meta"> • JSON Schema • Signed by GreenDisposal Corp</span>
+            <span class="receipt-name">Placeholder manifest artifact</span>
+            <span class="receipt-meta"> • Synthetic fixture • Not signed</span>
           </div>
-          <a href="#" class="receipt-link">View Manifest ↗</a>
+          <span class="receipt-meta">No artifact available</span>
         </div>
         <div class="receipt-item">
           <div>
-            <span class="receipt-name">Route Optimization Fuel Metrics</span>
-            <span class="receipt-meta"> • CSV (80 KB) • HPA Logistics</span>
+            <span class="receipt-name">Placeholder route artifact</span>
+            <span class="receipt-meta"> • Synthetic fixture • No source file</span>
           </div>
-          <a href="#" class="receipt-link">View File ↗</a>
+          <span class="receipt-meta">No artifact available</span>
         </div>
       </div>
     </section>
@@ -921,16 +939,20 @@
   </main>
 
   <footer>
-    <p>Fiduciary Rebate Commons. Escalation & arbitration loops governed by <a href="#">Dizzy the Polymath Judgment Engine</a>.</p>
+    <p>Fiduciary Rebate Commons local prototype. Contract behavior is authoritative; policy and integration concepts remain subject to review.</p>
     <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
-      Decentralized under IPFS / parallel health infrastructure initiatives.
+      Not audited. Not deployed to mainnet. Do not use real funds.
     </p>
   </footer>
 
   <script>
-    // Mock Data for PBM Omissions
+    // Synthetic omission fixtures. Production data must pass the provenance guard below.
     const pbmData = {
-      cvs: {
+      northstar: {
+        source: "synthetic-dashboard-fixture",
+        methodology: "demonstration values only; no real-world estimation",
+        verified: false,
+        mock: true,
         gap: "$2,450,000",
         quarters: [
           { q: "Q1 2026", status: "recorded", amount: "$380,000", desc: "Recorded deposit 2026-03-15" },
@@ -939,7 +961,11 @@
           { q: "Q4 2026", status: "omitted", amount: "$0", desc: "[Not recorded in this treasury]" }
         ]
       },
-      esi: {
+      harbor: {
+        source: "synthetic-dashboard-fixture",
+        methodology: "demonstration values only; no real-world estimation",
+        verified: false,
+        mock: true,
         gap: "$4,120,000",
         quarters: [
           { q: "Q1 2026", status: "omitted", amount: "$0", desc: "[Not recorded in this treasury]" },
@@ -948,7 +974,11 @@
           { q: "Q4 2026", status: "omitted", amount: "$0", desc: "[Not recorded in this treasury]" }
         ]
       },
-      optum: {
+      summit: {
+        source: "synthetic-dashboard-fixture",
+        methodology: "demonstration values only; no real-world estimation",
+        verified: false,
+        mock: true,
         gap: "$1,890,000",
         quarters: [
           { q: "Q1 2026", status: "recorded", amount: "$620,000", desc: "Recorded deposit 2026-03-22" },
@@ -959,12 +989,26 @@
       }
     };
 
+    function assertDisplayableOmissionDataset(data) {
+      const hasProvenance = typeof data.source === "string" && data.source.length > 0
+        && typeof data.methodology === "string" && data.methodology.length > 0
+        && typeof data.verified === "boolean"
+        && typeof data.mock === "boolean";
+      if (!hasProvenance || (!data.mock && !data.verified)) {
+        throw new Error("Omission data requires source, methodology, verified, and mock provenance.");
+      }
+    }
+
     function updateOmissions() {
       const pbmKey = document.getElementById("pbm-selector").value;
       const data = pbmData[pbmKey];
+      assertDisplayableOmissionDataset(data);
       
       // Update Gap Display
       document.getElementById("estimated-gap").innerText = data.gap;
+      document.getElementById("gap-provenance").innerText = data.mock
+        ? "Synthetic fixture; not an estimate about a real company"
+        : `Verified source: ${data.source} | Methodology: ${data.methodology}`;
 
       // Update Cards
       const container = document.getElementById("omission-grid-container");
@@ -992,7 +1036,7 @@
     // Initial load for omissions
     updateOmissions();
 
-    // Mock Quadratic Funding Data
+    // Synthetic squared vote-weight data
     window.projects = [
       { id: 0, title: "Co-op Pharmacy Solar Grid", votes: 120 },
       { id: 1, title: "Free Insulin Dispensary", votes: 195 },
@@ -1006,23 +1050,15 @@
       const proj = window.projects.find(p => p.id === projectId);
       if (proj) {
         proj.votes += 1;
-        window.recalculateQF();
+        window.recalculateMatching();
       }
     };
 
-    window.recalculateQF = function() {
-      // Formula: match proportional to (sum(sqrt(votes)))^2
-      // In this mock, we calculate matching proportion based on quadratic votes weight
-      let sumSqrt = 0;
-      window.projects.forEach(p => {
-        sumSqrt += Math.sqrt(p.votes);
-      });
-
-      // Calculate matching weights: (sum(sqrt(votes)))^2 - sum(votes)
-      // For simplicity in UI visual display, we can allocate proportion of matching pool:
+    window.recalculateMatching = function() {
+      // Match the contract's simplified squared vote-count weighting.
       let totalWeight = 0;
       const weights = window.projects.map(p => {
-        const sq = Math.pow(Math.sqrt(p.votes), 2); // QF matching multiplier
+        const sq = p.votes * p.votes;
         totalWeight += sq;
         return sq;
       });
@@ -1036,8 +1072,8 @@
       });
     };
 
-    // Initial QF calc
-    window.recalculateQF();
+    // Initial matching calculation
+    window.recalculateMatching();
 
     // Rollover timer simulation
     let secondsLeft = 18 * 24 * 60 * 60 + 6 * 60 * 60 + 12 * 60 + 45;

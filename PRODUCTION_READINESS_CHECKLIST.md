@@ -83,6 +83,7 @@ Status: needs definition before public launch.
 - [ ] Enforce HTTPS.
 - [ ] Set security headers: CSP, HSTS, X-Content-Type-Options, Referrer-Policy, and frame restrictions.
 - [ ] Confirm deployed contract addresses and chain IDs are environment-specific.
+- [ ] Confirm cap and minimum-epoch values use the selected payout token's base units and decimals.
 - [ ] Document release and rollback steps.
 
 Acceptance test:

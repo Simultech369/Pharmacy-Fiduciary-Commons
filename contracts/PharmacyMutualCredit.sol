@@ -29,8 +29,12 @@ contract PharmacyMutualCredit is AccessControl {
     mapping(address => bool) public registered;
     mapping(address => bool) public authorizedIssuers;
 
+    // Credit capacity committed to valid, unexpired vouchers but not yet settled.
+    mapping(address => uint256) public reservedVoucherCredit;
+
     // voucherId -> Voucher details
     mapping(bytes32 => Voucher) public vouchers;
+    mapping(bytes32 => bool) public voucherReservationReleased;
 
     // =========================================================
     // EVENTS
@@ -41,6 +45,7 @@ contract PharmacyMutualCredit is AccessControl {
     event CreditTransferred(address indexed sender, address indexed recipient, uint256 amount);
     event VoucherCreated(bytes32 indexed voucherId, address indexed issuer, uint256 amount, uint256 expiry);
     event VoucherRedeemed(bytes32 indexed voucherId, address indexed redeemer, address indexed issuer, uint256 amount);
+    event VoucherReservationReleased(bytes32 indexed voucherId, address indexed issuer, uint256 amount);
 
     // =========================================================
     // CUSTOM ERRORS
@@ -54,6 +59,7 @@ contract PharmacyMutualCredit is AccessControl {
     error VoucherDoesNotExist();
     error Unauthorized();
     error InvalidAddress();
+    error VoucherNotExpired();
 
     // =========================================================
     // CONSTRUCTOR
@@ -86,6 +92,7 @@ contract PharmacyMutualCredit is AccessControl {
         onlyRole(COUNCIL_ROLE)
     {
         if (!registered[participant]) revert NotRegistered();
+        if (!_capacityCovers(participant, 0, newCreditLimit)) revert CreditLimitExceeded();
         
         creditLimits[participant] = newCreditLimit;
         emit CreditLimitUpdated(participant, newCreditLimit);
@@ -115,10 +122,7 @@ contract PharmacyMutualCredit is AccessControl {
         if (!registered[recipient]) revert NotRegistered();
         if (amount == 0) revert ZeroAmount();
 
-        int256 creditLimitVal = int256(creditLimits[msg.sender]);
-        if (balances[msg.sender] - int256(amount) < -creditLimitVal) {
-            revert CreditLimitExceeded();
-        }
+        if (!_capacityCovers(msg.sender, amount, creditLimits[msg.sender])) revert CreditLimitExceeded();
 
         balances[msg.sender] -= int256(amount);
         balances[recipient] += int256(amount);
@@ -139,7 +143,9 @@ contract PharmacyMutualCredit is AccessControl {
         if (vouchers[voucherId].issuer != address(0)) revert AlreadyRegistered();
         if (amount == 0) revert ZeroAmount();
         if (expiry <= block.timestamp) revert VoucherExpired();
+        if (!_capacityCovers(msg.sender, amount, creditLimits[msg.sender])) revert CreditLimitExceeded();
 
+        reservedVoucherCredit[msg.sender] += amount;
         vouchers[voucherId] = Voucher({
             issuer: msg.sender,
             amount: amount,
@@ -152,7 +158,7 @@ contract PharmacyMutualCredit is AccessControl {
 
     /**
      * @notice Redeems a registered voucher, debiting the issuer and crediting the pharmacy.
-     * @dev    Enforces that the voucher is valid and that the issuer stays within their credit lines.
+     * @dev    Creation reserves issuer capacity, so valid vouchers clear without a second credit decision.
      */
     function redeemVoucher(bytes32 voucherId) external {
         if (!registered[msg.sender]) revert NotRegistered();
@@ -161,21 +167,52 @@ contract PharmacyMutualCredit is AccessControl {
         if (v.issuer == address(0)) revert VoucherDoesNotExist();
         if (v.redeemed) revert VoucherAlreadyRedeemed();
         if (block.timestamp > v.expiry) revert VoucherExpired();
+        if (voucherReservationReleased[voucherId]) revert VoucherExpired();
 
         address issuer = v.issuer;
         uint256 amount = v.amount;
 
         if (!registered[issuer]) revert NotRegistered();
 
-        int256 creditLimitVal = int256(creditLimits[issuer]);
-        if (balances[issuer] - int256(amount) < -creditLimitVal) {
-            revert CreditLimitExceeded();
-        }
-
         v.redeemed = true;
+        reservedVoucherCredit[issuer] -= amount;
+        voucherReservationReleased[voucherId] = true;
         balances[issuer] -= int256(amount);
         balances[msg.sender] += int256(amount);
 
         emit VoucherRedeemed(voucherId, msg.sender, issuer, amount);
+    }
+
+    /**
+     * @notice Releases capacity reserved by an expired, unredeemed voucher.
+     * @dev Anyone may perform expiry cleanup; no value is transferred.
+     */
+    function releaseExpiredVoucher(bytes32 voucherId) external {
+        Voucher storage v = vouchers[voucherId];
+        if (v.issuer == address(0)) revert VoucherDoesNotExist();
+        if (v.redeemed) revert VoucherAlreadyRedeemed();
+        if (block.timestamp <= v.expiry) revert VoucherNotExpired();
+        if (voucherReservationReleased[voucherId]) revert VoucherExpired();
+
+        voucherReservationReleased[voucherId] = true;
+        reservedVoucherCredit[v.issuer] -= v.amount;
+        emit VoucherReservationReleased(voucherId, v.issuer, v.amount);
+    }
+
+    function _capacityCovers(address participant, uint256 additional, uint256 limit)
+        internal
+        view
+        returns (bool)
+    {
+        if (
+            additional > uint256(type(int256).max) ||
+            reservedVoucherCredit[participant] > uint256(type(int256).max) - additional ||
+            limit > uint256(type(int256).max)
+        ) {
+            return false;
+        }
+
+        int256 committed = int256(reservedVoucherCredit[participant] + additional);
+        return balances[participant] - committed >= -int256(limit);
     }
 }

@@ -30,13 +30,14 @@ We begin mainnet deployment under strict risk-mitigated caps to observe live int
 
 ---
 
-## Phase 3: First Participatory Budgeting & Quadratic Funding Round
+## Phase 3: First Participatory Budgeting Round
 
 Activate the community allocation layers for matching patient fund reserves.
 
 - **Actions**:
   - Accumulate the Patient Fund from the 10% claim routing fee and unclaimed epoch recalls.
-  - Deploy the off-chain QF matching portal with verifiable credential/attestation gates.
+  - Deploy the credential-gated voting portal using the contract's squared vote-count weighting.
+  - Evaluate canonical contribution-based QF separately before making any QF claim.
   - Run the first local participatory budgeting round for patient co-pay assistance and independent pharmacy resilience.
   - Audit and distribute matches to community projects based on unique participant support.
 - **Success Criteria**: > 70% of Patient Fund resources allocated to preventative care projects with zero Sybil incidents detected.
