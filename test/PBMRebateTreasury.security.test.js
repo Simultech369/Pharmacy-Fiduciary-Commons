@@ -697,19 +697,32 @@ describe("PBMRebateTreasury security baseline", function () {
       const govRes = await treasury.governanceReserve();
       const exclRes = await treasury.exclusionRemediationReserve();
 
-      let totalEscrowAndFlags = 0n;
+      let totalEscrow = 0n;
+      let totalFlaggedNorm = 0n;
+      let totalFlaggedExcl = 0n;
+
       for (const ep of epochsList) {
-        totalEscrowAndFlags += await treasury.epochEscrow(ep);
+        totalEscrow += await treasury.epochEscrow(ep);
         for (const pharm of listPharmacies) {
+          const flagged = await treasury.flaggedAmount(ep, pharm.address);
           const isExcl = await treasury.isExclusionDispute(ep, pharm.address);
-          if (!isExcl) {
-            totalEscrowAndFlags += await treasury.flaggedAmount(ep, pharm.address);
+          if (flagged > 0n) {
+            if (isExcl) {
+              totalFlaggedExcl += flagged;
+            } else {
+              totalFlaggedNorm += flagged;
+            }
           }
         }
       }
 
-      const expectedBalance = distPool + govRes + exclRes + totalEscrowAndFlags;
+      const expectedBalance = distPool + govRes + exclRes + totalEscrow + totalFlaggedNorm;
       expect(contractBalance).to.equal(expectedBalance);
+
+      // Verify global aggregate variables match
+      expect(await treasury.totalEscrowed()).to.equal(totalEscrow);
+      expect(await treasury.totalFlaggedNormal()).to.equal(totalFlaggedNorm);
+      expect(await treasury.totalFlaggedExclusion()).to.equal(totalFlaggedExcl);
     }
 
     // 1. Initial State Check
