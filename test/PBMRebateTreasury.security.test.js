@@ -664,4 +664,143 @@ describe("PBMRebateTreasury security baseline", function () {
       (await treasury.epochEscrow(0))
     );
   });
+
+  it("reports correct bucketBalances including exclusionRemediationReserve", async function () {
+    const balancesBefore = await treasury.bucketBalances();
+    expect(balancesBefore.distribution).to.equal(0n);
+    expect(balancesBefore.governance).to.equal(0n);
+    expect(balancesBefore.exclusion).to.equal(0n);
+    expect(balancesBefore.totalDeposited).to.equal(0n);
+
+    await seedDeposit(toWei("1000"));
+    await token.connect(depositor).approve(await treasury.getAddress(), toWei("50"));
+    await treasury.connect(depositor).fundExclusionRemediation(toWei("50"));
+
+    const balancesAfter = await treasury.bucketBalances();
+    expect(balancesAfter.distribution).to.equal(toWei("990"));
+    expect(balancesAfter.governance).to.equal(toWei("10"));
+    expect(balancesAfter.exclusion).to.equal(toWei("50"));
+    expect(balancesAfter.totalDeposited).to.equal(toWei("1000"));
+  });
+
+  it("enforces the core accounting invariant under a complex multi-epoch lifecycle with claims, normal/exclusion disputes, and recalls", async function () {
+    const signers = await ethers.getSigners();
+    const pharmacyA = pharmacy;
+    const pharmacyB = signers[9];
+    const pharmacyC = attacker;
+
+    const listPharmacies = [pharmacyA, pharmacyB, pharmacyC];
+
+    async function checkInvariant(epochsList) {
+      const contractBalance = await token.balanceOf(await treasury.getAddress());
+      const distPool = await treasury.distributionPool();
+      const govRes = await treasury.governanceReserve();
+      const exclRes = await treasury.exclusionRemediationReserve();
+
+      let totalEscrowAndFlags = 0n;
+      for (const ep of epochsList) {
+        totalEscrowAndFlags += await treasury.epochEscrow(ep);
+        for (const pharm of listPharmacies) {
+          const isExcl = await treasury.isExclusionDispute(ep, pharm.address);
+          if (!isExcl) {
+            totalEscrowAndFlags += await treasury.flaggedAmount(ep, pharm.address);
+          }
+        }
+      }
+
+      const expectedBalance = distPool + govRes + exclRes + totalEscrowAndFlags;
+      expect(contractBalance).to.equal(expectedBalance);
+    }
+
+    // 1. Initial State Check
+    await checkInvariant([0n]);
+
+    // 2. Deposit Rebate
+    await seedDeposit(toWei("1000"));
+    await checkInvariant([0n]);
+
+    // 3. Setup Merkle root with two leaves: pharmacyA (100) and pharmacyB (50)
+    const leafA = merkleLeaf(pharmacyA.address, toWei("100"), toWei("100"));
+    const leafB = merkleLeaf(pharmacyB.address, toWei("50"), toWei("50"));
+    const sorted = [leafA, leafB].sort();
+    const root = ethers.keccak256(ethers.solidityPacked(["bytes32", "bytes32"], [sorted[0], sorted[1]]));
+    const proofA = sorted[0] === leafA ? [sorted[1]] : [sorted[0]];
+    const proofB = sorted[0] === leafB ? [sorted[1]] : [sorted[0]];
+
+    await treasury.connect(council).proposeRoot(root, toWei("150"));
+    await treasury.connect(council2).confirmRoot(0n);
+    await checkInvariant([0n]);
+
+    // 4. Pharmacy A claims 100
+    await treasury.connect(pharmacyA).claim(toWei("100"), toWei("100"), proofA);
+    await checkInvariant([0n]);
+
+    // 5. Pharmacy B flags a normal claim dispute for 50
+    await treasury.connect(pharmacyB).flagClaim(0n, toWei("50"), toWei("50"), proofB);
+    await checkInvariant([0n]);
+
+    // 6. Pharmacy C flags an exclusion dispute for 80
+    await treasury.connect(pharmacyC).flagExclusion(0n, toWei("80"));
+    await checkInvariant([0n]);
+
+    // 7. Fund Exclusion Remediation Reserve
+    await token.connect(depositor).approve(await treasury.getAddress(), toWei("100"));
+    await treasury.connect(depositor).fundExclusionRemediation(toWei("100"));
+    await checkInvariant([0n]);
+
+    // 8. Confirmer approves Pharmacy C's exclusion, and Council resolves it as RELEASE
+    await treasury.connect(council2).approveExclusionClaim(0n, pharmacyC.address);
+    const txExcl = await treasury.connect(council).resolveClaim(0n, pharmacyC.address, 0); // 0 is RELEASE
+    const receiptExcl = await txExcl.wait();
+    const eventExcl = receiptExcl.logs.find(x => x.fragment && x.fragment.name === "ClaimResolved");
+    expect(eventExcl).to.not.be.undefined;
+    expect(eventExcl.args[4]).to.be.true; // isExclusion parameter is true
+    await checkInvariant([0n]);
+
+    // 9. Finalize Epoch 0 and move to Epoch 1
+    await ethers.provider.send("evm_increaseTime", [24 * 60 * 60]);
+    await ethers.provider.send("evm_mine", []);
+    await treasury.connect(council).finalizeEpoch();
+    await checkInvariant([0n, 1n]);
+
+    // 10. Deposit in Epoch 1
+    await seedDeposit(toWei("500"));
+    await checkInvariant([0n, 1n]);
+
+    // 11. 30 days pass (RECALL_DELAY) to recall Epoch 0
+    await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60]);
+    await ethers.provider.send("evm_mine", []);
+
+    // Recall unclaimed from Epoch 0 (escrow is 0, but check invariant)
+    // Wait, escrow was 150 - 100 (claim) - 50 (flagged) = 0. So nothing to recall.
+    await expectRevert(
+      treasury.connect(council).recallUnclaimed(0n),
+      "NothingToRecall"
+    );
+
+    // Let's dismiss Pharmacy B's dispute (since it is flagged, it is held in flaggedAmount, and epoch 0 is finalized)
+    // Let's set epochRecalled manually or recall it by having some positive escrow.
+    // Wait, let's check: was epoch 0 recalled? No, because unclaimed escrow was 0.
+    // Let's check the invariant before dismissal
+    await checkInvariant([0n, 1n]);
+
+    // Dismiss Pharmacy B's dispute. Since epochRecalled is false, it returns to escrow.
+    const txNorm = await treasury.connect(council).resolveClaim(0n, pharmacyB.address, 2); // 2 is DISMISS
+    const receiptNorm = await txNorm.wait();
+    const eventNorm = receiptNorm.logs.find(x => x.fragment && x.fragment.name === "ClaimResolved");
+    expect(eventNorm).to.not.be.undefined;
+    expect(eventNorm.args[4]).to.be.false; // isExclusion parameter is false
+    await checkInvariant([0n, 1n]);
+
+    // Now escrow has 50 tokens. Let's recall it!
+    await treasury.connect(council).recallUnclaimed(0n);
+    await checkInvariant([0n, 1n]);
+
+    // 12. Withdraw some governance reserve
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("withdrawGovernanceReserve", [signers[6].address, toWei("5")])
+    );
+    await checkInvariant([0n, 1n]);
+  });
 });

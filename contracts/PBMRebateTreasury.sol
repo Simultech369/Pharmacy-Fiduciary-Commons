@@ -379,7 +379,8 @@ contract PBMRebateTreasury is
         uint256 indexed epoch,
         address indexed pharmacy,
         uint256 amount,
-        DisputeResolution resolution
+        DisputeResolution resolution,
+        bool isExclusion
     );
 
     event GovernanceReserveWithdrawn(address indexed recipient, uint256 amount);
@@ -923,11 +924,11 @@ contract PBMRebateTreasury is
                 uint256 patientShare  = (amount * patientClaimBP) / BP_DENOM;
                 uint256 netToPharmacy = amount - patientShare;
 
-                emit ClaimResolved(epoch, pharmacy, amount, resolution);
+                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
                 token.safeTransfer(patientFund, patientShare);
                 token.safeTransfer(pharmacy,    netToPharmacy);
             } else { // DISMISS
-                emit ClaimResolved(epoch, pharmacy, amount, resolution);
+                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
                 // No funds were locked, so no transfer occurs
             }
         } else { // Normal dispute
@@ -935,11 +936,11 @@ contract PBMRebateTreasury is
                 uint256 patientShare  = (amount * patientClaimBP) / BP_DENOM;
                 uint256 netToPharmacy = amount - patientShare;
 
-                emit ClaimResolved(epoch, pharmacy, amount, resolution);
+                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
                 token.safeTransfer(patientFund, patientShare);
                 token.safeTransfer(pharmacy,    netToPharmacy);
             } else if (resolution == DisputeResolution.SEND_TO_PATIENT_FUND) {
-                emit ClaimResolved(epoch, pharmacy, amount, resolution);
+                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
                 token.safeTransfer(patientFund, amount);
             } else { // DISMISS
                 // Correct volume and claimed total metrics to free volume caps
@@ -953,12 +954,12 @@ contract PBMRebateTreasury is
                 if (epochRecalled[epoch]) {
                     // Unclaimed funds have already been recalled.
                     // Directly send this dismissed amount to the patientFund to prevent permanent locking.
-                    emit ClaimResolved(epoch, pharmacy, amount, resolution);
+                    emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
                     token.safeTransfer(patientFund, amount);
                 } else {
                     // Return funds back to epochEscrow
                     epochEscrow[epoch] += amount;
-                    emit ClaimResolved(epoch, pharmacy, amount, resolution);
+                    emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
                 }
             }
         }
@@ -1339,6 +1340,7 @@ contract PBMRebateTreasury is
     /// @notice Current bucket balances.
     /// @return distribution   Current distributionPool balance.
     /// @return governance     Current governanceReserve balance.
+    /// @return exclusion      Current exclusionRemediationReserve balance.
     /// @return totalDeposited Cumulative total ever deposited.
     function bucketBalances()
         external
@@ -1346,10 +1348,11 @@ contract PBMRebateTreasury is
         returns (
             uint256 distribution,
             uint256 governance,
+            uint256 exclusion,
             uint256 totalDeposited
         )
     {
-        return (distributionPool, governanceReserve, totalRebateDeposited);
+        return (distributionPool, governanceReserve, exclusionRemediationReserve, totalRebateDeposited);
     }
 
     // =========================================================
