@@ -697,4 +697,101 @@ describe("PatientFundParticipatoryBudgeting", function () {
       );
     });
   });
+
+  describe("Decentralized Project Proposals", function () {
+    const title = "Clean Water Initiative";
+
+    beforeEach(async function () {
+      await pb.connect(council).startRound(toWei("1000"));
+      // Register voters[0], voters[1], voters[2]
+      await pb.connect(council).registerVotersBatch(1n, [
+        voters[0].address,
+        voters[1].address,
+        voters[2].address
+      ]);
+    });
+
+    it("allows registered voters to propose a project", async function () {
+      await pb.connect(voters[0]).proposeProject(1n, title, recipientA.address);
+      const prop = await pb.roundProposals(1n, 0n);
+      expect(prop.title).to.equal(title);
+      expect(prop.recipient).to.equal(recipientA.address);
+      expect(prop.supportCount).to.equal(0n);
+      expect(prop.registered).to.be.false;
+
+      expect(await pb.roundProposalCount(1n)).to.equal(1n);
+    });
+
+    it("reverts if non-registered voter attempts to propose", async function () {
+      await expectRevert(
+        pb.connect(attacker).proposeProject(1n, title, recipientA.address),
+        "Unauthorized"
+      );
+    });
+
+    it("allows registered voters to support proposals and auto-registers at threshold", async function () {
+      await pb.connect(council).setProjectSupportThreshold(2n);
+      await pb.connect(voters[0]).proposeProject(1n, title, recipientA.address);
+
+      // Support 1
+      await pb.connect(voters[0]).supportProposal(1n, 0n);
+      let prop = await pb.roundProposals(1n, 0n);
+      expect(prop.supportCount).to.equal(1n);
+      expect(prop.registered).to.be.false;
+
+      // Support 2 (reaches threshold of 2)
+      await pb.connect(voters[1]).supportProposal(1n, 0n);
+      prop = await pb.roundProposals(1n, 0n);
+      expect(prop.supportCount).to.equal(2n);
+      expect(prop.registered).to.be.true; // Marked as registered!
+
+      // Verify project is now in roundProjects and count has updated
+      const proj = await pb.roundProjects(1n, 0n);
+      expect(proj.title).to.equal(title);
+      expect(proj.recipient).to.equal(recipientA.address);
+      expect(proj.active).to.be.true;
+      expect((await pb.rounds(1n)).projectCount).to.equal(1n);
+    });
+
+    it("reverts if a voter double supports a proposal", async function () {
+      await pb.connect(voters[0]).proposeProject(1n, title, recipientA.address);
+      await pb.connect(voters[0]).supportProposal(1n, 0n);
+
+      await expectRevert(
+        pb.connect(voters[0]).supportProposal(1n, 0n),
+        "AlreadySupported"
+      );
+    });
+
+    it("reverts if supporting an already registered proposal", async function () {
+      await pb.connect(council).setProjectSupportThreshold(1n);
+      await pb.connect(voters[0]).proposeProject(1n, title, recipientA.address);
+
+      // Support 1 (auto-registers because threshold = 1)
+      await pb.connect(voters[0]).supportProposal(1n, 0n);
+
+      // Attempt to support again by another voter
+      await expectRevert(
+        pb.connect(voters[1]).supportProposal(1n, 0n),
+        "ProposalAlreadyRegistered"
+      );
+    });
+
+    it("reverts if supporting a non-existent proposal", async function () {
+      await expectRevert(
+        pb.connect(voters[0]).supportProposal(1n, 999n),
+        "ProposalDoesNotExist"
+      );
+    });
+
+    it("allows council to set support threshold, but restricts to council", async function () {
+      await pb.connect(council).setProjectSupportThreshold(5n);
+      expect(await pb.projectSupportThreshold()).to.equal(5n);
+
+      await expectRevert(
+        pb.connect(attacker).setProjectSupportThreshold(2n),
+        "AccessControl"
+      );
+    });
+  });
 });

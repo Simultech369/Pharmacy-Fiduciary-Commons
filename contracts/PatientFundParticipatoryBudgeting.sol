@@ -37,6 +37,13 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         bool active;
     }
 
+    struct ProjectProposal {
+        string title;
+        address recipient;
+        uint256 supportCount;
+        bool registered;
+    }
+
     struct Round {
         uint256 matchingPool;
         RoundState state;
@@ -69,6 +76,15 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     // issuerAddress => isTrusted
     mapping(address => bool) public trustedCredentialIssuers;
 
+    uint256 public projectSupportThreshold = 3;
+
+    // roundId => proposalId => ProjectProposal details
+    mapping(uint256 => mapping(uint256 => ProjectProposal)) public roundProposals;
+    // roundId => proposalCount
+    mapping(uint256 => uint256) public roundProposalCount;
+    // roundId => proposalId => voter => hasSupported
+    mapping(uint256 => mapping(uint256 => mapping(address => bool))) public hasSupportedProposal;
+
     // =========================================================
     // EVENTS
     // =========================================================
@@ -88,6 +104,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     event MatchDistributed(uint256 indexed roundId, uint256 indexed projectId, address indexed recipient, uint256 amount);
     event RelayerVerifierUpdated(address indexed newVerifier);
     event Sweep(address indexed tokenAddr, address indexed recipient, uint256 amount);
+    event ProjectProposed(uint256 indexed roundId, uint256 indexed proposalId, string title, address indexed recipient);
+    event ProposalSupported(uint256 indexed roundId, uint256 indexed proposalId, address indexed supporter, uint256 currentSupport);
+    event ProjectSupportThresholdUpdated(uint256 newThreshold);
 
     // =========================================================
     // CUSTOM ERRORS
@@ -108,6 +127,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     error RoundAlreadyActive();
     error CannotSweepMatchingToken();
     error GuardianMustDifferFromCouncil();
+    error ProposalAlreadyRegistered();
+    error AlreadySupported();
+    error ProposalDoesNotExist();
 
     // =========================================================
     // CONSTRUCTOR
@@ -260,11 +282,66 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         emit RegistrationAuthorizationUsed(roundId, msg.sender, credentialHash, policyVersion, block.timestamp);
     }
 
+    function setProjectSupportThreshold(uint256 threshold) external onlyRole(COUNCIL_ROLE) whenNotPaused {
+        projectSupportThreshold = threshold;
+        emit ProjectSupportThresholdUpdated(threshold);
+    }
+
+    /**
+     * @notice Allows a registered voter to propose a new project for the active round.
+     */
+    function proposeProject(uint256 roundId, string calldata title, address recipient) external whenNotPaused {
+        if (!registeredVoters[roundId][msg.sender]) revert Unauthorized();
+        if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
+        if (recipient == address(0)) revert InvalidAddress();
+        if (bytes(title).length == 0) revert InvalidAddress();
+
+        uint256 proposalId = roundProposalCount[roundId];
+        roundProposals[roundId][proposalId] = ProjectProposal({
+            title: title,
+            recipient: recipient,
+            supportCount: 0,
+            registered: false
+        });
+
+        roundProposalCount[roundId] += 1;
+
+        emit ProjectProposed(roundId, proposalId, title, recipient);
+    }
+
+    /**
+     * @notice Allows a registered voter to support a proposed project.
+     *         Once a proposal reaches the projectSupportThreshold, it is registered.
+     */
+    function supportProposal(uint256 roundId, uint256 proposalId) external whenNotPaused {
+        if (!registeredVoters[roundId][msg.sender]) revert Unauthorized();
+        if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
+        if (proposalId >= roundProposalCount[roundId]) revert ProposalDoesNotExist();
+
+        ProjectProposal storage prop = roundProposals[roundId][proposalId];
+        if (prop.registered) revert ProposalAlreadyRegistered();
+        if (hasSupportedProposal[roundId][proposalId][msg.sender]) revert AlreadySupported();
+
+        hasSupportedProposal[roundId][proposalId][msg.sender] = true;
+        prop.supportCount += 1;
+
+        emit ProposalSupported(roundId, proposalId, msg.sender, prop.supportCount);
+
+        if (prop.supportCount >= projectSupportThreshold) {
+            prop.registered = true;
+            _registerProject(roundId, prop.title, prop.recipient);
+        }
+    }
+
     function registerProject(uint256 roundId, string calldata title, address recipient) external onlyRole(COUNCIL_ROLE) whenNotPaused {
         if (recipient == address(0)) revert InvalidAddress();
         if (bytes(title).length == 0) revert InvalidAddress();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
 
+        _registerProject(roundId, title, recipient);
+    }
+
+    function _registerProject(uint256 roundId, string memory title, address recipient) internal {
         Round storage r = rounds[roundId];
         if (r.projectCount >= MAX_PROJECTS_PER_ROUND) revert ProjectLimitReached();
         uint256 projectId = r.projectCount;
