@@ -8,6 +8,7 @@ describe("PharmacyMutualCredit", function () {
   let pharmacyB;
   let advocate;
   let attacker;
+  let guardian;
 
   function errorText(err) {
     return [
@@ -37,10 +38,10 @@ describe("PharmacyMutualCredit", function () {
   }
 
   beforeEach(async function () {
-    [council, pharmacyA, pharmacyB, advocate, attacker] = await ethers.getSigners();
+    [council, pharmacyA, pharmacyB, advocate, attacker, guardian] = await ethers.getSigners();
 
     const PharmacyMutualCredit = await ethers.getContractFactory("PharmacyMutualCredit");
-    credit = await PharmacyMutualCredit.deploy(council.address);
+    credit = await PharmacyMutualCredit.deploy(council.address, guardian.address);
     await credit.waitForDeployment();
   });
 
@@ -327,6 +328,69 @@ describe("PharmacyMutualCredit", function () {
       await credit.connect(pharmacyA).redeemVoucher(voucherId);
       expect(await credit.balances(pharmacyA.address)).to.equal(amount);
       expect(await credit.balances(pharmacyB.address)).to.equal(0n);
+    });
+  });
+
+  describe("Pausable & Sweep Enhancements", function () {
+    it("enforces constructor guardian and council separation", async function () {
+      const PharmacyMutualCredit = await ethers.getContractFactory("PharmacyMutualCredit");
+      await expectRevert(
+        PharmacyMutualCredit.deploy(council.address, council.address),
+        "GuardianMustDifferFromCouncil"
+      );
+    });
+
+    it("allows guardian to pause and blocks all credit and voucher actions, then council can unpause", async function () {
+      await credit.connect(council).registerParticipant(pharmacyA.address, 1000n);
+      await credit.connect(council).registerParticipant(pharmacyB.address, 1000n);
+
+      // Guardian pauses
+      await credit.connect(guardian).pause();
+
+      // Check actions revert when paused
+      await expectRevert(
+        credit.connect(council).registerParticipant(advocate.address, 1000n),
+        "Pausable: paused"
+      );
+      await expectRevert(
+        credit.connect(pharmacyA).transferCredit(pharmacyB.address, 100n),
+        "Pausable: paused"
+      );
+
+      // Attacker cannot unpause
+      await expectRevert(
+        credit.connect(attacker).unpause(),
+        "AccessControl"
+      );
+
+      // Council unpauses
+      await credit.connect(council).unpause();
+
+      // Actions now succeed
+      await credit.connect(pharmacyA).transferCredit(pharmacyB.address, 100n);
+      expect(await credit.balances(pharmacyA.address)).to.equal(-100n);
+      expect(await credit.balances(pharmacyB.address)).to.equal(100n);
+    });
+
+    it("allows council to sweep accidental ERC-20 tokens", async function () {
+      const MockERC20 = await ethers.getContractFactory("MockERC20");
+      const randomToken = await MockERC20.deploy("Random Token", "RDM", 18);
+      await randomToken.waitForDeployment();
+
+      await randomToken.mint(await credit.getAddress(), 1000n);
+      expect(await randomToken.balanceOf(await credit.getAddress())).to.equal(1000n);
+
+      // Attacker cannot sweep
+      await expectRevert(
+        credit.connect(attacker).sweep(await randomToken.getAddress(), 1000n),
+        "AccessControl"
+      );
+
+      // Council sweeps
+      const councilBefore = await randomToken.balanceOf(council.address);
+      await credit.connect(council).sweep(await randomToken.getAddress(), 1000n);
+      const councilAfter = await randomToken.balanceOf(council.address);
+      expect(councilAfter - councilBefore).to.equal(1000n);
     });
   });
 });

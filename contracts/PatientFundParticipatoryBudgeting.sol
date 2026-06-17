@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 /**
  * @title  PatientFundParticipatoryBudgeting
@@ -13,11 +14,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @notice Governs the allocation of the Patient Fund matching pool using squared vote weights.
  *         Credential-gated voting enables community members to vote on local health projects.
  */
-contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
+contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     using SafeERC20 for IERC20;
     using ECDSA for bytes32;
 
     bytes32 public constant COUNCIL_ROLE = keccak256("COUNCIL_ROLE");
+    bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
     uint256 public constant MAX_PROJECTS_PER_ROUND = 50;
     bytes32 public constant REGISTRATION_TYPEHASH = keccak256(
         "VoterRegistration(uint256 roundId,address voter,uint256 nonce,bytes32 credentialHash,bytes32 policyVersion,uint256 deadline)"
@@ -77,6 +79,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
     event VoteCast(uint256 indexed roundId, uint256 indexed projectId, address indexed voter);
     event MatchDistributed(uint256 indexed roundId, uint256 indexed projectId, address indexed recipient, uint256 amount);
     event RelayerVerifierUpdated(address indexed newVerifier);
+    event Sweep(address indexed tokenAddr, address indexed recipient, uint256 amount);
 
     // =========================================================
     // CUSTOM ERRORS
@@ -94,27 +97,36 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
     error InvalidAuthorizationMetadata();
     error UnsupportedCredentialPolicy();
     error ProjectLimitReached();
+    error RoundAlreadyActive();
+    error CannotSweepMatchingToken();
+    error GuardianMustDifferFromCouncil();
 
     // =========================================================
     // CONSTRUCTOR
     // =========================================================
-    constructor(address _token, address _council)
+    constructor(address _token, address _council, address _guardian)
         EIP712("Pharmacy Fiduciary Commons", "1")
     {
         if (_token == address(0)) revert InvalidAddress();
         if (_council == address(0)) revert InvalidAddress();
+        if (_guardian == address(0)) revert InvalidAddress();
+        if (_guardian == _council) revert GuardianMustDifferFromCouncil();
 
         token = IERC20(_token);
         _grantRole(DEFAULT_ADMIN_ROLE, _council);
         _grantRole(COUNCIL_ROLE, _council);
+        _grantRole(GUARDIAN_ROLE, _guardian);
     }
 
     // =========================================================
     // ROUND ADMINISTRATION (COUNCIL ONLY)
     // =========================================================
 
-    function startRound(uint256 matchingPoolAmount) external onlyRole(COUNCIL_ROLE) {
+    function startRound(uint256 matchingPoolAmount) external onlyRole(COUNCIL_ROLE) whenNotPaused {
         if (matchingPoolAmount == 0) revert ZeroAmount();
+        if (currentRound > 0 && rounds[currentRound].state != RoundState.Finalized) {
+            revert RoundAlreadyActive();
+        }
 
         currentRound += 1;
         uint256 roundId = currentRound;
@@ -130,13 +142,13 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
         emit RoundStarted(roundId, matchingPoolAmount);
     }
 
-    function setRelayerVerifier(address _newVerifier) external onlyRole(COUNCIL_ROLE) {
+    function setRelayerVerifier(address _newVerifier) external onlyRole(COUNCIL_ROLE) whenNotPaused {
         if (_newVerifier == address(0)) revert InvalidAddress();
         relayerVerifier = _newVerifier;
         emit RelayerVerifierUpdated(_newVerifier);
     }
 
-    function registerVoter(uint256 roundId, address voter, bool status) external onlyRole(COUNCIL_ROLE) {
+    function registerVoter(uint256 roundId, address voter, bool status) external onlyRole(COUNCIL_ROLE) whenNotPaused {
         if (voter == address(0)) revert InvalidAddress();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
 
@@ -145,7 +157,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
         emit VoterRegistered(roundId, voter, status);
     }
 
-    function registerVotersBatch(uint256 roundId, address[] calldata voters) external onlyRole(COUNCIL_ROLE) {
+    function registerVotersBatch(uint256 roundId, address[] calldata voters) external onlyRole(COUNCIL_ROLE) whenNotPaused {
         if (voters.length == 0) revert ArrayEmpty();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
 
@@ -165,7 +177,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
         bytes32 policyVersion,
         uint256 deadline,
         bytes calldata signature
-    ) external {
+    ) external whenNotPaused {
         if (voter == address(0)) revert InvalidAddress();
         if (msg.sender != voter) revert Unauthorized();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
@@ -201,7 +213,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
         emit RegistrationAuthorizationUsed(roundId, voter, credentialHash, policyVersion, deadline);
     }
 
-    function registerProject(uint256 roundId, string calldata title, address recipient) external onlyRole(COUNCIL_ROLE) {
+    function registerProject(uint256 roundId, string calldata title, address recipient) external onlyRole(COUNCIL_ROLE) whenNotPaused {
         if (recipient == address(0)) revert InvalidAddress();
         if (bytes(title).length == 0) revert InvalidAddress();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
@@ -226,7 +238,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
     // VOTING (REGISTERED VOTERS ONLY)
     // =========================================================
 
-    function castVote(uint256 roundId, uint256 projectId) external {
+    function castVote(uint256 roundId, uint256 projectId) external whenNotPaused {
         if (!registeredVoters[roundId][msg.sender]) revert Unauthorized();
         
         Round storage r = rounds[roundId];
@@ -252,7 +264,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
      * @dev    Weight of project i is (votes_i)^2. Proportional share is Weight_i / TotalWeight.
      *         If totalWeight is 0, the matching pool is returned to the council address to prevent locking.
      */
-    function finalizeRound(uint256 roundId) external onlyRole(COUNCIL_ROLE) {
+    function finalizeRound(uint256 roundId) external onlyRole(COUNCIL_ROLE) whenNotPaused {
         Round storage r = rounds[roundId];
         if (r.state != RoundState.Active) revert WrongRoundState();
 
@@ -300,5 +312,29 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712 {
         }
 
         emit RoundFinalized(roundId, totalWeight);
+    }
+
+    // =========================================================
+    // EMERGENCY CONTROL
+    // =========================================================
+
+    function pause() external onlyRole(GUARDIAN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(COUNCIL_ROLE) {
+        _unpause();
+    }
+
+    // =========================================================
+    // RECOVERY
+    // =========================================================
+
+    function sweep(address _token, uint256 _amount) external onlyRole(COUNCIL_ROLE) {
+        if (_token == address(0)) revert InvalidAddress();
+        if (_amount == 0) revert ZeroAmount();
+        if (_token == address(token)) revert CannotSweepMatchingToken();
+        IERC20(_token).safeTransfer(msg.sender, _amount);
+        emit Sweep(_token, msg.sender, _amount);
     }
 }

@@ -11,6 +11,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
   let recipientB;
   let voters;
   let attacker;
+  let guardian;
 
   function errorText(err) {
     return [
@@ -46,13 +47,14 @@ describe("PatientFundParticipatoryBudgeting", function () {
     recipientB = signers[2];
     attacker = signers[3];
     voters = signers.slice(4, 11); // 7 voters available
+    guardian = signers[11];
 
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     token = await MockERC20.deploy("Mock DAI", "mDAI", 18);
     await token.waitForDeployment();
 
     const PB = await ethers.getContractFactory("PatientFundParticipatoryBudgeting");
-    pb = await PB.deploy(await token.getAddress(), council.address);
+    pb = await PB.deploy(await token.getAddress(), council.address, guardian.address);
     await pb.waitForDeployment();
 
     // Mint tokens to council and approve PB contract
@@ -415,6 +417,83 @@ describe("PatientFundParticipatoryBudgeting", function () {
           1n, voter.address, credentialHash, unsupportedPolicy, deadline, signature
         ),
         "UnsupportedCredentialPolicy"
+      );
+    });
+  });
+
+  describe("Active Round, Pausable & Sweep Enhancements", function () {
+    it("prevents starting a new round if the current round is still active", async function () {
+      await pb.connect(council).startRound(toWei("1000"));
+      // Try starting another round while it's active
+      await expectRevert(
+        pb.connect(council).startRound(toWei("1000")),
+        "RoundAlreadyActive"
+      );
+    });
+
+    it("enforces constructor guardian and council separation", async function () {
+      const PB = await ethers.getContractFactory("PatientFundParticipatoryBudgeting");
+      await expectRevert(
+        PB.deploy(await token.getAddress(), council.address, council.address),
+        "GuardianMustDifferFromCouncil"
+      );
+    });
+
+    it("allows guardian to pause and blocks all state changes, then council can unpause", async function () {
+      await pb.connect(council).startRound(toWei("1000"));
+      await pb.connect(council).registerVoter(1n, voters[0].address, true);
+
+      // Guardian pauses
+      await pb.connect(guardian).pause();
+
+      // Check actions revert when paused
+      await expectRevert(
+        pb.connect(council).registerProject(1n, "Solar Grid", recipientA.address),
+        "Pausable: paused"
+      );
+      await expectRevert(
+        pb.connect(voters[0]).castVote(1n, 0n),
+        "Pausable: paused"
+      );
+
+      // Attacker cannot unpause
+      await expectRevert(
+        pb.connect(attacker).unpause(),
+        "AccessControl"
+      );
+
+      // Council unpauses
+      await pb.connect(council).unpause();
+
+      // Actions now succeed
+      await pb.connect(council).registerProject(1n, "Solar Grid", recipientA.address);
+      await pb.connect(voters[0]).castVote(1n, 0n);
+    });
+
+    it("allows council to sweep accidental non-matching ERC-20 tokens, but not matching pool token", async function () {
+      const MockERC20 = await ethers.getContractFactory("MockERC20");
+      const badToken = await MockERC20.deploy("Bad Token", "BAD", 18);
+      await badToken.waitForDeployment();
+
+      await badToken.mint(await pb.getAddress(), toWei("500"));
+      expect(await badToken.balanceOf(await pb.getAddress())).to.equal(toWei("500"));
+
+      // Attacker cannot sweep
+      await expectRevert(
+        pb.connect(attacker).sweep(await badToken.getAddress(), toWei("500")),
+        "AccessControl"
+      );
+
+      // Council sweeps non-matching token
+      const councilBefore = await badToken.balanceOf(council.address);
+      await pb.connect(council).sweep(await badToken.getAddress(), toWei("500"));
+      const councilAfter = await badToken.balanceOf(council.address);
+      expect(councilAfter - councilBefore).to.equal(toWei("500"));
+
+      // Cannot sweep the matching token
+      await expectRevert(
+        pb.connect(council).sweep(await token.getAddress(), toWei("500")),
+        "CannotSweepMatchingToken"
       );
     });
   });

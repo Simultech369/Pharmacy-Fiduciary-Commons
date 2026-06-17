@@ -2,6 +2,9 @@
 pragma solidity 0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
 /**
  * @title  PharmacyMutualCredit
@@ -9,9 +12,11 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
  * @notice Zero-sum mutual credit clearing ledger and community health voucher engine.
  *         Stabilizes independent pharmacy liquidity during reimbursement delays.
  */
-contract PharmacyMutualCredit is AccessControl {
+contract PharmacyMutualCredit is AccessControl, Pausable {
+    using SafeERC20 for IERC20;
 
     bytes32 public constant COUNCIL_ROLE = keccak256("COUNCIL_ROLE");
+    bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
 
     struct Voucher {
         address issuer;
@@ -47,6 +52,7 @@ contract PharmacyMutualCredit is AccessControl {
     event VoucherCreated(bytes32 indexed voucherId, address indexed issuer, address indexed recipient, uint256 amount, uint256 expiry);
     event VoucherRedeemed(bytes32 indexed voucherId, address indexed redeemer, address indexed issuer, uint256 amount);
     event VoucherReservationReleased(bytes32 indexed voucherId, address indexed issuer, uint256 amount);
+    event Sweep(address indexed tokenAddr, address indexed recipient, uint256 amount);
 
     // =========================================================
     // CUSTOM ERRORS
@@ -61,14 +67,18 @@ contract PharmacyMutualCredit is AccessControl {
     error Unauthorized();
     error InvalidAddress();
     error VoucherNotExpired();
+    error GuardianMustDifferFromCouncil();
 
     // =========================================================
     // CONSTRUCTOR
     // =========================================================
-    constructor(address _council) {
+    constructor(address _council, address _guardian) {
         if (_council == address(0)) revert InvalidAddress();
+        if (_guardian == address(0)) revert InvalidAddress();
+        if (_guardian == _council) revert GuardianMustDifferFromCouncil();
         _grantRole(DEFAULT_ADMIN_ROLE, _council);
         _grantRole(COUNCIL_ROLE, _council);
+        _grantRole(GUARDIAN_ROLE, _guardian);
     }
 
     // =========================================================
@@ -78,6 +88,7 @@ contract PharmacyMutualCredit is AccessControl {
     function registerParticipant(address participant, uint256 initialCreditLimit)
         external
         onlyRole(COUNCIL_ROLE)
+        whenNotPaused
     {
         if (participant == address(0)) revert InvalidAddress();
         if (registered[participant]) revert AlreadyRegistered();
@@ -91,6 +102,7 @@ contract PharmacyMutualCredit is AccessControl {
     function updateCreditLimit(address participant, uint256 newCreditLimit)
         external
         onlyRole(COUNCIL_ROLE)
+        whenNotPaused
     {
         if (!registered[participant]) revert NotRegistered();
         if (!_capacityCovers(participant, 0, newCreditLimit)) revert CreditLimitExceeded();
@@ -102,6 +114,7 @@ contract PharmacyMutualCredit is AccessControl {
     function updateIssuerStatus(address issuer, bool status)
         external
         onlyRole(COUNCIL_ROLE)
+        whenNotPaused
     {
         if (issuer == address(0)) revert InvalidAddress();
         if (!registered[issuer]) revert NotRegistered();
@@ -118,7 +131,7 @@ contract PharmacyMutualCredit is AccessControl {
      * @notice Transfer credit from caller to recipient.
      * @dev    Enforces that the sender's balance does not drop below their negative creditLimit.
      */
-    function transferCredit(address recipient, uint256 amount) external {
+    function transferCredit(address recipient, uint256 amount) external whenNotPaused {
         if (!registered[msg.sender]) revert NotRegistered();
         if (!registered[recipient]) revert NotRegistered();
         if (amount == 0) revert ZeroAmount();
@@ -138,7 +151,7 @@ contract PharmacyMutualCredit is AccessControl {
     /**
      * @notice Registers a new voucher that can be redeemed at a pharmacy.
      */
-    function createVoucher(bytes32 voucherId, address recipient, uint256 amount, uint256 expiry) external {
+    function createVoucher(bytes32 voucherId, address recipient, uint256 amount, uint256 expiry) external whenNotPaused {
         if (!registered[msg.sender]) revert NotRegistered();
         if (!authorizedIssuers[msg.sender]) revert Unauthorized();
         if (recipient == address(0)) revert InvalidAddress();
@@ -164,7 +177,7 @@ contract PharmacyMutualCredit is AccessControl {
      * @notice Redeems a registered voucher, debiting the issuer and crediting the pharmacy.
      * @dev    Creation reserves issuer capacity, so valid vouchers clear without a second credit decision.
      */
-    function redeemVoucher(bytes32 voucherId) external {
+    function redeemVoucher(bytes32 voucherId) external whenNotPaused {
         if (!registered[msg.sender]) revert NotRegistered();
         
         Voucher storage v = vouchers[voucherId];
@@ -192,7 +205,7 @@ contract PharmacyMutualCredit is AccessControl {
      * @notice Releases capacity reserved by an expired, unredeemed voucher.
      * @dev Anyone may perform expiry cleanup; no value is transferred.
      */
-    function releaseExpiredVoucher(bytes32 voucherId) external {
+    function releaseExpiredVoucher(bytes32 voucherId) external whenNotPaused {
         Voucher storage v = vouchers[voucherId];
         if (v.issuer == address(0)) revert VoucherDoesNotExist();
         if (v.redeemed) revert VoucherAlreadyRedeemed();
@@ -208,7 +221,7 @@ contract PharmacyMutualCredit is AccessControl {
      * @notice Releases capacity reserved by multiple expired, unredeemed vouchers in batch.
      * @dev Anyone may perform expiry cleanup; no value is transferred.
      */
-    function releaseExpiredVouchersBatch(bytes32[] calldata voucherIds) external {
+    function releaseExpiredVouchersBatch(bytes32[] calldata voucherIds) external whenNotPaused {
         for (uint256 i = 0; i < voucherIds.length; i++) {
             bytes32 voucherId = voucherIds[i];
             Voucher storage v = vouchers[voucherId];
@@ -238,5 +251,28 @@ contract PharmacyMutualCredit is AccessControl {
 
         int256 committed = int256(reservedVoucherCredit[participant] + additional);
         return balances[participant] - committed >= -int256(limit);
+    }
+
+    // =========================================================
+    // EMERGENCY CONTROL
+    // =========================================================
+
+    function pause() external onlyRole(GUARDIAN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(COUNCIL_ROLE) {
+        _unpause();
+    }
+
+    // =========================================================
+    // RECOVERY
+    // =========================================================
+
+    function sweep(address _token, uint256 _amount) external onlyRole(COUNCIL_ROLE) {
+        if (_token == address(0)) revert InvalidAddress();
+        if (_amount == 0) revert ZeroAmount();
+        IERC20(_token).safeTransfer(msg.sender, _amount);
+        emit Sweep(_token, msg.sender, _amount);
     }
 }

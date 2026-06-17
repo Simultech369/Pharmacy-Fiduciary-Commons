@@ -63,7 +63,7 @@ describe("Portability Export Tool", function () {
 
     // Deploy Participatory Budgeting
     const PB = await ethers.getContractFactory("PatientFundParticipatoryBudgeting");
-    pb = await PB.deploy(await token.getAddress(), council.address);
+    pb = await PB.deploy(await token.getAddress(), council.address, guardian.address);
     await pb.waitForDeployment();
 
     // Mint tokens to council and approve PB contract
