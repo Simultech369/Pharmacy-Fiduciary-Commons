@@ -63,6 +63,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     // roundId => voter => next relayer authorization nonce
     mapping(uint256 => mapping(address => uint256)) public registrationNonces;
 
+    // roundId => projectId => matching share amount
+    mapping(uint256 => mapping(uint256 => uint256)) public roundProjectShares;
+
     // =========================================================
     // EVENTS
     // =========================================================
@@ -292,17 +295,15 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
             return;
         }
 
-        // 3. Distribute matching pool proportionally
+        // 3. Record matching shares proportionally
         uint256 distributed = 0;
         for (uint256 i = 0; i < count; i++) {
             if (weights[i] > 0) {
                 // Calculate proportional share
                 uint256 share = (pool * weights[i]) / totalWeight;
                 if (share > 0) {
-                    address recipient = roundProjects[roundId][i].recipient;
-                    token.safeTransfer(recipient, share);
+                    roundProjectShares[roundId][i] = share;
                     distributed += share;
-                    emit MatchDistributed(roundId, i, recipient, share);
                 }
             }
         }
@@ -314,6 +315,24 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         }
 
         emit RoundFinalized(roundId, totalWeight);
+    }
+
+    /**
+     * @notice Allows claiming calculated matching pool shares for a finalized round.
+     * @dev    Enforces pull-payment pattern to prevent gas exhaustion.
+     */
+    function claimMatchShare(uint256 roundId, uint256 projectId) external whenNotPaused {
+        Round storage r = rounds[roundId];
+        if (r.state != RoundState.Finalized) revert WrongRoundState();
+
+        uint256 share = roundProjectShares[roundId][projectId];
+        if (share == 0) revert ZeroAmount();
+
+        roundProjectShares[roundId][projectId] = 0;
+        address recipient = roundProjects[roundId][projectId].recipient;
+        token.safeTransfer(recipient, share);
+
+        emit MatchDistributed(roundId, projectId, recipient, share);
     }
 
     // =========================================================

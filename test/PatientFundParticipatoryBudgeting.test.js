@@ -170,7 +170,16 @@ describe("PatientFundParticipatoryBudgeting", function () {
       const balBeforeA = await token.balanceOf(recipientA.address);
       const balBeforeB = await token.balanceOf(recipientB.address);
 
+      // 1. Finalize round - should not distribute directly
       await pb.connect(council).finalizeRound(1n);
+
+      // Verify no balance changes yet
+      expect(await token.balanceOf(recipientA.address)).to.equal(balBeforeA);
+      expect(await token.balanceOf(recipientB.address)).to.equal(balBeforeB);
+
+      // 2. Claim match share for project 0 (A) and project 1 (B)
+      await pb.claimMatchShare(1n, 0n);
+      await pb.claimMatchShare(1n, 1n);
 
       const balAfterA = await token.balanceOf(recipientA.address);
       const balAfterB = await token.balanceOf(recipientB.address);
@@ -180,6 +189,38 @@ describe("PatientFundParticipatoryBudgeting", function () {
 
       const r = await pb.rounds(1n);
       expect(r.state).to.equal(2n); // RoundState.Finalized is enum value 2
+    });
+
+    it("reverts claims made before round is finalized", async function () {
+      // Voter casts vote
+      await pb.connect(voters[0]).castVote(1n, 0n);
+      
+      // Attempting to claim before finalization should revert
+      await expectRevert(
+        pb.claimMatchShare(1n, 0n),
+        "WrongRoundState"
+      );
+    });
+
+    it("reverts double claims and claims for zero shares", async function () {
+      // Voter casts vote for project 0
+      await pb.connect(voters[0]).castVote(1n, 0n);
+      await pb.connect(council).finalizeRound(1n);
+
+      // Claim first time succeeds
+      await pb.claimMatchShare(1n, 0n);
+
+      // Claim second time reverts
+      await expectRevert(
+        pb.claimMatchShare(1n, 0n),
+        "ZeroAmount"
+      );
+
+      // Claim for project 1 (0 votes, so 0 share) reverts
+      await expectRevert(
+        pb.claimMatchShare(1n, 1n),
+        "ZeroAmount"
+      );
     });
 
     it("returns matching pool to council if no votes are cast", async function () {
