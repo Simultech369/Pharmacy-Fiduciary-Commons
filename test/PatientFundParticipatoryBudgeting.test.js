@@ -496,5 +496,59 @@ describe("PatientFundParticipatoryBudgeting", function () {
         "CannotSweepMatchingToken"
       );
     });
+
+    it("refunds dust and zero-vote pools to council address, not msg.sender", async function () {
+      // Grant COUNCIL_ROLE to another signer (recipientA)
+      const councilRole = await pb.COUNCIL_ROLE();
+      await pb.connect(council).grantRole(councilRole, recipientA.address);
+
+      // Start a round using council
+      await pb.connect(council).startRound(toWei("1000"));
+
+      // 1. Test zero-vote refund: finalize round (0 votes cast) using recipientA
+      const councilBalBefore = await token.balanceOf(council.address);
+      const recipientABalBefore = await token.balanceOf(recipientA.address);
+
+      // RecipientA finalizes the round
+      await pb.connect(recipientA).finalizeRound(1n);
+
+      const councilBalAfter = await token.balanceOf(council.address);
+      const recipientABalAfter = await token.balanceOf(recipientA.address);
+
+      // The refund should go to council, not recipientA
+      expect(councilBalAfter - councilBalBefore).to.equal(toWei("1000"));
+      expect(recipientABalAfter).to.equal(recipientABalBefore);
+
+      // 2. Test dust refund: Start a second round
+      await pb.connect(council).startRound(toWei("1000")); // Round 2
+      await pb.connect(council).registerProject(2n, "Project A", recipientB.address);
+      await pb.connect(council).registerProject(2n, "Project B", recipientB.address);
+      await pb.connect(council).registerProject(2n, "Project C", recipientB.address);
+      await pb.connect(council).registerVotersBatch(2n, [voters[0].address, voters[1].address, voters[2].address]);
+
+      // Project 0 gets 1 vote. Weight = 1.
+      // Project 1 gets 1 vote. Weight = 1.
+      // Project 2 gets 1 vote. Weight = 1.
+      // Total weight = 3.
+      // 1000 * 1 / 3 = 333.333333333333333333
+      // Total distributed = 999.999999999999999999
+      // Dust = 1 wei
+      await pb.connect(voters[0]).castVote(2n, 0n);
+      await pb.connect(voters[1]).castVote(2n, 1n);
+      await pb.connect(voters[2]).castVote(2n, 2n);
+
+      const councilBalBeforeDust = await token.balanceOf(council.address);
+      const recipientABalBeforeDust = await token.balanceOf(recipientA.address);
+
+      // Finalize round 2 using recipientA
+      await pb.connect(recipientA).finalizeRound(2n);
+
+      const councilBalAfterDust = await token.balanceOf(council.address);
+      const recipientABalAfterDust = await token.balanceOf(recipientA.address);
+
+      // The dust (1 wei) should go to council, not recipientA
+      expect(councilBalAfterDust - councilBalBeforeDust).to.equal(1n); // 1 wei
+      expect(recipientABalAfterDust).to.equal(recipientABalBeforeDust);
+    });
   });
 });

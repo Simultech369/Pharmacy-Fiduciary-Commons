@@ -803,4 +803,392 @@ describe("PBMRebateTreasury security baseline", function () {
     );
     await checkInvariant([0n, 1n]);
   });
+
+  describe("Global accounting aggregates & scenario fuzzer", function () {
+    it("correctly updates totalEscrowed, totalFlaggedNormal, and totalFlaggedExclusion through standard flows", async function () {
+      // Initially all should be 0
+      let acc = await treasury.globalAccounting();
+      expect(acc.escrowed).to.equal(0n);
+      expect(acc.flaggedNormal).to.equal(0n);
+      expect(acc.flaggedExclusion).to.equal(0n);
+
+      // Deposit and confirm root
+      await seedDeposit(toWei("1000"));
+      const amtA = toWei("100");
+      const amtB = toWei("50");
+      const { root, proofA, proofB } = makeTwoLeafTree(
+        pharmacy.address, amtA, amtA,
+        council2.address, amtB, amtB
+      );
+
+      await treasury.connect(council).proposeRoot(root, toWei("150"));
+      await treasury.connect(council2).confirmRoot(0n);
+
+      acc = await treasury.globalAccounting();
+      expect(acc.escrowed).to.equal(toWei("150"));
+      expect(acc.flaggedNormal).to.equal(0n);
+      expect(acc.flaggedExclusion).to.equal(0n);
+
+      // Claim A
+      await treasury.connect(pharmacy).claim(amtA, amtA, proofA);
+      acc = await treasury.globalAccounting();
+      expect(acc.escrowed).to.equal(toWei("50"));
+      expect(acc.flaggedNormal).to.equal(0n);
+      expect(acc.flaggedExclusion).to.equal(0n);
+
+      // Flag B (normal claim)
+      await treasury.connect(council2).flagClaim(0n, amtB, amtB, proofB);
+      acc = await treasury.globalAccounting();
+      expect(acc.escrowed).to.equal(0n);
+      expect(acc.flaggedNormal).to.equal(amtB);
+      expect(acc.flaggedExclusion).to.equal(0n);
+
+      // Flag C (exclusion claim) - need to use another pharmacy
+      const signers = await ethers.getSigners();
+      const pharmacyC = signers[8];
+      await treasury.connect(pharmacyC).flagExclusion(0n, toWei("80"));
+      acc = await treasury.globalAccounting();
+      expect(acc.escrowed).to.equal(0n);
+      expect(acc.flaggedNormal).to.equal(amtB);
+      expect(acc.flaggedExclusion).to.equal(toWei("80"));
+
+      // Resolve B as DISMISS (since epochRecalled is false, it returns to escrow)
+      await treasury.connect(council).resolveClaim(0n, council2.address, 2); // DISMISS
+      acc = await treasury.globalAccounting();
+      expect(acc.escrowed).to.equal(amtB);
+      expect(acc.flaggedNormal).to.equal(0n);
+      expect(acc.flaggedExclusion).to.equal(toWei("80"));
+
+      // Resolve C as DISMISS (exclusion)
+      await treasury.connect(council).resolveClaim(0n, pharmacyC.address, 2); // DISMISS
+      acc = await treasury.globalAccounting();
+      expect(acc.escrowed).to.equal(amtB);
+      expect(acc.flaggedNormal).to.equal(0n);
+      expect(acc.flaggedExclusion).to.equal(0n);
+
+      // Finalize epoch 0
+      const minDuration = 24 * 60 * 60; // 1 day
+      await ethers.provider.send("evm_increaseTime", [minDuration]);
+      await ethers.provider.send("evm_mine", []);
+      await treasury.connect(council).finalizeEpoch();
+
+      // 30 days pass to recall
+      const recallDelay = 30 * 24 * 60 * 60;
+      await ethers.provider.send("evm_increaseTime", [recallDelay]);
+      await ethers.provider.send("evm_mine", []);
+
+      // Recall unclaimed
+      await treasury.connect(council).recallUnclaimed(0n);
+      acc = await treasury.globalAccounting();
+      expect(acc.escrowed).to.equal(0n);
+      expect(acc.flaggedNormal).to.equal(0n);
+      expect(acc.flaggedExclusion).to.equal(0n);
+    });
+
+    it("runs 100+ randomized state transitions and asserts the core balance invariant and global accounting matching at every step", async function () {
+      const signers = await ethers.getSigners();
+      // Use signers 12 to 20 for fuzzed pharmacies to prevent collisions
+      const pharmacies = signers.slice(12, 20);
+
+      // Pre-fund the pharmacies
+      for (const p of pharmacies) {
+        await token.mint(p.address, toWei("1000"));
+      }
+
+      // Mint plenty of tokens to depositor for the fuzzed deposits
+      await token.mint(depositor.address, toWei("10000000"));
+
+      // We will track the expected values off-chain to compare with the contract's public state variables
+      let expectedEscrowed = 0n;
+      let expectedFlaggedNormal = 0n;
+      let expectedFlaggedExclusion = 0n;
+
+      // Ensure we have some base deposits
+      await seedDeposit(toWei("50000"));
+
+      let activeEpoch = 0n;
+      let epochRootAmount = 0n;
+
+      // Track active disputes: epoch -> pharmacyAddress -> { amount, isExclusion, approved }
+      const activeDisputes = {};
+
+      // Helper to generate Merkle proofs for active pharmacies in activeEpoch
+      const allocation = toWei("100");
+      const leaves = pharmacies.map(p => merkleLeaf(p.address, allocation, allocation));
+
+      function buildTree(leavesArray) {
+        let level = [...leavesArray];
+        const tree = [level];
+        while (level.length > 1) {
+          const nextLevel = [];
+          for (let i = 0; i < level.length; i += 2) {
+            if (i + 1 < level.length) {
+              const sorted = [level[i], level[i+1]].sort();
+              nextLevel.push(ethers.keccak256(ethers.solidityPacked(["bytes32", "bytes32"], [sorted[0], sorted[1]])));
+            } else {
+              nextLevel.push(level[i]);
+            }
+          }
+          level = nextLevel;
+          tree.push(level);
+        }
+        return tree;
+      }
+
+      function getProof(tree, index) {
+        const proof = [];
+        let idx = index;
+        for (let i = 0; i < tree.length - 1; i++) {
+          const level = tree[i];
+          const isRight = idx % 2 === 1;
+          const sibIdx = isRight ? idx - 1 : idx + 1;
+          if (sibIdx < level.length) {
+            proof.push(level[sibIdx]);
+          }
+          idx = Math.floor(idx / 2);
+        }
+        return proof;
+      }
+
+      const tree = buildTree(leaves);
+      const root = tree[tree.length - 1][0];
+      const proofs = pharmacies.map((_, i) => getProof(tree, i));
+
+      // We will perform 105 randomized actions
+      const actionsCount = 105;
+      for (let step = 0; step < actionsCount; step++) {
+        const possibleActions = [];
+        
+        const hasRoot = (await treasury.epochMerkleRoot(activeEpoch)) !== ethers.ZeroHash;
+        const pending = await treasury.getPendingRoot(activeEpoch);
+        const hasPending = pending.proposedAt !== 0n;
+
+        if (!hasRoot && !hasPending) {
+          possibleActions.push("PROPOSE_ROOT");
+        } else if (!hasRoot && hasPending) {
+          possibleActions.push("CONFIRM_ROOT");
+        }
+
+        if (hasRoot) {
+          possibleActions.push("CLAIM");
+          possibleActions.push("FLAG_CLAIM");
+          possibleActions.push("FLAG_EXCLUSION");
+        }
+
+        let hasUnapprovedExclusion = false;
+        let hasAnyDispute = false;
+
+        const epDisputes = activeDisputes[Number(activeEpoch)] || {};
+        for (const pAddr of Object.keys(epDisputes)) {
+          const disp = epDisputes[pAddr];
+          if (disp && disp.amount > 0) {
+            hasAnyDispute = true;
+            if (disp.isExclusion && !disp.approved) {
+              hasUnapprovedExclusion = true;
+            }
+          }
+        }
+
+        if (hasUnapprovedExclusion) {
+          possibleActions.push("APPROVE_EXCLUSION");
+        }
+        if (hasAnyDispute) {
+          possibleActions.push("RESOLVE_DISPUTE");
+        }
+
+        if (hasRoot && !hasPending) {
+          possibleActions.push("FINALIZE_EPOCH");
+        }
+
+        let canRecallAny = false;
+        for (let ep = 0n; ep < activeEpoch; ep++) {
+          const recalled = await treasury.epochRecalled(ep);
+          const escrow = await treasury.epochEscrow(ep);
+          if (!recalled && escrow > 0n) {
+            canRecallAny = true;
+            break;
+          }
+        }
+        if (canRecallAny && !hasPending) {
+          possibleActions.push("RECALL_UNCLAIMED");
+        }
+
+        if (possibleActions.length === 0) {
+          possibleActions.push("DEPOSIT");
+        }
+
+        const action = possibleActions[Math.floor(Math.random() * possibleActions.length)];
+
+        switch (action) {
+          case "PROPOSE_ROOT": {
+            epochRootAmount = allocation * BigInt(pharmacies.length);
+            await treasury.connect(council).proposeRoot(root, epochRootAmount);
+            break;
+          }
+          case "CONFIRM_ROOT": {
+            await treasury.connect(council2).confirmRoot(activeEpoch);
+            expectedEscrowed += epochRootAmount;
+            break;
+          }
+          case "CLAIM": {
+            const pIdx = Math.floor(Math.random() * pharmacies.length);
+            const pharm = pharmacies[pIdx];
+            const hasCl = await treasury.hasClaimed(activeEpoch, pharm.address);
+            const flAmount = await treasury.flaggedAmount(activeEpoch, pharm.address);
+            if (!hasCl && flAmount === 0n) {
+              const dailyCap = await treasury.dailyVolumeCap();
+              const epochVol = await treasury.epochVolume();
+              if (epochVol + allocation <= dailyCap) {
+                await treasury.connect(pharm).claim(allocation, allocation, proofs[pIdx]);
+                expectedEscrowed -= allocation;
+              }
+            }
+            break;
+          }
+          case "FLAG_CLAIM": {
+            const pIdx = Math.floor(Math.random() * pharmacies.length);
+            const pharm = pharmacies[pIdx];
+            const hasCl = await treasury.hasClaimed(activeEpoch, pharm.address);
+            const flAmount = await treasury.flaggedAmount(activeEpoch, pharm.address);
+            if (!hasCl && flAmount === 0n) {
+              const dailyCap = await treasury.dailyVolumeCap();
+              const epochVol = await treasury.epochVolume();
+              if (epochVol + allocation <= dailyCap) {
+                await treasury.connect(pharm).flagClaim(activeEpoch, allocation, allocation, proofs[pIdx]);
+                expectedEscrowed -= allocation;
+                expectedFlaggedNormal += allocation;
+                if (!activeDisputes[Number(activeEpoch)]) activeDisputes[Number(activeEpoch)] = {};
+                activeDisputes[Number(activeEpoch)][pharm.address] = {
+                  amount: allocation,
+                  isExclusion: false,
+                  approved: false
+                };
+              }
+            }
+            break;
+          }
+          case "FLAG_EXCLUSION": {
+            const pIdx = Math.floor(Math.random() * pharmacies.length);
+            const pharm = pharmacies[pIdx];
+            const hasCl = await treasury.hasClaimed(activeEpoch, pharm.address);
+            const flAmount = await treasury.flaggedAmount(activeEpoch, pharm.address);
+            if (!hasCl && flAmount === 0n) {
+              await treasury.connect(pharm).flagExclusion(activeEpoch, allocation);
+              expectedFlaggedExclusion += allocation;
+              if (!activeDisputes[Number(activeEpoch)]) activeDisputes[Number(activeEpoch)] = {};
+              activeDisputes[Number(activeEpoch)][pharm.address] = {
+                amount: allocation,
+                isExclusion: true,
+                approved: false
+              };
+            }
+            break;
+          }
+          case "APPROVE_EXCLUSION": {
+            for (const pAddr of Object.keys(epDisputes)) {
+              const disp = epDisputes[pAddr];
+              if (disp && disp.isExclusion && !disp.approved) {
+                await treasury.connect(council2).approveExclusionClaim(activeEpoch, pAddr);
+                disp.approved = true;
+                break;
+              }
+            }
+            break;
+          }
+          case "RESOLVE_DISPUTE": {
+            for (const pAddr of Object.keys(epDisputes)) {
+              const disp = epDisputes[pAddr];
+              if (disp && disp.amount > 0) {
+                let res;
+                if (disp.isExclusion) {
+                  if (disp.approved) {
+                    res = Math.random() < 0.5 ? 0 : 2;
+                    await token.connect(depositor).approve(await treasury.getAddress(), disp.amount);
+                    await treasury.connect(depositor).fundExclusionRemediation(disp.amount);
+                    await treasury.connect(council).resolveClaim(activeEpoch, pAddr, res);
+                    expectedFlaggedExclusion -= disp.amount;
+                    disp.amount = 0n;
+                  }
+                } else {
+                  res = [0, 1, 2][Math.floor(Math.random() * 3)];
+                  await treasury.connect(council).resolveClaim(activeEpoch, pAddr, res);
+                  expectedFlaggedNormal -= disp.amount;
+                  if (res === 2) {
+                    expectedEscrowed += disp.amount;
+                  }
+                  disp.amount = 0n;
+                }
+                break;
+              }
+            }
+            break;
+          }
+          case "FINALIZE_EPOCH": {
+            await ethers.provider.send("evm_increaseTime", [24 * 60 * 60 + 1]);
+            await ethers.provider.send("evm_mine", []);
+            const minVol = await treasury.minimumEpochVolume();
+            const currentVol = await treasury.epochVolume();
+            if (currentVol >= minVol) {
+              await treasury.connect(council).finalizeEpoch();
+              activeEpoch += 1n;
+            }
+            break;
+          }
+          case "RECALL_UNCLAIMED": {
+            for (let ep = 0n; ep < activeEpoch; ep++) {
+              const recalled = await treasury.epochRecalled(ep);
+              const escrow = await treasury.epochEscrow(ep);
+              if (!recalled && escrow > 0n) {
+                await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60 + 1]);
+                await ethers.provider.send("evm_mine", []);
+                await treasury.connect(council).recallUnclaimed(ep);
+                expectedEscrowed -= escrow;
+                break;
+              }
+            }
+            break;
+          }
+          case "DEPOSIT": {
+            await seedDeposit(toWei("1000"));
+            break;
+          }
+        }
+
+        // Compare actual contract state variables with expected values
+        const actualEscrowed = await treasury.totalEscrowed();
+        const actualFlaggedNormal = await treasury.totalFlaggedNormal();
+        const actualFlaggedExclusion = await treasury.totalFlaggedExclusion();
+
+        expect(actualEscrowed).to.equal(expectedEscrowed, `Step ${step}: escrowed mismatch`);
+        expect(actualFlaggedNormal).to.equal(expectedFlaggedNormal, `Step ${step}: flaggedNormal mismatch`);
+        expect(actualFlaggedExclusion).to.equal(expectedFlaggedExclusion, `Step ${step}: flaggedExclusion mismatch`);
+
+        // Assert globalAccounting view outputs match
+        const acc = await treasury.globalAccounting();
+        expect(acc.escrowed).to.equal(expectedEscrowed, `Step ${step}: view escrowed mismatch`);
+        expect(acc.flaggedNormal).to.equal(expectedFlaggedNormal, `Step ${step}: view flaggedNormal mismatch`);
+        expect(acc.flaggedExclusion).to.equal(expectedFlaggedExclusion, `Step ${step}: view flaggedExclusion mismatch`);
+
+        // Check overall contract balance invariant
+        const contractBalance = await token.balanceOf(await treasury.getAddress());
+        const distPool = await treasury.distributionPool();
+        const govRes = await treasury.governanceReserve();
+        const exclRes = await treasury.exclusionRemediationReserve();
+
+        let contractEscrowsAndFlags = 0n;
+        for (let ep = 0n; ep <= activeEpoch; ep++) {
+          contractEscrowsAndFlags += await treasury.epochEscrow(ep);
+          for (const p of pharmacies) {
+            const isEx = await treasury.isExclusionDispute(ep, p.address);
+            if (!isEx) {
+              contractEscrowsAndFlags += await treasury.flaggedAmount(ep, p.address);
+            }
+          }
+        }
+
+        const expectedBalance = distPool + govRes + exclRes + contractEscrowsAndFlags;
+        expect(contractBalance).to.equal(expectedBalance, `Step ${step}: overall balance invariant broken`);
+      }
+    });
+  });
 });

@@ -44,6 +44,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     }
 
     IERC20 public immutable token;
+    address public immutable council;
     uint256 public currentRound;
     address public relayerVerifier;
 
@@ -113,6 +114,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         if (_guardian == _council) revert GuardianMustDifferFromCouncil();
 
         token = IERC20(_token);
+        council = _council;
         _grantRole(DEFAULT_ADMIN_ROLE, _council);
         _grantRole(COUNCIL_ROLE, _council);
         _grantRole(GUARDIAN_ROLE, _guardian);
@@ -285,7 +287,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
 
         // 2. Handle zero vote edge case
         if (totalWeight == 0) {
-            token.safeTransfer(msg.sender, pool);
+            token.safeTransfer(council, pool);
             emit RoundFinalized(roundId, 0);
             return;
         }
@@ -308,7 +310,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         // Refund any tiny division dust left over to the council
         if (pool > distributed) {
             uint256 dust = pool - distributed;
-            token.safeTransfer(msg.sender, dust);
+            token.safeTransfer(council, dust);
         }
 
         emit RoundFinalized(roundId, totalWeight);

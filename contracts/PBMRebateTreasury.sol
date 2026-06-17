@@ -219,6 +219,15 @@ contract PBMRebateTreasury is
     ///         This reserve cannot be sourced from root distribution liquidity.
     uint256 public exclusionRemediationReserve;
 
+    /// @notice Aggregate of all currently escrowed funds across active and finalized epochs.
+    uint256 public totalEscrowed;
+
+    /// @notice Aggregate of all currently flagged proof-backed claims.
+    uint256 public totalFlaggedNormal;
+
+    /// @notice Aggregate of all currently flagged root-exclusion claims.
+    uint256 public totalFlaggedExclusion;
+
     // =========================================================
     // CAPS
     // =========================================================
@@ -620,6 +629,7 @@ contract PBMRebateTreasury is
         // Partition pool to epoch escrow
         distributionPool     -= confirmedTotal;
         epochEscrow[epoch]    = confirmedTotal;
+        totalEscrowed        += confirmedTotal;
 
         delete pendingRoot[epoch];
 
@@ -742,6 +752,7 @@ contract PBMRebateTreasury is
         epochClaimedTotal[epoch]                  += amount;
         epochRootClaimedTotal[epoch]              += amount;
         epochEscrow[epoch]                         -= amount;
+        totalEscrowed                              -= amount;
 
         uint256 patientShare  = (amount * patientClaimBP) / BP_DENOM;
         uint256 netToPharmacy = amount - patientShare;
@@ -815,6 +826,8 @@ contract PBMRebateTreasury is
         epochRootClaimedTotal[epoch]                += amount;
         flaggedAmount[epoch][msg.sender]             = amount;
         epochEscrow[epoch]                           -= amount;
+        totalEscrowed                                -= amount;
+        totalFlaggedNormal                           += amount;
 
         emit ClaimFlagged(epoch, msg.sender, amount);
     }
@@ -846,6 +859,7 @@ contract PBMRebateTreasury is
         hasClaimed[epoch][msg.sender]         = true;
         flaggedAmount[epoch][msg.sender]      = amount;
         isExclusionDispute[epoch][msg.sender] = true;
+        totalFlaggedExclusion                += amount;
 
         emit ClaimFlagged(epoch, msg.sender, amount);
     }
@@ -908,6 +922,9 @@ contract PBMRebateTreasury is
         if (isExclusion) {
             isExclusionDispute[epoch][pharmacy] = false;
             exclusionApproved[epoch][pharmacy] = false;
+            totalFlaggedExclusion               -= amount;
+        } else {
+            totalFlaggedNormal                  -= amount;
         }
 
         // Interactions after state is settled
@@ -959,6 +976,7 @@ contract PBMRebateTreasury is
                 } else {
                     // Return funds back to epochEscrow
                     epochEscrow[epoch] += amount;
+                    totalEscrowed      += amount;
                     emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
                 }
             }
@@ -1020,6 +1038,7 @@ contract PBMRebateTreasury is
 
         epochRecalled[epoch] = true;
         epochEscrow[epoch]   = 0;
+        totalEscrowed       -= unclaimed;
 
         token.safeTransfer(patientFund, unclaimed);
 
@@ -1273,6 +1292,19 @@ contract PBMRebateTreasury is
         exclusionPaid   = epochExclusionPaidTotal[epoch];
         escrowUnclaimed = epochEscrow[epoch];
         totalClaimed    = epochClaimedTotal[epoch];
+    }
+
+    /// @notice Global aggregate accounting for dashboards and watchdogs.
+    function globalAccounting()
+        external
+        view
+        returns (
+            uint256 escrowed,
+            uint256 flaggedNormal,
+            uint256 flaggedExclusion
+        )
+    {
+        return (totalEscrowed, totalFlaggedNormal, totalFlaggedExclusion);
     }
 
     /// @notice How much a pharmacy has claimed in a given epoch.
