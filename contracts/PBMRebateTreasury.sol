@@ -130,10 +130,6 @@ contract PBMRebateTreasury is
     error NoFallback();
     error CannotSweepPayoutToken();
     error OutOfRange();
-    error EmptyBatch();
-    error ArrayMismatchCaps();
-    error ArrayMismatchProofs();
-    error SingleClaimPerEpoch();
     error EpochTooShort();
     error EpochVolumeTooLow();
     error GuardianMustDifferFromCouncil();
@@ -678,36 +674,7 @@ contract PBMRebateTreasury is
     }
 
     /**
-     * @notice Compatibility wrapper for integrators expecting an array-based claim interface.
-     * @dev    This contract enforces one claim per pharmacy per epoch. Arrays must contain
-     *         exactly one entry - use claim() directly if calling from your own code.
-     *         The len == 1 constraint is explicit rather than relying on the AlreadyClaimed
-     *         revert from _processClaim, so callers get a clear error at the array boundary.
-     *
-     * @param amounts      Single-element array: gross allocated amount.
-     * @param eligibleCaps Single-element array: per-pharmacy cap encoded in the Merkle leaf.
-     * @param proofs       Single-element array: Merkle proof.
-     */
-    function claimBatch(
-        uint256[]   calldata amounts,
-        uint256[]   calldata eligibleCaps,
-        bytes32[][] calldata proofs
-    )
-        external
-        nonReentrant
-        whenNotPaused
-    {
-        uint256 len = amounts.length;
-        if (len == 0)                    revert EmptyBatch();
-        if (len != eligibleCaps.length)  revert ArrayMismatchCaps();
-        if (len != proofs.length)        revert ArrayMismatchProofs();
-        if (len != 1)                    revert SingleClaimPerEpoch();
-
-        _processClaim(msg.sender, amounts[0], eligibleCaps[0], proofs[0]);
-    }
-
-    /**
-     * @dev Internal claim logic shared by claim() and claimBatch().
+     * @dev Internal claim logic for claim().
      *      Leaf encoding uses abi.encodePacked for gas efficiency - safe because
      *      all three fields (address, uint256, uint256) are fixed-size types.
      */
