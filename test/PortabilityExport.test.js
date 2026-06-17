@@ -38,7 +38,7 @@ describe("Portability Export Tool", function () {
 
     // Deploy ERC20 Token
     const MockERC20 = await ethers.getContractFactory("MockERC20");
-    token = await MockERC20.deploy("Mock DAI", "mDAI");
+    token = await MockERC20.deploy("Mock DAI", "mDAI", 18);
     await token.waitForDeployment();
 
     // Deploy Timelock Controller
@@ -200,5 +200,30 @@ describe("Portability Export Tool", function () {
     const fabricatedVerification = await verifyPayloadOnChain(fabricated, { provider: ethers.provider });
     expect(fabricatedVerification.ok).to.be.false;
     expect(fabricatedVerification.errors.join(" | ")).to.contain("block hash does not match");
+
+    // Additional offline verifier error branch tests
+    const badPharmacy = structuredClone(payload);
+    badPharmacy.claims[0].pharmacyAddress = ethers.ZeroAddress;
+    const badPharmacyVerification = verifyPayload(badPharmacy);
+    expect(badPharmacyVerification.ok).to.be.false;
+    expect(badPharmacyVerification.errors.join(" | ")).to.contain("does not match exporter");
+
+    const badVoter = structuredClone(payload);
+    badVoter.votes[0].voter = ethers.ZeroAddress;
+    const badVoterVerification = verifyPayload(badVoter);
+    expect(badVoterVerification.ok).to.be.false;
+    expect(badVoterVerification.errors.join(" | ")).to.contain("voter does not match exporter");
+
+    const missingReceipt = structuredClone(payload);
+    missingReceipt.receipts = [];
+    const missingReceiptVerification = verifyPayload(missingReceipt);
+    expect(missingReceiptVerification.ok).to.be.false;
+    expect(missingReceiptVerification.errors.join(" | ")).to.contain("missing a matching receipt");
+
+    const invalidHash = structuredClone(payload);
+    invalidHash.receipts[0].hash = "0x123";
+    const invalidHashVerification = verifyPayload(invalidHash);
+    expect(invalidHashVerification.ok).to.be.false;
+    expect(invalidHashVerification.errors.join(" | ")).to.contain("Receipt has invalid hash");
   });
 });

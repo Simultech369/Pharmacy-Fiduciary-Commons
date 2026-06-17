@@ -109,7 +109,7 @@ describe("PBMRebateTreasury security baseline", function () {
     ] = await ethers.getSigners();
 
     const MockERC20 = await ethers.getContractFactory("MockERC20");
-    token = await MockERC20.deploy("Mock DAI", "mDAI");
+    token = await MockERC20.deploy("Mock DAI", "mDAI", 18);
     await token.waitForDeployment();
 
     timelockDelay = 1n;
@@ -197,7 +197,7 @@ describe("PBMRebateTreasury security baseline", function () {
 
   it("finalizes realistic epochs for a six-decimal payout token", async function () {
     const usdcUnits = (value) => ethers.parseUnits(value, 6);
-    const MockUSDC = await ethers.getContractFactory("MockERC20Decimals");
+    const MockUSDC = await ethers.getContractFactory("MockERC20");
     const usdc = await MockUSDC.deploy("Mock USDC", "mUSDC", 6);
     await usdc.waitForDeployment();
 

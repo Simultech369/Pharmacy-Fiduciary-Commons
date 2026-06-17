@@ -13,6 +13,7 @@ Options:
   --treasury <address> PBMRebateTreasury address (default: 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0)
   --merkle <path>     Path to allocations Merkle tree file (default: merkle.json)
   --out <path>        Path to write JSON export (default: exports/<exporter>.json)
+  --from-block <num>  Start block for historical event queries (default: 0)
 `);
 }
 
@@ -23,7 +24,8 @@ function parseArgs(argv) {
     pb: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
     treasury: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
     merkle: "merkle.json",
-    out: null
+    out: null,
+    fromBlock: "0"
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -34,6 +36,7 @@ function parseArgs(argv) {
     else if (arg === "--treasury") args.treasury = argv[i + 1];
     else if (arg === "--merkle") args.merkle = argv[i + 1];
     else if (arg === "--out") args.out = argv[i + 1];
+    else if (arg === "--from-block") args.fromBlock = argv[i + 1];
   }
 
   return args;
@@ -60,6 +63,7 @@ async function main(opts = {}) {
   const pbAddress = opts.pb || args.pb;
   const merklePathInput = opts.merkle || args.merkle;
   const outPathInput = opts.out || args.out;
+  const fromBlockInput = opts.fromBlock || args.fromBlock || "0";
 
   if (!exporterAddress) {
     usage();
@@ -80,7 +84,7 @@ async function main(opts = {}) {
   const claimFilter = treasury.filters.Claimed(null, exporter);
   let claimEvents = [];
   try {
-    claimEvents = await treasury.queryFilter(claimFilter, 0, "latest");
+    claimEvents = await treasury.queryFilter(claimFilter, BigInt(fromBlockInput), "latest");
   } catch (err) {
     console.log("Warning: Could not fetch Claimed events:", err.message);
   }
@@ -185,7 +189,7 @@ async function main(opts = {}) {
   const voteFilter = pb.filters.VoteCast(null, null, exporter);
   let voteEvents = [];
   try {
-    voteEvents = await pb.queryFilter(voteFilter, 0, "latest");
+    voteEvents = await pb.queryFilter(voteFilter, BigInt(fromBlockInput), "latest");
   } catch (err) {
     console.log("Warning: Could not fetch VoteCast events:", err.message);
   }

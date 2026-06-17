@@ -204,6 +204,25 @@ contract PharmacyMutualCredit is AccessControl {
         emit VoucherReservationReleased(voucherId, v.issuer, v.amount);
     }
 
+    /**
+     * @notice Releases capacity reserved by multiple expired, unredeemed vouchers in batch.
+     * @dev Anyone may perform expiry cleanup; no value is transferred.
+     */
+    function releaseExpiredVouchersBatch(bytes32[] calldata voucherIds) external {
+        for (uint256 i = 0; i < voucherIds.length; i++) {
+            bytes32 voucherId = voucherIds[i];
+            Voucher storage v = vouchers[voucherId];
+            if (v.issuer == address(0)) revert VoucherDoesNotExist();
+            if (v.redeemed) revert VoucherAlreadyRedeemed();
+            if (block.timestamp <= v.expiry) revert VoucherNotExpired();
+            if (voucherReservationReleased[voucherId]) revert VoucherExpired();
+
+            voucherReservationReleased[voucherId] = true;
+            reservedVoucherCredit[v.issuer] -= v.amount;
+            emit VoucherReservationReleased(voucherId, v.issuer, v.amount);
+        }
+    }
+
     function _capacityCovers(address participant, uint256 additional, uint256 limit)
         internal
         view

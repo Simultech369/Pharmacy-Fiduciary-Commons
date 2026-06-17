@@ -212,6 +212,73 @@ describe("PharmacyMutualCredit", function () {
       );
     });
 
+    it("releases batch of expired voucher reservations", async function () {
+      const voucherId1 = ethers.keccak256(ethers.toUtf8Bytes("voucher-001"));
+      const voucherId2 = ethers.keccak256(ethers.toUtf8Bytes("voucher-002"));
+
+      await credit.connect(advocate).createVoucher(voucherId1, pharmacyA.address, 80n, expiry);
+      await credit.connect(advocate).createVoucher(voucherId2, pharmacyA.address, 100n, expiry);
+
+      expect(await credit.reservedVoucherCredit(advocate.address)).to.equal(180n);
+
+      await ethers.provider.send("evm_setNextBlockTimestamp", [Number(expiry + 1n)]);
+      await ethers.provider.send("evm_mine", []);
+
+      await credit.connect(attacker).releaseExpiredVouchersBatch([voucherId1, voucherId2]);
+      expect(await credit.reservedVoucherCredit(advocate.address)).to.equal(0n);
+
+      await expectRevert(
+        credit.connect(attacker).releaseExpiredVouchersBatch([voucherId1]),
+        "VoucherExpired"
+      );
+    });
+
+    it("reverts batch release if any voucher is not expired, redeemed, or non-existent", async function () {
+      const voucherId1 = ethers.keccak256(ethers.toUtf8Bytes("voucher-001"));
+      const voucherId2 = ethers.keccak256(ethers.toUtf8Bytes("voucher-002"));
+      const nonExistentVoucher = ethers.keccak256(ethers.toUtf8Bytes("voucher-nonexistent"));
+
+      await credit.connect(advocate).createVoucher(voucherId1, pharmacyA.address, 80n, expiry);
+
+      // Revert if any in batch doesn't exist
+      await expectRevert(
+        credit.connect(attacker).releaseExpiredVouchersBatch([nonExistentVoucher]),
+        "VoucherDoesNotExist"
+      );
+
+      // Revert if any in batch is not expired yet
+      await expectRevert(
+        credit.connect(attacker).releaseExpiredVouchersBatch([voucherId1]),
+        "VoucherNotExpired"
+      );
+
+      await ethers.provider.send("evm_setNextBlockTimestamp", [Number(expiry + 1n)]);
+      await ethers.provider.send("evm_mine", []);
+
+      const newExpiry = expiry + 3600n;
+      await credit.connect(advocate).createVoucher(voucherId2, pharmacyA.address, 50n, newExpiry);
+
+      await expectRevert(
+        credit.connect(attacker).releaseExpiredVouchersBatch([voucherId1, voucherId2]),
+        "VoucherNotExpired"
+      );
+
+      const voucherId3 = ethers.keccak256(ethers.toUtf8Bytes("voucher-003"));
+      const currentBlock = await ethers.provider.getBlock("latest");
+      const tempExpiry = BigInt(currentBlock.timestamp) + 1000n;
+      await credit.connect(advocate).createVoucher(voucherId3, pharmacyA.address, 20n, tempExpiry);
+
+      await credit.connect(pharmacyA).redeemVoucher(voucherId3);
+
+      await ethers.provider.send("evm_setNextBlockTimestamp", [Number(tempExpiry + 1n)]);
+      await ethers.provider.send("evm_mine", []);
+
+      await expectRevert(
+        credit.connect(attacker).releaseExpiredVouchersBatch([voucherId3]),
+        "VoucherAlreadyRedeemed"
+      );
+    });
+
     it("requires voucher creators to be authorized registered participants", async function () {
       const attackerVoucherId = ethers.keccak256(ethers.toUtf8Bytes("voucher-attacker"));
 

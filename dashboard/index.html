@@ -8,19 +8,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+
   <style>
     :root {
       --bg-dark: #070a13;
       --panel-bg: rgba(13, 20, 38, 0.6);
       --border-color: rgba(255, 255, 255, 0.08);
       --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
+      --text-muted: #cbd5e1;
       --accent-blue: #3b82f6;
       --accent-cyan: #06b6d4;
       --accent-purple: #8b5cf6;
       --accent-green: #10b981;
+      --accent-green-text: #34d399;
       --accent-red: #ef4444;
+      --accent-red-text: #f87171;
       --accent-orange: #f59e0b;
       --font-body: 'Outfit', sans-serif;
       --font-heading: 'Space Grotesk', sans-serif;
@@ -34,7 +36,7 @@
 
     body {
       background-color: var(--bg-dark);
-      background-image: 
+      background-image:
         radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
         radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
         radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
@@ -97,7 +99,7 @@
     .badge-unverified {
       border: 1px solid rgba(239, 68, 68, 0.3);
       background: rgba(239, 68, 68, 0.1);
-      color: var(--accent-red);
+      color: var(--accent-red-text);
       font-size: 0.75rem;
       font-weight: 600;
       padding: 0.25rem 0.6rem;
@@ -258,12 +260,12 @@
 
     .status-badge.recorded {
       background: rgba(16, 185, 129, 0.15);
-      color: var(--accent-green);
+      color: var(--accent-green-text);
     }
 
     .status-badge.omitted {
       background: rgba(239, 68, 68, 0.15);
-      color: var(--accent-red);
+      color: var(--accent-red-text);
     }
 
     .amount-display {
@@ -392,7 +394,7 @@
 
     .badge-claim-status.claimed {
       background: rgba(16, 185, 129, 0.15);
-      color: var(--accent-green);
+      color: var(--accent-green-text);
     }
 
     .badge-claim-status.flagged {
@@ -402,7 +404,7 @@
 
     .badge-claim-status.disputed {
       background: rgba(239, 68, 68, 0.15);
-      color: var(--accent-red);
+      color: var(--accent-red-text);
     }
 
     .appeal-timer {
@@ -542,7 +544,7 @@
 
     .rollover-title {
       font-weight: 600;
-      color: var(--accent-red);
+      color: var(--accent-red-text);
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -552,7 +554,7 @@
       font-family: monospace;
       font-weight: 700;
       font-size: 1rem;
-      color: var(--accent-red);
+      color: var(--accent-red-text);
       background: rgba(239, 68, 68, 0.1);
       padding: 0.25rem 0.5rem;
       border-radius: 0.25rem;
@@ -684,7 +686,7 @@
   </header>
 
   <main>
-    
+
     <!-- 1. The Ledger of Omissions View -->
     <section class="panel" data-provenance="synthetic-fixture">
       <div class="panel-title">
@@ -722,7 +724,7 @@
     </section>
 
     <div class="dashboard-grid">
-      
+
       <!-- 2. Claims & Disbursements View -->
       <section class="panel" data-provenance="synthetic-fixture">
         <div class="panel-title">
@@ -799,7 +801,7 @@
           Patient Fund Participatory Allocation
           <span class="badge-unverified">PROJECT CARDS ARE SYNTHETIC</span>
         </div>
-        
+
         <div class="pb-intro">
           A 10% share of every gross claim is routed to this fund. This prototype distributes configured round pools using squared vote weights.
         </div>
@@ -933,6 +935,33 @@
           </div>
           <span class="receipt-meta">No artifact available</span>
         </div>
+    </section>
+
+    <!-- 5. Portability Export Verifier Panel (Prototype) -->
+    <section class="panel" data-provenance="synthetic-fixture">
+      <div class="panel-title">
+        Portability Export Verifier
+        <span class="badge-unverified" style="border-color: rgba(6, 182, 212, 0.3); background: rgba(6, 182, 212, 0.1); color: var(--accent-cyan); animation: none;">Offline Prototype</span>
+      </div>
+      <div class="pb-intro" style="margin-bottom: 1.5rem;">
+        Verify the structural and Merkle tree mathematical integrity of a portability JSON export payload locally.
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <div>
+          <label for="portability-json-input" style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">Paste exported JSON payload:</label>
+          <textarea id="portability-json-input" class="select-pbm" style="font-family: monospace; font-size: 0.85rem; width: 100%; height: 180px; resize: vertical; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main);" placeholder='{ "exporter": "0x...", ... }'></textarea>
+        </div>
+
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+          <button id="btn-verify-portability" class="btn-vote" style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);">🔍 Verify Export</button>
+          <div id="portability-verification-status" role="status" aria-live="polite" style="font-size: 0.9rem; font-weight: 600;"></div>
+        </div>
+
+        <div id="portability-verification-results" style="display: none; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.25rem;">
+          <h4 style="font-family: var(--font-heading); font-size: 1.1rem; margin-bottom: 0.75rem;" id="portability-results-title">Verification Results</h4>
+          <ul id="portability-results-list" style="list-style-type: none; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem;"></ul>
+        </div>
       </div>
     </section>
 
@@ -1003,7 +1032,7 @@
       const pbmKey = document.getElementById("pbm-selector").value;
       const data = pbmData[pbmKey];
       assertDisplayableOmissionDataset(data);
-      
+
       // Update Gap Display
       document.getElementById("estimated-gap").innerText = data.gap;
       document.getElementById("gap-provenance").innerText = data.mock
@@ -1018,14 +1047,14 @@
         const isRecorded = item.status === "recorded";
         const card = document.createElement("div");
         card.className = `omission-card ${item.status}`;
-        
+
         card.innerHTML = `
           <div class="quarter-label">${item.q}</div>
           <span class="status-badge ${item.status}">${item.status}</span>
-          <div class="amount-display" style="color: ${isRecorded ? 'var(--accent-green)' : 'var(--accent-red)'}">
+          <div class="amount-display" style="color: ${isRecorded ? 'var(--accent-green-text)' : 'var(--accent-red-text)'}">
             ${item.amount}
           </div>
-          <div class="omission-desc" style="color: ${isRecorded ? 'var(--text-muted)' : 'var(--accent-red)'}">
+          <div class="omission-desc" style="color: ${isRecorded ? 'var(--text-muted)' : 'var(--accent-red-text)'}">
             ${item.desc}
           </div>
         `;
@@ -1066,7 +1095,7 @@
       window.projects.forEach((p, idx) => {
         const share = weights[idx] / totalWeight;
         const matchingAmount = Math.round(share * TOTAL_MATCHING_POOL);
-        
+
         document.getElementById(`proj-${p.id}-votes`).innerText = `${p.votes} votes`;
         document.getElementById(`proj-${p.id}-match`).innerText = `$${matchingAmount.toLocaleString()}`;
       });
@@ -1080,18 +1109,208 @@
     setInterval(() => {
       secondsLeft -= 1;
       if (secondsLeft < 0) secondsLeft = 0;
-      
+
       const d = Math.floor(secondsLeft / (24 * 60 * 60));
       const h = Math.floor((secondsLeft % (24 * 60 * 60)) / (60 * 60));
       const m = Math.floor((secondsLeft % (60 * 60)) / 60);
       const s = secondsLeft % 60;
 
       const pad = (num) => String(num).padStart(2, '0');
-      document.getElementById("rollover-countdown").innerText = 
+      document.getElementById("rollover-countdown").innerText =
         `${d}d ${pad(h)}h ${pad(m)}m ${pad(s)}s`;
     }, 1000);
+
+    function merkleLeafJS(pharmacyAddress, amount, eligibleCap) {
+      const inner = ethers.solidityPackedKeccak256(
+        ["address", "uint256", "uint256"],
+        [pharmacyAddress, amount, eligibleCap]
+      );
+      return ethers.keccak256(ethers.solidityPacked(["bytes32"], [inner]));
+    }
+
+    function processProofJS(proof, leaf) {
+      let computedHash = leaf;
+      for (const proofElement of proof) {
+        if (!ethers.isHexString(proofElement, 32)) {
+          throw new Error(`Invalid proof element: ${proofElement}`);
+        }
+        const pair = [computedHash, proofElement].sort();
+        computedHash = ethers.keccak256(ethers.solidityPacked(["bytes32", "bytes32"], pair));
+      }
+      return computedHash;
+    }
+
+    function verifyMerkleProofJS(proof, root, leaf) {
+      return processProofJS(proof, leaf).toLowerCase() === root.toLowerCase();
+    }
+
+    document.getElementById("btn-verify-portability").addEventListener("click", () => {
+      const statusEl = document.getElementById("portability-verification-status");
+      const resultsEl = document.getElementById("portability-verification-results");
+      const listEl = document.getElementById("portability-results-list");
+      const titleEl = document.getElementById("portability-results-title");
+
+      statusEl.className = "";
+      statusEl.style.color = "var(--text-muted)";
+      statusEl.innerText = "Verifying...";
+      resultsEl.style.display = "none";
+      listEl.innerHTML = "";
+
+      const jsonText = document.getElementById("portability-json-input").value.trim();
+      if (!jsonText) {
+        statusEl.style.color = "var(--accent-red-text)";
+        statusEl.innerText = "Error: Input is empty.";
+        return;
+      }
+
+      let payload;
+      try {
+        payload = JSON.parse(jsonText);
+      } catch (err) {
+        statusEl.style.color = "var(--accent-red-text)";
+        statusEl.innerText = "Error: Invalid JSON format.";
+        return;
+      }
+
+      const errors = [];
+      const warnings = [];
+
+      // 1. Structural Validation
+      if (!payload || typeof payload !== "object") {
+        errors.push("Payload must be a JSON object.");
+      } else {
+        let exporter;
+        try {
+          exporter = ethers.getAddress(payload.exporter);
+        } catch {
+          errors.push("Missing or invalid exporter address.");
+        }
+
+        if (!payload.exported_at || Number.isNaN(Date.parse(payload.exported_at))) {
+          errors.push("Missing or invalid exported_at timestamp.");
+        }
+
+        for (const field of ["claims", "merkle_proofs", "votes", "receipts"]) {
+          if (!Array.isArray(payload[field])) {
+            errors.push(`${field} must be an array.`);
+          }
+        }
+
+        if (errors.length === 0) {
+          const receiptsByHash = new Map();
+          for (const receipt of payload.receipts) {
+            if (!receipt.hash || !ethers.isHexString(receipt.hash, 32)) {
+              errors.push(`Receipt has invalid hash: ${receipt.hash}`);
+              continue;
+            }
+            receiptsByHash.set(receipt.hash.toLowerCase(), receipt);
+          }
+
+          for (const claim of payload.claims) {
+            let pharmacy;
+            try {
+              pharmacy = ethers.getAddress(claim.pharmacyAddress);
+            } catch {
+              errors.push(`Claim ${claim.claimId || "(unknown)"} has invalid pharmacyAddress.`);
+              continue;
+            }
+
+            if (pharmacy !== exporter) {
+              errors.push(`Claim ${claim.claimId || "(unknown)"} pharmacyAddress does not match exporter.`);
+            }
+
+            if (!receiptsByHash.has(String(claim.transactionHash || "").toLowerCase())) {
+              errors.push(`Claim ${claim.claimId || "(unknown)"} is missing a matching receipt.`);
+            }
+
+            if (claim.metadataProvenance !== "synthetic-placeholder" && claim.ndc === "unavailable-off-chain") {
+              errors.push(`Claim ${claim.claimId || "(unknown)"} has unavailable clinical metadata without synthetic provenance.`);
+            }
+          }
+
+          for (const proof of payload.merkle_proofs) {
+            if (!ethers.isHexString(proof.claimRoot, 32)) {
+              errors.push(`Merkle proof at index ${proof.leafIndex} has invalid claimRoot.`);
+              continue;
+            }
+
+            try {
+              const pharmacy = ethers.getAddress(proof.pharmacy);
+              if (pharmacy !== exporter) {
+                errors.push(`Merkle proof at index ${proof.leafIndex} pharmacy does not match exporter.`);
+              }
+
+              const leaf = merkleLeafJS(pharmacy, BigInt(proof.grossAmount), BigInt(proof.eligibleCap));
+              const proofItems = Array.isArray(proof.proof) ? proof.proof : [];
+              const valid = verifyMerkleProofJS(proofItems, proof.claimRoot, leaf);
+              if (!valid) {
+                errors.push(`Merkle proof at index ${proof.leafIndex} does not verify against claimRoot.`);
+              }
+            } catch (err) {
+              errors.push(`Merkle proof at index ${proof.leafIndex} is malformed: ${err.message}`);
+            }
+          }
+
+          for (const vote of payload.votes) {
+            try {
+              const voter = ethers.getAddress(vote.voter);
+              if (voter !== exporter) {
+                errors.push(`Vote for project ${vote.project || "(unknown)"} voter does not match exporter.`);
+              }
+            } catch {
+              errors.push(`Vote for project ${vote.project || "(unknown)"} has invalid voter address.`);
+            }
+          }
+
+          if (payload.merkle_proofs.length === 0 && payload.claims.length > 0) {
+            warnings.push("Claims exist without Merkle proof material; export is not independently claim-verifiable.");
+          }
+        }
+      }
+
+      // Offline notice
+      warnings.push("Offline prototype: Verifies structure and Merkle mathematical proof. Authoritative on-chain receipt verification requires verify-export.js command-line execution.");
+
+      // 3. Render results
+      resultsEl.style.display = "block";
+      if (errors.length === 0) {
+        statusEl.style.color = "var(--accent-green-text)";
+        statusEl.innerText = "✅ Export Verified Locally!";
+        titleEl.innerText = "Verification Success";
+        titleEl.style.color = "var(--accent-green-text)";
+
+        const li = document.createElement("li");
+        li.style.color = "var(--text-main)";
+        li.innerText = "✓ JSON structure complies with schema.";
+        listEl.appendChild(li);
+
+        const li2 = document.createElement("li");
+        li2.style.color = "var(--text-main)";
+        li2.innerText = "✓ Merkle proofs match claims and verify mathematically against claimRoot.";
+        listEl.appendChild(li2);
+      } else {
+        statusEl.style.color = "var(--accent-red-text)";
+        statusEl.innerText = "❌ Verification Failed";
+        titleEl.innerText = "Verification Errors";
+        titleEl.style.color = "var(--accent-red-text)";
+
+        errors.forEach(err => {
+          const li = document.createElement("li");
+          li.style.color = "var(--accent-red-text)";
+          li.innerText = `• ${err}`;
+          listEl.appendChild(li);
+        });
+      }
+
+      warnings.forEach(warn => {
+        const li = document.createElement("li");
+        li.style.color = "var(--accent-orange)";
+        li.innerText = `⚠️ ${warn}`;
+        listEl.appendChild(li);
+      });
+    });
   </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" integrity="sha384-u0NcfwGT0MUYq60cVWPN34m99JhiJTCRG+0JOgmAQ++pTQ4w6AKkwhA9Wj/VjNRi" crossorigin="anonymous"></script>
   <script src="./web3_integration.js"></script>
 </body>
 </html>

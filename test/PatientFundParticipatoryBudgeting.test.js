@@ -48,7 +48,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
     voters = signers.slice(4, 11); // 7 voters available
 
     const MockERC20 = await ethers.getContractFactory("MockERC20");
-    token = await MockERC20.deploy("Mock DAI", "mDAI");
+    token = await MockERC20.deploy("Mock DAI", "mDAI", 18);
     await token.waitForDeployment();
 
     const PB = await ethers.getContractFactory("PatientFundParticipatoryBudgeting");

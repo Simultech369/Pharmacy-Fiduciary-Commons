@@ -1,9 +1,37 @@
-// Web3 and ethers.js Integration for Wellbeing Dashboard
-// Integrates MetaMask, PBMRebateTreasury, PharmacyMutualCredit, and PatientFundParticipatoryBudgeting contracts
+const DEPLOYMENT_CONFIG = {
+  31337: {
+    name: "Hardhat Local Network",
+    pbAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    mutualCreditAddress: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    treasuryAddress: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+  },
+  1337: {
+    name: "Hardhat Local Network (Alternate)",
+    pbAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    mutualCreditAddress: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    treasuryAddress: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+  }
+  /*
+  // Template placeholders for public networks.
+  // Note: No active deployments currently exist on public networks.
+  , 11155111: {
+    name: "Sepolia Testnet",
+    pbAddress: "0x0000000000000000000000000000000000000000",
+    mutualCreditAddress: "0x0000000000000000000000000000000000000000",
+    treasuryAddress: "0x0000000000000000000000000000000000000000"
+  },
+  1: {
+    name: "Ethereum Mainnet",
+    pbAddress: "0x0000000000000000000000000000000000000000",
+    mutualCreditAddress: "0x0000000000000000000000000000000000000000",
+    treasuryAddress: "0x0000000000000000000000000000000000000000"
+  }
+  */
+};
 
-const PB_CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-const MUTUAL_CREDIT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-const TREASURY_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+let pbAddress = DEPLOYMENT_CONFIG[31337].pbAddress;
+let mutualCreditAddress = DEPLOYMENT_CONFIG[31337].mutualCreditAddress;
+let treasuryAddress = DEPLOYMENT_CONFIG[31337].treasuryAddress;
 
 const PB_ABI = [
   "function currentRound() view returns (uint256)",
@@ -90,14 +118,19 @@ async function setupWeb3Connection(account) {
 
   const network = await provider.getNetwork();
   const chainId = Number(network.chainId);
-  if (!EXPECTED_CHAIN_IDS.has(chainId)) {
+  const config = DEPLOYMENT_CONFIG[chainId];
+  if (!config) {
     showConnectionWarning(`Wallet connected to unsupported chain ${chainId}. Use the local/test Hardhat network.`);
     return;
   }
 
+  pbAddress = config.pbAddress;
+  mutualCreditAddress = config.mutualCreditAddress;
+  treasuryAddress = config.treasuryAddress;
+
   const [pbCode, creditCode] = await Promise.all([
-    provider.getCode(PB_CONTRACT_ADDRESS),
-    provider.getCode(MUTUAL_CREDIT_ADDRESS)
+    provider.getCode(pbAddress),
+    provider.getCode(mutualCreditAddress)
   ]);
 
   if (pbCode === "0x" || creditCode === "0x") {
@@ -106,8 +139,8 @@ async function setupWeb3Connection(account) {
   }
 
   // Initialize contracts
-  pbContract = new ethers.Contract(PB_CONTRACT_ADDRESS, PB_ABI, signer);
-  creditContract = new ethers.Contract(MUTUAL_CREDIT_ADDRESS, CREDIT_ABI, signer);
+  pbContract = new ethers.Contract(pbAddress, PB_ABI, signer);
+  creditContract = new ethers.Contract(mutualCreditAddress, CREDIT_ABI, signer);
   isWeb3Connected = true;
 
   // Update UI Elements
