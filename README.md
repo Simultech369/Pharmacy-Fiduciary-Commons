@@ -5,7 +5,7 @@
 **On-chain rebate transparency infrastructure for independent pharmacies and patient funds.**
 
 ![CI](https://github.com/Simultech369/Pharmacy-Fiduciary-Commons/actions/workflows/test.yml/badge.svg)
-![Tests](https://img.shields.io/badge/local%20tests-64%20passing-16a34a?style=for-the-badge)
+![Tests](https://img.shields.io/badge/local%20tests-93%20passing-16a34a?style=for-the-badge)
 ![Audit](https://img.shields.io/badge/audit-not%20audited-dc2626?style=for-the-badge)
 ![Mainnet](https://img.shields.io/badge/mainnet-not%20deployed-6b7280?style=for-the-badge)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.20-363636?style=for-the-badge&logo=solidity)
@@ -28,10 +28,10 @@
 | `PBMRebateTreasury` | Working Solidity contract with epoch escrow, Merkle claims, dispute handling, sanctions, recall, pause, and cap controls |
 | `PatientFundParticipatoryBudgeting` | Working patient-fund voting prototype with council registration and relayer-assisted voter self-registration |
 | `PharmacyMutualCredit` | Working decoupled mutual-credit prototype with reserved-capacity, recipient-bound vouchers |
-| Tests | `64 passing` via `npm.cmd test` |
-| Dashboard | Static prototype with local/test Web3 integration guardrails |
+| Tests | `93 passing` via `npm.cmd test` |
+| Dashboard | Static prototype with local/test Web3 integration, synthetic-data labels, accessibility improvements, and offline verifier panel |
 | Merkle tooling | Allocation root/proof generator |
-| Portability export | Prototype JSON export plus local verifier for claims, proofs, votes, and receipts |
+| Portability export | Prototype JSON export plus offline and optional RPC-backed verifier for claims, proofs, votes, and receipts |
 | Mainnet | Not deployed |
 | External audit | Pending |
 
@@ -58,7 +58,7 @@ npm.cmd run merkle:allocations -- --in allocations.json --out merkle.json
 Run the portability export prototype:
 
 ```bash
-node scripts/export-portability.js --exporter <participant_address>
+node scripts/export-portability.js --exporter <participant_address> --from-block <deployment_block>
 ```
 
 Verify a portability export:
@@ -74,20 +74,34 @@ npm.cmd run verify:export -- --file exports/<participant_address>.json
 ```mermaid
 flowchart LR
   Depositor["PBM / depositor"] --> Treasury["PBMRebateTreasury"]
-  Council["Council multisig"] --> Treasury
-  Guardian["Guardian"] --> Treasury
+  Council["Council Safe"] --> Treasury
+  Confirmer["Root confirmer"] --> Treasury
+  Guardian["Guardian pause key"] --> Treasury
   Timelock["Timelock executor"] --> Treasury
-  Treasury --> Pharmacy["Independent pharmacy claims"]
+  Remediation["Exclusion remediation reserve"] --> Treasury
+  Treasury --> Pharmacy["Merkle pharmacy claims"]
   Treasury --> PatientFund["Patient fund"]
-  PatientFund --> PB["Participatory budgeting"]
+  PatientFund --> PB["PatientFundParticipatoryBudgeting"]
+  Voters["Credentialed voters"] --> PB
   PB --> Projects["Community health projects"]
+  Issuer["Credential issuer / relayer"] --> PB
   MutualCredit["PharmacyMutualCredit"] -. decoupled .-> Pharmacy
+  MutualCredit --> Vouchers["Recipient-bound vouchers"]
   Dashboard["Dashboard prototype"] --> Treasury
   Dashboard --> PB
   Dashboard --> MutualCredit
-  Export["Portability export"] --> Treasury
+  Export["Portability export + verifier"] --> Treasury
   Export --> PB
 ```
+
+## Current Checkpoint
+
+- Treasury remediation, root-backed claims, governance funds, and epoch escrow are separated in contract accounting.
+- Voter registration supports EIP-712 relayer authorizations and direct trusted-issuer credential signatures.
+- Patient-fund matching now uses pull-based project claims after round finalization.
+- Mutual-credit vouchers reserve issuer capacity and can be redeemed only by the intended registered recipient.
+- Dashboard values are explicitly synthetic unless contract-backed.
+- Portability exports can be checked offline for structure/Merkle math and with RPC for chain provenance.
 
 ---
 
@@ -110,7 +124,7 @@ This is infrastructure for transparent rebate pass-through. It is not legal, fin
 1. PBM or depositor calls `depositRebate()`.
 2. The council Safe calls `proposeRoot()` for the current epoch.
 3. A separately configured root-confirmer Safe calls `confirmRoot()`.
-4. Pharmacies claim with Merkle proofs through `claim()` or `claimBatch()`.
+4. Pharmacies claim with Merkle proofs through `claim()`.
 5. Council calls `finalizeEpoch()` to close the epoch.
 6. After the 30-day `RECALL_DELAY`, unclaimed funds can be recalled to `patientFund`.
 
