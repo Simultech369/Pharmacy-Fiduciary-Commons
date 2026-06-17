@@ -250,7 +250,9 @@ contract PharmacyMutualCredit is AccessControl, Pausable {
         }
 
         int256 committed = int256(reservedVoucherCredit[participant] + additional);
-        return balances[participant] - committed >= -int256(limit);
+        // Rewrite `balance - committed >= -limit` to `balance >= committed - limit` to prevent underflow.
+        // Since both committed and limit are non-negative int256 values, committed - limit is safe from overflow/underflow.
+        return balances[participant] >= committed - int256(limit);
     }
 
     // =========================================================

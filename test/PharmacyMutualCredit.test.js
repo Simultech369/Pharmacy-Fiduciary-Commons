@@ -131,6 +131,35 @@ describe("PharmacyMutualCredit", function () {
         "NotRegistered"
       );
     });
+
+    it("prevents integer underflow and cleanly reverts with CreditLimitExceeded when balance is near type(int256).min", async function () {
+      const maxInt256 = 2n ** 255n - 1n;
+      
+      // Update credit limits to maxInt256
+      await credit.connect(council).updateCreditLimit(pharmacyA.address, maxInt256);
+      await credit.connect(council).updateCreditLimit(pharmacyB.address, maxInt256);
+
+      // Transfer maxInt256 to push pharmacyA's balance to -maxInt256
+      await credit.connect(pharmacyA).transferCredit(pharmacyB.address, maxInt256);
+      expect(await credit.balances(pharmacyA.address)).to.equal(-maxInt256);
+
+      // Attempting to transfer 2 more should exceed limit and revert with CreditLimitExceeded
+      await expectRevert(
+        credit.connect(pharmacyA).transferCredit(pharmacyB.address, 2n),
+        "CreditLimitExceeded"
+      );
+
+      // Authorize pharmacyA to issue vouchers, and verify voucher capacity underflow check
+      await credit.connect(council).updateIssuerStatus(pharmacyA.address, true);
+      const voucherId = ethers.keccak256(ethers.toUtf8Bytes("underflow-voucher"));
+      const latestBlock = await ethers.provider.getBlock("latest");
+      const expiry = BigInt(latestBlock.timestamp) + 3600n;
+
+      await expectRevert(
+        credit.connect(pharmacyA).createVoucher(voucherId, pharmacyB.address, 2n, expiry),
+        "CreditLimitExceeded"
+      );
+    });
   });
 
   describe("Voucher System", function () {
