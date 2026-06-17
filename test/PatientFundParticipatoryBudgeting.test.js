@@ -592,4 +592,109 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(recipientABalAfterDust).to.equal(recipientABalBeforeDust);
     });
   });
+
+  describe("On-Chain Credential Voter Registration", function () {
+    let issuer;
+    const credentialHash = ethers.keccak256(ethers.toUtf8Bytes("voter-credential-123"));
+    const policyVersion = ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v1"));
+
+    beforeEach(async function () {
+      issuer = ethers.Wallet.createRandom().connect(ethers.provider);
+      // Start round 1
+      await pb.connect(council).startRound(toWei("1000"));
+    });
+
+    it("allows council to configure trusted issuers, but restricts to council", async function () {
+      await pb.connect(council).setTrustedCredentialIssuer(issuer.address, true);
+      expect(await pb.trustedCredentialIssuers(issuer.address)).to.be.true;
+
+      await expectRevert(
+        pb.connect(attacker).setTrustedCredentialIssuer(issuer.address, false),
+        "AccessControl"
+      );
+    });
+
+    it("allows a voter to self-register with a valid trusted issuer signature", async function () {
+      await pb.connect(council).setTrustedCredentialIssuer(issuer.address, true);
+
+      // Construct message and sign with issuer private key
+      const messageHash = ethers.solidityPackedKeccak256(
+        ["address", "uint256", "bytes32", "bytes32"],
+        [voters[0].address, 1n, credentialHash, policyVersion]
+      );
+      const signature = await issuer.signMessage(ethers.getBytes(messageHash));
+
+      // Voter self-registers
+      await pb.connect(voters[0]).registerVoterWithCredential(
+        1n,
+        credentialHash,
+        policyVersion,
+        signature
+      );
+
+      expect(await pb.registeredVoters(1n, voters[0].address)).to.be.true;
+    });
+
+    it("reverts if the issuer is not trusted", async function () {
+      // Issuer is NOT configured as trusted
+      const messageHash = ethers.solidityPackedKeccak256(
+        ["address", "uint256", "bytes32", "bytes32"],
+        [voters[0].address, 1n, credentialHash, policyVersion]
+      );
+      const signature = await issuer.signMessage(ethers.getBytes(messageHash));
+
+      await expectRevert(
+        pb.connect(voters[0]).registerVoterWithCredential(
+          1n,
+          credentialHash,
+          policyVersion,
+          signature
+        ),
+        "Unauthorized"
+      );
+    });
+
+    it("reverts if the signature is invalid or tampered", async function () {
+      await pb.connect(council).setTrustedCredentialIssuer(issuer.address, true);
+
+      // Sign with a different payload (e.g. voter 1 instead of voter 0)
+      const messageHash = ethers.solidityPackedKeccak256(
+        ["address", "uint256", "bytes32", "bytes32"],
+        [voters[1].address, 1n, credentialHash, policyVersion]
+      );
+      const signature = await issuer.signMessage(ethers.getBytes(messageHash));
+
+      // Voter 0 tries to use Voter 1's signature
+      await expectRevert(
+        pb.connect(voters[0]).registerVoterWithCredential(
+          1n,
+          credentialHash,
+          policyVersion,
+          signature
+        ),
+        "Unauthorized"
+      );
+    });
+
+    it("reverts if the policy version is unsupported", async function () {
+      await pb.connect(council).setTrustedCredentialIssuer(issuer.address, true);
+      const badPolicy = ethers.keccak256(ethers.toUtf8Bytes("bad-policy-v2"));
+
+      const messageHash = ethers.solidityPackedKeccak256(
+        ["address", "uint256", "bytes32", "bytes32"],
+        [voters[0].address, 1n, credentialHash, badPolicy]
+      );
+      const signature = await issuer.signMessage(ethers.getBytes(messageHash));
+
+      await expectRevert(
+        pb.connect(voters[0]).registerVoterWithCredential(
+          1n,
+          credentialHash,
+          badPolicy,
+          signature
+        ),
+        "UnsupportedCredentialPolicy"
+      );
+    });
+  });
 });

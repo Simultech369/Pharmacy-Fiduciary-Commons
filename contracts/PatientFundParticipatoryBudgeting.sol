@@ -66,9 +66,13 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     // roundId => projectId => matching share amount
     mapping(uint256 => mapping(uint256 => uint256)) public roundProjectShares;
 
+    // issuerAddress => isTrusted
+    mapping(address => bool) public trustedCredentialIssuers;
+
     // =========================================================
     // EVENTS
     // =========================================================
+    event TrustedCredentialIssuerUpdated(address indexed issuer, bool status);
     event RoundStarted(uint256 indexed roundId, uint256 matchingPool);
     event RoundFinalized(uint256 indexed roundId, uint256 totalWeight);
     event ProjectRegistered(uint256 indexed roundId, uint256 indexed projectId, string title, address recipient);
@@ -153,6 +157,12 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         emit RelayerVerifierUpdated(_newVerifier);
     }
 
+    function setTrustedCredentialIssuer(address issuer, bool status) external onlyRole(COUNCIL_ROLE) whenNotPaused {
+        if (issuer == address(0)) revert InvalidAddress();
+        trustedCredentialIssuers[issuer] = status;
+        emit TrustedCredentialIssuerUpdated(issuer, status);
+    }
+
     function registerVoter(uint256 roundId, address voter, bool status) external onlyRole(COUNCIL_ROLE) whenNotPaused {
         if (voter == address(0)) revert InvalidAddress();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
@@ -216,6 +226,38 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         registeredVoters[roundId][voter] = true;
         emit VoterRegistered(roundId, voter, true);
         emit RegistrationAuthorizationUsed(roundId, voter, credentialHash, policyVersion, deadline);
+    }
+
+    /**
+     * @notice Allows a voter to self-register by presenting a credential signed by a trusted issuer.
+     */
+    function registerVoterWithCredential(
+        uint256 roundId,
+        bytes32 credentialHash,
+        bytes32 policyVersion,
+        bytes calldata issuerSignature
+    ) external whenNotPaused {
+        if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
+        if (credentialHash == bytes32(0) || policyVersion == bytes32(0)) {
+            revert InvalidAuthorizationMetadata();
+        }
+        if (policyVersion != ACCEPTED_CREDENTIAL_POLICY_VERSION) {
+            revert UnsupportedCredentialPolicy();
+        }
+
+        // Reconstruct the message hash: standard ECDSA
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(msg.sender, roundId, credentialHash, policyVersion)
+        );
+        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
+        address issuer = ethSignedMessageHash.recover(issuerSignature);
+
+        if (!trustedCredentialIssuers[issuer]) revert Unauthorized();
+
+        registeredVoters[roundId][msg.sender] = true;
+        registrationNonces[roundId][msg.sender] += 1;
+        emit VoterRegistered(roundId, msg.sender, true);
+        emit RegistrationAuthorizationUsed(roundId, msg.sender, credentialHash, policyVersion, block.timestamp);
     }
 
     function registerProject(uint256 roundId, string calldata title, address recipient) external onlyRole(COUNCIL_ROLE) whenNotPaused {
