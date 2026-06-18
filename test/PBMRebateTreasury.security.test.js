@@ -276,6 +276,48 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(await treasury.totalRebateDeposited()).to.equal(toWei("1000"));
   });
 
+  it("recovers stale unallocated distribution liquidity only through timelock after long inactivity", async function () {
+    await seedDeposit(toWei("1000"));
+
+    await expectRevert(
+      timelockExecute(
+        await treasury.getAddress(),
+        treasury.interface.encodeFunctionData("recoverStaleDistributionPool", [patientFund.address, toWei("100")])
+      ),
+      "underlying transaction reverted"
+    );
+
+    await ethers.provider.send("evm_increaseTime", [180 * 24 * 60 * 60 + 1]);
+    await ethers.provider.send("evm_mine", []);
+
+    const patientBefore = await token.balanceOf(patientFund.address);
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("recoverStaleDistributionPool", [patientFund.address, toWei("100")])
+    );
+
+    expect(await treasury.distributionPool()).to.equal(toWei("890"));
+    expect((await token.balanceOf(patientFund.address)) - patientBefore).to.equal(toWei("100"));
+  });
+
+  it("blocks stale distribution recovery after a root is confirmed", async function () {
+    await seedDeposit(toWei("1000"));
+    const gross = toWei("100");
+    await publishSingleLeafRoot(gross, gross);
+    await treasury.connect(council2).confirmRoot(0);
+
+    await ethers.provider.send("evm_increaseTime", [180 * 24 * 60 * 60 + 1]);
+    await ethers.provider.send("evm_mine", []);
+
+    await expectRevert(
+      timelockExecute(
+        await treasury.getAddress(),
+        treasury.interface.encodeFunctionData("recoverStaleDistributionPool", [patientFund.address, toWei("100")])
+      ),
+      "underlying transaction reverted"
+    );
+  });
+
   it("requires root approval from the separately configured confirmer", async function () {
     await seedDeposit(toWei("1000"));
 

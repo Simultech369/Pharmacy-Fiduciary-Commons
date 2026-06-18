@@ -133,6 +133,7 @@ contract PBMRebateTreasury is
     error EpochTooShort();
     error EpochVolumeTooLow();
     error EpochVolumeMeetsMinimum();
+    error RecoveryDelayNotElapsed();
     error GuardianMustDifferFromCouncil();
     error RootConfirmerMustDifferFromCouncil();
     error NotSanctioned();
@@ -181,6 +182,9 @@ contract PBMRebateTreasury is
 
     /// @notice Proposed roots expire if not co-signed within this window.
     uint256 private constant ROOT_PROPOSAL_EXPIRY = 3 days;
+
+    /// @notice Long inactivity window before timelock may recover unallocated distribution liquidity.
+    uint256 private constant STALE_DISTRIBUTION_RECOVERY_DELAY = 180 days;
 
     // =========================================================
     // IMMUTABLE CORE
@@ -391,6 +395,7 @@ contract PBMRebateTreasury is
     );
 
     event GovernanceReserveWithdrawn(address indexed recipient, uint256 amount);
+    event StaleDistributionPoolRecovered(address indexed recipient, uint256 amount);
     event ExclusionRemediationFunded(address indexed funder, uint256 amount);
 
     event Sweep(address indexed tokenAddr, address indexed recipient, uint256 amount);
@@ -1066,6 +1071,35 @@ contract PBMRebateTreasury is
         token.safeTransfer(recipient, amount);
 
         emit GovernanceReserveWithdrawn(recipient, amount);
+    }
+
+    /**
+     * @notice Timelocked recovery for distribution liquidity never assigned to a root.
+     * @dev    This does not touch epoch escrow or the payout token sweep guard. It only
+     *         reduces unallocated distributionPool after a long period with no confirmed
+     *         root for the current epoch, preventing indefinite lock if root publication
+     *         governance stalls.
+     *
+     * @param recipient Address to receive recovered distribution liquidity.
+     * @param amount    Amount to recover from the unallocated distribution pool.
+     */
+    function recoverStaleDistributionPool(address recipient, uint256 amount)
+        external
+        onlyRole(EXECUTOR_ROLE)
+        nonReentrant
+    {
+        if (recipient == address(0)) revert InvalidAddress();
+        if (amount == 0)             revert ZeroAmount();
+        if (epochMerkleRoot[currentEpoch] != bytes32(0)) revert RootAlreadyLive();
+        if (block.timestamp < epochStartTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
+            revert RecoveryDelayNotElapsed();
+        }
+        if (distributionPool < amount) revert InsufficientDistributionPool();
+
+        distributionPool -= amount;
+        token.safeTransfer(recipient, amount);
+
+        emit StaleDistributionPoolRecovered(recipient, amount);
     }
 
     // =========================================================

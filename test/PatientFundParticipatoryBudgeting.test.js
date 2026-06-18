@@ -601,9 +601,10 @@ describe("PatientFundParticipatoryBudgeting", function () {
     async function signIssuerCredential(voter, roundId, hash = credentialHash, policy = policyVersion, deadline = null) {
       const nonce = await pb.registrationNonces(roundId, voter.address);
       const expiresAt = deadline ?? BigInt((await ethers.provider.getBlock("latest")).timestamp + 3600);
+      const network = await ethers.provider.getNetwork();
       const messageHash = ethers.solidityPackedKeccak256(
-        ["address", "uint256", "uint256", "bytes32", "bytes32", "uint256"],
-        [voter.address, roundId, nonce, hash, policy, expiresAt]
+        ["uint256", "address", "address", "uint256", "uint256", "bytes32", "bytes32", "uint256"],
+        [network.chainId, await pb.getAddress(), voter.address, roundId, nonce, hash, policy, expiresAt]
       );
       const signature = await issuer.signMessage(ethers.getBytes(messageHash));
       return { deadline: expiresAt, signature };
@@ -704,6 +705,29 @@ describe("PatientFundParticipatoryBudgeting", function () {
           policyVersion,
           current.deadline,
           current.signature
+        ),
+        "Unauthorized"
+      );
+    });
+
+    it("rejects trusted issuer signatures replayed across deployments", async function () {
+      await pb.connect(council).setTrustedCredentialIssuer(issuer.address, true);
+      const { deadline, signature } = await signIssuerCredential(voters[0], 1n);
+
+      const PB = await ethers.getContractFactory("PatientFundParticipatoryBudgeting");
+      const otherPb = await PB.deploy(await token.getAddress(), council.address, guardian.address);
+      await otherPb.waitForDeployment();
+      await token.connect(council).approve(await otherPb.getAddress(), toWei("1000"));
+      await otherPb.connect(council).startRound(toWei("1000"));
+      await otherPb.connect(council).setTrustedCredentialIssuer(issuer.address, true);
+
+      await expectRevert(
+        otherPb.connect(voters[0]).registerVoterWithCredential(
+          1n,
+          credentialHash,
+          policyVersion,
+          deadline,
+          signature
         ),
         "Unauthorized"
       );

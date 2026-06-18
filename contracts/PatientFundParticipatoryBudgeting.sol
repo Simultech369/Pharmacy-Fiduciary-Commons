@@ -252,9 +252,10 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
 
     /**
      * @notice Allows a voter to self-register by presenting a credential signed by a trusted issuer.
-     * @dev Issuer signatures bind voter, round, current nonce, credential hash,
-     *      policy version, and deadline. Council registration/revocation advances
-     *      the nonce and invalidates outstanding issuer signatures.
+     * @dev Issuer signatures bind chain ID, contract address, voter, round,
+     *      current nonce, credential hash, policy version, and deadline. Council
+     *      registration/revocation advances the nonce and invalidates outstanding
+     *      issuer signatures.
      */
     function registerVoterWithCredential(
         uint256 roundId,
@@ -273,10 +274,11 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         if (block.timestamp > deadline) revert AuthorizationExpired();
 
         // Reconstruct the issuer authorization. The nonce and deadline keep direct
-        // issuer signatures from becoming reusable stale credentials.
+        // issuer signatures from becoming reusable stale credentials, while chain
+        // and contract binding prevent cross-deployment replay.
         uint256 nonce = registrationNonces[roundId][msg.sender];
         bytes32 messageHash = keccak256(
-            abi.encodePacked(msg.sender, roundId, nonce, credentialHash, policyVersion, deadline)
+            abi.encodePacked(block.chainid, address(this), msg.sender, roundId, nonce, credentialHash, policyVersion, deadline)
         );
         bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
         address issuer = ethSignedMessageHash.recover(issuerSignature);
