@@ -5,7 +5,6 @@
 **On-chain rebate transparency infrastructure for independent pharmacies and patient funds.**
 
 ![CI](https://github.com/Simultech369/Pharmacy-Fiduciary-Commons/actions/workflows/test.yml/badge.svg)
-![Tests](https://img.shields.io/badge/local%20tests-93%20passing-16a34a?style=for-the-badge)
 ![Audit](https://img.shields.io/badge/audit-not%20audited-dc2626?style=for-the-badge)
 ![Mainnet](https://img.shields.io/badge/mainnet-not%20deployed-6b7280?style=for-the-badge)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.20-363636?style=for-the-badge&logo=solidity)
@@ -28,7 +27,7 @@
 | `PBMRebateTreasury` | Working Solidity contract with epoch escrow, Merkle claims, dispute handling, sanctions, recall, pause, and cap controls |
 | `PatientFundParticipatoryBudgeting` | Working patient-fund voting prototype with council registration and relayer-assisted voter self-registration |
 | `PharmacyMutualCredit` | Working decoupled mutual-credit prototype with reserved-capacity, recipient-bound vouchers |
-| Tests | `93 passing` via `npm.cmd test` |
+| Tests | Compile and unit tests run in CI; run locally with `npm.cmd test` |
 | Dashboard | Static prototype with local/test Web3 integration, synthetic-data labels, accessibility improvements, and offline verifier panel |
 | Merkle tooling | Allocation root/proof generator |
 | Portability export | Prototype JSON export plus offline and optional RPC-backed verifier for claims, proofs, votes, and receipts |
@@ -258,7 +257,8 @@ Optional timelock variables:
 
 - `TIMELOCK_MIN_DELAY_SECONDS`
 - `TIMELOCK_PROPOSERS`
-- `TIMELOCK_EXECUTORS`
+- `TIMELOCK_EXECUTORS` - comma-separated executor addresses; set `ALLOW_OPEN_TIMELOCK_EXECUTOR=true` only if open execution is intentional
+- `ALLOW_OPEN_TIMELOCK_EXECUTOR=true` - explicit acknowledgement that ready timelock operations may be executed by any address
 - `RENOUNCE_TIMELOCK_ADMIN=true` - supported only when `TIMELOCK_ADMIN` is the deployer; removes the temporary human admin after deployment checks
 
 ---

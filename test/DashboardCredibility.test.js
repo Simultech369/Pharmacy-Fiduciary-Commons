@@ -21,4 +21,12 @@ describe("Dashboard credibility guardrails", function () {
     }
     expect(dashboard).to.include("(!data.mock && !data.verified)");
   });
+
+  it("renders omission card fields with textContent instead of dynamic innerHTML", function () {
+    expect(dashboard).to.include("quarter.textContent = item.q");
+    expect(dashboard).to.include("badge.textContent = item.status");
+    expect(dashboard).to.include("amount.textContent = item.amount");
+    expect(dashboard).to.include("desc.textContent = item.desc");
+    expect(dashboard).not.to.match(/card\.innerHTML\s*=/);
+  });
 });

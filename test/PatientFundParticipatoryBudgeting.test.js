@@ -598,6 +598,17 @@ describe("PatientFundParticipatoryBudgeting", function () {
     const credentialHash = ethers.keccak256(ethers.toUtf8Bytes("voter-credential-123"));
     const policyVersion = ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v1"));
 
+    async function signIssuerCredential(voter, roundId, hash = credentialHash, policy = policyVersion, deadline = null) {
+      const nonce = await pb.registrationNonces(roundId, voter.address);
+      const expiresAt = deadline ?? BigInt((await ethers.provider.getBlock("latest")).timestamp + 3600);
+      const messageHash = ethers.solidityPackedKeccak256(
+        ["address", "uint256", "uint256", "bytes32", "bytes32", "uint256"],
+        [voter.address, roundId, nonce, hash, policy, expiresAt]
+      );
+      const signature = await issuer.signMessage(ethers.getBytes(messageHash));
+      return { deadline: expiresAt, signature };
+    }
+
     beforeEach(async function () {
       issuer = ethers.Wallet.createRandom().connect(ethers.provider);
       // Start round 1
@@ -617,37 +628,31 @@ describe("PatientFundParticipatoryBudgeting", function () {
     it("allows a voter to self-register with a valid trusted issuer signature", async function () {
       await pb.connect(council).setTrustedCredentialIssuer(issuer.address, true);
 
-      // Construct message and sign with issuer private key
-      const messageHash = ethers.solidityPackedKeccak256(
-        ["address", "uint256", "bytes32", "bytes32"],
-        [voters[0].address, 1n, credentialHash, policyVersion]
-      );
-      const signature = await issuer.signMessage(ethers.getBytes(messageHash));
+      const { deadline, signature } = await signIssuerCredential(voters[0], 1n);
 
       // Voter self-registers
       await pb.connect(voters[0]).registerVoterWithCredential(
         1n,
         credentialHash,
         policyVersion,
+        deadline,
         signature
       );
 
       expect(await pb.registeredVoters(1n, voters[0].address)).to.be.true;
+      expect(await pb.registrationNonces(1n, voters[0].address)).to.equal(1n);
     });
 
     it("reverts if the issuer is not trusted", async function () {
       // Issuer is NOT configured as trusted
-      const messageHash = ethers.solidityPackedKeccak256(
-        ["address", "uint256", "bytes32", "bytes32"],
-        [voters[0].address, 1n, credentialHash, policyVersion]
-      );
-      const signature = await issuer.signMessage(ethers.getBytes(messageHash));
+      const { deadline, signature } = await signIssuerCredential(voters[0], 1n);
 
       await expectRevert(
         pb.connect(voters[0]).registerVoterWithCredential(
           1n,
           credentialHash,
           policyVersion,
+          deadline,
           signature
         ),
         "Unauthorized"
@@ -657,12 +662,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
     it("reverts if the signature is invalid or tampered", async function () {
       await pb.connect(council).setTrustedCredentialIssuer(issuer.address, true);
 
-      // Sign with a different payload (e.g. voter 1 instead of voter 0)
-      const messageHash = ethers.solidityPackedKeccak256(
-        ["address", "uint256", "bytes32", "bytes32"],
-        [voters[1].address, 1n, credentialHash, policyVersion]
-      );
-      const signature = await issuer.signMessage(ethers.getBytes(messageHash));
+      const { deadline, signature } = await signIssuerCredential(voters[1], 1n);
 
       // Voter 0 tries to use Voter 1's signature
       await expectRevert(
@@ -670,7 +670,40 @@ describe("PatientFundParticipatoryBudgeting", function () {
           1n,
           credentialHash,
           policyVersion,
+          deadline,
           signature
+        ),
+        "Unauthorized"
+      );
+    });
+
+    it("rejects expired or nonce-stale trusted issuer signatures", async function () {
+      await pb.connect(council).setTrustedCredentialIssuer(issuer.address, true);
+
+      const expiredDeadline = BigInt((await ethers.provider.getBlock("latest")).timestamp - 1);
+      const expired = await signIssuerCredential(voters[0], 1n, credentialHash, policyVersion, expiredDeadline);
+
+      await expectRevert(
+        pb.connect(voters[0]).registerVoterWithCredential(
+          1n,
+          credentialHash,
+          policyVersion,
+          expired.deadline,
+          expired.signature
+        ),
+        "AuthorizationExpired"
+      );
+
+      const current = await signIssuerCredential(voters[0], 1n);
+      await pb.connect(council).registerVoter(1n, voters[0].address, false);
+
+      await expectRevert(
+        pb.connect(voters[0]).registerVoterWithCredential(
+          1n,
+          credentialHash,
+          policyVersion,
+          current.deadline,
+          current.signature
         ),
         "Unauthorized"
       );
@@ -680,17 +713,14 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await pb.connect(council).setTrustedCredentialIssuer(issuer.address, true);
       const badPolicy = ethers.keccak256(ethers.toUtf8Bytes("bad-policy-v2"));
 
-      const messageHash = ethers.solidityPackedKeccak256(
-        ["address", "uint256", "bytes32", "bytes32"],
-        [voters[0].address, 1n, credentialHash, badPolicy]
-      );
-      const signature = await issuer.signMessage(ethers.getBytes(messageHash));
+      const { deadline, signature } = await signIssuerCredential(voters[0], 1n, credentialHash, badPolicy);
 
       await expectRevert(
         pb.connect(voters[0]).registerVoterWithCredential(
           1n,
           credentialHash,
           badPolicy,
+          deadline,
           signature
         ),
         "UnsupportedCredentialPolicy"

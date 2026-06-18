@@ -132,6 +132,7 @@ contract PBMRebateTreasury is
     error OutOfRange();
     error EpochTooShort();
     error EpochVolumeTooLow();
+    error EpochVolumeMeetsMinimum();
     error GuardianMustDifferFromCouncil();
     error RootConfirmerMustDifferFromCouncil();
     error NotSanctioned();
@@ -368,6 +369,7 @@ contract PBMRebateTreasury is
     );
 
     event EpochFinalized(uint256 indexed epoch, uint256 totalVolume, uint256 remainingEscrow, uint256 timestamp);
+    event StaleEpochFinalizedForRecall(uint256 indexed epoch, uint256 totalVolume, uint256 remainingEscrow, uint256 timestamp);
     event EpochStarted(uint256 indexed epoch, uint256 timestamp);
 
     event HardCapReduced(uint256 indexed oldCap, uint256 indexed newCap);
@@ -968,6 +970,34 @@ contract PBMRebateTreasury is
         if (block.timestamp < epochStartTimestamp + MIN_EPOCH_DURATION) revert EpochTooShort();
         if (epochVolume < minimumEpochVolume) revert EpochVolumeTooLow();
 
+        emit EpochFinalized(epoch, epochVolume, epochEscrow[epoch], block.timestamp);
+
+        unchecked { currentEpoch = epoch + 1; }
+        epochVolume         = 0;
+        epochStartTimestamp = block.timestamp;
+
+        emit EpochStarted(currentEpoch, block.timestamp);
+    }
+
+    /**
+     * @notice Finalizes a below-minimum-volume epoch after the recall window has elapsed.
+     * @dev    Normal finalization still requires minimumEpochVolume. This liveness path
+     *         exists only so inactive or low-participation epochs cannot permanently
+     *         trap root escrow by blocking recallUnclaimed().
+     */
+    function finalizeStaleEpochForRecall()
+        external
+        onlyRole(COUNCIL_ROLE)
+        whenNotPaused
+    {
+        uint256 epoch = currentEpoch;
+        uint256 publishedAt = epochPublishedTimestamp[epoch];
+        if (publishedAt == 0) revert NoRootPublished();
+        if (block.timestamp < epochStartTimestamp + MIN_EPOCH_DURATION) revert EpochTooShort();
+        if (epochVolume >= minimumEpochVolume) revert EpochVolumeMeetsMinimum();
+        if (block.timestamp < publishedAt + RECALL_DELAY) revert RecallDelayNotElapsed();
+
+        emit StaleEpochFinalizedForRecall(epoch, epochVolume, epochEscrow[epoch], block.timestamp);
         emit EpochFinalized(epoch, epochVolume, epochEscrow[epoch], block.timestamp);
 
         unchecked { currentEpoch = epoch + 1; }

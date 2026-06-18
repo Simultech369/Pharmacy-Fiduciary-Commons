@@ -252,11 +252,15 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
 
     /**
      * @notice Allows a voter to self-register by presenting a credential signed by a trusted issuer.
+     * @dev Issuer signatures bind voter, round, current nonce, credential hash,
+     *      policy version, and deadline. Council registration/revocation advances
+     *      the nonce and invalidates outstanding issuer signatures.
      */
     function registerVoterWithCredential(
         uint256 roundId,
         bytes32 credentialHash,
         bytes32 policyVersion,
+        uint256 deadline,
         bytes calldata issuerSignature
     ) external whenNotPaused {
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
@@ -266,10 +270,13 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         if (policyVersion != ACCEPTED_CREDENTIAL_POLICY_VERSION) {
             revert UnsupportedCredentialPolicy();
         }
+        if (block.timestamp > deadline) revert AuthorizationExpired();
 
-        // Reconstruct the message hash: standard ECDSA
+        // Reconstruct the issuer authorization. The nonce and deadline keep direct
+        // issuer signatures from becoming reusable stale credentials.
+        uint256 nonce = registrationNonces[roundId][msg.sender];
         bytes32 messageHash = keccak256(
-            abi.encodePacked(msg.sender, roundId, credentialHash, policyVersion)
+            abi.encodePacked(msg.sender, roundId, nonce, credentialHash, policyVersion, deadline)
         );
         bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
         address issuer = ethSignedMessageHash.recover(issuerSignature);
@@ -277,9 +284,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         if (!trustedCredentialIssuers[issuer]) revert Unauthorized();
 
         registeredVoters[roundId][msg.sender] = true;
-        registrationNonces[roundId][msg.sender] += 1;
+        registrationNonces[roundId][msg.sender] = nonce + 1;
         emit VoterRegistered(roundId, msg.sender, true);
-        emit RegistrationAuthorizationUsed(roundId, msg.sender, credentialHash, policyVersion, block.timestamp);
+        emit RegistrationAuthorizationUsed(roundId, msg.sender, credentialHash, policyVersion, deadline);
     }
 
     function setProjectSupportThreshold(uint256 threshold) external onlyRole(COUNCIL_ROLE) whenNotPaused {

@@ -1052,19 +1052,29 @@
 
       data.quarters.forEach(item => {
         const isRecorded = item.status === "recorded";
+        const statusClass = isRecorded ? "recorded" : "omitted";
         const card = document.createElement("div");
-        card.className = `omission-card ${item.status}`;
+        card.className = `omission-card ${statusClass}`;
 
-        card.innerHTML = `
-          <div class="quarter-label">${item.q}</div>
-          <span class="status-badge ${item.status}">${item.status}</span>
-          <div class="amount-display" style="color: ${isRecorded ? 'var(--accent-green-text)' : 'var(--accent-red-text)'}">
-            ${item.amount}
-          </div>
-          <div class="omission-desc" style="color: ${isRecorded ? 'var(--text-muted)' : 'var(--accent-red-text)'}">
-            ${item.desc}
-          </div>
-        `;
+        const quarter = document.createElement("div");
+        quarter.className = "quarter-label";
+        quarter.textContent = item.q;
+
+        const badge = document.createElement("span");
+        badge.className = `status-badge ${statusClass}`;
+        badge.textContent = item.status;
+
+        const amount = document.createElement("div");
+        amount.className = "amount-display";
+        amount.style.color = isRecorded ? "var(--accent-green-text)" : "var(--accent-red-text)";
+        amount.textContent = item.amount;
+
+        const desc = document.createElement("div");
+        desc.className = "omission-desc";
+        desc.style.color = isRecorded ? "var(--text-muted)" : "var(--accent-red-text)";
+        desc.textContent = item.desc;
+
+        card.append(quarter, badge, amount, desc);
         container.appendChild(card);
       });
     }

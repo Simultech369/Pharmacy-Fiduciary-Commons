@@ -18,6 +18,18 @@ function parseAddressList(value) {
     .filter(Boolean);
 }
 
+function resolveTimelockExecutors() {
+  if (process.env.TIMELOCK_EXECUTORS) {
+    return parseAddressList(process.env.TIMELOCK_EXECUTORS);
+  }
+  if (process.env.ALLOW_OPEN_TIMELOCK_EXECUTOR === "true") {
+    return [hre.ethers.ZeroAddress];
+  }
+  throw new Error(
+    "TIMELOCK_EXECUTORS is required. Set ALLOW_OPEN_TIMELOCK_EXECUTOR=true only if open timelock execution is intentional."
+  );
+}
+
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
 
@@ -39,7 +51,7 @@ async function main() {
 
   const minDelaySeconds = BigInt(process.env.TIMELOCK_MIN_DELAY_SECONDS ?? "172800"); // 2 days
   const timelockProposers = parseAddressList(process.env.TIMELOCK_PROPOSERS ?? council);
-  const timelockExecutors = parseAddressList(process.env.TIMELOCK_EXECUTORS ?? hre.ethers.ZeroAddress);
+  const timelockExecutors = resolveTimelockExecutors();
   const timelockAdmin = requireEnv("TIMELOCK_ADMIN");
   const renounceSetupAdmin = process.env.RENOUNCE_TIMELOCK_ADMIN === "true";
 

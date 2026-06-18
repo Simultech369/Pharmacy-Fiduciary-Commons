@@ -11,8 +11,8 @@ Repository: https://github.com/Simultech369/Pharmacy-Fiduciary-Commons
 - Not audited.
 - Not deployed to mainnet.
 - No real funds should be routed through the contracts.
-- Current local verification: `93 passing` via `npm.cmd test`.
-- Current head reviewed locally: `65e4e38`.
+- Current local verification command: `npm.cmd test`.
+- Current head reviewed locally: see the latest pushed `main` commit.
 
 ## What Works Today
 

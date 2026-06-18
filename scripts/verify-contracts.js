@@ -18,6 +18,18 @@ function parseAddressList(value) {
     .filter(Boolean);
 }
 
+function resolveTimelockExecutors() {
+  if (process.env.TIMELOCK_EXECUTORS) {
+    return parseAddressList(process.env.TIMELOCK_EXECUTORS);
+  }
+  if (process.env.ALLOW_OPEN_TIMELOCK_EXECUTOR === "true") {
+    return [hre.ethers.ZeroAddress];
+  }
+  throw new Error(
+    "TIMELOCK_EXECUTORS is required. Set ALLOW_OPEN_TIMELOCK_EXECUTOR=true only if open timelock execution is intentional."
+  );
+}
+
 async function main() {
   const timelockAddress = requireEnv("TIMELOCK_ADDRESS");
   const treasuryAddress = requireEnv("TREASURY_ADDRESS");
@@ -40,7 +52,7 @@ async function main() {
 
   const minDelaySeconds = BigInt(process.env.TIMELOCK_MIN_DELAY_SECONDS ?? "172800");
   const timelockProposers = parseAddressList(process.env.TIMELOCK_PROPOSERS ?? council);
-  const timelockExecutors = parseAddressList(process.env.TIMELOCK_EXECUTORS ?? hre.ethers.ZeroAddress);
+  const timelockExecutors = resolveTimelockExecutors();
   const timelockAdmin = requireEnv("TIMELOCK_ADMIN");
 
   console.log("Verifying TimelockController at:", timelockAddress);

@@ -233,6 +233,41 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(await usdcTreasury.minimumEpochVolume()).to.equal(usdcUnits("1"));
   });
 
+  it("allows stale below-minimum epochs to close for unclaimed recall after the recall delay", async function () {
+    await seedDeposit(toWei("1000"));
+
+    const gross = toWei("0.5");
+    await publishSingleLeafRoot(gross, gross);
+    await treasury.connect(council2).confirmRoot(0);
+
+    await ethers.provider.send("evm_increaseTime", [24 * 60 * 60 + 1]);
+    await ethers.provider.send("evm_mine", []);
+
+    await expectRevert(
+      treasury.connect(council).finalizeEpoch(),
+      "EpochVolumeTooLow"
+    );
+
+    await expectRevert(
+      treasury.connect(council).finalizeStaleEpochForRecall(),
+      "RecallDelayNotElapsed"
+    );
+
+    await ethers.provider.send("evm_increaseTime", [29 * 24 * 60 * 60 + 1]);
+    await ethers.provider.send("evm_mine", []);
+
+    await treasury.connect(council).finalizeStaleEpochForRecall();
+    expect(await treasury.currentEpoch()).to.equal(1n);
+
+    const patientBefore = await token.balanceOf(patientFund.address);
+    await treasury.connect(council).recallUnclaimed(0);
+    const patientAfter = await token.balanceOf(patientFund.address);
+
+    expect(patientAfter - patientBefore).to.equal(gross);
+    expect(await treasury.epochRecalled(0)).to.equal(true);
+    expect(await treasury.epochEscrow(0)).to.equal(0n);
+  });
+
   it("splits deposits 99 percent distribution and 1 percent governance", async function () {
     await seedDeposit(toWei("1000"));
 

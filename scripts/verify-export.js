@@ -265,7 +265,12 @@ async function main(opts = {}) {
   }
 
   if (result.ok) {
-    console.log("Portability export verification passed.");
+    const rpcEnabled = Boolean(opts.provider || opts.rpc || args.rpc);
+    console.log(
+      rpcEnabled
+        ? "RPC provenance verification passed."
+        : "OFFLINE STRUCTURE CHECK PASSED - NOT CHAIN PROVENANCE."
+    );
     for (const warning of result.warnings) {
       console.log(`Warning: ${warning}`);
     }
