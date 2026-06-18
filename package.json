@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "**On-chain rebate transparency for independent pharmacies and patients.**",
   "main": "index.js",
+  "engines": {
+    "node": ">=18 <25"
+  },
   "scripts": {
     "test": "hardhat test",
     "compile": "hardhat compile",

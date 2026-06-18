@@ -4,29 +4,43 @@ This document outlines the four development and deployment phases of the Fiducia
 
 ---
 
+## Phase 0: Prototype Hardening Gate
+
+The project remains in this phase until the public-facing and operational gates are demonstrably satisfied. This phase is intentionally allowed to hold design decisions open while making the unresolved parts explicit.
+
+- **Actions**:
+  - Keep the contract test suite green on a supported Node runtime.
+  - Resolve production-readiness checklist items for frontend minification, private source maps, secrets, database/RLS, API authorization, rate limiting, caching, scaling, error tracking, and ADA/WCAG accessibility before public launch.
+  - Document any intentionally undecided policy choices in `OPEN_DESIGN_DECISIONS.md` instead of implying they are settled.
+  - Keep dashboard data synthetic or contract-backed with visible provenance labels.
+- **Success Criteria**: Local/testnet claims remain accurate, readiness gaps are visible, and public materials do not imply audit, production, or mainnet readiness.
+
+---
+
 ## Phase 1: Security Audit & Testnet Deployment
 
 The primary goal of Phase 1 is code validation and parameter calibration.
 
 - **Actions**:
-  - Secure a formal third-party smart contract security audit for `PBMRebateTreasury.sol`.
+  - Secure a formal third-party smart contract security audit for the treasury and any adjacent contract intended for deployment.
   - Deploy the contract to Ethereum Sepolia and Arbitrum Sepolia testnets.
   - Calibrate initial parameters: `initialDailyCap`, `RECALL_DELAY`, and `governanceBP`.
   - Build and validate the off-chain Merkle tree generator and proof distribution scripts.
-- **Success Criteria**: Zero high-severity vulnerabilities found; 100% test suite pass on testnets.
+  - Run the dashboard against testnet addresses without presenting test data as production data.
+- **Success Criteria**: No unresolved critical or high-severity audit findings; full test suite passes on a supported Node runtime; testnet deployment addresses, chain IDs, and operating parameters are documented.
 
 ---
 
 ## Phase 2: First Live Epoch (Small Capital Guardrails)
 
-We begin mainnet deployment under strict risk-mitigated caps to observe live interactions.
+Mainnet deployment begins only after Phase 0 and Phase 1 gates are satisfied. The first live epoch should be treated as a constrained operational trial, not proof of production maturity.
 
 - **Actions**:
   - Deploy the contract to mainnet (e.g. Arbitrum One or Base for low gas costs).
-  - Configure a 3/5 Gnosis Safe for `_council` and a 2-day `TimelockController` for `_executor`.
+  - Configure a 3/5 Safe for `_council`, a separate root-confirmer Safe or governance address, a separate guardian, and a timelocked executor.
   - Run the first live epoch using a low daily cap (e.g. $1,000 maximum daily volume) and small deposits.
-  - Launch the public dashboard showing active claims and the **Ledger of Omissions** (PBM non-recorded deposits).
-- **Success Criteria**: Successful claim execution, zero locked funds, and accurate tracking of omitted deposits.
+  - Launch a production-built public dashboard only after frontend hardening, accessibility, rate limiting, cache policy, error tracking, and deployment checks pass.
+- **Success Criteria**: Successful claim execution, no locked funds, no misleading production claims, and accurate tracking of contract-backed omissions or explicitly labeled submitted evidence.
 
 ---
 

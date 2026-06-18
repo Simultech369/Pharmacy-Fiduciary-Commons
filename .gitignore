@@ -7,6 +7,9 @@ coverage/
 coverage.json
 .hh-cache/
 .npm-cache/
+dist/
+build/
+*.map
 
 # Legacy folder (pre-root move)
 Proper/node_modules/
@@ -35,3 +38,5 @@ tools/credentials/issuer_private.key
 # Local analysis artifacts (optional; keep out of repo by default)
 github_overlap_*
 github_union_*
+exports/
+test-export-out.json
