@@ -34,15 +34,23 @@ An export payload contains four top-level arrays: `claims`, `merkle_proofs`, `vo
         "type": "object",
         "properties": {
           "claimId": { "type": "string" },
-          "patientId": { "type": "string" },
           "pharmacyAddress": { "type": "string" },
-          "ndc": { "type": "string" },
-          "quantity": { "type": "integer" },
+          "syntheticDemoFields": {
+            "type": "object",
+            "description": "Demo-only clinical placeholders. These are not provenance-backed patient records.",
+            "properties": {
+              "patientId": { "type": "string" },
+              "ndc": { "type": "string" },
+              "quantity": { "type": "integer" },
+              "metadataProvenance": { "type": "string", "enum": ["synthetic-placeholder"] }
+            },
+            "required": ["patientId", "ndc", "quantity", "metadataProvenance"]
+          },
           "claimedAt": { "type": "string", "format": "date-time" },
           "status": { "type": "string", "enum": ["submitted", "flagged", "resolved"] },
           "transactionHash": { "type": "string" }
         },
-        "required": ["claimId", "patientId", "pharmacyAddress", "ndc", "quantity", "claimedAt", "status"]
+        "required": ["claimId", "pharmacyAddress", "syntheticDemoFields", "claimedAt", "status"]
       }
     },
     "merkle_proofs": {

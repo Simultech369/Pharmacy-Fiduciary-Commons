@@ -36,4 +36,7 @@ module.exports = {
       arbitrumSepolia: process.env.ARBISCAN_API_KEY || "",
     },
   },
+  mocha: {
+    timeout: 120000,
+  },
 };

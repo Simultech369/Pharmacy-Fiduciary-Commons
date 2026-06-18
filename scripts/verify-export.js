@@ -87,6 +87,7 @@ function verifyPayload(payload) {
   }
 
   for (const claim of payload.claims) {
+    const demoFields = claim.syntheticDemoFields || claim;
     let pharmacy;
     try {
       pharmacy = ethers.getAddress(claim.pharmacyAddress);
@@ -103,7 +104,7 @@ function verifyPayload(payload) {
       fail(errors, `Claim ${claim.claimId || "(unknown)"} is missing a matching receipt.`);
     }
 
-    if (claim.metadataProvenance !== "synthetic-placeholder" && claim.ndc === "unavailable-off-chain") {
+    if (demoFields.metadataProvenance !== "synthetic-placeholder" && demoFields.ndc === "unavailable-off-chain") {
       fail(errors, `Claim ${claim.claimId || "(unknown)"} has unavailable clinical metadata without synthetic provenance.`);
     }
   }

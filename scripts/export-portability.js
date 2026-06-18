@@ -123,11 +123,13 @@ async function main(opts = {}) {
     const claimId = `claim-${epoch}-${pharmacy}`;
     claims.push({
       claimId,
-      patientId: `patient-epoch-${epoch.toString()}`,
       pharmacyAddress: pharmacy,
-      ndc: "unavailable-off-chain",
-      quantity: 1,
-      metadataProvenance: "synthetic-placeholder",
+      syntheticDemoFields: {
+        patientId: `patient-epoch-${epoch.toString()}`,
+        ndc: "unavailable-off-chain",
+        quantity: 1,
+        metadataProvenance: "synthetic-placeholder"
+      },
       claimedAt,
       status,
       transactionHash: event.transactionHash
@@ -279,7 +281,7 @@ async function main(opts = {}) {
   console.log(`Proofs:      ${merkleProofs.length}`);
   console.log(`Votes:       ${votes.length}`);
   console.log(`Receipts:    ${receipts.length}`);
-  console.log(`Note:        Off-chain clinical fields marked synthetic-placeholder unless independently supplied.`);
+  console.log(`Note:        Off-chain clinical fields are nested under syntheticDemoFields unless independently supplied.`);
   console.log(`==================================================\n`);
 }
 

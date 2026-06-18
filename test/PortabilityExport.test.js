@@ -147,11 +147,17 @@ describe("Portability Export Tool", function () {
     expect(payload.claims).to.have.lengthOf(1);
     const c = payload.claims[0];
     expect(c.claimId).to.equal(`claim-0-${pharmacy.address}`);
-    expect(c.patientId).to.equal("patient-epoch-0");
     expect(c.pharmacyAddress).to.equal(pharmacy.address);
-    expect(c.ndc).to.equal("unavailable-off-chain");
-    expect(c.quantity).to.equal(1);
-    expect(c.metadataProvenance).to.equal("synthetic-placeholder");
+    expect(c.syntheticDemoFields).to.deep.equal({
+      patientId: "patient-epoch-0",
+      ndc: "unavailable-off-chain",
+      quantity: 1,
+      metadataProvenance: "synthetic-placeholder"
+    });
+    expect(c.patientId).to.equal(undefined);
+    expect(c.ndc).to.equal(undefined);
+    expect(c.quantity).to.equal(undefined);
+    expect(c.metadataProvenance).to.equal(undefined);
     expect(c.status).to.equal("resolved");
     expect(c.transactionHash).to.equal(claimReceipt.hash);
 

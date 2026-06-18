@@ -78,3 +78,15 @@ Following Ostrom's Principle of Nested Enterprises, the Pharmacy Fiduciary Commo
 - **Arbitration Layer**: *Dizzy the Polymath* functions as the off-chain judgment and arbitration layer.
 - **Escalation Path**: If a dispute between the Council and a participant pharmacy remains unresolved after the 14-day window, or if a conflict of interest claim is made against the Council, the parties may escalate the case to the Dizzy agent framework.
 - **Judgment Outputs**: Dizzy evaluates the claim against the `LEGAL-GUARDRAILS` and the `MECHANISM_SIEVE` to output a structured recommendation. Because Dizzy is an advisory, off-chain agent framework, its judgments are non-binding recommendations. The Council retains final on-chain execution authority but is expected to align its actions with Dizzy's findings to preserve community trust and public credibility.
+
+---
+
+## 10. Credential Issuer Key Rotation & Revocation
+
+The current credential issuer and registry are prototype trust roots. Before public governance use, the Council must operate issuer keys under a documented lifecycle:
+
+* **Issuer Pinning**: Accepted issuer fingerprints must be versioned by environment. Local/test issuer keys must not be reused for production voting.
+* **Rotation**: Issuer-key rotation requires a public notice, updated verifier configuration, regenerated examples, and a test proving old signatures fail when the issuer is removed.
+* **Revocation**: Revoked credential IDs remain in the revocation registry across key rotations. Removing an issuer key does not erase prior revocation history.
+* **Freshness**: Direct issuer-signed voter registration must include the current registration nonce and an expiration deadline. Council registration or revocation advances the nonce and invalidates outstanding signatures.
+* **Production Gate**: No credentialed public vote should be represented as production-ready until issuer custody, backup, rotation, revocation publication, and emergency replacement procedures are documented and rehearsed.
