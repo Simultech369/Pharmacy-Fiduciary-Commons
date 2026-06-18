@@ -4,7 +4,7 @@
   "description": "**On-chain rebate transparency for independent pharmacies and patients.**",
   "main": "index.js",
   "engines": {
-    "node": ">=18 <25"
+    "node": "20.x || 22.x"
   },
   "scripts": {
     "test": "hardhat test",

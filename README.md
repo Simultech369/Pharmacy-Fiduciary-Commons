@@ -9,7 +9,7 @@
 ![Audit](https://img.shields.io/badge/audit-not%20audited-dc2626?style=for-the-badge)
 ![Mainnet](https://img.shields.io/badge/mainnet-not%20deployed-6b7280?style=for-the-badge)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.20-363636?style=for-the-badge&logo=solidity)
-![Node](https://img.shields.io/badge/node-18--22-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![Node](https://img.shields.io/badge/node-20%20%7C%2022-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)
 
 </div>
@@ -39,7 +39,7 @@
 
 ## Quickstart
 
-Prereqs: Node.js 18, 20, or 22 + npm.
+Prereqs: Node.js 20 LTS or 22 LTS + npm.
 
 Windows PowerShell note: if `npm` is blocked by script execution policy, use `npm.cmd` instead.
 
