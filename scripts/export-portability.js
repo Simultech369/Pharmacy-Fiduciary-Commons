@@ -8,12 +8,15 @@ Usage:
   node scripts/export-portability.js --exporter <address> [options]
 
 Options:
-  --rpc <url>         Ethereum JSON-RPC URL (default: http://127.0.0.1:8545)
-  --pb <address>       PatientFundParticipatoryBudgeting address (default: 0x5FbDB2315678afecb367f032d93F642f64180aa3)
-  --treasury <address> PBMRebateTreasury address (default: 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0)
-  --merkle <path>     Path to allocations Merkle tree file (default: merkle.json)
-  --out <path>        Path to write JSON export (default: exports/<exporter>.json)
-  --from-block <num>  Start block for historical event queries (default: 0)
+  --rpc <url>               Ethereum JSON-RPC URL (default: http://127.0.0.1:8545)
+  --pb <address>             PatientFundParticipatoryBudgeting address (default: 0x5FbDB2315678afecb367f032d93F642f64180aa3)
+  --treasury <address>       PBMRebateTreasury address (default: 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0)
+  --merkle <path>           Path to allocations Merkle tree file (default: merkle.json)
+  --out <path>              Path to write JSON export (default: exports/<exporter>.json)
+  --from-block <num>        Start block for historical event queries (default: 0)
+  --to-block <num>          End block for historical event queries (default: latest)
+  --allow-partial           Allow script to proceed and export even if queries/files fail
+  --allow-unbounded-query   Allow query from block 0 on public networks
 `);
 }
 
@@ -25,7 +28,10 @@ function parseArgs(argv) {
     treasury: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
     merkle: "merkle.json",
     out: null,
-    fromBlock: "0"
+    fromBlock: "0",
+    toBlock: "latest",
+    allowPartial: false,
+    allowUnboundedQuery: false
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -37,12 +43,14 @@ function parseArgs(argv) {
     else if (arg === "--merkle") args.merkle = argv[i + 1];
     else if (arg === "--out") args.out = argv[i + 1];
     else if (arg === "--from-block") args.fromBlock = argv[i + 1];
+    else if (arg === "--to-block") args.toBlock = argv[i + 1];
+    else if (arg === "--allow-partial") args.allowPartial = true;
+    else if (arg === "--allow-unbounded-query") args.allowUnboundedQuery = true;
   }
 
   return args;
 }
 
-// Contract ABIs
 const TREASURY_ABI = [
   "event Claimed(uint256 indexed epoch, address indexed pharmacy, uint256 grossAmount, uint256 netToPharmacy, uint256 patientShare)",
   "function isExclusionDispute(uint256 epoch, address pharmacy) view returns (bool)",
@@ -54,6 +62,22 @@ const PB_ABI = [
   "function roundProjects(uint256 roundId, uint256 projectId) view returns (string title, address recipient, uint256 voteCount, bool active)"
 ];
 
+
+async function queryFilterChunked(contract, filter, fromBlock, toBlock) {
+  const events = [];
+  const chunkLimit = 50000n;
+  let current = fromBlock;
+  while (current <= toBlock) {
+    let end = current + chunkLimit - 1n;
+    if (end > toBlock) end = toBlock;
+    console.log(`Querying events from block ${current} to ${end}...`);
+    const batch = await contract.queryFilter(filter, current, end);
+    events.push(...batch);
+    current = end + 1n;
+  }
+  return events;
+}
+
 async function main(opts = {}) {
   const args = parseArgs(process.argv.slice(2));
 
@@ -64,6 +88,7 @@ async function main(opts = {}) {
   const merklePathInput = opts.merkle || args.merkle;
   const outPathInput = opts.out || args.out;
   const fromBlockInput = opts.fromBlock || args.fromBlock || "0";
+  const toBlockInput = opts.toBlock || args.toBlock || "latest";
 
   if (!exporterAddress) {
     usage();
@@ -79,13 +104,31 @@ async function main(opts = {}) {
   const pb = new ethers.Contract(pbAddress, PB_ABI, provider);
   const network = await provider.getNetwork();
 
+  const latestBlock = BigInt(await provider.getBlockNumber());
+  const fromBlock = BigInt(fromBlockInput);
+  const toBlock = toBlockInput === "latest" ? latestBlock : BigInt(toBlockInput);
+
+  // Enforce explicit from-block for non-local networks after numeric parsing so
+  // equivalent zero forms such as 0x0 cannot bypass the guard.
+  const isLocalNetwork = network.chainId === 31337n || network.chainId === 1337n;
+  if (!isLocalNetwork && fromBlock === 0n && !args.allowUnboundedQuery && !opts.allowUnboundedQuery) {
+    throw new Error("Safety violation: A non-zero --from-block must be specified for non-local networks (or use --allow-unbounded-query to override).");
+  }
+
+  if (fromBlock > toBlock) {
+    throw new Error(`Invalid block range: from-block (${fromBlock}) is greater than to-block (${toBlock}).`);
+  }
+
   // 1. Fetch claims from PBMRebateTreasury Claimed events
   console.log("Fetching claimed events...");
   const claimFilter = treasury.filters.Claimed(null, exporter);
   let claimEvents = [];
   try {
-    claimEvents = await treasury.queryFilter(claimFilter, BigInt(fromBlockInput), "latest");
+    claimEvents = await queryFilterChunked(treasury, claimFilter, fromBlock, toBlock);
   } catch (err) {
+    if (!args.allowPartial && !opts.allowPartial) {
+      throw err;
+    }
     console.log("Warning: Could not fetch Claimed events:", err.message);
   }
 
@@ -108,6 +151,9 @@ async function main(opts = {}) {
         txSignature = tx.signature.serialized;
       }
     } catch (err) {
+      if (!args.allowPartial && !opts.allowPartial) {
+        throw err;
+      }
       console.log(`Warning: Could not fetch tx details for ${event.transactionHash}:`, err.message);
     }
 
@@ -117,6 +163,9 @@ async function main(opts = {}) {
       const isFlagged = await treasury.isExclusionDispute(epoch, pharmacy);
       if (isFlagged) status = "flagged";
     } catch (err) {
+      if (!args.allowPartial && !opts.allowPartial) {
+        throw err;
+      }
       console.log("Warning: Could not check exclusion dispute status:", err.message);
     }
 
@@ -158,6 +207,7 @@ async function main(opts = {}) {
   console.log("Reading Merkle allocations file...");
   const merkleProofs = [];
   const merklePath = path.resolve(process.cwd(), merklePathInput);
+  let hasMerkleEntry = false;
   if (fs.existsSync(merklePath)) {
     try {
       const merkleData = JSON.parse(fs.readFileSync(merklePath, "utf8"));
@@ -177,13 +227,26 @@ async function main(opts = {}) {
           eligibleCap: entry.eligibleCap.toString(),
           blockNumber
         });
+        hasMerkleEntry = true;
         console.log("✅ Found Merkle proof allocation entry.");
       }
     } catch (err) {
+      if (!args.allowPartial && !opts.allowPartial) {
+        throw new Error(`Failed to parse Merkle allocations file: ${err.message}`);
+      }
       console.log("Warning: Failed to parse Merkle allocations file:", err.message);
     }
   } else {
+    if (!args.allowPartial && !opts.allowPartial) {
+      throw new Error(`Merkle tree file not found at ${merklePathInput}.`);
+    }
     console.log(`Warning: Merkle tree file not found at ${merklePathInput}. Skipping proof export.`);
+  }
+
+  if (claims.length > 0 && !hasMerkleEntry) {
+    if (!args.allowPartial && !opts.allowPartial) {
+      throw new Error("Safety violation: Claims exist in export but no matching Merkle proof was found in allocations file.");
+    }
   }
 
   // 3. Fetch Votes from PatientFundParticipatoryBudgeting VoteCast events
@@ -191,8 +254,11 @@ async function main(opts = {}) {
   const voteFilter = pb.filters.VoteCast(null, null, exporter);
   let voteEvents = [];
   try {
-    voteEvents = await pb.queryFilter(voteFilter, BigInt(fromBlockInput), "latest");
+    voteEvents = await queryFilterChunked(pb, voteFilter, fromBlock, toBlock);
   } catch (err) {
+    if (!args.allowPartial && !opts.allowPartial) {
+      throw err;
+    }
     console.log("Warning: Could not fetch VoteCast events:", err.message);
   }
 
@@ -209,6 +275,9 @@ async function main(opts = {}) {
         projectTitle = proj.title;
       }
     } catch (err) {
+      if (!args.allowPartial && !opts.allowPartial) {
+        throw err;
+      }
       console.log(`Warning: Could not fetch project details for ${projectId}:`, err.message);
     }
 
@@ -220,6 +289,9 @@ async function main(opts = {}) {
         txSignature = tx.signature.serialized;
       }
     } catch (err) {
+      if (!args.allowPartial && !opts.allowPartial) {
+        throw err;
+      }
       console.log(`Warning: Could not fetch transaction details for ${event.transactionHash}:`, err.message);
     }
 

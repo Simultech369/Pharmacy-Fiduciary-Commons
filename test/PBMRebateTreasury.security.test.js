@@ -290,6 +290,15 @@ describe("PBMRebateTreasury security baseline", function () {
     await ethers.provider.send("evm_increaseTime", [180 * 24 * 60 * 60 + 1]);
     await ethers.provider.send("evm_mine", []);
 
+    // Assert recovery fails if recipient is not patientFund
+    await expectRevert(
+      timelockExecute(
+        await treasury.getAddress(),
+        treasury.interface.encodeFunctionData("recoverStaleDistributionPool", [attacker.address, toWei("100")])
+      ),
+      "underlying transaction reverted"
+    );
+
     const patientBefore = await token.balanceOf(patientFund.address);
     await timelockExecute(
       await treasury.getAddress(),
@@ -298,6 +307,39 @@ describe("PBMRebateTreasury security baseline", function () {
 
     expect(await treasury.distributionPool()).to.equal(toWei("890"));
     expect((await token.balanceOf(patientFund.address)) - patientBefore).to.equal(toWei("100"));
+  });
+
+  it("blocks stale distribution recovery when an active pending root exists", async function () {
+    await seedDeposit(toWei("1000"));
+
+    // Fast forward 180 days (recovery delay elapsed)
+    await ethers.provider.send("evm_increaseTime", [180 * 24 * 60 * 60 + 1]);
+    await ethers.provider.send("evm_mine", []);
+
+    // Propose a root (proposedAt is block.timestamp, active for 3 days)
+    const gross = toWei("100");
+    await publishSingleLeafRoot(gross, gross);
+
+    // Recovery should revert because the pending root is active
+    await expectRevert(
+      timelockExecute(
+        await treasury.getAddress(),
+        treasury.interface.encodeFunctionData("recoverStaleDistributionPool", [patientFund.address, toWei("100")])
+      ),
+      "underlying transaction reverted"
+    );
+
+    // Fast forward 3 more days + 1 second (pending root expires)
+    await ethers.provider.send("evm_increaseTime", [3 * 24 * 60 * 60 + 1]);
+    await ethers.provider.send("evm_mine", []);
+
+    // Recovery should now succeed because the pending root is expired
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("recoverStaleDistributionPool", [patientFund.address, toWei("100")])
+    );
+
+    expect(await treasury.distributionPool()).to.equal(toWei("890"));
   });
 
   it("blocks stale distribution recovery after a root is confirmed", async function () {

@@ -24,6 +24,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     bytes32 public constant REGISTRATION_TYPEHASH = keccak256(
         "VoterRegistration(uint256 roundId,address voter,uint256 nonce,bytes32 credentialHash,bytes32 policyVersion,uint256 deadline)"
     );
+    bytes32 public constant CREDENTIAL_TYPEHASH = keccak256(
+        "VoterCredential(uint256 roundId,address voter,uint256 nonce,bytes32 credentialHash,bytes32 policyVersion,uint256 deadline)"
+    );
     bytes32 public constant ACCEPTED_CREDENTIAL_POLICY_VERSION = keccak256(
         "fiduciary-credential-policy-v1"
     );
@@ -273,15 +276,21 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         }
         if (block.timestamp > deadline) revert AuthorizationExpired();
 
-        // Reconstruct the issuer authorization. The nonce and deadline keep direct
-        // issuer signatures from becoming reusable stale credentials, while chain
-        // and contract binding prevent cross-deployment replay.
+        // EIP-712 binds the authorization to this deployment and chain through the
+        // domain separator while keeping the policy fields readable to wallets.
         uint256 nonce = registrationNonces[roundId][msg.sender];
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(block.chainid, address(this), msg.sender, roundId, nonce, credentialHash, policyVersion, deadline)
+        bytes32 structHash = keccak256(
+            abi.encode(
+                CREDENTIAL_TYPEHASH,
+                roundId,
+                msg.sender,
+                nonce,
+                credentialHash,
+                policyVersion,
+                deadline
+            )
         );
-        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
-        address issuer = ethSignedMessageHash.recover(issuerSignature);
+        address issuer = _hashTypedDataV4(structHash).recover(issuerSignature);
 
         if (!trustedCredentialIssuers[issuer]) revert Unauthorized();
 

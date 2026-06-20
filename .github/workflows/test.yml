@@ -31,3 +31,6 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Run local readiness check
+        run: node scripts/check-readiness.js --env local

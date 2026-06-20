@@ -5,7 +5,12 @@ const { ethers } = require("ethers");
 function usage() {
   console.log(`
 Usage:
-  node scripts/verify-export.js --file <export_json_file> [--rpc <url>] [--confirmations <count>]
+  node scripts/verify-export.js --file <export_json_file> [options]
+
+Options:
+  --rpc <url>               Ethereum JSON-RPC URL
+  --confirmations <count>   Minimum confirmations required (default: 1)
+  --allow-incomplete        Allow verifying exports that are missing Merkle proof material
 `);
 }
 
@@ -14,7 +19,12 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg.startsWith("--")) {
-      args[arg.slice(2)] = argv[i + 1];
+      const key = arg.slice(2);
+      if (key === "allow-incomplete") {
+        args.allowIncomplete = true;
+      } else {
+        args[key] = argv[i + 1];
+      }
     }
   }
   return args;
@@ -48,7 +58,7 @@ function verifyMerkleProof(proof, root, leaf) {
   return processProof(proof, leaf).toLowerCase() === root.toLowerCase();
 }
 
-function verifyPayload(payload) {
+function verifyPayload(payload, options = {}) {
   const errors = [];
   const warnings = [];
 
@@ -144,7 +154,11 @@ function verifyPayload(payload) {
   }
 
   if (payload.merkle_proofs.length === 0 && payload.claims.length > 0) {
-    warnings.push("Claims exist without Merkle proof material; export is not independently claim-verifiable.");
+    if (options.allowIncomplete) {
+      warnings.push("Claims exist without Merkle proof material; export is not independently claim-verifiable.");
+    } else {
+      fail(errors, "Claims exist without Merkle proof material; export is not independently claim-verifiable (use --allow-incomplete to override).");
+    }
   }
 
   return { ok: errors.length === 0, errors, warnings };
@@ -250,7 +264,9 @@ async function main(opts = {}) {
   }
 
   const payload = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), filePath), "utf8"));
-  const result = verifyPayload(payload);
+  const result = verifyPayload(payload, {
+    allowIncomplete: Boolean(opts.allowIncomplete || args.allowIncomplete)
+  });
 
   if (result.ok && (opts.provider || opts.rpc || args.rpc)) {
     const chainResult = await verifyPayloadOnChain(payload, {

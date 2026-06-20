@@ -601,12 +601,32 @@ describe("PatientFundParticipatoryBudgeting", function () {
     async function signIssuerCredential(voter, roundId, hash = credentialHash, policy = policyVersion, deadline = null) {
       const nonce = await pb.registrationNonces(roundId, voter.address);
       const expiresAt = deadline ?? BigInt((await ethers.provider.getBlock("latest")).timestamp + 3600);
-      const network = await ethers.provider.getNetwork();
-      const messageHash = ethers.solidityPackedKeccak256(
-        ["uint256", "address", "address", "uint256", "uint256", "bytes32", "bytes32", "uint256"],
-        [network.chainId, await pb.getAddress(), voter.address, roundId, nonce, hash, policy, expiresAt]
-      );
-      const signature = await issuer.signMessage(ethers.getBytes(messageHash));
+      const { chainId } = await ethers.provider.getNetwork();
+      const domain = {
+        name: "Pharmacy Fiduciary Commons",
+        version: "1",
+        chainId,
+        verifyingContract: await pb.getAddress()
+      };
+      const types = {
+        VoterCredential: [
+          { name: "roundId", type: "uint256" },
+          { name: "voter", type: "address" },
+          { name: "nonce", type: "uint256" },
+          { name: "credentialHash", type: "bytes32" },
+          { name: "policyVersion", type: "bytes32" },
+          { name: "deadline", type: "uint256" }
+        ]
+      };
+      const value = {
+        roundId,
+        voter: voter.address,
+        nonce,
+        credentialHash: hash,
+        policyVersion: policy,
+        deadline: expiresAt
+      };
+      const signature = await issuer.signTypedData(domain, types, value);
       return { deadline: expiresAt, signature };
     }
 

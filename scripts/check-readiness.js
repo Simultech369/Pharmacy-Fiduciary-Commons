@@ -31,6 +31,58 @@ function uncheckedItems(markdown) {
     .filter(item => /^\s*-\s+\[\s\]\s+/.test(item.line));
 }
 
+function checkMechanicalSafety() {
+  let failed = false;
+
+  // 1. Check for .env file
+  const envPath = path.resolve(process.cwd(), ".env");
+  if (fs.existsSync(envPath)) {
+    console.error("Safety violation: .env file exists in the project root.");
+    failed = true;
+  }
+
+  // 2. Check for .map files in dashboard
+  const dashboardDir = path.resolve(process.cwd(), "dashboard");
+  if (fs.existsSync(dashboardDir)) {
+    const files = fs.readdirSync(dashboardDir);
+    for (const file of files) {
+      if (file.endsWith(".map")) {
+        console.error(`Safety violation: source map file found in dashboard: ${file}`);
+        failed = true;
+      }
+    }
+  }
+
+  // 3. Scan dashboard/index.html for innerHTML and CDN integrity
+  const indexPath = path.resolve(dashboardDir, "index.html");
+  if (fs.existsSync(indexPath)) {
+    const htmlContent = fs.readFileSync(indexPath, "utf8");
+
+    // Check innerHTML assignments that are not empty string
+    const innerHtmlRegex = /\.innerHTML\s*=\s*(?!\s*(["'`])\1\s*;?)/g;
+    let match;
+    while ((match = innerHtmlRegex.exec(htmlContent)) !== null) {
+      const lines = htmlContent.substring(0, match.index).split("\n");
+      const lineNum = lines.length;
+      console.error(`Safety violation: Unsafe innerHTML assignment in dashboard/index.html at line ${lineNum}: ${lines[lineNum - 1].trim()}`);
+      failed = true;
+    }
+
+    // Check script tags from CDN (src starts with http) and make sure they have integrity
+    const scriptRegex = /<script\s+[^>]*src=["'](http[^"']+)["'][^>]*>/gi;
+    while ((match = scriptRegex.exec(htmlContent)) !== null) {
+      const tag = match[0];
+      if (!tag.includes("integrity=")) {
+        const lines = htmlContent.substring(0, match.index).split("\n");
+        console.error(`Safety violation: CDN script tag in dashboard/index.html lacks integrity attribute at line ${lines.length}: ${tag.trim()}`);
+        failed = true;
+      }
+    }
+  }
+
+  return !failed;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const env = args.env;
@@ -40,6 +92,15 @@ function main() {
     process.exitCode = 1;
     return;
   }
+
+  console.log("Running mechanical safety checks...");
+  const safetyPassed = checkMechanicalSafety();
+  if (!safetyPassed) {
+    console.error("Mechanical safety checks failed!");
+    process.exitCode = 1;
+    return;
+  }
+  console.log("✅ Mechanical safety checks passed.");
 
   const checklistPath = path.resolve(process.cwd(), "PRODUCTION_READINESS_CHECKLIST.md");
   const markdown = fs.readFileSync(checklistPath, "utf8");
@@ -69,4 +130,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { uncheckedItems };
+module.exports = { uncheckedItems, checkMechanicalSafety };

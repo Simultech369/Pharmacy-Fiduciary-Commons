@@ -1089,11 +1089,18 @@ contract PBMRebateTreasury is
         nonReentrant
     {
         if (recipient == address(0)) revert InvalidAddress();
+        if (recipient != patientFund) revert InvalidAddress();
         if (amount == 0)             revert ZeroAmount();
         if (epochMerkleRoot[currentEpoch] != bytes32(0)) revert RootAlreadyLive();
         if (block.timestamp < epochStartTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
             revert RecoveryDelayNotElapsed();
         }
+
+        PendingRoot storage pr = pendingRoot[currentEpoch];
+        if (pr.proposedAt != 0 && block.timestamp <= pr.proposedAt + ROOT_PROPOSAL_EXPIRY) {
+            revert ProposalPendingOrNotExpired();
+        }
+
         if (distributionPool < amount) revert InsufficientDistributionPool();
 
         distributionPool -= amount;

@@ -231,5 +231,16 @@ describe("Portability Export Tool", function () {
     const invalidHashVerification = verifyPayload(invalidHash);
     expect(invalidHashVerification.ok).to.be.false;
     expect(invalidHashVerification.errors.join(" | ")).to.contain("Receipt has invalid hash");
+
+    // Test: verifyPayload fails without Merkle proofs unless allowIncomplete is true
+    const noProofs = structuredClone(payload);
+    noProofs.merkle_proofs = [];
+    const noProofsVerification = verifyPayload(noProofs);
+    expect(noProofsVerification.ok).to.be.false;
+    expect(noProofsVerification.errors.join(" | ")).to.contain("Claims exist without Merkle proof material");
+
+    const noProofsAllowedVerification = verifyPayload(noProofs, { allowIncomplete: true });
+    expect(noProofsAllowedVerification.ok).to.be.true;
+    expect(noProofsAllowedVerification.warnings.join(" | ")).to.contain("Claims exist without Merkle proof material");
   });
 });

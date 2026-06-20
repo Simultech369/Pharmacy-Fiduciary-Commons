@@ -32,6 +32,24 @@ function resolveTimelockExecutors() {
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
+  const timelockExecutors = resolveTimelockExecutors();
+
+  // Enforce deployment security validations for non-local networks
+  const isLocalNetwork = hre.network.name === "hardhat" || hre.network.name === "localhost";
+  if (!isLocalNetwork) {
+    const renounceSetupAdmin = process.env.RENOUNCE_TIMELOCK_ADMIN === "true";
+    const allowRetainedAdmin = process.env.ALLOW_RETAINED_TIMELOCK_ADMIN === "true";
+    if (!renounceSetupAdmin && !allowRetainedAdmin) {
+      throw new Error("Safety violation: RENOUNCE_TIMELOCK_ADMIN=true must be specified for non-local network deployments, or ALLOW_RETAINED_TIMELOCK_ADMIN=true to retain external admin.");
+    }
+
+    const hasOpenExecutor = timelockExecutors.some(
+      executor => executor.toLowerCase() === hre.ethers.ZeroAddress.toLowerCase()
+    );
+    if (hasOpenExecutor && process.env.DEPLOYMENT_ENV !== "demo" && process.env.DEPLOYMENT_ENV !== "local") {
+      throw new Error("Safety violation: Open execution (ZeroAddress executor) is not allowed on non-local networks unless DEPLOYMENT_ENV=demo or DEPLOYMENT_ENV=local is set.");
+    }
+  }
 
   const token = requireEnv("TOKEN");
   const patientFund = requireEnv("PATIENT_FUND");
@@ -51,7 +69,6 @@ async function main() {
 
   const minDelaySeconds = BigInt(process.env.TIMELOCK_MIN_DELAY_SECONDS ?? "172800"); // 2 days
   const timelockProposers = parseAddressList(process.env.TIMELOCK_PROPOSERS ?? council);
-  const timelockExecutors = resolveTimelockExecutors();
   const timelockAdmin = requireEnv("TIMELOCK_ADMIN");
   const renounceSetupAdmin = process.env.RENOUNCE_TIMELOCK_ADMIN === "true";
 

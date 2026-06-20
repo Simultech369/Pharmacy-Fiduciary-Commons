@@ -57,14 +57,21 @@ npm.cmd run merkle:allocations -- --in allocations.json --out merkle.json
 Run the portability export prototype:
 
 ```bash
-node scripts/export-portability.js --exporter <participant_address> --from-block <deployment_block>
+node scripts/export-portability.js \
+  --exporter <participant_address> \
+  --from-block <deployment_block> \
+  --to-block <end_block_or_latest>
 ```
+
+Exports fail closed by default on RPC/query failures or missing Merkle allocation material. `--allow-partial` and `--allow-unbounded-query` are explicit prototype/debug overrides, not production defaults.
 
 Verify a portability export:
 
 ```bash
 npm.cmd run verify:export -- --file exports/<participant_address>.json
 ```
+
+Offline verification requires proof material when claims are present. Use `--allow-incomplete` only when intentionally inspecting an incomplete export; add `--rpc <url>` for chain-provenance verification.
 
 ---
 
