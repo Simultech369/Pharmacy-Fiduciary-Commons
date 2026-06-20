@@ -243,4 +243,191 @@ describe("Portability Export Tool", function () {
     expect(noProofsAllowedVerification.ok).to.be.true;
     expect(noProofsAllowedVerification.warnings.join(" | ")).to.contain("Claims exist without Merkle proof material");
   });
+
+  it("enforces strict validation of missing/malformed completeness fields", function () {
+    const validPayload = {
+      schema_version: "1.1.0",
+      is_partial: false,
+      warnings: [],
+      exporter: pharmacy.address,
+      exported_at: new Date().toISOString(),
+      claims: [],
+      merkle_proofs: [],
+      votes: [],
+      receipts: []
+    };
+
+    // 1. Missing schema_version
+    const missingSchema = structuredClone(validPayload);
+    delete missingSchema.schema_version;
+    const missingSchemaResult = verifyPayload(missingSchema);
+    expect(missingSchemaResult.ok).to.be.false;
+    expect(missingSchemaResult.errors.join(" | ")).to.contain("Completeness field schema_version is missing");
+
+    // 2. Missing is_partial
+    const missingIsPartial = structuredClone(validPayload);
+    delete missingIsPartial.is_partial;
+    const v1 = verifyPayload(missingIsPartial);
+    expect(v1.ok).to.be.false;
+    expect(v1.errors.join(" | ")).to.contain("Completeness field is_partial is missing");
+
+    // 3. Malformed is_partial
+    const malformedIsPartial = structuredClone(validPayload);
+    malformedIsPartial.is_partial = "false";
+    const v2 = verifyPayload(malformedIsPartial);
+    expect(v2.ok).to.be.false;
+    expect(v2.errors.join(" | ")).to.contain("is_partial must be a boolean");
+
+    // 4. Missing warnings
+    const missingWarnings = structuredClone(validPayload);
+    delete missingWarnings.warnings;
+    const v3 = verifyPayload(missingWarnings);
+    expect(v3.ok).to.be.false;
+    expect(v3.errors.join(" | ")).to.contain("Completeness field warnings is missing");
+
+    // 5. Malformed warnings
+    const malformedWarnings = structuredClone(validPayload);
+    malformedWarnings.warnings = "none";
+    const v4 = verifyPayload(malformedWarnings);
+    expect(v4.ok).to.be.false;
+    expect(v4.errors.join(" | ")).to.contain("warnings must be an array");
+
+    // 6. Unsupported schema_version
+    const malformedSchema = structuredClone(validPayload);
+    malformedSchema.schema_version = true;
+    const v5 = verifyPayload(malformedSchema);
+    expect(v5.ok).to.be.false;
+    expect(v5.errors.join(" | ")).to.contain("Unsupported schema_version");
+
+    // 7. Non-string warning entries
+    const malformedWarningEntry = structuredClone(validPayload);
+    malformedWarningEntry.warnings = [{ message: "query failed" }];
+    const v6 = verifyPayload(malformedWarningEntry);
+    expect(v6.ok).to.be.false;
+    expect(v6.errors.join(" | ")).to.contain("warnings entries must be strings");
+
+    // 8. A payload cannot claim completeness while carrying partial warnings
+    const contradictoryCompleteness = structuredClone(validPayload);
+    contradictoryCompleteness.warnings = ["query failed"];
+    const v7 = verifyPayload(contradictoryCompleteness);
+    expect(v7.ok).to.be.false;
+    expect(v7.errors.join(" | ")).to.contain("complete export cannot contain partial-export warnings");
+  });
+
+  it("sanitizes warning messages, redacting RPC URLs, credentials, and absolute paths", function () {
+    const { sanitizeWarning } = require("../scripts/export-portability");
+
+    // Test URL with api key
+    const urlWarning = "Failed to fetch from https://apikey:secret-token@rpc.mainnet.com/v3/mykey: network error";
+    expect(sanitizeWarning(urlWarning)).to.equal("Failed to fetch from [URL_REDACTED]: network error");
+
+    // Test key-value credential pattern
+    const credentialWarning = "Connection refused with api-key=mySecretPassword123 and secret=supersecret";
+    expect(sanitizeWarning(credentialWarning)).to.equal("Connection refused with api-key=[REDACTED] and secret=[REDACTED]");
+
+    const authorizationWarning = "Request failed with Authorization: Bearer abc.def-123";
+    expect(sanitizeWarning(authorizationWarning)).to.equal("Request failed with authorization: [REDACTED]");
+
+    // Test Windows path
+    const winPathWarning = "File not found at D:\\Users\\Administrator\\Desktop\\PharmacyApp\\merkle.json";
+    expect(sanitizeWarning(winPathWarning)).to.equal("File not found at [PATH_REDACTED]");
+
+    // Test Unix path with home
+    const unixHomeWarning = "Failed to load /home/ubuntu/project/config.json: read error";
+    expect(sanitizeWarning(unixHomeWarning)).to.equal("Failed to load [PATH_REDACTED]: read error");
+
+    // Test Unix path with users
+    const unixUsersWarning = "Permission denied for /Users/josh/Desktop/contracts/PBM.sol";
+    expect(sanitizeWarning(unixUsersWarning)).to.equal("Permission denied for [PATH_REDACTED]");
+  });
+
+  it("enforces chain-ID network classification safety rules during export and verification", async function () {
+    const mockNetwork = { chainId: 1n };
+    const mockProvider = {
+      getNetwork: async () => mockNetwork,
+      getBlockNumber: async () => 1000n,
+      getSigner: async () => {}
+    };
+
+    let threw = false;
+    try {
+      await main({
+        exporter: pharmacy.address,
+        provider: mockProvider,
+        pb: await pb.getAddress(),
+        treasury: await treasury.getAddress(),
+        merkle: "merkle.json",
+        fromBlock: "0",
+        allowUnboundedQuery: false
+      });
+    } catch (err) {
+      threw = true;
+      expect(err.message).to.contain("Safety violation: A non-zero --from-block must be specified for non-local networks");
+    }
+    expect(threw).to.be.true;
+
+    const payload = {
+      schema_version: "1.1.0",
+      is_partial: false,
+      warnings: [],
+      exporter: pharmacy.address,
+      exported_at: new Date().toISOString(),
+      chain: {
+        chainId: "1",
+        treasuryAddress: await treasury.getAddress(),
+        participatoryBudgetingAddress: await pb.getAddress()
+      },
+      claims: [],
+      merkle_proofs: [],
+      votes: [],
+      receipts: []
+    };
+
+    const chainVerification = await verifyPayloadOnChain(payload, { provider: ethers.provider });
+    expect(chainVerification.ok).to.be.false;
+    expect(chainVerification.errors.join(" | ")).to.contain("Export chainId does not match the connected network");
+  });
+
+  it("CLI verifier output for partial export accepted with override", async function () {
+    const { main: verifyMain } = require("../scripts/verify-export");
+    const testFile = path.resolve(process.cwd(), "test-partial-export-temp.json");
+
+    const payload = {
+      schema_version: "1.1.0",
+      is_partial: true,
+      warnings: ["RPC query failed"],
+      exporter: pharmacy.address,
+      exported_at: new Date().toISOString(),
+      chain: {
+        chainId: "31337",
+        treasuryAddress: await treasury.getAddress(),
+        participatoryBudgetingAddress: await pb.getAddress()
+      },
+      claims: [],
+      merkle_proofs: [],
+      votes: [],
+      receipts: []
+    };
+
+    fs.writeFileSync(testFile, JSON.stringify(payload, null, 2), "utf8");
+
+    const logLines = [];
+    const originalLog = console.log;
+    console.log = (msg) => { logLines.push(msg); };
+
+    try {
+      await verifyMain({
+        file: testFile,
+        allowPartial: true
+      });
+    } finally {
+      console.log = originalLog;
+      fs.rmSync(testFile, { force: true });
+    }
+
+    const combinedLogs = logLines.join("\n");
+    expect(combinedLogs).to.contain("partial accepted with override");
+    expect(combinedLogs).to.not.contain("RPC provenance verification passed");
+    expect(combinedLogs).to.not.contain("OFFLINE STRUCTURE CHECK PASSED");
+  });
 });

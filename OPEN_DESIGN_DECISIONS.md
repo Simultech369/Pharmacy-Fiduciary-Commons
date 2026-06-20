@@ -25,3 +25,11 @@ Current behavior: council controls project registration and voter eligibility; r
 Decision still needed: retain council eligibility screening, add an appeal/community nomination process, or move eligibility to another governance mechanism.
 
 Required evidence: fraud-screening requirements, conflicts policy, appeal process, and a clear statement of which decisions are administrative versus community-controlled.
+
+## Stale Pool Recovery Liveness (Dust-Deposit Griefing)
+
+Current behavior: unallocated distribution pool recovery uses `lastDepositTimestamp` of the latest deposit to enforce the 180-day stale recovery delay.
+
+Decision still needed: retain the current O(1) delay check or implement a more granular recovery mechanism (such as store-and-track deposits or a governance-mediated recall) to eliminate the risk of cheap dust-deposit griefing (where any user can deposit 1 wei to reset the 180-day clock and lock the pool).
+
+Required evidence: expected frequency of deposits, impact of locked funds on governance liquidity, and feasibility of tracking deposits under gas boundaries.

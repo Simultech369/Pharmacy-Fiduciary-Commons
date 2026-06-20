@@ -268,6 +268,19 @@ Optional timelock variables:
 - `ALLOW_OPEN_TIMELOCK_EXECUTOR=true` - explicit acknowledgement that ready timelock operations may be executed by any address
 - `RENOUNCE_TIMELOCK_ADMIN=true` - supported only when `TIMELOCK_ADMIN` is the deployer; removes the temporary human admin after deployment checks
 
+Audit a deployed timelock and treasury against the expected environment configuration:
+
+```bash
+npm.cmd run audit:deployment -- --network <network>
+```
+
+The audit requires the deployment variables above plus `TIMELOCK_ADDRESS` and
+`TREASURY_ADDRESS`. It verifies the deployed constructor bindings, caps, role
+memberships, role administrators, timelock delay, proposers, executors, and
+external-admin state. After legitimate cap ratchets, set
+`EXPECTED_DAILY_VOLUME_CAP` and `EXPECTED_HARD_ABSOLUTE_VOLUME_CAP` to the
+expected current values; otherwise the original deployment cap values are used.
+
 ---
 
 ## Audit And Production Status

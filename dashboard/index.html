@@ -960,6 +960,15 @@
           <textarea id="portability-json-input" class="select-pbm" style="font-family: monospace; font-size: 0.85rem; width: 100%; height: 180px; resize: vertical; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); color: var(--text-main);" placeholder='{ "exporter": "0x...", ... }'></textarea>
         </div>
 
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem;">
+          <label style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+            <input type="checkbox" id="checkbox-allow-partial" style="cursor: pointer;"> Allow Partial RPC Data
+          </label>
+          <label style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+            <input type="checkbox" id="checkbox-allow-incomplete" style="cursor: pointer;"> Allow Incomplete Merkle Proofs
+          </label>
+        </div>
+
         <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
           <button id="btn-verify-portability" class="btn-vote" style="background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);">🔍 Verify Export</button>
           <div id="portability-verification-status" role="status" aria-live="polite" style="font-size: 0.9rem; font-weight: 600;"></div>
@@ -1162,6 +1171,9 @@
     }
 
     document.getElementById("btn-verify-portability").addEventListener("click", () => {
+      const allowPartial = document.getElementById("checkbox-allow-partial").checked;
+      const allowIncomplete = document.getElementById("checkbox-allow-incomplete").checked;
+
       const statusEl = document.getElementById("portability-verification-status");
       const resultsEl = document.getElementById("portability-verification-results");
       const listEl = document.getElementById("portability-results-list");
@@ -1210,6 +1222,49 @@
         for (const field of ["claims", "merkle_proofs", "votes", "receipts"]) {
           if (!Array.isArray(payload[field])) {
             errors.push(`${field} must be an array.`);
+          }
+        }
+
+        if (payload.schema_version === undefined) {
+          errors.push("Completeness field schema_version is missing.");
+        } else {
+          if (payload.schema_version !== "1.1.0") {
+            errors.push("Unsupported schema_version; expected 1.1.0.");
+          }
+          if (payload.is_partial === undefined) {
+            errors.push("Completeness field is_partial is missing.");
+          } else if (typeof payload.is_partial !== "boolean") {
+            errors.push("is_partial must be a boolean.");
+          }
+          if (payload.warnings === undefined) {
+            errors.push("Completeness field warnings is missing.");
+          } else if (!Array.isArray(payload.warnings)) {
+            errors.push("warnings must be an array.");
+          } else if (payload.warnings.some((warning) => typeof warning !== "string")) {
+            errors.push("warnings entries must be strings.");
+          }
+        }
+
+        if (payload.is_partial === false && Array.isArray(payload.warnings) && payload.warnings.length > 0) {
+          errors.push("A complete export cannot contain partial-export warnings.");
+        }
+
+        if (payload.is_partial === true) {
+          if (allowPartial) {
+            if (Array.isArray(payload.warnings)) {
+              for (const w of payload.warnings) {
+                warnings.push(`[Partial Export Warning] ${w}`);
+              }
+            } else {
+              warnings.push("Export is marked as partial.");
+            }
+          } else {
+            errors.push("Export is marked as partial (contains query failures). Check 'Allow Partial RPC Data' to override.");
+            if (Array.isArray(payload.warnings)) {
+              for (const w of payload.warnings) {
+                errors.push(`[Partial Export Error] ${w}`);
+              }
+            }
           }
         }
 
@@ -1280,7 +1335,11 @@
           }
 
           if (payload.merkle_proofs.length === 0 && payload.claims.length > 0) {
-            warnings.push("Claims exist without Merkle proof material; export is not independently claim-verifiable.");
+            if (allowIncomplete) {
+              warnings.push("Claims exist without Merkle proof material; export is not independently claim-verifiable.");
+            } else {
+              errors.push("Claims exist without Merkle proof material; export is not independently claim-verifiable. Check 'Allow Incomplete Merkle Proofs' to override.");
+            }
           }
         }
       }
@@ -1291,10 +1350,17 @@
       // 3. Render results
       resultsEl.style.display = "block";
       if (errors.length === 0) {
-        statusEl.style.color = "var(--accent-green-text)";
-        statusEl.innerText = "✅ Export Verified Locally!";
-        titleEl.innerText = "Verification Success";
-        titleEl.style.color = "var(--accent-green-text)";
+        if (payload.is_partial === true) {
+          statusEl.style.color = "var(--accent-orange)";
+          statusEl.innerText = "⚠ partial accepted with override";
+          titleEl.innerText = "Verification Success (Partial Override)";
+          titleEl.style.color = "var(--accent-orange)";
+        } else {
+          statusEl.style.color = "var(--accent-green-text)";
+          statusEl.innerText = "✅ Export Verified Locally!";
+          titleEl.innerText = "Verification Success";
+          titleEl.style.color = "var(--accent-green-text)";
+        }
 
         const li = document.createElement("li");
         li.style.color = "var(--text-main)";

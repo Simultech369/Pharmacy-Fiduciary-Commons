@@ -751,9 +751,13 @@ describe("PBMRebateTreasury security baseline", function () {
     // The patientFund should receive the 80 tokens directly
     expect(patientAfterDismiss - patientBeforeDismiss).to.equal(amtA);
 
-    // Escrow should remain 0, and flaggedAmount cleared
+    // Escrow should remain 0, the flag should clear, and every claim metric
+    // should be reversed before the dismissed funds leave for patientFund.
     expect(await treasury.epochEscrow(0)).to.equal(0n);
     expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(0n);
+    expect(await treasury.epochClaimedTotal(0)).to.equal(0n);
+    expect(await treasury.epochRootClaimedTotal(0)).to.equal(0n);
+    expect(await treasury.pharmacyClaimedThisEpoch(0, pharmacy.address)).to.equal(0n);
   });
 
   it("frees volume caps and updates claimed totals when a dispute is dismissed in the active epoch", async function () {

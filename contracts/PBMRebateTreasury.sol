@@ -252,6 +252,11 @@ contract PBMRebateTreasury is
     /// @notice Timestamp when the current epoch started.
     uint256 public epochStartTimestamp;
 
+    /// @notice Timestamp of the latest rebate deposit.
+    /// @dev NOTE: Vulnerable to cheap dust-deposit griefing (any user can deposit 1 wei
+    ///      to reset the timer). This is an accepted tradeoff for simplicity.
+    uint256 public lastDepositTimestamp;
+
     /// @notice merkleRoot[epoch] - zero if not yet published.
     mapping(uint256 => bytes32) public epochMerkleRoot;
 
@@ -451,6 +456,7 @@ contract PBMRebateTreasury is
         minimumEpochVolume    = _minimumEpochVolume;
 
         epochStartTimestamp = block.timestamp;
+        lastDepositTimestamp = block.timestamp;
 
         _setRoleAdmin(EXECUTOR_ROLE, EXECUTOR_ROLE);
         _setRoleAdmin(ROOT_CONFIRMER_ROLE, EXECUTOR_ROLE);
@@ -521,6 +527,7 @@ contract PBMRebateTreasury is
         governanceReserve    += forGovernance;
         distributionPool     += forDistribution;
         totalRebateDeposited += amount;
+        lastDepositTimestamp  = block.timestamp;
 
         uint256 depositId = rebateDeposits.length;
         rebateDeposits.push(RebateDeposit({
@@ -1092,7 +1099,7 @@ contract PBMRebateTreasury is
         if (recipient != patientFund) revert InvalidAddress();
         if (amount == 0)             revert ZeroAmount();
         if (epochMerkleRoot[currentEpoch] != bytes32(0)) revert RootAlreadyLive();
-        if (block.timestamp < epochStartTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
+        if (block.timestamp < lastDepositTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
             revert RecoveryDelayNotElapsed();
         }
 
@@ -1438,4 +1445,17 @@ contract PBMRebateTreasury is
 
     /// @notice Returns the GUARDIAN_ROLE identifier.
     function guardianRole()  external pure returns (bytes32) { return GUARDIAN_ROLE; }
+
+    /**
+     * @notice Returns the amount of unallocated distribution pool tokens eligible for stale recovery.
+     * @dev    If the recovery delay has elapsed since the latest deposit, the entire unallocated
+     *         pool is recoverable. Otherwise, 0 is returned.
+     *         Tradeoff: Vulnerable to 1-wei dust deposits restarting the clock.
+     */
+    function getRecoverableStaleAmount() public view returns (uint256) {
+        if (block.timestamp >= lastDepositTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
+            return distributionPool;
+        }
+        return 0;
+    }
 }

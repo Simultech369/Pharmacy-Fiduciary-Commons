@@ -2,6 +2,36 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { ethers } = require("ethers");
 
+function sanitizeWarning(msg) {
+  if (!msg) return "";
+  let sanitized = msg;
+  // 1. Redact http/https URLs (with or without credentials) before scanning
+  //    key/value patterns so URL path segments such as `/mykey:` are not
+  //    mistaken for standalone credential fields.
+  sanitized = sanitized.replace(/https?:\/\/[^\s'"\(\)\[\]]+/gi, (url) => {
+    const trailing = url.match(/[.,:;!]+$/);
+    return "[URL_REDACTED]" + (trailing ? trailing[0] : "");
+  });
+  // 2. Redact credentials or auth tokens in standard key/value patterns.
+  sanitized = sanitized.replace(/(key|auth|api-key|secret|password|pass|token|credential)\s*[=:]\s*[^\s,;]+/gi, "$1=[REDACTED]");
+  sanitized = sanitized.replace(/\bauthorization\s*:\s*(?:bearer\s+)?[^\s,;]+/gi, "authorization: [REDACTED]");
+  // 3. Redact Windows absolute paths
+  sanitized = sanitized.replace(/[a-zA-Z]:\\[^\s'"\(\)\[\]]+/g, (pathStr) => {
+    const trailing = pathStr.match(/[.,:;!]+$/);
+    return "[PATH_REDACTED]" + (trailing ? trailing[0] : "");
+  });
+  // 4. Redact Unix absolute paths that look user-specific or system-specific
+  sanitized = sanitized.replace(/\/[^\s'"\(\)\[\]]*\/(?:home|users|desktop|documents|downloads|appdata)\/[^\s'"\(\)\[\]]*/gi, (pathStr) => {
+    const trailing = pathStr.match(/[.,:;!]+$/);
+    return "[PATH_REDACTED]" + (trailing ? trailing[0] : "");
+  });
+  sanitized = sanitized.replace(/\/(?:home|users)\/[^\s'"\(\)\[\]]*/gi, (pathStr) => {
+    const trailing = pathStr.match(/[.,:;!]+$/);
+    return "[PATH_REDACTED]" + (trailing ? trailing[0] : "");
+  });
+  return sanitized;
+}
+
 function usage() {
   console.log(`
 Usage:
@@ -80,6 +110,8 @@ async function queryFilterChunked(contract, filter, fromBlock, toBlock) {
 
 async function main(opts = {}) {
   const args = parseArgs(process.argv.slice(2));
+  let isPartialExport = false;
+  const exportWarnings = [];
 
   const exporterAddress = opts.exporter || args.exporter;
   const rpcUrl = opts.rpc || args.rpc;
@@ -129,7 +161,9 @@ async function main(opts = {}) {
     if (!args.allowPartial && !opts.allowPartial) {
       throw err;
     }
-    console.log("Warning: Could not fetch Claimed events:", err.message);
+    isPartialExport = true;
+    exportWarnings.push(sanitizeWarning(`Could not fetch Claimed events: ${err.message}`));
+    console.log("Warning:", exportWarnings.at(-1));
   }
 
   const claims = [];
@@ -154,7 +188,9 @@ async function main(opts = {}) {
       if (!args.allowPartial && !opts.allowPartial) {
         throw err;
       }
-      console.log(`Warning: Could not fetch tx details for ${event.transactionHash}:`, err.message);
+      isPartialExport = true;
+      exportWarnings.push(sanitizeWarning(`Could not fetch tx details for ${event.transactionHash}: ${err.message}`));
+      console.log("Warning:", exportWarnings.at(-1));
     }
 
     // Determine status: check if flagged via exclusion dispute
@@ -166,7 +202,9 @@ async function main(opts = {}) {
       if (!args.allowPartial && !opts.allowPartial) {
         throw err;
       }
-      console.log("Warning: Could not check exclusion dispute status:", err.message);
+      isPartialExport = true;
+      exportWarnings.push(sanitizeWarning(`Could not check exclusion dispute status: ${err.message}`));
+      console.log("Warning:", exportWarnings.at(-1));
     }
 
     const claimId = `claim-${epoch}-${pharmacy}`;
@@ -234,19 +272,25 @@ async function main(opts = {}) {
       if (!args.allowPartial && !opts.allowPartial) {
         throw new Error(`Failed to parse Merkle allocations file: ${err.message}`);
       }
-      console.log("Warning: Failed to parse Merkle allocations file:", err.message);
+      isPartialExport = true;
+      exportWarnings.push(sanitizeWarning(`Failed to parse Merkle allocations file: ${err.message}`));
+      console.log("Warning:", exportWarnings.at(-1));
     }
   } else {
     if (!args.allowPartial && !opts.allowPartial) {
       throw new Error(`Merkle tree file not found at ${merklePathInput}.`);
     }
-    console.log(`Warning: Merkle tree file not found at ${merklePathInput}. Skipping proof export.`);
+    isPartialExport = true;
+    exportWarnings.push(sanitizeWarning(`Merkle tree file not found at ${merklePathInput}. Skipping proof export.`));
+    console.log("Warning:", exportWarnings.at(-1));
   }
 
   if (claims.length > 0 && !hasMerkleEntry) {
     if (!args.allowPartial && !opts.allowPartial) {
       throw new Error("Safety violation: Claims exist in export but no matching Merkle proof was found in allocations file.");
     }
+    isPartialExport = true;
+    exportWarnings.push("Safety violation: Claims exist in export but no matching Merkle proof was found in allocations file.");
   }
 
   // 3. Fetch Votes from PatientFundParticipatoryBudgeting VoteCast events
@@ -259,7 +303,9 @@ async function main(opts = {}) {
     if (!args.allowPartial && !opts.allowPartial) {
       throw err;
     }
-    console.log("Warning: Could not fetch VoteCast events:", err.message);
+    isPartialExport = true;
+    exportWarnings.push(sanitizeWarning(`Could not fetch VoteCast events: ${err.message}`));
+    console.log("Warning:", exportWarnings.at(-1));
   }
 
   const votes = [];
@@ -278,7 +324,9 @@ async function main(opts = {}) {
       if (!args.allowPartial && !opts.allowPartial) {
         throw err;
       }
-      console.log(`Warning: Could not fetch project details for ${projectId}:`, err.message);
+      isPartialExport = true;
+      exportWarnings.push(sanitizeWarning(`Could not fetch project details for project ${projectId} in round ${roundId}: ${err.message}`));
+      console.log("Warning:", exportWarnings.at(-1));
     }
 
     // Get tx details
@@ -292,7 +340,9 @@ async function main(opts = {}) {
       if (!args.allowPartial && !opts.allowPartial) {
         throw err;
       }
-      console.log(`Warning: Could not fetch transaction details for ${event.transactionHash}:`, err.message);
+      isPartialExport = true;
+      exportWarnings.push(sanitizeWarning(`Could not fetch transaction details for ${event.transactionHash}: ${err.message}`));
+      console.log("Warning:", exportWarnings.at(-1));
     }
 
     votes.push({
@@ -323,6 +373,9 @@ async function main(opts = {}) {
 
   // 4. Assemble payload
   const payload = {
+    schema_version: "1.1.0",
+    is_partial: isPartialExport,
+    warnings: exportWarnings,
     exporter,
     exported_at: new Date().toISOString(),
     chain: {
@@ -367,5 +420,6 @@ if (require.main === module) {
 module.exports = {
   TREASURY_ABI,
   PB_ABI,
+  sanitizeWarning,
   main
 };

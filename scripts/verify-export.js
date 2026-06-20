@@ -11,6 +11,7 @@ Options:
   --rpc <url>               Ethereum JSON-RPC URL
   --confirmations <count>   Minimum confirmations required (default: 1)
   --allow-incomplete        Allow verifying exports that are missing Merkle proof material
+  --allow-partial           Allow verifying exports that are marked as partial
 `);
 }
 
@@ -22,6 +23,8 @@ function parseArgs(argv) {
       const key = arg.slice(2);
       if (key === "allow-incomplete") {
         args.allowIncomplete = true;
+      } else if (key === "allow-partial") {
+        args.allowPartial = true;
       } else {
         args[key] = argv[i + 1];
       }
@@ -80,6 +83,49 @@ function verifyPayload(payload, options = {}) {
   for (const field of ["claims", "merkle_proofs", "votes", "receipts"]) {
     if (!Array.isArray(payload[field])) {
       fail(errors, `${field} must be an array.`);
+    }
+  }
+
+  if (payload.schema_version === undefined) {
+    fail(errors, "Completeness field schema_version is missing.");
+  } else {
+    if (payload.schema_version !== "1.1.0") {
+      fail(errors, "Unsupported schema_version; expected 1.1.0.");
+    }
+    if (payload.is_partial === undefined) {
+      fail(errors, "Completeness field is_partial is missing.");
+    } else if (typeof payload.is_partial !== "boolean") {
+      fail(errors, "is_partial must be a boolean.");
+    }
+    if (payload.warnings === undefined) {
+      fail(errors, "Completeness field warnings is missing.");
+    } else if (!Array.isArray(payload.warnings)) {
+      fail(errors, "warnings must be an array.");
+    } else if (payload.warnings.some((warning) => typeof warning !== "string")) {
+      fail(errors, "warnings entries must be strings.");
+    }
+  }
+
+  if (payload.is_partial === false && Array.isArray(payload.warnings) && payload.warnings.length > 0) {
+    fail(errors, "A complete export cannot contain partial-export warnings.");
+  }
+
+  if (payload.is_partial === true) {
+    if (options.allowPartial) {
+      if (Array.isArray(payload.warnings)) {
+        for (const w of payload.warnings) {
+          warnings.push(`[Partial Export Warning] ${w}`);
+        }
+      } else {
+        warnings.push("Export is marked as partial.");
+      }
+    } else {
+      fail(errors, "Export is marked as partial (contains query failures). Use --allow-partial to override.");
+      if (Array.isArray(payload.warnings)) {
+        for (const w of payload.warnings) {
+          fail(errors, `[Partial Export Error] ${w}`);
+        }
+      }
     }
   }
 
@@ -265,7 +311,8 @@ async function main(opts = {}) {
 
   const payload = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), filePath), "utf8"));
   const result = verifyPayload(payload, {
-    allowIncomplete: Boolean(opts.allowIncomplete || args.allowIncomplete)
+    allowIncomplete: Boolean(opts.allowIncomplete || args.allowIncomplete),
+    allowPartial: Boolean(opts.allowPartial || args.allowPartial)
   });
 
   if (result.ok && (opts.provider || opts.rpc || args.rpc)) {
@@ -282,12 +329,16 @@ async function main(opts = {}) {
   }
 
   if (result.ok) {
-    const rpcEnabled = Boolean(opts.provider || opts.rpc || args.rpc);
-    console.log(
-      rpcEnabled
-        ? "RPC provenance verification passed."
-        : "OFFLINE STRUCTURE CHECK PASSED - NOT CHAIN PROVENANCE."
-    );
+    if (payload.is_partial === true) {
+      console.log("partial accepted with override");
+    } else {
+      const rpcEnabled = Boolean(opts.provider || opts.rpc || args.rpc);
+      console.log(
+        rpcEnabled
+          ? "RPC provenance verification passed."
+          : "OFFLINE STRUCTURE CHECK PASSED - NOT CHAIN PROVENANCE."
+      );
+    }
     for (const warning of result.warnings) {
       console.log(`Warning: ${warning}`);
     }

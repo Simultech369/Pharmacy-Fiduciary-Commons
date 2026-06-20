@@ -20,6 +20,19 @@ An export payload contains four top-level arrays: `claims`, `merkle_proofs`, `vo
   "title": "PharmacyCommonsExportPayload",
   "type": "object",
   "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Version of the portability export schema (e.g. '1.1.0')"
+    },
+    "is_partial": {
+      "type": "boolean",
+      "description": "True if the export was generated with missing/partial RPC data"
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Sanitized query failure warning messages"
+    },
     "exporter": {
       "type": "string",
       "description": "Ethereum address of the participant requesting the export"
@@ -97,6 +110,11 @@ An export payload contains four top-level arrays: `claims`, `merkle_proofs`, `vo
       }
     }
   },
-  "required": ["exporter", "exported_at", "claims", "merkle_proofs", "votes", "receipts"]
+  "required": ["schema_version", "is_partial", "warnings", "exporter", "exported_at", "claims", "merkle_proofs", "votes", "receipts"]
 }
 ```
+
+Version `1.1.0` completeness metadata is required. Verifiers fail closed when
+`schema_version`, `is_partial`, or `warnings` is absent or malformed. Legacy
+payloads must be migrated before verification so omitting metadata cannot make a
+partial export appear complete.
