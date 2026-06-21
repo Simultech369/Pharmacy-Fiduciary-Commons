@@ -2,6 +2,8 @@
 
 This document defines the rules, roles, and accountability mechanisms governing the Pharmacy Fiduciary Commons. The system is designed under Ostrom-commons principles to manage shared resources without extractive capture.
 
+For the high-level governance philosophy and epistemic guidelines, refer to the [Draft Constitution v0.1 (Non-Ratified)](./COMMONS_CONSTITUTION.md).
+
 ---
 
 ## 1. Mission
