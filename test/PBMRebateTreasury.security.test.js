@@ -974,6 +974,72 @@ describe("PBMRebateTreasury security baseline", function () {
     await checkInvariant([0n, 1n]);
   });
 
+  it("documents that flagged normal disputes reserve active epoch volume until council resolution", async function () {
+    // 1. Seed deposit of 2000 tokens to cover distribution pool
+    await seedDeposit(toWei("2000"));
+
+    const signers = await ethers.getSigners();
+    const pharmacyA = pharmacy;
+    const pharmacyB = signers[9];
+
+    const amtA = toWei("800");
+    const amtB = toWei("300");
+
+    // 2. Generate root and proofs with two leaves
+    const { root, proofA, proofB } = makeTwoLeafTree(
+      pharmacyA.address, amtA, amtA,
+      pharmacyB.address, amtB, amtB
+    );
+
+    // 3. Increase daily cap to 1200 via executor (so we can confirm a root of 1100)
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("updateDailyCap", [toWei("1200")])
+    );
+
+    // 4. Propose and confirm root
+    await treasury.connect(council).proposeRoot(root, toWei("1100"));
+    await treasury.connect(council2).confirmRoot(0n);
+
+    // Verify root is confirmed and total amount is set
+    expect(await treasury.epochMerkleRoot(0n)).to.equal(root);
+    expect(await treasury.epochRootTotal(0n)).to.equal(toWei("1100"));
+
+    // 5. Reduce daily cap back to 1000
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("updateDailyCap", [toWei("1000")])
+    );
+    expect(await treasury.dailyVolumeCap()).to.equal(toWei("1000"));
+
+    // 6. Pharmacy A flags a large normal dispute of 800
+    await treasury.connect(pharmacyA).flagClaim(
+      0n, amtA, amtA, proofA, evidenceHash("dispute-A-large")
+    );
+
+    // Assert epochVolume is now 800
+    expect(await treasury.epochVolume()).to.equal(amtA);
+
+    // 7. Pharmacy B attempts to claim 300
+    // newVolume = 800 + 300 = 1100, which exceeds dailyVolumeCap (1000)
+    await expectRevert(
+      treasury.connect(pharmacyB).claim(amtB, amtB, proofB),
+      "DailyCapExceeded"
+    );
+
+    // 8. Council dismisses Pharmacy A's dispute (resolution 2 is DISMISS)
+    await treasury.connect(council).resolveClaim(
+      0n, pharmacyA.address, 2, evidenceHash("dismiss-A")
+    );
+
+    // Assert epochVolume is restored downward
+    expect(await treasury.epochVolume()).to.equal(0n);
+
+    // 9. Pharmacy B can now claim successfully
+    await treasury.connect(pharmacyB).claim(amtB, amtB, proofB);
+    expect(await treasury.pharmacyClaimedThisEpoch(0n, pharmacyB.address)).to.equal(amtB);
+  });
+
   describe("Global accounting aggregates & scenario fuzzer", function () {
     it("correctly updates totalEscrowed, totalFlaggedNormal, and totalFlaggedExclusion through standard flows", async function () {
       // Initially all should be 0

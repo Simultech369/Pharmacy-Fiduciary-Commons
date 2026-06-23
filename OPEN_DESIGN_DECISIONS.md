@@ -8,7 +8,7 @@ Current behavior: flagging either dispute path sets `hasClaimed`; dismissal reve
 
 Decision still needed: distinguish final rejection from dismissal that restores claim eligibility. A single automatic reset is not adopted because it could let a rejected proof-backed claim bypass the dispute outcome.
 
-Required evidence: explicit resolution reasons, sanction interaction, UI warnings, and tests proving that unpaid legitimate claimants can recover without enabling double payment or review bypass.
+Required evidence: explicit resolution reasons, sanction interaction, UI warnings, and tests proving that unpaid legitimate claimants can recover without enabling double payment or review bypass. The volume cap-reservation / anti-griefing tradeoff is now covered by security tests (`PBMRebateTreasury.security.test.js`).
 
 ## Credential Privacy Identifier
 
@@ -16,7 +16,7 @@ Current behavior: the exact canonical credential hash is signed and emitted as a
 
 Decision still needed: retain the stable hash for audit and duplicate detection or replace it with a deployment/round-scoped nullifier. The current hash is a correlation handle but is not represented as proof that credential contents are brute-force recoverable.
 
-Required evidence: intended anonymity level, cross-round duplicate policy, credential disclosure workflow, and a reviewed nullifier construction if privacy scope expands.
+Required evidence: intended anonymity level, cross-round duplicate policy, credential disclosure workflow, and a reviewed nullifier construction if privacy scope expands. The proposed roadmap for ZK nullifiers is detailed in [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md).
 
 ## Participatory Project Eligibility
 
@@ -24,7 +24,7 @@ Current behavior: council controls project registration and voter eligibility; r
 
 Decision still needed: retain council eligibility screening, add an appeal/community nomination process, or move eligibility to another governance mechanism.
 
-Required evidence: fraud-screening requirements, conflicts policy, appeal process, and a clear statement of which decisions are administrative versus community-controlled.
+Required evidence: fraud-screening requirements, conflicts policy, appeal process, and a clear statement of which decisions are administrative versus community-controlled. Proposed voter eligibility and admission criteria controls are defined in [RATIFICATION_PROCEDURE.md](RATIFICATION_PROCEDURE.md).
 
 ## Stale Pool Recovery Liveness
 

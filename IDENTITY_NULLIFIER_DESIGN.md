@@ -1,0 +1,68 @@
+# Scoped Identity and Nullifier Design Note
+
+This document outlines the proposed architecture for privacy-preserving identity management within the **Pharmacy Fiduciary Commons**.
+
+> [!IMPORTANT]
+> **DESIGN DIRECTION**: This is a proposed design roadmap. The current testnet deployment uses stable credential hashes for voter registration and Merkle claims. The ZK-proofs and nullifiers described below represent future upgrades to protect claimant privacy from corporate retaliation.
+
+---
+
+## 1. The Risk of Stable Credential Hashes
+
+In the current prototype, credential verification uses stable cryptographic signatures and public wallet addresses. In a production environment, this introduces significant risks:
+* **Payer Profiling**: PBMs and large insurance carriers can monitor the public blockchain, link claim volumes to specific pharmacy addresses, and retaliate by terminating their networks or reducing reimbursement rates.
+* **Corrupted Anonymity**: If a pharmacy's public key is linked to its real-world identity once, their entire claim history, dispute filings, and voting records become retroactively visible.
+
+To resolve this, the project rejects using a single stable identifier for all purposes. Instead, we advocate a **hybrid scoped-nullifier** approach.
+
+---
+
+## 2. The Core Principle: Separation of Identity Concerns
+
+We do not ask a single identifier to handle uniqueness, accountability, continuity, privacy, revocation, and migration simultaneously. Instead, we decouple these roles:
+
+```
+                  ┌───────────────────────┐
+                  │ Real-World License    │
+                  │ (NCPDP / NPI Registry)│
+                  └───────────┬───────────┘
+                              │
+               [Issuer / Auditor Custody Only]
+                              │
+            ┌─────────────────┴─────────────────┐
+            ▼                                   ▼
+ ┌────────────────────┐               ┌────────────────────┐
+ │  Voting Nullifier  │               │   Claim Nullifier  │
+ │  (Round-Scoped)    │               │   (Epoch-Scoped)   │
+ └────────────────────┘               └────────────────────┘
+   * Double-voting                      * Blocks double-claiming
+     prevention                           without linking wallet
+   * Refreshed each                     * Re-randomized each
+     budgeting round                      distribution epoch
+```
+
+---
+
+## 3. Scoped-Nullifier Architecture
+
+### 1. Voting: Round-Scoped Nullifiers
+To participate in participatory budgeting, a voter proves membership in the electorate using a Zero-Knowledge Proof (ZKP) of their credential.
+* A **Round-Scoped Nullifier** ($\eta_{round}$) is derived from the credential secret and the specific round ID:
+  $$\eta_{round} = \text{Hash}(\text{Credential Secret}, \text{Round ID})$$
+* This prevents double-voting within the round but makes it mathematically impossible to link votes cast by the same pharmacy across different rounds.
+
+### 2. Claims/Disputes: Epoch-Scoped Nullifiers
+For claiming rebates or flagging disputes:
+* An **Epoch-Scoped Nullifier** is generated for the distribution epoch:
+  $$\eta_{epoch} = \text{Hash}(\text{Credential Secret}, \text{Epoch ID})$$
+* A pharmacy can prove they are eligible for an allocation and submit a dispute without revealing their public wallet address or linking their claim to their voting record.
+
+### 3. Deployment-Scoped Identity
+* The mapping of real-world credentials to cryptographic secrets is maintained offline under strict custody of trusted issuers or independent auditors. Public blockchain events contain only the nullifiers and ZK proofs.
+
+---
+
+## 4. Continuity, Revocation, and Migration
+
+* **Migration & Exit**: When migrating to a new deployment or forking the protocol, participants can generate a ZK proof of continuity. This proves they were a valid participant in the old system without disclosing their nullifier history.
+* **Revocation**: Instead of publishing a public blacklist of stable identity hashes, credential revocation uses cryptographic accumulators (e.g., Merkle trees or cryptographic accumulators). Voters prove non-membership in the revoked accumulator in zero-knowledge.

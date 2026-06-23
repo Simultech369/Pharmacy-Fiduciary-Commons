@@ -73,6 +73,7 @@ This section analyzes the structural implementation of the smart contracts again
 * **Gaps**:
   * Credential revocation (managed off-chain or by the credential relayer key) has no general appeal mechanism.
   * The 14-day review timeout and the requirement to lift or sustain sanctions are documented in `GOVERNANCE.md` but are not enforced in contract code.
+  * Future privacy-preserving credential mitigation is detailed in the [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) proposal.
 
 ### 1.8 Legible Power
 * **Code References**: Events (`ClaimResolved`, `SanctionUpdated`, etc.)
@@ -81,7 +82,7 @@ This section analyzes the structural implementation of the smart contracts again
   * Core state modifications emit events detailing the actor and transaction parameters.
   * Normal dispute flags, exclusion dispute flags, dispute resolutions, and sanction appeals now bind non-zero evidence hashes on-chain.
 * **Gaps**:
-  * Events still do not store full evidence, NCPDP logs, or Council meeting rationales. `SanctionUpdated` remains reason-coded but does not require an evidence hash.
+  * Events still do not store full evidence, NCPDP logs, or Council meeting rationales. `SanctionUpdated` remains reason-coded but does not require an evidence hash. The off-chain storage and availability requirements for these commitments are now defined in [EVIDENCE_METADATA.md](EVIDENCE_METADATA.md).
 
 ### 1.9 Bounded Experimentation
 * **Code References**: `contracts/PBMRebateTreasury.sol#L1141` (`reduceHardCap`)
@@ -90,6 +91,7 @@ This section analyzes the structural implementation of the smart contracts again
   * Enforces caps on daily and absolute epoch volumes.
 * **Gaps**:
   * Caps are manual administrative parameters; they are not bound to live pharmacy transaction metrics or external sandboxes.
+  * The cap-reservation dispute tradeoff (where a flagged dispute locks up daily/epoch cap volume) is now documented and covered by security tests (`PBMRebateTreasury.security.test.js`).
 
 ### 1.10 The Protocol is Not the Community
 * **Code References**: `WELLBEING_METRICS.md`
@@ -103,7 +105,7 @@ This section analyzes the structural implementation of the smart contracts again
 
 ## 2. Participant Co-Authorship & Ratification Pathways
 
-To transition `COMMONS_CONSTITUTION.md` from a draft proposal to a legitimate governance covenant, we outline three potential ratification pathways:
+To transition `COMMONS_CONSTITUTION.md` from a draft proposal to a legitimate governance covenant, we outline three potential ratification pathways, which have been formalized in the proposed [RATIFICATION_PROCEDURE.md](RATIFICATION_PROCEDURE.md):
 
 1. **Credential-Gated Referendum**:
    * Leverage the existing `PatientFundParticipatoryBudgeting.sol` infrastructure to hold a ratification vote.
@@ -128,5 +130,4 @@ Two core governance tensions remain active and unresolved:
 ### 3.2 Public Ledger Transparency vs. Corporate Retaliation
 * **Disagreement**: Should the system record stable, searchable participant credential hashes, or should it prioritize absolute privacy?
 * **Tension**:
-  * Stable hashes are required to prevent double-claiming and verify duplicate voter registration.
-  * However, stable hashes allow payers (PBMs) to profile and retaliate against independent pharmacies that join the commons. Resolving this requires evaluating zero-knowledge nullifiers which add implementation complexity.
+  * However, stable hashes allow payers (PBMs) to profile and retaliate against independent pharmacies that join the commons. Resolving this requires evaluating zero-knowledge nullifiers which add implementation complexity. The proposed design direction for this is detailed in [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md).

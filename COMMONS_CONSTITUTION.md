@@ -3,13 +3,13 @@
 **Pharmacy Fiduciary Commons**  
 *Status: Draft Proposal. This document has not been participant-ratified and does not possess binding legal or political authority over the commons.*
 
-This draft proposes a potential interpretive framework. Until ratified, it does not override contracts, governance documents, or existing procedures.
+This draft proposes a potential interpretive framework. Until ratified, it does not override contracts, governance documents, or existing procedures. For the planned path toward formal validation, see [RATIFICATION_PROCEDURE.md](RATIFICATION_PROCEDURE.md).
 
 ---
 
 ## 1. Standpoint & Purpose
 
-The Pharmacy Fiduciary Commons is a federated fiduciary commons: collectively governed infrastructure that socializes captured pharmaceutical surplus, resists concentrated authority, aspires to permit local autonomy and meaningful exit, and uses permissionless experimentation without allowing wealth, technical expertise, or institutional status to become permanent political power.
+The Pharmacy Fiduciary Commons is a federated fiduciary commons: collectively governed infrastructure that socializes captured pharmaceutical surplus, resists concentrated authority, aspires to permit local autonomy and meaningful exit, and uses permissionless experimentation without allowing wealth, technical expertise, or institutional status to become permanent political power. For a comparison of this model to transparent Web2 enterprise PBM platforms, see [WEB2_TRANSPARENT_PBM_COMPARISON.md](WEB2_TRANSPARENT_PBM_COMPARISON.md).
 
 ---
 
@@ -85,7 +85,7 @@ To prevent the production of "truth" from becoming an opaque administrative mono
 8. **contested claim**: Unsettled assertions under dispute (e.g., active exclusion disputes).
 9. **unknown or unavailable evidence**: Data that is missing or proprietary (e.g., confidential PBM manufacturer rebate files).
 
-Each claim processed or presented by the commons should carry provenance, confidence metadata where applicable, contestation status, and explicit authority limits.
+Each claim processed or presented by the commons should carry provenance, confidence metadata where applicable, contestation status, and explicit authority limits. For the schema and rules governing these commitments, see [EVIDENCE_METADATA.md](EVIDENCE_METADATA.md).
 
 ---
 
@@ -120,7 +120,7 @@ Amendments to this draft constitution or the core governance parameters of the c
 | **Stale Recovery Liveness** | `contracts/PBMRebateTreasury.sol#L1104` | Mitigated tested design risk | Stale recovery is gated by `epochStartTimestamp`, so dust deposits no longer extend the 180-day recovery delay; current-root and unexpired pending-root guards remain. |
 | **Forkability & Portability** | `scripts/export-portability.js` | Tool-supported prototype | Portability depends on off-chain tools; does not guarantee automatic federation or claim recognition. |
 | **Anti-Plutocracy** | `contracts/PatientFundParticipatoryBudgeting.sol` | Partially protocol-enforced | Uses credential-gated approval voting with squared project-weight matching, which amplifies majorities but rejects token weight. |
-| **Contestable Identity** | `contracts/PBMRebateTreasury.sol#L1220` | Partial protocol support + unimplemented procedure | Sanction appeals require evidence hashes, but revocation lacks appeal; the 14-day council response window is only documented, not contract-enforced. |
+| **Contestable Identity** | `contracts/PBMRebateTreasury.sol#L1220` | Partial protocol support + unimplemented procedure | Sanction appeals require evidence hashes, but revocation lacks appeal; the 14-day council response window is only documented, not contract-enforced. Privacy-preserving credentials use the [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) direction. |
 | **Legible Power** | Event emission logs | Partially protocol-enforced | Dispute and appeal events bind evidence hashes, but many admin events still do not include complete rationale records. |
 | **Bounded Experimentation**| `contracts/PBMRebateTreasury.sol#L1141` | Partially protocol-enforced | Treasury caps exist; universal sandboxes, reversibility, and explicit risk-bearing rules do not. |
 | **Protocol is Not Community**| `WELLBEING_METRICS.md` | Aspirational / Docs-only | Wellbeing auditing is absent in code (CLI tool not implemented). |

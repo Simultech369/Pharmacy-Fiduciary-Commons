@@ -29,6 +29,7 @@ Coverage levels:
 | Exclusion remediation cannot consume ordinary distribution liquidity | Contract-enforced + tested | `fundExclusionRemediation`, `exclusionRemediationReserve`, and security tests | Define an operational reserve-funding target before deployment |
 | Exclusion payouts cannot distort root-unclaimed reporting | Contract-enforced + tested | `epochRootClaimedTotal`, `epochExclusionPaidTotal`, `epochAccounting`, and security tests | Surface the provenance-aware fields in any future dashboard |
 | Issued vouchers reserve mutual-credit capacity until redemption or expiry cleanup | Contract-enforced + tested | `reservedVoucherCredit`, `releaseExpiredVoucher`, transfer and limit-update checks | Add operational monitoring for expired reservations awaiting cleanup |
+| Flagged normal disputes reserve cap volume until resolved | Contract-enforced + tested | `resolveClaim` resets volume, security tests | Covered by cap-reservation regression tests |
 | Voucher IDs cannot be stolen and redeemed by another participant | Contract-enforced + tested | Recipient stored in `Voucher`; `redeemVoucher` requires the intended recipient | Add cancellation and reissuance only if real workflows require it |
 
 ## Governance And Trust Roots
@@ -42,6 +43,9 @@ Coverage levels:
 | Dizzy is an arbitration/judgment layer | Docs-only | `GOVERNANCE.md` | Reframe as advisory unless evidence packet, versioned prompt, appeal path, and council ratification exist |
 | Relayer verifier enables voter self-registration | Contract-enforced but centralized | `relayerVerifier`, `registerVoterWithSignature` | Add verifier rotation/runbook and eligibility policy |
 | Relayer authorizations cannot be replayed after use or council revocation | Contract-enforced + tested | chain-bound registration nonce in `PatientFundParticipatoryBudgeting` | Add operator tooling to query nonce automatically from the target chain |
+| Ratification requires multi-class constituency thresholds | Docs-only (Proposed) | `RATIFICATION_PROCEDURE.md` | Freeze eligibility lists and voting thresholds |
+| Evidence commitments use off-chain metadata schema | Docs-only (Proposed) | `EVIDENCE_METADATA.md` | Define custodian, availability, and retention policies |
+| Voter and claim privacy via scoped nullifiers | Docs-only (Proposed) | `IDENTITY_NULLIFIER_DESIGN.md` | Mitigate PBM profiling risk with ZK nullifiers |
 
 ## Dashboard And Public Legibility
 

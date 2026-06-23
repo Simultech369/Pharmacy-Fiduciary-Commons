@@ -89,13 +89,20 @@ No mainnet deployment should occur until:
 
 The on-chain voting and registration mechanism uses EIP-712 structured credential signatures that reference `credentialHash`. Because on-chain transactions and event logs are fully public:
 1. **Correlation Risk**: If a voter uses the same `credentialHash` (or if it is derived from a long-term identifier) across multiple rounds or rounds in different deployments, their voting patterns can be correlated by on-chain watchdogs.
-2. **Mitigation**: Trusted issuers should rotate policy versions regularly and use different credential hashes per round or participant. Future iterations will consider using nullifier sets or Zero-Knowledge (ZK) proofs to completely hide correlation markers while preserving double-vote prevention.
+2. **Mitigation**: Trusted issuers should rotate policy versions regularly and use different credential hashes per round or participant. Future iterations will adopt the ZK scoped nullifier architecture detailed in the [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) design direction to prevent tracking.
 
 ## Stale Distribution Recovery
 
 The unallocated distribution pool recovery mechanism uses `epochStartTimestamp`, not `lastDepositTimestamp`, to enforce the 180-day stale recovery delay. A later dust deposit updates deposit metadata but does not extend the recovery window.
 1. **Liveness Mitigation**: A 1 wei deposit can no longer restart the stale recovery timer for the entire distribution pool.
 2. **Safety Guards**: Recovery remains limited to the current epoch when no root is live, no pending root proposal remains unexpired, and the timelock executor routes recovered liquidity to the `patientFund`.
+
+## Dispute Cap-Reservation Tradeoff
+
+The `PBMRebateTreasury` contract checks `epochVolume` (disputed and claimed volumes in the active epoch) against `dailyVolumeCap` and `hardAbsoluteVolumeCap`.
+1. **Liveness/Griefing Risk**: When a pharmacy flags a normal dispute (`flagClaim`), the disputed amount is reserved from the epoch escrow and the `epochVolume` increases immediately. If a pharmacy has a very large dispute, it can lock up the remaining daily volume cap, causing subsequent legitimate claims to temporarily revert with `DailyCapExceeded` until the Council resolves or dismisses the dispute.
+2. **Design Tradeoff**: This is an intentional design choice. The alternative (not checking caps at dispute time) would allow an attacker to flag large arbitrary disputes to drain or lock the entire distribution pool without cap enforcement.
+3. **Mitigation**: The Council holds the authority to quickly review and resolve or dismiss disputes via `resolveClaim`, which immediately releases the reserved volume cap if dismissed.
 
 ## Content Security Policy (CSP) Guidelines
 

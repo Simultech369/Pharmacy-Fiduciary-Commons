@@ -2,7 +2,7 @@
 
 This document defines the rules, roles, and accountability mechanisms governing the Pharmacy Fiduciary Commons. The system is designed under Ostrom-commons principles to manage shared resources without extractive capture.
 
-For the high-level governance philosophy and epistemic guidelines, refer to the [Draft Constitution v0.1 (Non-Ratified)](./COMMONS_CONSTITUTION.md).
+For the high-level governance philosophy and epistemic guidelines, refer to the [Draft Constitution v0.1 (Non-Ratified)](COMMONS_CONSTITUTION.md) and the proposed [Ratification Procedure](RATIFICATION_PROCEDURE.md).
 
 ---
 
@@ -36,7 +36,7 @@ The Council is a 3/5 multisig address (e.g., Gnosis Safe) representing the trust
 * **Annual Nominations**: Signers are elected from community health organizers, independent pharmacy cooperative representatives, and patient advocacy groups. Nominations are held annually.
 * **Patient Voice & Nominations**: Any verified participant pharmacy or patient advocate group can nominate a candidate.
 * **Removal Petition Threshold**: If a Council member is suspected of negligence, conflict of interest, or capture, a public petition signed by **at least 10% of active participant pharmacies and patients** (based on unique claimant addresses over the last 4 epochs) forces an on-chain signer replacement vote.
-* **Signer Rotation**: Council membership uses `DEFAULT_ADMIN_ROLE`. Root-confirmer rotation is executed through the timelock, and the contract rejects any address that would simultaneously hold council and root-confirmation authority.
+* **Signer Rotation**: Council membership uses `DEFAULT_ADMIN_ROLE`. Root-confirmer rotation is executed through the timelock, and the contract rejects any address that would simultaneously hold council and root-confirmation authority. For the planned eligibility and admission controls, see [RATIFICATION_PROCEDURE.md](RATIFICATION_PROCEDURE.md).
 
 ---
 
@@ -51,7 +51,7 @@ The Council is a 3/5 multisig address (e.g., Gnosis Safe) representing the trust
 
 * **Root Generation**: Off-chain Merkle tree generators use validated dispensing reports (NCPDP standards) to calculate allocations.
 * **Exclusion Auditing**: When an exclusion dispute is flagged (`flagExclusion`), the pharmacy must submit verifiable dispensing data to the Council audit board and bind that evidence to the on-chain flag with a non-zero evidence hash. The Council checks this evidence against the epoch's deposited rebate files, the root confirmer independently approves any proposed payout, and the Council then executes or dismisses the resolution with a non-zero resolution evidence hash. Approved payouts draw only from the explicitly funded exclusion-remediation reserve, never from root escrow or future distribution liquidity.
-* **Audit Transparency**: All audited dispensing data summaries and matching rebate deposits are published under structural transparency guidelines on the public dashboard.
+* **Audit Transparency**: All audited dispensing data summaries and matching rebate deposits are published under structural transparency guidelines on the public dashboard. Committing evidence to the chain requires adhering to the [Evidence Metadata Schema](EVIDENCE_METADATA.md).
 
 ---
 
@@ -91,4 +91,4 @@ The current credential issuer and registry are prototype trust roots. Before pub
 * **Rotation**: Issuer-key rotation requires a public notice, updated verifier configuration, regenerated examples, and a test proving old signatures fail when the issuer is removed.
 * **Revocation**: Revoked credential IDs remain in the revocation registry across key rotations. Removing an issuer key does not erase prior revocation history.
 * **Freshness**: Direct issuer-signed voter registration must include the current registration nonce and an expiration deadline. Council registration or revocation advances the nonce and invalidates outstanding signatures.
-* **Production Gate**: No credentialed public vote should be represented as production-ready until issuer custody, backup, rotation, revocation publication, and emergency replacement procedures are documented and rehearsed.
+* **Production Gate**: No credentialed public vote should be represented as production-ready until issuer custody, backup, rotation, revocation publication, and emergency replacement procedures are documented and rehearsed. Future credential designs will integrate the [Identity Nullifier Design](IDENTITY_NULLIFIER_DESIGN.md) to protect participant privacy.
