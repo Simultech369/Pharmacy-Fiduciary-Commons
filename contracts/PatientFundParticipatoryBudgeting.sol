@@ -21,6 +21,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     bytes32 public constant COUNCIL_ROLE = keccak256("COUNCIL_ROLE");
     bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
     uint256 public constant MAX_PROJECTS_PER_ROUND = 50;
+    uint256 public constant MATCH_RECLAIM_GRACE_PERIOD = 90 days;
     bytes32 public constant REGISTRATION_TYPEHASH = keccak256(
         "VoterRegistration(uint256 roundId,address voter,uint256 nonce,bytes32 credentialHash,bytes32 policyVersion,uint256 deadline)"
     );
@@ -51,12 +52,14 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         uint256 matchingPool;
         RoundState state;
         uint256 projectCount;
+        uint256 finalizedAt;
     }
 
     IERC20 public immutable token;
     address public immutable council;
     uint256 public currentRound;
     address public relayerVerifier;
+    uint256 public recycledMatchingPool;
 
     // roundId -> Round details
     mapping(uint256 => Round) public rounds;
@@ -105,6 +108,8 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     );
     event VoteCast(uint256 indexed roundId, uint256 indexed projectId, address indexed voter);
     event MatchDistributed(uint256 indexed roundId, uint256 indexed projectId, address indexed recipient, uint256 amount);
+    event MatchShareReclaimed(uint256 indexed roundId, uint256 indexed projectId, address indexed recipient, uint256 amount);
+    event RecycledMatchingPoolApplied(uint256 indexed roundId, uint256 amount);
     event RelayerVerifierUpdated(address indexed newVerifier);
     event Sweep(address indexed tokenAddr, address indexed recipient, uint256 amount);
     event ProjectProposed(uint256 indexed roundId, uint256 indexed proposalId, string title, address indexed recipient);
@@ -133,6 +138,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     error ProposalAlreadyRegistered();
     error AlreadySupported();
     error ProposalDoesNotExist();
+    error ReclaimGracePeriodNotElapsed();
 
     // =========================================================
     // CONSTRUCTOR
@@ -157,7 +163,8 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     // =========================================================
 
     function startRound(uint256 matchingPoolAmount) external onlyRole(COUNCIL_ROLE) whenNotPaused {
-        if (matchingPoolAmount == 0) revert ZeroAmount();
+        uint256 recycled = recycledMatchingPool;
+        if (matchingPoolAmount == 0 && recycled == 0) revert ZeroAmount();
         if (currentRound > 0 && rounds[currentRound].state != RoundState.Finalized) {
             revert RoundAlreadyActive();
         }
@@ -165,15 +172,24 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         currentRound += 1;
         uint256 roundId = currentRound;
 
-        token.safeTransferFrom(msg.sender, address(this), matchingPoolAmount);
+        if (matchingPoolAmount > 0) {
+            token.safeTransferFrom(msg.sender, address(this), matchingPoolAmount);
+        }
+        if (recycled > 0) {
+            recycledMatchingPool = 0;
+            emit RecycledMatchingPoolApplied(roundId, recycled);
+        }
+
+        uint256 totalMatchingPool = matchingPoolAmount + recycled;
 
         rounds[roundId] = Round({
-            matchingPool: matchingPoolAmount,
+            matchingPool: totalMatchingPool,
             state: RoundState.Active,
-            projectCount: 0
+            projectCount: 0,
+            finalizedAt: 0
         });
 
-        emit RoundStarted(roundId, matchingPoolAmount);
+        emit RoundStarted(roundId, totalMatchingPool);
     }
 
     function setRelayerVerifier(address _newVerifier) external onlyRole(COUNCIL_ROLE) whenNotPaused {
@@ -424,6 +440,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
 
         uint256 pool = r.matchingPool;
         r.state = RoundState.Finalized;
+        r.finalizedAt = block.timestamp;
 
         // 2. Handle zero vote edge case
         if (totalWeight == 0) {
@@ -461,6 +478,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     function claimMatchShare(uint256 roundId, uint256 projectId) external whenNotPaused {
         Round storage r = rounds[roundId];
         if (r.state != RoundState.Finalized) revert WrongRoundState();
+        if (projectId >= r.projectCount) revert ProjectInactive();
 
         uint256 share = roundProjectShares[roundId][projectId];
         if (share == 0) revert ZeroAmount();
@@ -470,6 +488,36 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         token.safeTransfer(recipient, share);
 
         emit MatchDistributed(roundId, projectId, recipient, share);
+    }
+
+    /**
+     * @notice Reclaims an unclaimed finalized project share after a 90-day grace period.
+     * @dev    This makes finalized shares claimable until the deadline, not perpetual debts.
+     *         Reclaimed funds remain in the contract and are automatically added to the next
+     *         matching round rather than entering council custody.
+     */
+    function reclaimUnclaimedMatchShare(uint256 roundId, uint256 projectId)
+        external
+        onlyRole(COUNCIL_ROLE)
+        whenNotPaused
+    {
+        Round storage r = rounds[roundId];
+        if (r.state != RoundState.Finalized) revert WrongRoundState();
+        if (projectId >= r.projectCount) revert ProjectInactive();
+        if (block.timestamp < r.finalizedAt + MATCH_RECLAIM_GRACE_PERIOD) {
+            revert ReclaimGracePeriodNotElapsed();
+        }
+
+        uint256 share = roundProjectShares[roundId][projectId];
+        if (share == 0) revert ZeroAmount();
+
+        roundProjectShares[roundId][projectId] = 0;
+        address recipient = roundProjects[roundId][projectId].recipient;
+        if (recipient == address(0)) revert ProjectInactive();
+
+        recycledMatchingPool += share;
+
+        emit MatchShareReclaimed(roundId, projectId, recipient, share);
     }
 
     // =========================================================

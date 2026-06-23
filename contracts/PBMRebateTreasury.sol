@@ -142,6 +142,7 @@ contract PBMRebateTreasury is
     error InvalidExclusionResolution();
     error MinimumEpochVolumeExceedsDailyCap();
     error GovernanceRoleSeparationViolation();
+    error ZeroEvidenceHash();
 
     // =========================================================
     // ROLES
@@ -253,8 +254,8 @@ contract PBMRebateTreasury is
     uint256 public epochStartTimestamp;
 
     /// @notice Timestamp of the latest rebate deposit.
-    /// @dev NOTE: Vulnerable to cheap dust-deposit griefing (any user can deposit 1 wei
-    ///      to reset the timer). This is an accepted tradeoff for simplicity.
+    /// @dev Informational deposit metadata only. Stale distribution recovery is gated by
+    ///      epochStartTimestamp so dust deposits cannot extend the recovery delay.
     uint256 public lastDepositTimestamp;
 
     /// @notice merkleRoot[epoch] - zero if not yet published.
@@ -385,18 +386,20 @@ contract PBMRebateTreasury is
     event DailyCapUpdated(uint256 indexed oldCap, uint256 indexed newCap);
 
     event SanctionUpdated(address indexed account, bool status, string reason);
-    event SanctionAppealed(address indexed account, string reason);
+    event SanctionAppealed(address indexed account, string reason, bytes32 indexed evidenceHash);
 
     event EpochRecalled(uint256 indexed epoch, uint256 amount);
 
-    event ClaimFlagged(uint256 indexed epoch, address indexed pharmacy, uint256 amount);
+    event ClaimFlagged(uint256 indexed epoch, address indexed pharmacy, uint256 amount, bytes32 indexed evidenceHash);
+    event ExclusionClaimFlagged(uint256 indexed epoch, address indexed pharmacy, uint256 amount, bytes32 indexed evidenceHash);
     event ExclusionClaimApproved(uint256 indexed epoch, address indexed pharmacy, uint256 amount, address approver);
     event ClaimResolved(
         uint256 indexed epoch,
         address indexed pharmacy,
         uint256 amount,
         DisputeResolution resolution,
-        bool isExclusion
+        bool isExclusion,
+        bytes32 indexed evidenceHash
     );
 
     event GovernanceReserveWithdrawn(address indexed recipient, uint256 amount);
@@ -766,16 +769,19 @@ contract PBMRebateTreasury is
      * @param amount      Amount the pharmacy believes it is owed (must match leaf).
      * @param eligibleCap Per-pharmacy cap as encoded in the leaf.
      * @param proof       Merkle proof authenticating the leaf.
+     * @param evidenceHash Hash binding off-chain dispute evidence to this on-chain flag.
      */
     function flagClaim(
         uint256 epoch,
         uint256 amount,
         uint256 eligibleCap,
-        bytes32[] calldata proof
+        bytes32[] calldata proof,
+        bytes32 evidenceHash
     )
         external
         whenNotPaused
     {
+        if (evidenceHash == bytes32(0)) revert ZeroEvidenceHash();
         if (epoch != currentEpoch)                revert CanOnlyFlagCurrentEpoch();
         if (sanctioned[msg.sender])               revert Sanctioned();
         if (hasClaimed[epoch][msg.sender])        revert AlreadyClaimed();
@@ -810,7 +816,7 @@ contract PBMRebateTreasury is
         totalEscrowed                                -= amount;
         totalFlaggedNormal                           += amount;
 
-        emit ClaimFlagged(epoch, msg.sender, amount);
+        emit ClaimFlagged(epoch, msg.sender, amount, evidenceHash);
     }
 
     /**
@@ -823,11 +829,13 @@ contract PBMRebateTreasury is
      *
      * @param epoch  The epoch being disputed (must be currentEpoch).
      * @param amount The gross amount being claimed.
+     * @param evidenceHash Hash binding off-chain omission evidence to this on-chain flag.
      */
-    function flagExclusion(uint256 epoch, uint256 amount)
+    function flagExclusion(uint256 epoch, uint256 amount, bytes32 evidenceHash)
         external
         whenNotPaused
     {
+        if (evidenceHash == bytes32(0)) revert ZeroEvidenceHash();
         if (epoch != currentEpoch)                 revert CanOnlyFlagCurrentEpoch();
         if (sanctioned[msg.sender])                revert Sanctioned();
         if (hasClaimed[epoch][msg.sender])         revert AlreadyClaimed();
@@ -842,7 +850,7 @@ contract PBMRebateTreasury is
         isExclusionDispute[epoch][msg.sender] = true;
         totalFlaggedExclusion                += amount;
 
-        emit ClaimFlagged(epoch, msg.sender, amount);
+        emit ExclusionClaimFlagged(epoch, msg.sender, amount, evidenceHash);
     }
 
     /**
@@ -873,16 +881,19 @@ contract PBMRebateTreasury is
      * @param epoch      The epoch of the dispute.
      * @param pharmacy   The pharmacy whose dispute to resolve.
      * @param resolution RELEASE_TO_PHARMACY or SEND_TO_PATIENT_FUND.
+     * @param evidenceHash Hash binding off-chain resolution evidence/rationale.
      */
     function resolveClaim(
         uint256            epoch,
         address            pharmacy,
-        DisputeResolution  resolution
+        DisputeResolution  resolution,
+        bytes32            evidenceHash
     )
         external
         onlyRole(COUNCIL_ROLE)
         nonReentrant
     {
+        if (evidenceHash == bytes32(0)) revert ZeroEvidenceHash();
         uint256 amount = flaggedAmount[epoch][pharmacy];
         if (amount == 0) revert NoFlaggedClaim();
 
@@ -922,11 +933,11 @@ contract PBMRebateTreasury is
                 uint256 patientShare  = (amount * patientClaimBP) / BP_DENOM;
                 uint256 netToPharmacy = amount - patientShare;
 
-                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
+                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
                 token.safeTransfer(patientFund, patientShare);
                 token.safeTransfer(pharmacy,    netToPharmacy);
             } else { // DISMISS
-                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
+                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
                 // No funds were locked, so no transfer occurs
             }
         } else { // Normal dispute
@@ -934,11 +945,11 @@ contract PBMRebateTreasury is
                 uint256 patientShare  = (amount * patientClaimBP) / BP_DENOM;
                 uint256 netToPharmacy = amount - patientShare;
 
-                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
+                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
                 token.safeTransfer(patientFund, patientShare);
                 token.safeTransfer(pharmacy,    netToPharmacy);
             } else if (resolution == DisputeResolution.SEND_TO_PATIENT_FUND) {
-                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
+                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
                 token.safeTransfer(patientFund, amount);
             } else { // DISMISS
                 // Correct volume and claimed total metrics to free volume caps
@@ -952,13 +963,13 @@ contract PBMRebateTreasury is
                 if (epochRecalled[epoch]) {
                     // Unclaimed funds have already been recalled.
                     // Directly send this dismissed amount to the patientFund to prevent permanent locking.
-                    emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
+                    emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
                     token.safeTransfer(patientFund, amount);
                 } else {
                     // Return funds back to epochEscrow
                     epochEscrow[epoch] += amount;
                     totalEscrowed      += amount;
-                    emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion);
+                    emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
                 }
             }
         }
@@ -1099,7 +1110,7 @@ contract PBMRebateTreasury is
         if (recipient != patientFund) revert InvalidAddress();
         if (amount == 0)             revert ZeroAmount();
         if (epochMerkleRoot[currentEpoch] != bytes32(0)) revert RootAlreadyLive();
-        if (block.timestamp < lastDepositTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
+        if (block.timestamp < epochStartTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
             revert RecoveryDelayNotElapsed();
         }
 
@@ -1204,10 +1215,12 @@ contract PBMRebateTreasury is
     /**
      * @notice Allows a sanctioned address to submit an on-chain appeal.
      * @param reason The justification for the appeal.
+     * @param evidenceHash Hash binding off-chain appeal evidence to this on-chain appeal.
      */
-    function appealSanction(string calldata reason) external {
+    function appealSanction(string calldata reason, bytes32 evidenceHash) external {
+        if (evidenceHash == bytes32(0)) revert ZeroEvidenceHash();
         if (!sanctioned[msg.sender]) revert NotSanctioned();
-        emit SanctionAppealed(msg.sender, reason);
+        emit SanctionAppealed(msg.sender, reason, evidenceHash);
     }
 
     /**
@@ -1448,12 +1461,21 @@ contract PBMRebateTreasury is
 
     /**
      * @notice Returns the amount of unallocated distribution pool tokens eligible for stale recovery.
-     * @dev    If the recovery delay has elapsed since the latest deposit, the entire unallocated
-     *         pool is recoverable. Otherwise, 0 is returned.
-     *         Tradeoff: Vulnerable to 1-wei dust deposits restarting the clock.
+     * @dev    Mirrors recoverStaleDistributionPool() eligibility checks so off-chain
+     *         monitors do not report funds as recoverable while a current root is live
+     *         or a pending root proposal remains unexpired.
      */
     function getRecoverableStaleAmount() public view returns (uint256) {
-        if (block.timestamp >= lastDepositTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
+        if (epochMerkleRoot[currentEpoch] != bytes32(0)) {
+            return 0;
+        }
+
+        PendingRoot storage pr = pendingRoot[currentEpoch];
+        if (pr.proposedAt != 0 && block.timestamp <= pr.proposedAt + ROOT_PROPOSAL_EXPIRY) {
+            return 0;
+        }
+
+        if (block.timestamp >= epochStartTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
             return distributionPool;
         }
         return 0;

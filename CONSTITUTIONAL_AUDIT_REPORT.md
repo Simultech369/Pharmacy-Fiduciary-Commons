@@ -23,6 +23,7 @@ This section analyzes the structural implementation of the smart contracts again
 * **Status**: **Aspirational / Gapped**.
 * **Analysis**:
   * `PharmacyMutualCredit.sol` allows peer-to-peer credit transfers and voucher redemption.
+  * Voucher redemption now includes a 30-day issuer deauthorization grace window for vouchers created before issuer removal, with `createdAt` stored on each voucher to handle reauthorization cycles.
 * **Gaps**:
   * All credit limits (`updateCreditLimit`) and authorized voucher issuers (`updateIssuerStatus`) are managed by the global `COUNCIL_ROLE`. 
   * There is no local autonomy: a local federation cannot set its own credit constraints, approve its own local emergency issuers, or partition its liabilities from the global registry.
@@ -36,13 +37,15 @@ This section analyzes the structural implementation of the smart contracts again
 * **Gaps**:
   * The broader promise that experimental features or governance failures will not shift losses to pharmacies and patients is not contract-enforced.
 
-### 1.4 Stale Recovery Liveness (Known Design Risk)
-* **Code References**: `contracts/PBMRebateTreasury.sol#L1093` (`recoverStaleDistributionPool`)
-* **Status**: **Known tested design risk**.
+### 1.4 Stale Recovery Liveness (Mitigated Design Risk)
+* **Code References**: `contracts/PBMRebateTreasury.sol#L1104` (`recoverStaleDistributionPool`)
+* **Status**: **Mitigated tested design risk**.
 * **Analysis**:
   * If unallocated distribution funds sit inactive for 180 days, the `Executor` can recover them to the `patientFund` to prevent permanent locks.
-* **Gaps**:
-  * Any caller can deposit `1 wei` to reset `lastDepositTimestamp`, restarting the 180-day delay. This allows cheap, malicious denial-of-liveness attacks on stale pool recovery.
+  * Recovery is gated by `epochStartTimestamp`, not `lastDepositTimestamp`, so a later 1 wei dust deposit does not restart the 180-day delay.
+  * Recovery remains blocked while a current root is live or a pending root proposal has not expired.
+* **Remaining Gaps**:
+  * Governance still needs participant-facing notice expectations before stale recovery is executed.
 
 ### 1.5 Forkability and Portability
 * **Code References**: `scripts/export-portability.js`, `scripts/verify-export.js`
@@ -57,14 +60,16 @@ This section analyzes the structural implementation of the smart contracts again
 * **Status**: **Partially protocol-enforced**.
 * **Analysis**:
   * Payout matching weights use approval counts rather than token size.
+  * Finalized project shares are claimable for 90 days; after that grace period, council may reclaim unclaimed shares into an internal recycled matching pool that is automatically applied to the next round.
 * **Gaps**:
-  * Aggracted project votes are squared for payout weighting (`castVote` increments approval count, and finalization squares it). While non-token-weighted, this approval system amplifies majorities and does not intrinsically prevent minority project exclusion.
+  * Aggregated project votes are squared for payout weighting (`castVote` increments approval count, and finalization squares it). While non-token-weighted, this approval system amplifies majorities and does not intrinsically prevent minority project exclusion.
+  * Reclaimed funds no longer enter council custody directly, but the council still controls when the next round starts and which projects are eligible.
 
 ### 1.7 Contestable Identity
-* **Code References**: `contracts/PBMRebateTreasury.sol#L1208` (`appealSanction`)
+* **Code References**: `contracts/PBMRebateTreasury.sol#L1220` (`appealSanction`)
 * **Status**: **Partial protocol support + unimplemented procedure**.
 * **Analysis**:
-  * Any sanctioned account can submit a string reason to log an appeal on-chain.
+  * Any sanctioned account can submit a string reason plus non-zero evidence hash to log an appeal on-chain.
 * **Gaps**:
   * Credential revocation (managed off-chain or by the credential relayer key) has no general appeal mechanism.
   * The 14-day review timeout and the requirement to lift or sustain sanctions are documented in `GOVERNANCE.md` but are not enforced in contract code.
@@ -74,11 +79,12 @@ This section analyzes the structural implementation of the smart contracts again
 * **Status**: **Partially protocol-enforced**.
 * **Analysis**:
   * Core state modifications emit events detailing the actor and transaction parameters.
+  * Normal dispute flags, exclusion dispute flags, dispute resolutions, and sanction appeals now bind non-zero evidence hashes on-chain.
 * **Gaps**:
-  * Events show the *outcome* of power, not the *evidence* behind it. `ClaimResolved` and `SanctionUpdated` do not bind or store cryptographic hashes of the audit evidence, NCPDP logs, or Council meeting rationales.
+  * Events still do not store full evidence, NCPDP logs, or Council meeting rationales. `SanctionUpdated` remains reason-coded but does not require an evidence hash.
 
 ### 1.9 Bounded Experimentation
-* **Code References**: `contracts/PBMRebateTreasury.sol#L1130` (`reduceHardCap`)
+* **Code References**: `contracts/PBMRebateTreasury.sol#L1141` (`reduceHardCap`)
 * **Status**: **Partially protocol-enforced**.
 * **Analysis**:
   * Enforces caps on daily and absolute epoch volumes.

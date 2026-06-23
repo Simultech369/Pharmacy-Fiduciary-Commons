@@ -36,6 +36,10 @@ describe("PBMRebateTreasury security baseline", function () {
     return { root, leafA, leafB, proofA, proofB };
   }
 
+  function evidenceHash(label) {
+    return ethers.keccak256(ethers.toUtf8Bytes(label));
+  }
+
   function errorText(err) {
     return [
       err?.message,
@@ -536,21 +540,21 @@ describe("PBMRebateTreasury security baseline", function () {
 
     // 1. Flag exclusion (no pool/escrow change at flag time)
     const poolBefore = await treasury.distributionPool();
-    await treasury.connect(attacker).flagExclusion(0, toWei("50"));
+    await treasury.connect(attacker).flagExclusion(0, toWei("50"), evidenceHash("exclusion-attacker"));
     const poolAfter = await treasury.distributionPool();
     expect(poolBefore).to.equal(poolAfter);
     expect(await treasury.flaggedAmount(0, attacker.address)).to.equal(toWei("50"));
     expect(await treasury.isExclusionDispute(0, attacker.address)).to.be.true;
 
     // 2. Resolve claim as DISMISS (flag cleared, no transfers)
-    await treasury.connect(council).resolveClaim(0, attacker.address, 2); // DISMISS is enum val 2
+    await treasury.connect(council).resolveClaim(0, attacker.address, 2, evidenceHash("dismiss-attacker")); // DISMISS is enum val 2
     expect(await treasury.flaggedAmount(0, attacker.address)).to.equal(0n);
     expect(await treasury.isExclusionDispute(0, attacker.address)).to.be.false;
 
     // 3. Flag exclusion again; council cannot pay it without independent approval.
-    await treasury.connect(depositor).flagExclusion(0, toWei("50"));
+    await treasury.connect(depositor).flagExclusion(0, toWei("50"), evidenceHash("exclusion-depositor"));
     await expectRevert(
-      treasury.connect(council).resolveClaim(0, depositor.address, 0),
+      treasury.connect(council).resolveClaim(0, depositor.address, 0, evidenceHash("release-without-approval")),
       "ExclusionApprovalRequired"
     );
     await expectRevert(
@@ -563,7 +567,7 @@ describe("PBMRebateTreasury security baseline", function () {
     await token.connect(depositor).approve(await treasury.getAddress(), toWei("50"));
     await treasury.connect(depositor).fundExclusionRemediation(toWei("50"));
     const balanceBefore = await token.balanceOf(depositor.address);
-    await treasury.connect(council).resolveClaim(0, depositor.address, 0); // RELEASE_TO_PHARMACY is 0
+    await treasury.connect(council).resolveClaim(0, depositor.address, 0, evidenceHash("release-depositor")); // RELEASE_TO_PHARMACY is 0
     const balanceAfter = await token.balanceOf(depositor.address);
     // Net transfer is 90% of 50 = 45 (using initial 10% patientClaimBP)
     expect(balanceAfter - balanceBefore).to.equal(toWei("45"));
@@ -594,11 +598,11 @@ describe("PBMRebateTreasury security baseline", function () {
     await publishSingleLeafRoot(gross, gross);
     await treasury.connect(council2).confirmRoot(0);
 
-    await treasury.connect(attacker).flagExclusion(0, gross);
+    await treasury.connect(attacker).flagExclusion(0, gross, evidenceHash("exclusion-unclaimed-reporting"));
     await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
     await token.connect(depositor).approve(await treasury.getAddress(), gross);
     await treasury.connect(depositor).fundExclusionRemediation(gross);
-    await treasury.connect(council).resolveClaim(0, attacker.address, 0);
+    await treasury.connect(council).resolveClaim(0, attacker.address, 0, evidenceHash("release-unclaimed-reporting"));
 
     expect(await treasury.epochClaimedTotal(0)).to.equal(gross);
     expect(await treasury.epochRootClaimedTotal(0)).to.equal(0n);
@@ -619,17 +623,17 @@ describe("PBMRebateTreasury security baseline", function () {
     await treasury.connect(council2).confirmRoot(0);
     await treasury.connect(pharmacy).claim(gross, gross, []);
 
-    await treasury.connect(attacker).flagExclusion(0, toWei("200"));
+    await treasury.connect(attacker).flagExclusion(0, toWei("200"), evidenceHash("exclusion-cap-check"));
     await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
     await token.connect(depositor).approve(await treasury.getAddress(), toWei("200"));
     await treasury.connect(depositor).fundExclusionRemediation(toWei("200"));
 
     await expectRevert(
-      treasury.connect(council).resolveClaim(0, attacker.address, 0),
+      treasury.connect(council).resolveClaim(0, attacker.address, 0, evidenceHash("release-cap-check")),
       "DailyCapExceeded"
     );
     await expectRevert(
-      treasury.connect(council).resolveClaim(0, attacker.address, 1),
+      treasury.connect(council).resolveClaim(0, attacker.address, 1, evidenceHash("invalid-exclusion-resolution")),
       "InvalidExclusionResolution"
     );
 
@@ -642,12 +646,12 @@ describe("PBMRebateTreasury security baseline", function () {
     await publishSingleLeafRoot(gross, gross);
     await treasury.connect(council2).confirmRoot(0);
 
-    await treasury.connect(attacker).flagExclusion(0, toWei("50"));
+    await treasury.connect(attacker).flagExclusion(0, toWei("50"), evidenceHash("exclusion-reserve-check"));
     await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
     const distributionBefore = await treasury.distributionPool();
 
     await expectRevert(
-      treasury.connect(council).resolveClaim(0, attacker.address, 0),
+      treasury.connect(council).resolveClaim(0, attacker.address, 0, evidenceHash("release-no-reserve")),
       "InsufficientExclusionReserve"
     );
 
@@ -655,7 +659,7 @@ describe("PBMRebateTreasury security baseline", function () {
     await treasury.connect(depositor).fundExclusionRemediation(toWei("50"));
     expect(await treasury.exclusionRemediationReserve()).to.equal(toWei("50"));
 
-    await treasury.connect(council).resolveClaim(0, attacker.address, 0);
+    await treasury.connect(council).resolveClaim(0, attacker.address, 0, evidenceHash("release-with-reserve"));
 
     expect(await treasury.exclusionRemediationReserve()).to.equal(0n);
     expect(await treasury.distributionPool()).to.equal(distributionBefore);
@@ -666,12 +670,42 @@ describe("PBMRebateTreasury security baseline", function () {
     await treasury.connect(council).updateSanction(attacker.address, true, "spamming claims");
     expect(await treasury.sanctioned(attacker.address)).to.be.true;
 
-    const tx = await treasury.connect(attacker).appealSanction("i am a valid pharmacy");
+    const appealEvidence = evidenceHash("appeal-sanction");
+    const tx = await treasury.connect(attacker).appealSanction("i am a valid pharmacy", appealEvidence);
     const receipt = await tx.wait();
     const event = receipt.logs.find(x => x.fragment && x.fragment.name === "SanctionAppealed");
     expect(event).to.not.be.undefined;
     expect(event.args[0]).to.equal(attacker.address);
     expect(event.args[1]).to.equal("i am a valid pharmacy");
+    expect(event.args[2]).to.equal(appealEvidence);
+  });
+
+  it("rejects zero evidence hashes for dispute flags, resolutions, and appeals", async function () {
+    await seedDeposit(toWei("1000"));
+    const gross = toWei("100");
+    await publishSingleLeafRoot(gross, gross);
+    await treasury.connect(council2).confirmRoot(0);
+
+    await expectRevert(
+      treasury.connect(pharmacy).flagClaim(0, gross, gross, [], ethers.ZeroHash),
+      "ZeroEvidenceHash"
+    );
+    await expectRevert(
+      treasury.connect(attacker).flagExclusion(0, toWei("50"), ethers.ZeroHash),
+      "ZeroEvidenceHash"
+    );
+
+    await treasury.connect(pharmacy).flagClaim(0, gross, gross, [], evidenceHash("valid-flag-before-zero-resolution"));
+    await expectRevert(
+      treasury.connect(council).resolveClaim(0, pharmacy.address, 2, ethers.ZeroHash),
+      "ZeroEvidenceHash"
+    );
+
+    await treasury.connect(council).updateSanction(attacker.address, true, "spamming claims");
+    await expectRevert(
+      treasury.connect(attacker).appealSanction("i am a valid pharmacy", ethers.ZeroHash),
+      "ZeroEvidenceHash"
+    );
   });
 
   it("enforces parameter setters and executor limits", async function () {
@@ -714,7 +748,7 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(await treasury.epochEscrow(0)).to.equal(toWei("100"));
 
     // 3. Pharmacy flags a dispute of its 80 tokens allocation
-    await treasury.connect(pharmacy).flagClaim(0, amtA, amtA, proofA);
+    await treasury.connect(pharmacy).flagClaim(0, amtA, amtA, proofA, evidenceHash("normal-flag-recalled"));
 
     // Escrow should decrease by 80 to 20
     expect(await treasury.epochEscrow(0)).to.equal(toWei("20"));
@@ -745,7 +779,7 @@ describe("PBMRebateTreasury security baseline", function () {
     // 7. Council resolves the dispute as DISMISS
     // Instead of locking, it should directly transfer the 80 tokens to the patientFund.
     const patientBeforeDismiss = await token.balanceOf(patientFund.address);
-    await treasury.connect(council).resolveClaim(0, pharmacy.address, 2); // 2 is DISMISS
+    await treasury.connect(council).resolveClaim(0, pharmacy.address, 2, evidenceHash("dismiss-after-recall")); // 2 is DISMISS
     const patientAfterDismiss = await token.balanceOf(patientFund.address);
 
     // The patientFund should receive the 80 tokens directly
@@ -767,14 +801,14 @@ describe("PBMRebateTreasury security baseline", function () {
     await treasury.connect(council2).confirmRoot(0);
 
     // Flag the claim
-    await treasury.connect(pharmacy).flagClaim(0, gross, gross, []);
+    await treasury.connect(pharmacy).flagClaim(0, gross, gross, [], evidenceHash("normal-active-dismiss"));
 
     // Caps and totals should be updated as if claimed
     expect(await treasury.epochVolume()).to.equal(gross);
     expect(await treasury.epochClaimedTotal(0)).to.equal(gross);
 
     // Dismiss the claim
-    await treasury.connect(council).resolveClaim(0, pharmacy.address, 2); // 2 is DISMISS
+    await treasury.connect(council).resolveClaim(0, pharmacy.address, 2, evidenceHash("dismiss-active")); // 2 is DISMISS
 
     // epochVolume and epochClaimedTotal should be reset to 0
     expect(await treasury.epochVolume()).to.equal(0n);
@@ -872,11 +906,11 @@ describe("PBMRebateTreasury security baseline", function () {
     await checkInvariant([0n]);
 
     // 5. Pharmacy B flags a normal claim dispute for 50
-    await treasury.connect(pharmacyB).flagClaim(0n, toWei("50"), toWei("50"), proofB);
+    await treasury.connect(pharmacyB).flagClaim(0n, toWei("50"), toWei("50"), proofB, evidenceHash("normal-b"));
     await checkInvariant([0n]);
 
     // 6. Pharmacy C flags an exclusion dispute for 80
-    await treasury.connect(pharmacyC).flagExclusion(0n, toWei("80"));
+    await treasury.connect(pharmacyC).flagExclusion(0n, toWei("80"), evidenceHash("exclusion-c"));
     await checkInvariant([0n]);
 
     // 7. Fund Exclusion Remediation Reserve
@@ -886,7 +920,7 @@ describe("PBMRebateTreasury security baseline", function () {
 
     // 8. Confirmer approves Pharmacy C's exclusion, and Council resolves it as RELEASE
     await treasury.connect(council2).approveExclusionClaim(0n, pharmacyC.address);
-    const txExcl = await treasury.connect(council).resolveClaim(0n, pharmacyC.address, 0); // 0 is RELEASE
+    const txExcl = await treasury.connect(council).resolveClaim(0n, pharmacyC.address, 0, evidenceHash("release-c")); // 0 is RELEASE
     const receiptExcl = await txExcl.wait();
     const eventExcl = receiptExcl.logs.find(x => x.fragment && x.fragment.name === "ClaimResolved");
     expect(eventExcl).to.not.be.undefined;
@@ -921,7 +955,7 @@ describe("PBMRebateTreasury security baseline", function () {
     await checkInvariant([0n, 1n]);
 
     // Dismiss Pharmacy B's dispute. Since epochRecalled is false, it returns to escrow.
-    const txNorm = await treasury.connect(council).resolveClaim(0n, pharmacyB.address, 2); // 2 is DISMISS
+    const txNorm = await treasury.connect(council).resolveClaim(0n, pharmacyB.address, 2, evidenceHash("dismiss-b")); // 2 is DISMISS
     const receiptNorm = await txNorm.wait();
     const eventNorm = receiptNorm.logs.find(x => x.fragment && x.fragment.name === "ClaimResolved");
     expect(eventNorm).to.not.be.undefined;
@@ -973,7 +1007,7 @@ describe("PBMRebateTreasury security baseline", function () {
       expect(acc.flaggedExclusion).to.equal(0n);
 
       // Flag B (normal claim)
-      await treasury.connect(council2).flagClaim(0n, amtB, amtB, proofB);
+      await treasury.connect(council2).flagClaim(0n, amtB, amtB, proofB, evidenceHash("normal-global-b"));
       acc = await treasury.globalAccounting();
       expect(acc.escrowed).to.equal(0n);
       expect(acc.flaggedNormal).to.equal(amtB);
@@ -982,21 +1016,21 @@ describe("PBMRebateTreasury security baseline", function () {
       // Flag C (exclusion claim) - need to use another pharmacy
       const signers = await ethers.getSigners();
       const pharmacyC = signers[8];
-      await treasury.connect(pharmacyC).flagExclusion(0n, toWei("80"));
+      await treasury.connect(pharmacyC).flagExclusion(0n, toWei("80"), evidenceHash("exclusion-global-c"));
       acc = await treasury.globalAccounting();
       expect(acc.escrowed).to.equal(0n);
       expect(acc.flaggedNormal).to.equal(amtB);
       expect(acc.flaggedExclusion).to.equal(toWei("80"));
 
       // Resolve B as DISMISS (since epochRecalled is false, it returns to escrow)
-      await treasury.connect(council).resolveClaim(0n, council2.address, 2); // DISMISS
+      await treasury.connect(council).resolveClaim(0n, council2.address, 2, evidenceHash("dismiss-global-b")); // DISMISS
       acc = await treasury.globalAccounting();
       expect(acc.escrowed).to.equal(amtB);
       expect(acc.flaggedNormal).to.equal(0n);
       expect(acc.flaggedExclusion).to.equal(toWei("80"));
 
       // Resolve C as DISMISS (exclusion)
-      await treasury.connect(council).resolveClaim(0n, pharmacyC.address, 2); // DISMISS
+      await treasury.connect(council).resolveClaim(0n, pharmacyC.address, 2, evidenceHash("dismiss-global-c")); // DISMISS
       acc = await treasury.globalAccounting();
       expect(acc.escrowed).to.equal(amtB);
       expect(acc.flaggedNormal).to.equal(0n);
@@ -1190,7 +1224,7 @@ describe("PBMRebateTreasury security baseline", function () {
               const dailyCap = await treasury.dailyVolumeCap();
               const epochVol = await treasury.epochVolume();
               if (epochVol + allocation <= dailyCap) {
-                await treasury.connect(pharm).flagClaim(activeEpoch, allocation, allocation, proofs[pIdx]);
+                await treasury.connect(pharm).flagClaim(activeEpoch, allocation, allocation, proofs[pIdx], evidenceHash(`fuzzer-normal-${step}-${pIdx}`));
                 expectedEscrowed -= allocation;
                 expectedFlaggedNormal += allocation;
                 if (!activeDisputes[Number(activeEpoch)]) activeDisputes[Number(activeEpoch)] = {};
@@ -1209,7 +1243,7 @@ describe("PBMRebateTreasury security baseline", function () {
             const hasCl = await treasury.hasClaimed(activeEpoch, pharm.address);
             const flAmount = await treasury.flaggedAmount(activeEpoch, pharm.address);
             if (!hasCl && flAmount === 0n) {
-              await treasury.connect(pharm).flagExclusion(activeEpoch, allocation);
+              await treasury.connect(pharm).flagExclusion(activeEpoch, allocation, evidenceHash(`fuzzer-exclusion-${step}-${pIdx}`));
               expectedFlaggedExclusion += allocation;
               if (!activeDisputes[Number(activeEpoch)]) activeDisputes[Number(activeEpoch)] = {};
               activeDisputes[Number(activeEpoch)][pharm.address] = {
@@ -1241,13 +1275,13 @@ describe("PBMRebateTreasury security baseline", function () {
                     res = Math.random() < 0.5 ? 0 : 2;
                     await token.connect(depositor).approve(await treasury.getAddress(), disp.amount);
                     await treasury.connect(depositor).fundExclusionRemediation(disp.amount);
-                    await treasury.connect(council).resolveClaim(activeEpoch, pAddr, res);
+                    await treasury.connect(council).resolveClaim(activeEpoch, pAddr, res, evidenceHash(`fuzzer-resolve-exclusion-${step}`));
                     expectedFlaggedExclusion -= disp.amount;
                     disp.amount = 0n;
                   }
                 } else {
                   res = [0, 1, 2][Math.floor(Math.random() * 3)];
-                  await treasury.connect(council).resolveClaim(activeEpoch, pAddr, res);
+                  await treasury.connect(council).resolveClaim(activeEpoch, pAddr, res, evidenceHash(`fuzzer-resolve-normal-${step}`));
                   expectedFlaggedNormal -= disp.amount;
                   if (res === 2) {
                     expectedEscrowed += disp.amount;

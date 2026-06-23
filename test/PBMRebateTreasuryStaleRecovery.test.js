@@ -125,7 +125,7 @@ describe("PBMRebateTreasury Stale Recovery & Timer Checks", function () {
     await token.mint(depositor.address, toWei("5000"));
   });
 
-  it("blocks stale distribution recovery if 180 days have not elapsed since the LATEST deposit", async function () {
+  it("blocks stale distribution recovery if 180 days have not elapsed since the current epoch began", async function () {
     await seedDeposit(toWei("1000"));
 
     // Fast forward 179 days
@@ -141,7 +141,7 @@ describe("PBMRebateTreasury Stale Recovery & Timer Checks", function () {
       "underlying transaction reverted"
     );
 
-    // Fast forward 2 more days -> now it's 181 days since the deposit
+    // Fast forward 2 more days -> now it's 181 days since epoch start
     await ethers.provider.send("evm_increaseTime", [2 * 24 * 60 * 60]);
     await ethers.provider.send("evm_mine", []);
 
@@ -153,8 +153,9 @@ describe("PBMRebateTreasury Stale Recovery & Timer Checks", function () {
     expect(await treasury.distributionPool()).to.equal(toWei("890"));
   });
 
-  it("resets the recovery timer on a dust deposit (griefing check)", async function () {
+  it("does not let a dust deposit extend the epoch-start recovery delay", async function () {
     await seedDeposit(toWei("1000"));
+    const firstDepositTimestamp = await treasury.lastDepositTimestamp();
 
     // Fast forward 179 days
     await ethers.provider.send("evm_increaseTime", [179 * 24 * 60 * 60]);
@@ -164,12 +165,53 @@ describe("PBMRebateTreasury Stale Recovery & Timer Checks", function () {
     await token.mint(depositor.address, 1n);
     await token.connect(depositor).approve(await treasury.getAddress(), 1n);
     await treasury.connect(depositor).depositRebate(1n, "Dust deposit");
+    const dustDepositTimestamp = await treasury.lastDepositTimestamp();
+    expect(dustDepositTimestamp).to.be.gt(firstDepositTimestamp);
 
-    // Fast forward 2 more days (total 181 days since first deposit, but only 2 days since dust deposit)
+    // Fast forward 2 more days (total 181 days since epoch start, but only 2 days since dust deposit)
     await ethers.provider.send("evm_increaseTime", [2 * 24 * 60 * 60]);
     await ethers.provider.send("evm_mine", []);
 
-    // Recovery should fail because the dust deposit reset the clock
+    // Recovery should succeed because the delay is measured from epochStartTimestamp, not lastDepositTimestamp.
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("recoverStaleDistributionPool", [patientFund.address, toWei("100")])
+    );
+    expect(await treasury.distributionPool()).to.equal(toWei("890") + 1n);
+  });
+
+  it("still blocks stale recovery while a current root is live", async function () {
+    await seedDeposit(toWei("1000"));
+
+    const root = merkleLeaf(pharmacy.address, toWei("100"), toWei("100"));
+    await treasury.connect(council).proposeRoot(root, toWei("100"));
+    await treasury.connect(council2).confirmRoot(0);
+
+    await ethers.provider.send("evm_increaseTime", [180 * 24 * 60 * 60 + 1]);
+    await ethers.provider.send("evm_mine", []);
+
+    expect(await treasury.getRecoverableStaleAmount()).to.equal(0n);
+
+    await expectRevert(
+      timelockExecute(
+        await treasury.getAddress(),
+        treasury.interface.encodeFunctionData("recoverStaleDistributionPool", [patientFund.address, toWei("100")])
+      ),
+      "underlying transaction reverted"
+    );
+  });
+
+  it("still blocks stale recovery while a pending root proposal has not expired", async function () {
+    await seedDeposit(toWei("1000"));
+
+    await ethers.provider.send("evm_increaseTime", [180 * 24 * 60 * 60 + 1]);
+    await ethers.provider.send("evm_mine", []);
+
+    const root = merkleLeaf(pharmacy.address, toWei("100"), toWei("100"));
+    await treasury.connect(council).proposeRoot(root, toWei("100"));
+
+    expect(await treasury.getRecoverableStaleAmount()).to.equal(0n);
+
     await expectRevert(
       timelockExecute(
         await treasury.getAddress(),
@@ -178,16 +220,16 @@ describe("PBMRebateTreasury Stale Recovery & Timer Checks", function () {
       "underlying transaction reverted"
     );
 
-    // Fast forward 178 more days (total 180 days since the dust deposit)
-    await ethers.provider.send("evm_increaseTime", [178 * 24 * 60 * 60]);
+    await ethers.provider.send("evm_increaseTime", [4 * 24 * 60 * 60]);
     await ethers.provider.send("evm_mine", []);
 
-    // Recovery should now succeed
+    expect(await treasury.getRecoverableStaleAmount()).to.equal(await treasury.distributionPool());
+
     await timelockExecute(
       await treasury.getAddress(),
       treasury.interface.encodeFunctionData("recoverStaleDistributionPool", [patientFund.address, toWei("100")])
     );
-    expect(await treasury.distributionPool()).to.equal(toWei("890") + 1n);
+    expect(await treasury.distributionPool()).to.equal(toWei("890"));
   });
 
   it("reports correct getRecoverableStaleAmount view values", async function () {

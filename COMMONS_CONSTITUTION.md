@@ -52,12 +52,12 @@ Each principle is categorized by its enforcement nature: **Protocol-Enforced** (
 ### 2.7 Contestable Identity
 * **Definition**: Credentials establish limited capabilities, not a totalizing institutional identity. Any sanction, revocation, or exclusion must be reason-coded, visible, and appealable.
 * **Status**: **Partial protocol support plus unimplemented procedure**.
-  * Sanction updates emit reason codes and allow appeal submissions, but credential revocation has no general appeal mechanism, and the 14-day council response window is documented rather than contract-enforced.
+  * Sanction updates emit reason codes and appeal submissions require a non-zero evidence hash, but credential revocation has no general appeal mechanism, and the 14-day council response window is documented rather than contract-enforced.
 
 ### 2.8 Legible Power
 * **Definition**: Every privileged action must expose who acted, under what authority, and using what evidence.
 * **Status**: **Partially protocol-enforced**.
-  * Admin calls emit events on-chain, but events generally show actors and amounts rather than the underlying evidence (e.g., `ClaimResolved` does not contain an evidence hash or rationale).
+  * Dispute flags, dispute resolutions, and sanction appeals bind non-zero evidence hashes on-chain. Other admin events still show actions more often than full underlying evidence or rationale.
 
 ### 2.9 Bounded Experimentation
 * **Definition**: Novel financial or coordination mechanisms must begin with strict volume caps, sandboxes, reversibility, and explicit risk-bearing parameters.
@@ -117,10 +117,10 @@ Amendments to this draft constitution or the core governance parameters of the c
 | **No Permanent Sovereign** | `contracts/OZTimelockControllerImport.sol` | Partial protocol-enforced | Timelock and role isolation alone do not ensure replaceability of all authorities; council elections and removal petitions are unimplemented. |
 | **Subsidiarity** | `contracts/PharmacyMutualCredit.sol` | Aspirational | Most decisions are at the global contract level; local federated autonomy is absent in code. |
 | **Socialized Surplus** | `contracts/PBMRebateTreasury.sol` | Partially protocol-enforced | Bucket separation is enforced; broader risk-allocation models remain aspirational. |
-| **Stale Recovery Liveness** | `contracts/PBMRebateTreasury.sol#L1093` | Known tested design risk | The dust-deposit recovery reset in `recoverStaleDistributionPool` remains a known tested design risk. |
+| **Stale Recovery Liveness** | `contracts/PBMRebateTreasury.sol#L1104` | Mitigated tested design risk | Stale recovery is gated by `epochStartTimestamp`, so dust deposits no longer extend the 180-day recovery delay; current-root and unexpired pending-root guards remain. |
 | **Forkability & Portability** | `scripts/export-portability.js` | Tool-supported prototype | Portability depends on off-chain tools; does not guarantee automatic federation or claim recognition. |
 | **Anti-Plutocracy** | `contracts/PatientFundParticipatoryBudgeting.sol` | Partially protocol-enforced | Uses credential-gated approval voting with squared project-weight matching, which amplifies majorities but rejects token weight. |
-| **Contestable Identity** | `contracts/PBMRebateTreasury.sol#L1208` | Partial protocol support + unimplemented procedure | Revocation lacks appeal; the 14-day council response window is only documented, not contract-enforced. |
-| **Legible Power** | Event emission logs | Partially protocol-enforced | Events show actions but not the underlying evidence or complete rationales. |
-| **Bounded Experimentation**| `contracts/PBMRebateTreasury.sol#L1130` | Partially protocol-enforced | Treasury caps exist; universal sandboxes, reversibility, and explicit risk-bearing rules do not. |
+| **Contestable Identity** | `contracts/PBMRebateTreasury.sol#L1220` | Partial protocol support + unimplemented procedure | Sanction appeals require evidence hashes, but revocation lacks appeal; the 14-day council response window is only documented, not contract-enforced. |
+| **Legible Power** | Event emission logs | Partially protocol-enforced | Dispute and appeal events bind evidence hashes, but many admin events still do not include complete rationale records. |
+| **Bounded Experimentation**| `contracts/PBMRebateTreasury.sol#L1141` | Partially protocol-enforced | Treasury caps exist; universal sandboxes, reversibility, and explicit risk-bearing rules do not. |
 | **Protocol is Not Community**| `WELLBEING_METRICS.md` | Aspirational / Docs-only | Wellbeing auditing is absent in code (CLI tool not implemented). |

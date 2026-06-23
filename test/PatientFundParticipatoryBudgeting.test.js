@@ -223,6 +223,81 @@ describe("PatientFundParticipatoryBudgeting", function () {
       );
     });
 
+    it("allows council to reclaim unclaimed project shares only after the grace period", async function () {
+      await pb.connect(voters[0]).castVote(1n, 0n);
+
+      await expectRevert(
+        pb.connect(council).reclaimUnclaimedMatchShare(1n, 0n),
+        "WrongRoundState"
+      );
+
+      await pb.connect(council).finalizeRound(1n);
+
+      await expectRevert(
+        pb.connect(council).reclaimUnclaimedMatchShare(1n, 0n),
+        "ReclaimGracePeriodNotElapsed"
+      );
+
+      await ethers.provider.send("evm_increaseTime", [90 * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine", []);
+
+      await expectRevert(
+        pb.connect(council).reclaimUnclaimedMatchShare(1n, 999n),
+        "ProjectInactive"
+      );
+
+      const councilBefore = await token.balanceOf(council.address);
+      const tx = await pb.connect(council).reclaimUnclaimedMatchShare(1n, 0n);
+      const receipt = await tx.wait();
+      const event = receipt.logs.find(x => x.fragment && x.fragment.name === "MatchShareReclaimed");
+      expect(event).to.not.be.undefined;
+      expect(event.args[0]).to.equal(1n);
+      expect(event.args[1]).to.equal(0n);
+      expect(event.args[2]).to.equal(recipientA.address);
+      expect(event.args[3]).to.equal(toWei("10000"));
+      const councilAfter = await token.balanceOf(council.address);
+
+      expect(councilAfter).to.equal(councilBefore);
+      expect(await pb.recycledMatchingPool()).to.equal(toWei("10000"));
+      expect(await pb.roundProjectShares(1n, 0n)).to.equal(0n);
+
+      await expectRevert(
+        pb.claimMatchShare(1n, 0n),
+        "ZeroAmount"
+      );
+      await expectRevert(
+        pb.connect(council).reclaimUnclaimedMatchShare(1n, 0n),
+        "ZeroAmount"
+      );
+
+      await pb.connect(council).startRound(0n);
+      const nextRound = await pb.rounds(2n);
+      expect(nextRound.matchingPool).to.equal(toWei("10000"));
+      expect(await pb.recycledMatchingPool()).to.equal(0n);
+    });
+
+    it("lets the project recipient claim before the reclaim grace period expires", async function () {
+      await pb.connect(voters[0]).castVote(1n, 0n);
+      await pb.connect(council).finalizeRound(1n);
+
+      await ethers.provider.send("evm_increaseTime", [89 * 24 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+
+      const recipientBefore = await token.balanceOf(recipientA.address);
+      await pb.claimMatchShare(1n, 0n);
+      const recipientAfter = await token.balanceOf(recipientA.address);
+
+      expect(recipientAfter - recipientBefore).to.equal(toWei("10000"));
+
+      await ethers.provider.send("evm_increaseTime", [2 * 24 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+
+      await expectRevert(
+        pb.connect(council).reclaimUnclaimedMatchShare(1n, 0n),
+        "ZeroAmount"
+      );
+    });
+
     it("returns matching pool to council if no votes are cast", async function () {
       const balanceBefore = await token.balanceOf(council.address);
       

@@ -91,11 +91,11 @@ The on-chain voting and registration mechanism uses EIP-712 structured credentia
 1. **Correlation Risk**: If a voter uses the same `credentialHash` (or if it is derived from a long-term identifier) across multiple rounds or rounds in different deployments, their voting patterns can be correlated by on-chain watchdogs.
 2. **Mitigation**: Trusted issuers should rotate policy versions regularly and use different credential hashes per round or participant. Future iterations will consider using nullifier sets or Zero-Knowledge (ZK) proofs to completely hide correlation markers while preserving double-vote prevention.
 
-## Dust-Deposit Griefing Tradeoff
+## Stale Distribution Recovery
 
-The unallocated distribution pool recovery mechanism uses `lastDepositTimestamp` of the latest deposit to enforce the 180-day stale recovery delay.
-1. **Liveness Risk**: Any participant or adversary can execute a cheap dust deposit (as small as 1 wei) just before the 180-day window expires. This updates `lastDepositTimestamp` and resets the stale recovery timer for the entire distribution pool, delaying recovery.
-2. **Acceptance Rationale**: This is a known liveness tradeoff accepted for prototype simplicity and security. It prevents the council or unauthorized executors from prematurely reclaiming the distribution pool while active deposits are being made. Legitimate allocation to a Merkle root remains fully executable via the root confirmation role, regardless of recovery timer resets.
+The unallocated distribution pool recovery mechanism uses `epochStartTimestamp`, not `lastDepositTimestamp`, to enforce the 180-day stale recovery delay. A later dust deposit updates deposit metadata but does not extend the recovery window.
+1. **Liveness Mitigation**: A 1 wei deposit can no longer restart the stale recovery timer for the entire distribution pool.
+2. **Safety Guards**: Recovery remains limited to the current epoch when no root is live, no pending root proposal remains unexpired, and the timelock executor routes recovered liquidity to the `patientFund`.
 
 ## Content Security Policy (CSP) Guidelines
 

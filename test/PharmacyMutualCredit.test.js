@@ -187,6 +187,7 @@ describe("PharmacyMutualCredit", function () {
       expect(v.recipient).to.equal(pharmacyA.address);
       expect(v.amount).to.equal(amount);
       expect(v.redeemed).to.be.false;
+      expect(v.createdAt).to.be.gt(0n);
       expect(await credit.reservedVoucherCredit(advocate.address)).to.equal(amount);
 
       // Pharmacy A redeems voucher
@@ -199,6 +200,79 @@ describe("PharmacyMutualCredit", function () {
 
       const redeemedV = await credit.vouchers(voucherId);
       expect(redeemedV.redeemed).to.be.true;
+    });
+
+    it("allows vouchers created before issuer deauthorization to redeem inside the grace window", async function () {
+      const latestBlock = await ethers.provider.getBlock("latest");
+      const longExpiry = BigInt(latestBlock.timestamp) + 60n * 24n * 60n * 60n;
+      await credit.connect(advocate).createVoucher(voucherId, pharmacyA.address, amount, longExpiry);
+      const createdVoucher = await credit.vouchers(voucherId);
+
+      await credit.connect(council).updateIssuerStatus(advocate.address, false);
+      const deregTime = await credit.issuerDeregistrationTimestamp(advocate.address);
+      expect(deregTime).to.be.gt(createdVoucher.createdAt);
+      expect(await credit.authorizedIssuers(advocate.address)).to.be.false;
+
+      await ethers.provider.send("evm_increaseTime", [15 * 24 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+
+      await credit.connect(pharmacyA).redeemVoucher(voucherId);
+      expect(await credit.balances(advocate.address)).to.equal(-amount);
+      expect(await credit.balances(pharmacyA.address)).to.equal(amount);
+    });
+
+    it("rejects pre-deauthorization vouchers after the issuer grace window", async function () {
+      const latestBlock = await ethers.provider.getBlock("latest");
+      const longExpiry = BigInt(latestBlock.timestamp) + 60n * 24n * 60n * 60n;
+      await credit.connect(advocate).createVoucher(voucherId, pharmacyA.address, amount, longExpiry);
+      await credit.connect(council).updateIssuerStatus(advocate.address, false);
+
+      await ethers.provider.send("evm_increaseTime", [31 * 24 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+
+      await expectRevert(
+        credit.connect(pharmacyA).redeemVoucher(voucherId),
+        "Unauthorized"
+      );
+    });
+
+    it("keeps voucher expiry authoritative even inside the issuer grace window", async function () {
+      await credit.connect(advocate).createVoucher(voucherId, pharmacyA.address, amount, expiry);
+      await credit.connect(council).updateIssuerStatus(advocate.address, false);
+
+      await ethers.provider.send("evm_increaseTime", [2 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+
+      await expectRevert(
+        credit.connect(pharmacyA).redeemVoucher(voucherId),
+        "VoucherExpired"
+      );
+    });
+
+    it("resets issuer deauthorization timestamps across reauthorization cycles", async function () {
+      const latestBlock = await ethers.provider.getBlock("latest");
+      const longExpiry = BigInt(latestBlock.timestamp) + 120n * 24n * 60n * 60n;
+      const oldVoucher = ethers.keccak256(ethers.toUtf8Bytes("old-cycle-voucher"));
+      const newVoucher = ethers.keccak256(ethers.toUtf8Bytes("new-cycle-voucher"));
+
+      await credit.connect(advocate).createVoucher(oldVoucher, pharmacyA.address, 50n, longExpiry);
+      await credit.connect(council).updateIssuerStatus(advocate.address, false);
+      const firstDeregTime = await credit.issuerDeregistrationTimestamp(advocate.address);
+      expect(firstDeregTime).to.be.gt(0n);
+
+      await credit.connect(council).updateIssuerStatus(advocate.address, true);
+      expect(await credit.issuerDeregistrationTimestamp(advocate.address)).to.equal(0n);
+
+      await ethers.provider.send("evm_increaseTime", [2 * 24 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+      await credit.connect(advocate).createVoucher(newVoucher, pharmacyA.address, 50n, longExpiry);
+
+      await credit.connect(council).updateIssuerStatus(advocate.address, false);
+      const secondDeregTime = await credit.issuerDeregistrationTimestamp(advocate.address);
+      expect(secondDeregTime).to.be.gt(firstDeregTime);
+
+      await credit.connect(pharmacyA).redeemVoucher(newVoucher);
+      expect(await credit.balances(pharmacyA.address)).to.equal(50n);
     });
 
     it("rejects voucher issuance that would exceed issuer credit capacity", async function () {

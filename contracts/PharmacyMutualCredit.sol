@@ -17,6 +17,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable {
 
     bytes32 public constant COUNCIL_ROLE = keccak256("COUNCIL_ROLE");
     bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
+    uint256 public constant ISSUER_GRACE_PERIOD = 30 days;
 
     struct Voucher {
         address issuer;
@@ -24,6 +25,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable {
         uint256 amount;
         bool redeemed;
         uint256 expiry;
+        uint256 createdAt;
     }
 
     // Zero-sum balance ledger. The sum of all balances in the system is always 0.
@@ -34,6 +36,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable {
     
     mapping(address => bool) public registered;
     mapping(address => bool) public authorizedIssuers;
+    mapping(address => uint256) public issuerDeregistrationTimestamp;
 
     // Credit capacity committed to valid, unexpired vouchers but not yet settled.
     mapping(address => uint256) public reservedVoucherCredit;
@@ -118,8 +121,13 @@ contract PharmacyMutualCredit is AccessControl, Pausable {
     {
         if (issuer == address(0)) revert InvalidAddress();
         if (!registered[issuer]) revert NotRegistered();
-        
+        bool wasAuthorized = authorizedIssuers[issuer];
         authorizedIssuers[issuer] = status;
+        if (status) {
+            issuerDeregistrationTimestamp[issuer] = 0;
+        } else if (wasAuthorized) {
+            issuerDeregistrationTimestamp[issuer] = block.timestamp;
+        }
         emit IssuerStatusUpdated(issuer, status);
     }
 
@@ -167,7 +175,8 @@ contract PharmacyMutualCredit is AccessControl, Pausable {
             recipient: recipient,
             amount: amount,
             redeemed: false,
-            expiry: expiry
+            expiry: expiry,
+            createdAt: block.timestamp
         });
 
         emit VoucherCreated(voucherId, msg.sender, recipient, amount, expiry);
@@ -191,6 +200,16 @@ contract PharmacyMutualCredit is AccessControl, Pausable {
         uint256 amount = v.amount;
 
         if (!registered[issuer]) revert NotRegistered();
+        if (!authorizedIssuers[issuer]) {
+            uint256 deregTime = issuerDeregistrationTimestamp[issuer];
+            if (
+                deregTime == 0 ||
+                v.createdAt >= deregTime ||
+                block.timestamp > deregTime + ISSUER_GRACE_PERIOD
+            ) {
+                revert Unauthorized();
+            }
+        }
 
         v.redeemed = true;
         reservedVoucherCredit[issuer] -= amount;

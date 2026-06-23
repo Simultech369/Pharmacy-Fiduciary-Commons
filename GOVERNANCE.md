@@ -50,7 +50,7 @@ The Council is a 3/5 multisig address (e.g., Gnosis Safe) representing the trust
 ## 6. How Evidence is Reviewed
 
 * **Root Generation**: Off-chain Merkle tree generators use validated dispensing reports (NCPDP standards) to calculate allocations.
-* **Exclusion Auditing**: When an exclusion dispute is flagged (`flagExclusion`), the pharmacy must submit verifiable dispensing data to the Council audit board. The Council checks this evidence against the epoch's deposited rebate files, the root confirmer independently approves any proposed payout, and the Council then executes or dismisses the resolution. Approved payouts draw only from the explicitly funded exclusion-remediation reserve, never from root escrow or future distribution liquidity.
+* **Exclusion Auditing**: When an exclusion dispute is flagged (`flagExclusion`), the pharmacy must submit verifiable dispensing data to the Council audit board and bind that evidence to the on-chain flag with a non-zero evidence hash. The Council checks this evidence against the epoch's deposited rebate files, the root confirmer independently approves any proposed payout, and the Council then executes or dismisses the resolution with a non-zero resolution evidence hash. Approved payouts draw only from the explicitly funded exclusion-remediation reserve, never from root escrow or future distribution liquidity.
 * **Audit Transparency**: All audited dispensing data summaries and matching rebate deposits are published under structural transparency guidelines on the public dashboard.
 
 ---
@@ -67,7 +67,7 @@ The Council is a 3/5 multisig address (e.g., Gnosis Safe) representing the trust
 
 * **Sanctions**: Applied only for verified double-claiming, fake dispensing records, or Sybil behavior. All sanctions are reason-coded and logged publicly on-chain via the `SanctionUpdated` event.
 * **Appeals Timeline**:
-  - Any sanctioned pharmacy may register an appeal directly on-chain using the `appealSanction(string reason)` function.
+  - Any sanctioned pharmacy may register an appeal directly on-chain using the `appealSanction(string reason, bytes32 evidenceHash)` function.
   - The Council has a **strict 14-day window** from the `SanctionAppealed` block timestamp to review the submitted evidence.
   - The Council must issue a public summary of findings and either sustain or lift the sanction (`updateSanction(account, false, "Appeal approved")`) before the 14 days expire.
 * **Public Evidence Window**: The appeal case, relevant dispensing records, and the Council's final justification summary must be published to the public dashboard within 7 days of resolution, keeping all enforcement actions fully legible and contestable.
