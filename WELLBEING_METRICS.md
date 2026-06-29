@@ -36,10 +36,10 @@ To maintain an anti-extractive operational posture, the system enforces the foll
 
 ---
 
-## 4. Automated Review Triggers
+## 4. Review Triggers
 
-If any of the following triggers are tripped, the system pauses automatic surplus allocations and flags an epoch exception:
+These are policy triggers, not executable contract controls at this checkpoint. If any trigger is tripped, operators should pause automatic surplus allocations, record an evidence packet, and flag an epoch exception through the governance process. A future implementation should add a `tools/wellbeing/audit.mjs` script and explicit contract or runbook hooks before representing these checks as automated.
 
-1. **Admin Overhead Exception**: If $Fees_{\text{admin}} > 15\%$ for a finalized epoch, the contract will refuse matching round distributions until the council logs a manual adjustment or executes a fee-reduction patch.
-2. **Savings Dispersion Drop**: If the cooperative savings spread ($S_{coop}$) falls below **10%** for 3 consecutive epochs, the system triggers a mandatory review loop in Dizzy to evaluate wholesale catalog pricing lists and flag potential cartel pricing.
-3. **Sybil Vote Concentration**: If any project receives more than **80%** of its votes from accounts registered within the same 24-hour window, the voting round is put on hold to investigate voter credential collusion.
+1. **Admin Overhead Exception**: If $Fees_{\text{admin}} > 15\%$ for a finalized epoch, council should log a manual adjustment, fee-reduction patch, or explicit waiver before continuing surplus allocations.
+2. **Savings Dispersion Drop**: If the cooperative savings spread ($S_{coop}$) falls below **10%** for 3 consecutive epochs, the council should open a review loop, publish the pricing-list evidence packet, and document whether Dizzy was used as an advisory analysis layer.
+3. **Sybil Vote Concentration**: If any project receives more than **80%** of its votes from accounts registered within the same 24-hour window, operators should pause the affected voting round until credential-collusion evidence is reviewed.

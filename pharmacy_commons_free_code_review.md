@@ -1,3 +1,5 @@
+> **Stale review artifact.** This file is preserved as historical reviewer output, not as a current finding list. Several claims below predate later credential-policy, trusted-issuer, nonce, and replay-protection hardening in `contracts/PatientFundParticipatoryBudgeting.sol` and the related tests. Re-verify every issue against the current code before treating it as actionable.
+
 I'll analyze each file's contents and cross-reference against the recent design decisions you mentioned. Let's start with the PatientFundParticipatoryBudgeting.sol file and highlight critical areas:
 
 ### PatientFundParticipatoryBudgeting.sol

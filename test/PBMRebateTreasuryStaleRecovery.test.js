@@ -180,6 +180,32 @@ describe("PBMRebateTreasury Stale Recovery & Timer Checks", function () {
     expect(await treasury.distributionPool()).to.equal(toWei("890") + 1n);
   });
 
+  it("treats late legitimate unrooted deposits as recoverable once the epoch itself is stale", async function () {
+    await seedDeposit(toWei("1000"));
+    const firstDepositTimestamp = await treasury.lastDepositTimestamp();
+
+    await ethers.provider.send("evm_increaseTime", [179 * 24 * 60 * 60]);
+    await ethers.provider.send("evm_mine", []);
+
+    await token.connect(depositor).approve(await treasury.getAddress(), toWei("500"));
+    await treasury.connect(depositor).depositRebate(toWei("500"), "Late unrooted legitimate deposit");
+    const lateDepositTimestamp = await treasury.lastDepositTimestamp();
+    expect(lateDepositTimestamp).to.be.gt(firstDepositTimestamp);
+    expect(await treasury.distributionPool()).to.equal(toWei("1485"));
+    expect(await treasury.getRecoverableStaleAmount()).to.equal(0n);
+
+    await ethers.provider.send("evm_increaseTime", [2 * 24 * 60 * 60]);
+    await ethers.provider.send("evm_mine", []);
+
+    expect(await treasury.getRecoverableStaleAmount()).to.equal(toWei("1485"));
+
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("recoverStaleDistributionPool", [patientFund.address, toWei("1400")])
+    );
+    expect(await treasury.distributionPool()).to.equal(toWei("85"));
+  });
+
   it("still blocks stale recovery while a current root is live", async function () {
     await seedDeposit(toWei("1000"));
 

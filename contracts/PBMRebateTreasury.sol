@@ -38,7 +38,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  * 1. PBM (or any party) calls depositRebate() - funds enter escrow, source logged forever.
  * 2. Council proposes Merkle root via proposeRoot().
  * 3. A separately configured root confirmer calls confirmRoot() - root becomes active.
- * 4. Pharmacies (or delegated claims agent) call claim().
+ * 4. Pharmacies call claim() directly with Merkle proofs.
  * 5. Council calls finalizeEpoch() to close epoch and open the next.
  * 6. After RECALL_DELAY, unclaimed funds recalled to patientFund.
  *

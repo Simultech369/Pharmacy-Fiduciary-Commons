@@ -38,3 +38,19 @@ To maintain integrity, we distinguish what the Commons currently implements vers
 * **Publicly Verifiable, Not Trustless**: The Commons is not fully "trustless." It relies on bounded trust roots. The Council must propose roots, and a separate Root Confirmer must verify them. If both roles collude, they can submit incorrect roots (mitigated by role separation and dispute windows, but still a trust assumption).
 * **Information Asymmetry**: Legibility of PBM omissions relies on pharmacies and auditors having external access to dispensing records. The contract itself does not automatically discover missing deposits without this input.
 * **Privacy Tradeoffs**: In its current state, the Commons uses public wallet addresses for claiming and voting. Fully preserving claimant privacy requires migrating to the proposed scoped-nullifier architecture (see `IDENTITY_NULLIFIER_DESIGN.md`) to prevent corporate profiling.
+
+---
+
+## 4. Disruption And Evasion Matrix
+
+The Commons should sharpen the mechanisms that an incumbent can imitate only by giving up discretionary opacity. A normal dashboard can copy transparency language; it is harder to copy participant-controlled evidence, portable exit, and constrained governance.
+
+| Incumbent pattern | Likely evasion path | Commons counter-pressure | Current status |
+|-------------------|---------------------|--------------------------|----------------|
+| Rebate pass-through is promised by contract language | Reclassify value as admin fees, network terms, formulary services, or post-period adjustments | Require deposit/reconciliation evidence and publish omission entries with neutral provenance | Docs-only plus on-chain deposits |
+| Claims and exclusions are resolved inside proprietary workflows | Delay, bundle, or settle disputes without participant-verifiable records | Bind flags, approvals, and resolutions to evidence hashes and public accounting buckets | Partially contract-supported |
+| Transparency portals show selected metrics | Make dashboards impressive while leaving raw proofs, root inputs, and omission logic inaccessible | Keep exportable roots, proofs, events, and verification scripts as the source of authority | Script-supported, needs chain reconciliation |
+| Member voice is advisory | Route hard decisions through vendor-controlled policy boards | Ratify constituency thresholds, appeals, and fork/exit rights before claiming democratic control | Proposed/docs-only |
+| Privacy is handled by vendor confidentiality | Centralize identifiers and create profiling leverage | Move toward scoped nullifiers and reduce stable cross-round credential handles | Proposed/docs-only |
+
+Strategic implication: the strongest wedge is not "cheaper PBM software." It is a verifiable fiduciary pattern where omissions, exceptions, and governance choices become inspectable artifacts. That is the part to sharpen as a weapon.

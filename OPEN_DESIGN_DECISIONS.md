@@ -32,4 +32,14 @@ Current behavior: unallocated distribution pool recovery uses `epochStartTimesta
 
 Resolved checkpoint decision: the cheap dust-deposit griefing vector is mitigated by gating stale recovery on the current epoch age rather than the latest deposit timestamp. Recovery still fails when a current root is live or a pending root proposal has not expired.
 
-Remaining evidence: expected frequency of legitimate unrooted deposits, participant notice requirements before stale recovery, and whether future releases should expose richer recovery status in the dashboard.
+Current tradeoff now covered by regression tests: a late legitimate unrooted deposit is recoverable once the epoch itself is stale. This favors liveness and anti-griefing over deposit-age protection.
+
+Remaining evidence: expected frequency of legitimate unrooted deposits, participant notice requirements before stale recovery, whether recovery should require a public notice period keyed to `lastDepositTimestamp`, and whether future releases should expose richer recovery status in the dashboard.
+
+## Exclusion Cap Ratchets
+
+Current behavior: root-exclusion disputes are checked against current daily and hard caps at flag time and again at resolution time. If governance reduces a cap after a dispute is flagged and approved, the older approved payout remains pending until the current caps allow it or council dismisses it.
+
+Decision still needed: decide whether remediation should be governed by current safety caps, historical caps from flag time, or a separate remediation-specific cap. Current behavior favors live blast-radius control but can strand older exclusion remediation after an emergency cap reduction.
+
+Required evidence: operator playbooks for cap reductions, participant notice before dismissing stranded remediation, and dashboard/readiness warnings that approved exclusion claims can remain unpaid while current caps are lower than the approved amount.

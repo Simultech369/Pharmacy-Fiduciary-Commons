@@ -666,6 +666,42 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(await treasury.epochEscrow(0)).to.equal(gross);
   });
 
+  it("keeps approved exclusion payouts bound to current cap ratchets", async function () {
+    await seedDeposit(toWei("1000"));
+    const gross = toWei("100");
+    await publishSingleLeafRoot(gross, gross);
+    await treasury.connect(council2).confirmRoot(0);
+
+    await treasury.connect(attacker).flagExclusion(0, toWei("80"), evidenceHash("exclusion-before-cap-ratchet"));
+    await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
+    await token.connect(depositor).approve(await treasury.getAddress(), toWei("80"));
+    await treasury.connect(depositor).fundExclusionRemediation(toWei("80"));
+
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("updateDailyCap", [toWei("50")])
+    );
+
+    await expectRevert(
+      treasury.connect(council).resolveClaim(0, attacker.address, 0, evidenceHash("release-after-cap-ratchet")),
+      "DailyCapExceeded"
+    );
+
+    expect(await treasury.flaggedAmount(0, attacker.address)).to.equal(toWei("80"));
+    expect(await treasury.exclusionApproved(0, attacker.address)).to.be.true;
+    expect(await treasury.exclusionRemediationReserve()).to.equal(toWei("80"));
+
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("updateDailyCap", [toWei("1000")])
+    );
+    await treasury.connect(council).resolveClaim(0, attacker.address, 0, evidenceHash("release-after-cap-restore"));
+
+    expect(await treasury.flaggedAmount(0, attacker.address)).to.equal(0n);
+    expect(await treasury.exclusionRemediationReserve()).to.equal(0n);
+    expect(await treasury.epochExclusionPaidTotal(0)).to.equal(toWei("80"));
+  });
+
   it("allows sanctioned address to submit an on-chain appeal", async function () {
     await treasury.connect(council).updateSanction(attacker.address, true, "spamming claims");
     expect(await treasury.sanctioned(attacker.address)).to.be.true;
