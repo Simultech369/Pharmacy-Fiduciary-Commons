@@ -91,6 +91,10 @@ The on-chain voting and registration mechanism uses EIP-712 structured credentia
 1. **Correlation Risk**: If a voter uses the same `credentialHash` (or if it is derived from a long-term identifier) across multiple rounds or rounds in different deployments, their voting patterns can be correlated by on-chain watchdogs.
 2. **Mitigation**: Trusted issuers should rotate policy versions regularly and use different credential hashes per round or participant. Future iterations will adopt the ZK scoped nullifier architecture detailed in the [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) design direction to prevent tracking.
 
+## Payout Token Assumption
+
+Treasury accounting assumes the configured payout token is a standard, non-rebasing, non-deflationary ERC-20 with no fee-on-transfer behavior. Deposits and reserve funding are accounted by the requested transfer amount, so production deployments must not use tokens whose received balance can differ from the transfer amount.
+
 ## Stale Distribution Recovery
 
 The unallocated distribution pool recovery mechanism uses `epochStartTimestamp`, not `lastDepositTimestamp`, to enforce the 180-day stale recovery delay. A later dust deposit updates deposit metadata but does not extend the recovery window.

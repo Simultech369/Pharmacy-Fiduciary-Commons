@@ -35,7 +35,7 @@ The Council is a 3/5 multisig address (e.g., Gnosis Safe) representing the trust
 
 * **Annual Nominations**: Signers are elected from community health organizers, independent pharmacy cooperative representatives, and patient advocacy groups. Nominations are held annually.
 * **Patient Voice & Nominations**: Any verified participant pharmacy or patient advocate group can nominate a candidate.
-* **Removal Petition Threshold**: If a Council member is suspected of negligence, conflict of interest, or capture, a public petition signed by **at least 10% of active participant pharmacies and patients** (based on unique claimant addresses over the last 4 epochs) forces an on-chain signer replacement vote.
+* **Removal Petition Threshold**: If a Council member is suspected of negligence, conflict of interest, or capture, a public petition signed by **at least 10% of active participant pharmacies and patients** (based on unique claimant addresses over the last 4 epochs) forces a documented signer-replacement process through the Council Safe, proposed ratification pathway, or another explicitly approved governance procedure. This petition pathway is not currently enforced by contract.
 * **Signer Rotation**: Council membership uses `DEFAULT_ADMIN_ROLE`. Root-confirmer rotation is executed through the timelock, and the contract rejects any address that would simultaneously hold council and root-confirmation authority. For the planned eligibility and admission controls, see [RATIFICATION_PROCEDURE.md](RATIFICATION_PROCEDURE.md).
 
 ---

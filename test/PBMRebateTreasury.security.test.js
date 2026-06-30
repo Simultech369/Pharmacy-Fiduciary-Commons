@@ -460,6 +460,54 @@ describe("PBMRebateTreasury security baseline", function () {
     );
   });
 
+  it("applies the current patient share at claim and dispute resolution time", async function () {
+    await seedDeposit(toWei("1000"));
+
+    const claimAmount = toWei("100");
+    const disputeAmount = toWei("60");
+    const { root, proofA, proofB } = makeTwoLeafTree(
+      pharmacy.address, claimAmount, claimAmount,
+      attacker.address, disputeAmount, disputeAmount
+    );
+
+    await treasury.connect(council).proposeRoot(root, claimAmount + disputeAmount);
+    await treasury.connect(council2).confirmRoot(0);
+
+    await treasury.connect(attacker).flagClaim(
+      0,
+      disputeAmount,
+      disputeAmount,
+      proofB,
+      evidenceHash("patient-bp-open-dispute")
+    );
+
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("updatePatientClaimBP", [1500n])
+    );
+
+    const patientBeforeClaim = await token.balanceOf(patientFund.address);
+    const pharmacyBeforeClaim = await token.balanceOf(pharmacy.address);
+
+    await treasury.connect(pharmacy).claim(claimAmount, claimAmount, proofA);
+
+    expect(await token.balanceOf(patientFund.address) - patientBeforeClaim).to.equal(toWei("15"));
+    expect(await token.balanceOf(pharmacy.address) - pharmacyBeforeClaim).to.equal(toWei("85"));
+
+    const patientBeforeResolve = await token.balanceOf(patientFund.address);
+    const attackerBeforeResolve = await token.balanceOf(attacker.address);
+
+    await treasury.connect(council).resolveClaim(
+      0,
+      attacker.address,
+      0,
+      evidenceHash("patient-bp-resolve-dispute")
+    );
+
+    expect(await token.balanceOf(patientFund.address) - patientBeforeResolve).to.equal(toWei("9"));
+    expect(await token.balanceOf(attacker.address) - attackerBeforeResolve).to.equal(toWei("51"));
+  });
+
   it("enforces guardian pause and council-only unpause", async function () {
     await expectRevert(treasury.connect(attacker).pause(), "AccessControl");
 

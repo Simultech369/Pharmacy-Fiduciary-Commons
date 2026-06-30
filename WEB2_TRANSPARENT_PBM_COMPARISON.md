@@ -28,7 +28,7 @@ However, the Pharmacy Fiduciary Commons is not designed to compete as "another P
 
 ### Forkability & Portability: Vendor Lock-in vs. Exit Package
 * **Web2 SaaS** platforms create high switching costs and vendor lock-in through proprietary APIs and closed data formats.
-* **Pharmacy Fiduciary Commons** ensures exit legitimacy. If participants disagree with the Council, they can package their portability export data (generated via `scripts/export-portability.js`), the current open-source code commit, and the credential policy, to launch an independent fork.
+* **Pharmacy Fiduciary Commons** supports exit legitimacy. If participants disagree with the Council, they can package their portability export data (generated via `scripts/export-portability.js`), the current open-source code commit, and the credential policy, to launch an independent fork.
 
 ---
 
@@ -43,7 +43,7 @@ To maintain integrity, we distinguish what the Commons currently implements vers
 
 ## 4. Disruption And Evasion Matrix
 
-The Commons should sharpen the mechanisms that an incumbent can imitate only by giving up discretionary opacity. A normal dashboard can copy transparency language; it is harder to copy participant-controlled evidence, portable exit, and constrained governance.
+The Commons should prioritize the mechanisms that an incumbent can imitate only by giving up discretionary opacity. A normal dashboard can copy transparency language; it is harder to copy participant-controlled evidence, portable exit, and constrained governance.
 
 | Incumbent pattern | Likely evasion path | Commons counter-pressure | Current status |
 |-------------------|---------------------|--------------------------|----------------|
@@ -53,4 +53,4 @@ The Commons should sharpen the mechanisms that an incumbent can imitate only by 
 | Member voice is advisory | Route hard decisions through vendor-controlled policy boards | Ratify constituency thresholds, appeals, and fork/exit rights before claiming democratic control | Proposed/docs-only |
 | Privacy is handled by vendor confidentiality | Centralize identifiers and create profiling leverage | Move toward scoped nullifiers and reduce stable cross-round credential handles | Proposed/docs-only |
 
-Strategic implication: the strongest wedge is not "cheaper PBM software." It is a verifiable fiduciary pattern where omissions, exceptions, and governance choices become inspectable artifacts. That is the part to sharpen as a weapon.
+Strategic implication: the strongest wedge is not "cheaper PBM software." It is a verifiable fiduciary pattern where omissions, exceptions, and governance choices become inspectable artifacts. That is the part to sharpen into procurement leverage.

@@ -27,7 +27,7 @@ $$S_{coop} = 1 - \frac{\sum Cost_{\text{cooperative}}}{\sum Cost_{\text{wholesal
 
 ## 3. Mathematical Audit Thresholds
 
-To maintain an anti-extractive operational posture, the system enforces the following mathematical constraints:
+To maintain an anti-extractive operational posture, operators evaluate the following audit thresholds:
 
 - **Administrative Capture Limit**: The total amount of captured fees diverted to administrative maintenance or hosting costs must never exceed **15%** of the total matching pool in any given epoch.
   $$Fees_{\text{admin}} \leq 0.15 \times Pool_{\text{matching}}$$

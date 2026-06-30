@@ -10,7 +10,7 @@ In the current pharmaceutical supply chain, Pharmacy Benefit Managers (PBMs) cap
 
 The Ledger of Omissions changes the default:
 * **Measurable Non-Participation**: If a PBM or payer claims they pass through rebates to local communities, but has no recorded deposits in the contract for a given quarter, their non-participation is mathematically measurable on-chain.
-* **Omission as Pressure**: Making the silence visible creates non-violent, anti-extractive pressure. Payers, unions, and local governments can demand that their PBMs deposit funds into the treasury, using the absence of records as proof of ongoing extraction.
+* **Omission as Pressure**: Making the silence visible creates non-violent, anti-extractive pressure. Payers, unions, and local governments can demand that their PBMs reconcile or deposit funds into the treasury, using the absence of records as evidence of non-participation in this treasury and a basis for reconciliation inquiry.
 * **Structural Accountability**: On-chain opacity is currently free for middlemen. The Ledger of Omissions makes opacity public and auditable, imposing a social and structural cost on silence.
 
 ---
