@@ -46,6 +46,17 @@ Coverage levels:
 | Ratification requires multi-class constituency thresholds | Docs-only (Proposed) | `RATIFICATION_PROCEDURE.md` | Freeze eligibility lists and voting thresholds |
 | Evidence commitments use off-chain metadata schema | Docs-only (Proposed) | `EVIDENCE_METADATA.md` | Define custodian, availability, and retention policies |
 | Voter and claim privacy via scoped nullifiers | Docs-only (Proposed) | `IDENTITY_NULLIFIER_DESIGN.md` | Mitigate PBM profiling risk with ZK nullifiers |
+| Shielded participant safety tiers | Docs-only (Proposed) | `RETALIATION_AND_PRIVACY_THREAT_MODEL.md` | Tier 1 shielded claims/votes require future ZK nullifier implementation |
+| Credential revocation appeal legitimacy | Docs-only (Proposed) | `RATIFICATION_PROCEDURE.md` | Add governed revocation appeal process and emergency continuity status |
+
+## Care Continuity And Scarcity
+
+| Claim | Current Coverage | Evidence | Gap / Next Step |
+|-------|------------------|----------|-----------------|
+| Auditable value flow is not the same as reliable care | Docs-only | `CARE_CONTINUITY.md` | Define measurable care-continuity workflows and responsible operators |
+| Mutual credit can support emergency fills | Contract-enforced accounting + docs-only operations | `PharmacyMutualCredit.sol`, `CARE_CONTINUITY.md` | Contract clears credit, but does not track inventory, formularies, or SKU availability |
+| Non-digital workflows protect access during infrastructure degradation | Not implemented | `CARE_CONTINUITY.md`, `PRODUCTION_READINESS_CHECKLIST.md` | Build SMS/paper/proxy receipt reconciliation and privacy-safe audit tooling |
+| Scarcity allocation has legitimate triage rules | Docs-only (Proposed) | `SCARCITY_GOVERNANCE.md` | Ratify privacy-preserving, appealable scarcity governance before public use |
 
 ## Dashboard And Public Legibility
 

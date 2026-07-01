@@ -23,7 +23,7 @@ Value routing (Merkle claims, participatory budgeting) is necessary but insuffic
 
 | Risk Class | Description | Operational Impact | Commons Counter-Pressure |
 | :--- | :--- | :--- | :--- |
-| **Supply Stockouts** | Manufacturer shortages, distributor caps, or distribution network delays. | Patients face sudden therapy gaps regardless of wallet funds. | **Cooperative Formulary Sharing**: Peer-to-peer inventory sharing via the [PharmacyMutualCredit](contracts/PharmacyMutualCredit.sol) clearing ledger. |
+| **Supply Stockouts** | Manufacturer shortages, distributor caps, or distribution network delays. | Patients face sudden therapy gaps regardless of wallet funds. | **Cooperative Formulary Coordination**: Off-chain inventory or formulary sharing can use [PharmacyMutualCredit](contracts/PharmacyMutualCredit.sol) only as a financial settlement layer; the contract does not track drug inventory, SKU availability, or formulary status. |
 | **Payer Formulary Shifts** | PBMs suddenly reclassifying drugs or altering co-pay tiers. | Direct increase in financial barriers to medication adherence. | **Omission Ledger Tracking**: Classifying formulary shifts as PBM omissions under [OMISSION_LEDGER.md](OMISSION_LEDGER.md). |
 | **Network Exclusions** | PBMs auditing, penalizing, or delisting independent pharmacies. | Patients lose local providers; pharmacy solvency degrades. | **Retaliation Tiers**: Shielded operational paths and cooperative defense reserves (see [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md)). |
 | **Infrastructure Degradation** | Internet outages, blockchain network congestion, stablecoin failures, or licensing registry lockouts. | Electronic claims and on-chain voting fail. | **Minimal Offline Mode**: Offline paper vouchers and SMS-fallback verification mechanisms. |
@@ -35,18 +35,19 @@ Value routing (Merkle claims, participatory budgeting) is necessary but insuffic
 To keep feedback loops connected to operational reality, the project defines the following human-centered metrics. These contrast with financial indicators like Total Value Locked (TVL) or contract volume:
 
 ### 3.1 Continuous Refill Ratio (CRR)
-* **Definition**: The percentage of patients on chronic therapies within the commons who maintain their refills within a $\le 3$-day variance from clinical schedule.
-* **Target**: $> 95\%$. 
+* **Definition**: The percentage of patients on chronic therapies within the commons who maintain their refills within a `<= 3`-day variance from clinical schedule.
+* **Target**: `> 95%`.
 * **Operational Trigger**: If the CRR drops below $90\%$ in a specific district, the Council should prioritize local pharmacy credit limit expansions (`updateCreditLimit`) and local patient fund projects. This is a policy trigger, not an automated contract control.
 
 ### 3.2 Emergency Fill Access (EFA)
 * **Definition**: The availability of local mutual-credit capacity and emergency vouchers to cover immediate medication fills under sudden network outages or reimbursement delays.
-* **Target**: Every registered pharmacy must hold at least 30 days of average credit capacity.
+* **Target**: Every registered pharmacy should hold at least 30 days of average credit capacity. This is a policy target, not an implemented admission rule.
 * **Current Mechanism**: Supported by peer credit limit allocations in [PharmacyMutualCredit.sol](contracts/PharmacyMutualCredit.sol), but the 30-day capacity target is not contract-enforced.
 
 ### 3.3 Non-Digital Workflow Adoption (NDWA)
 * **Definition**: The volume of claims, vouchers, or disputes processed via SMS, physical paper, or trusted cooperative proxies, relative to direct web-connected wallet interactions.
-* **Target**: Support at least $20\%$ of transactions offline to prevent digital exclusion.
+* **Target**: Support at least `20%` of transactions offline to prevent digital exclusion.
+* **Current Status**: Aspirational / policy target. The repository does not yet include SMS, paper-voucher, or offline-receipt auditing tools.
 
 ---
 
@@ -55,3 +56,6 @@ To keep feedback loops connected to operational reality, the project defines the
 When algorithmic or contract evidence conflicts with human survival needs, the commons rejects automated finality.
 * **The Rule of Override**: If a patient or pharmacy is excluded from a claim because of a technical error (e.g. Merkle proof mismatch or credential registry omission), they should be able to submit a dispute flag accompanied by participant testimony (as defined in [EVIDENCE_METADATA.md](EVIDENCE_METADATA.md)).
 * **Community Evidence Juries**: For contested exclusions, a future community jury process could advise the Council and root confirmer on whether strict protocol enforcement would cause clinical harm. Any remediation payout still requires the implemented `exclusionRemediationReserve` funding, root-confirmer approval, and council resolution path in [PBMRebateTreasury.sol](contracts/PBMRebateTreasury.sol).
+* **Governance Boundary**: Community juries are strictly advisory until a ratified process and contract-recognized authority exist. Today, the Council and root confirmer remain the final on-chain actors for remediation payouts and dispute resolution.
+
+For scarce-fund and scarce-medicine triage boundaries, see [SCARCITY_GOVERNANCE.md](SCARCITY_GOVERNANCE.md).

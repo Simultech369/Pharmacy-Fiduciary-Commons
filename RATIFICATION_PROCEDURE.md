@@ -25,6 +25,17 @@ To prevent circularity where the Council holds absolute control over who gets to
 * **Appeal Path**: Any participant excluded from the eligibility list has a defined, documented path to appeal to the governance forum.
 * **Bounded Veto**: The Council or a specialized Guardian may veto a voter admission only by publishing an emergency veto containing a reason and an `evidenceHash` (which expires and must be reviewed within 14 days).
 
+### Credential Revocation Appeals
+
+Credential revocation is not currently appeal-enforced by contract. Before ratification, the Commons must define a revocation appeal procedure that covers:
+
+* **Issuer capture or coercion**: a participant may challenge revocation if the credential issuer is suspected of PBM, payer, or council pressure.
+* **Evidence packet**: every contested revocation must publish a reason code, `evidenceHash`, issuer identity, and expiration or review deadline.
+* **Temporary continuity**: pharmacies or patient advocates under active appeal should have a documented temporary-status path so issuer capture cannot silently remove claim, vote, or dispute standing.
+* **Independent review**: appeal review must involve a role or constituency not controlled solely by the revoking issuer.
+
+This procedure is proposed only; current credential policy tooling checks revocation state but does not adjudicate revocation legitimacy.
+
 ---
 
 ## 3. Multi-Class Constituency Thresholds

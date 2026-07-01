@@ -38,6 +38,22 @@ Acceptance test:
 - [ ] Run unauthorized read/write tests against every protected table.
 - [ ] Confirm anonymous and authenticated users receive only the minimum intended rows.
 
+## 2A. Offline And Non-Digital Workflow Safety
+
+Status: not present yet.
+
+- [ ] Define the SMS, paper voucher, or trusted-proxy workflows before claiming non-digital access.
+- [ ] Add receipt identifiers that can be reconciled without exposing PHI or patient precarity.
+- [ ] Add an offline-receipt audit script or documented reconciliation procedure.
+- [ ] Define who can enter offline claims, who reviews them, and how disputes are handled.
+- [ ] Test duplicate receipt, forged receipt, delayed sync, and lost-connectivity cases.
+
+Acceptance test:
+
+- [ ] Offline receipts can be reconciled to on-chain events or explicitly marked unresolved.
+- [ ] Offline workflows do not publish diagnosis, income, immigration, disability, or stigmatized medication data.
+- [ ] Operators can measure Non-Digital Workflow Adoption without exposing protected participant data.
+
 ## 3. Version Control
 
 Status: partially present.

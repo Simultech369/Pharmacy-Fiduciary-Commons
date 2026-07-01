@@ -53,13 +53,13 @@ This document outlines the threat landscape, attack vectors, and mitigations con
 
 ## 3. Participant Safety Tiers
 
-To protect participants at varying levels of risk, the Commons defines three operational tiers:
+To protect participants at varying levels of risk, the Commons defines three operational tiers. Only the public-address and stable-credential surfaces exist in the current prototype; shielded operation remains proposed roadmap work.
 
-| Tier | Visibility | Intended For | Protection Level |
-| :--- | :--- | :--- | :--- |
-| **Tier 1: Shielded** | Off-chain, zero-knowledge proofs only. | Vulnerable pharmacies in highly consolidated markets; individual patients. | **Maximum**: Claims and votes are submitted via ZK nullifiers, preventing public key or transaction-volume correlation. |
-| **Tier 2: Pseudonymous** | Public wallet address, stable credential hash. | Standard independent pharmacies under normal operating conditions. | **Moderate**: Transactions are public, but real-world identity is shielded off-chain by trusted credential issuers. |
-| **Tier 3: Public** | Fully verified public address. | Large cooperatives, cooperative aggregators, and public policy stewards. | **None**: Addresses are explicitly linked to real-world entities to build public fiduciary comparison benchmarks. |
+| Tier | Current status | Visibility | Intended For | Protection Level |
+| :--- | :--- | :--- | :--- | :--- |
+| **Tier 1: Shielded** | **Proposed / roadmap only** | Off-chain, zero-knowledge proofs only. | Vulnerable pharmacies in highly consolidated markets; individual patients. | **Maximum**: Claims and votes would be submitted via ZK nullifiers, preventing public key or transaction-volume correlation. Not available in the current contracts. |
+| **Tier 2: Pseudonymous** | **Current prototype surface** | Public wallet address, stable credential hash. | Standard independent pharmacies under normal operating conditions. | **Moderate**: Transactions are public, but real-world identity is shielded off-chain by trusted credential issuers. |
+| **Tier 3: Public** | **Current prototype surface when intentionally disclosed** | Fully verified public address. | Large cooperatives, cooperative aggregators, and public policy stewards. | **None**: Addresses are explicitly linked to real-world entities to build public fiduciary comparison benchmarks. |
 
 ---
 
