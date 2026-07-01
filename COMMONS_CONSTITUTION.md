@@ -53,6 +53,7 @@ Each principle is categorized by its enforcement nature: **Protocol-Enforced** (
 * **Definition**: Credentials establish limited capabilities, not a totalizing institutional identity. Any sanction, revocation, or exclusion must be reason-coded, visible, and appealable.
 * **Status**: **Partial protocol support plus unimplemented procedure**.
   * Sanction updates emit reason codes and appeal submissions require a non-zero evidence hash, but credential revocation has no general appeal mechanism, and the 14-day council response window is documented rather than contract-enforced.
+  * To protect pharmacy and patient participants from PBM network retaliation and diagnostic profiling, the project defines security through participant safety tiers and the Patient Dignity Protocol, detailed in **[RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md)**.
 
 ### 2.8 Legible Power
 * **Definition**: Every privileged action must expose who acted, under what authority, and using what evidence.
@@ -67,7 +68,7 @@ Each principle is categorized by its enforcement nature: **Protocol-Enforced** (
 ### 2.10 The Protocol is Not the Community
 * **Definition**: The blockchain provides commitment and evidence. It does not replace or exhaust social knowledge, lived experience, or legitimate political judgment.
 * **Status**: **Aspirational / interpretive**.
-  * Blockchain commits to allocations but does not govern the human relations surrounding pharmacy operations. No concrete procedure currently implements this distinction.
+  * Blockchain commits to allocations but does not govern the human relations surrounding pharmacy operations. The limits of technical value flows vs. actual care continuity, including stockout management and proposed community-jury escalation pathways, are defined in **[CARE_CONTINUITY.md](CARE_CONTINUITY.md)**.
 
 ---
 
@@ -120,7 +121,7 @@ Amendments to this draft constitution or the core governance parameters of the c
 | **Stale Recovery Liveness** | `contracts/PBMRebateTreasury.sol#L1104` | Mitigated tested design risk | Stale recovery is gated by `epochStartTimestamp`, so dust deposits no longer extend the 180-day recovery delay; current-root and unexpired pending-root guards remain. |
 | **Forkability & Portability** | `scripts/export-portability.js` | Tool-supported prototype | Portability depends on off-chain tools; does not guarantee automatic federation or claim recognition. |
 | **Anti-Plutocracy** | `contracts/PatientFundParticipatoryBudgeting.sol` | Partially protocol-enforced | Uses credential-gated approval voting with squared project-weight matching, which amplifies majorities but rejects token weight. |
-| **Contestable Identity** | `contracts/PBMRebateTreasury.sol#L1220` | Partial protocol support + unimplemented procedure | Sanction appeals require evidence hashes, but revocation lacks appeal; the 14-day council response window is only documented, not contract-enforced. Privacy-preserving credentials use the [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) direction. |
+| **Contestable Identity** | `contracts/PBMRebateTreasury.sol#L1220` | Partial protocol support + unimplemented procedure | Sanction appeals require evidence hashes, but revocation lacks appeal; the 14-day council response window is only documented, not contract-enforced. Privacy-preserving credentials use the [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) direction. Retaliation mitigations are detailed in [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md). |
 | **Legible Power** | Event emission logs | Partially protocol-enforced | Dispute and appeal events bind evidence hashes, but many admin events still do not include complete rationale records. |
 | **Bounded Experimentation**| `contracts/PBMRebateTreasury.sol#L1141` | Partially protocol-enforced | Treasury caps exist; universal sandboxes, reversibility, and explicit risk-bearing rules do not. |
-| **Protocol is Not Community**| `WELLBEING_METRICS.md` | Aspirational / Docs-only | Wellbeing auditing is absent in code (CLI tool not implemented). |
+| **Protocol is Not Community**| `WELLBEING_METRICS.md` | Aspirational / Docs-only | Wellbeing auditing is absent in code (CLI tool not implemented). Care continuity boundaries and proposed escalation frameworks are defined in [CARE_CONTINUITY.md](CARE_CONTINUITY.md). |

@@ -85,11 +85,14 @@ No mainnet deployment should occur until:
 - an independent smart-contract audit is completed;
 - audit findings are fixed or explicitly accepted with rationale.
 
-## Privacy and Correlation Risks
+## Privacy, Correlation, and Retaliation Risks
 
-The on-chain voting and registration mechanism uses EIP-712 structured credential signatures that reference `credentialHash`. Because on-chain transactions and event logs are fully public:
-1. **Correlation Risk**: If a voter uses the same `credentialHash` (or if it is derived from a long-term identifier) across multiple rounds or rounds in different deployments, their voting patterns can be correlated by on-chain watchdogs.
-2. **Mitigation**: Trusted issuers should rotate policy versions regularly and use different credential hashes per round or participant. Future iterations will adopt the ZK scoped nullifier architecture detailed in the [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) design direction to prevent tracking.
+The on-chain voting and registration mechanism uses EIP-712 structured credential signatures that reference `credentialHash`. Because on-chain transactions and event logs are fully public, participants face risks of correlation and corporate retaliation.
+
+For the complete risk vectors and safety architectures, see:
+* **[RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md)**: Details threat actors (PBMs, data brokers), attack scenarios, participant safety tiers, and the Patient Dignity Protocol.
+* **[CARE_CONTINUITY.md](CARE_CONTINUITY.md)**: Addresses the critical distinction between auditable value flows and actual care continuity, outlining stockout/network risks and proposed community-jury escalation pathways.
+* **[IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md)**: Explains the planned scoped-nullifier ZK architecture for cross-round privacy.
 
 ## Payout Token Assumption
 
