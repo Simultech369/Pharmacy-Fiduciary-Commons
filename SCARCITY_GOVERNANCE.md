@@ -31,6 +31,8 @@ Current implementation supports:
 * mutual-credit capacity and voucher accounting;
 * dispute flags, evidence hashes, and council/root-confirmer remediation paths.
 
+These are partial supports, not scarcity governance. For example, the `exclusionRemediationReserve` can fund approved root-exclusion remediation without draining ordinary distribution liquidity, `PatientFundParticipatoryBudgeting` can distribute a pre-funded matching pool, and `PharmacyMutualCredit` can reserve credit capacity for vouchers. None of these mechanisms decides which patient receives scarce medicine, verifies physical inventory, creates a partial-payment queue, or replaces a ratified triage process.
+
 Current implementation does **not** support:
 
 * automatic scarcity triage;
@@ -39,6 +41,8 @@ Current implementation does **not** support:
 * non-council emergency allocation authority;
 * offline claim clearing;
 * enforceable community-jury override.
+* partial matching payouts or debt queueing for underfunded patient-fund rounds;
+* bad-debt writeoffs, insolvency handling, or cooperative liquidation in the mutual-credit ledger.
 
 ---
 
@@ -65,3 +69,20 @@ Before claiming scarcity governance, the project needs:
 * emergency issuer and credential-revocation appeal procedures;
 * offline receipt reconciliation;
 * tests or tabletop exercises covering shortage, issuer capture, PBM retaliation, internet outage, and patient-fund depletion.
+
+---
+
+## 5. Mutual-Credit Default And Bad Debt
+
+`PharmacyMutualCredit` records zero-sum balances and reserved voucher capacity. It does not create collateral, inventory, insurance, or a bankruptcy process.
+
+Before mutual credit is used as crisis infrastructure, the Commons must define:
+
+* maximum credit-limit policy and review cadence;
+* who can approve large credit-limit increases;
+* what happens when a pharmacy cannot settle its negative balance;
+* whether positive credit holders bear loss, receive patient-fund support, or enter a cooperative liquidation process;
+* how voucher recipients are warned that credit balances are not the same as guaranteed medicine or stablecoin redemption;
+* how bad-debt decisions are appealed and reported without exposing patient data.
+
+Until those rules exist, mutual credit should be described as a settlement and liquidity-support ledger, not as a guarantee of medicine supply or full redemption.

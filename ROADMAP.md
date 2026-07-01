@@ -13,6 +13,8 @@ The project remains in this phase until the public-facing and operational gates 
   - Resolve production-readiness checklist items for frontend minification, private source maps, secrets, database/RLS, API authorization, rate limiting, caching, scaling, error tracking, and ADA/WCAG accessibility before public launch.
   - Document any intentionally undecided policy choices in `OPEN_DESIGN_DECISIONS.md` instead of implying they are settled.
   - Keep dashboard data synthetic or contract-backed with visible provenance labels.
+  - Exercise the offline/non-digital workflow gates in `PRODUCTION_READINESS_CHECKLIST.md` with tabletop scenarios for SMS, paper voucher, trusted-proxy, delayed-sync, duplicate-receipt, forged-receipt, and lost-connectivity cases before claiming non-digital access.
+  - Define privacy-safe, fraud-resistant care-continuity metric ingestion before using CRR or similar wellbeing metrics to prioritize funding.
 - **Success Criteria**: Local/testnet claims remain accurate, readiness gaps are visible, and public materials do not imply audit, production, or mainnet readiness.
 
 ---
@@ -66,4 +68,5 @@ Scale the system by launching adjacent, decoupled primitives to form a complete 
   - Build the **Pharmacy Cooperative Procurement Layer** for shared formulary intelligence.
   - Develop the **Pharmacy Mutual Credit Clearing / Voucher Ledger** to stabilize pharmacy liquidity during reimbursement delays.
   - Establish the **Rebate Transparency Registry** as a public-facing legal dashboard exposing market-wide net pricing discrepancies.
+  - Prototype privacy-safe offline receipt reconciliation only after the non-digital workflow tabletop exercises define the required evidence, review, and appeal paths.
 - **Success Criteria**: Successful integration of adjacent tools, lower operating costs for participating independent pharmacies, and reduced dependency on corporate PBMs.

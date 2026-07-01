@@ -116,7 +116,7 @@ Amendments to this draft constitution or the core governance parameters of the c
 | Constitutional Clause | Codebase/Spec Element | Status | Gaps / Next Steps |
 | :--- | :--- | :--- | :--- |
 | **No Permanent Sovereign** | `contracts/OZTimelockControllerImport.sol` | Partial protocol-enforced | Timelock and role isolation alone do not ensure replaceability of all authorities; council elections and removal petitions are unimplemented. |
-| **Subsidiarity** | `contracts/PharmacyMutualCredit.sol` | Aspirational | Most decisions are at the global contract level; local federated autonomy is absent in code. |
+| **Subsidiarity** | `contracts/PharmacyMutualCredit.sol` | Aspirational | Most decisions are at the global contract level; local federated autonomy is absent in code. Scarce-resource triage remains proposed in [SCARCITY_GOVERNANCE.md](SCARCITY_GOVERNANCE.md). |
 | **Socialized Surplus** | `contracts/PBMRebateTreasury.sol` | Partially protocol-enforced | Bucket separation is enforced; broader risk-allocation models remain aspirational. |
 | **Stale Recovery Liveness** | `contracts/PBMRebateTreasury.sol#L1104` | Mitigated tested design risk | Stale recovery is gated by `epochStartTimestamp`, so dust deposits no longer extend the 180-day recovery delay; current-root and unexpired pending-root guards remain. |
 | **Forkability & Portability** | `scripts/export-portability.js` | Tool-supported prototype | Portability depends on off-chain tools; does not guarantee automatic federation or claim recognition. |

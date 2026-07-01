@@ -47,12 +47,14 @@ Status: not present yet.
 - [ ] Add an offline-receipt audit script or documented reconciliation procedure.
 - [ ] Define who can enter offline claims, who reviews them, and how disputes are handled.
 - [ ] Test duplicate receipt, forged receipt, delayed sync, and lost-connectivity cases.
+- [ ] Define a privacy-safe, fraud-resistant data collection protocol for care-continuity metrics such as Continuous Refill Ratio (CRR).
 
 Acceptance test:
 
 - [ ] Offline receipts can be reconciled to on-chain events or explicitly marked unresolved.
 - [ ] Offline workflows do not publish diagnosis, income, immigration, disability, or stigmatized medication data.
 - [ ] Operators can measure Non-Digital Workflow Adoption without exposing protected participant data.
+- [ ] Care-continuity metrics can be audited without exposing patient identity, diagnosis, income, or stigmatized medication category, and without relying solely on self-reported pharmacy data.
 
 ## 3. Version Control
 
@@ -71,6 +73,20 @@ Acceptance test:
 - [ ] `git status` is clean before release.
 - [ ] CI passes on the exact commit being deployed.
 - [ ] Release tag points to the deployed commit.
+
+## 3A. Patient Fund Matching Liquidity
+
+Status: needs operational enforcement before public participatory budgeting.
+
+- [ ] Verify the matching token balance is present before starting any patient-fund matching round.
+- [ ] Document whether matching pools are pre-funded, escrowed, or otherwise guaranteed before `finalizeRound`.
+- [ ] Define what happens if approved projects exceed available matching liquidity.
+- [ ] Add operator runbook steps for paused, underfunded, or partially funded rounds.
+
+Acceptance test:
+
+- [ ] A dry-run proves every registered project can claim its expected match from the funded pool.
+- [ ] Underfunded matching rounds fail before public launch or are clearly marked unresolved; no public interface implies partial-payment queueing exists.
 
 ## 4. APIs
 

@@ -23,3 +23,20 @@ To maintain the project's legitimacy and protect the commons from legal harassme
 * **Safe Harbor Disclaimers**: All public interfaces must feature explicit disclaimers:
   > "The absence of a deposit in this contract indicates only that no tokens were sent to this treasury address during the specified period. It does not constitute a legal claim of contract breach, regulatory violation, or financial impropriety by any party."
 * **Neutral Registry Posture**: The registry is a public utility. It does not campaign, threaten, or harass; it simply logs deposits. The numbers speak for themselves.
+
+---
+
+## 3. Omission Taxonomy
+
+The ledger should distinguish factual absence from possible market evasion. A missing deposit does not prove any one of these categories, but reviewers may use the taxonomy to frame reconciliation questions:
+
+| Omission Class | Neutral Description | Evidence Needed Before Public Attribution |
+| --- | --- | --- |
+| **No recorded deposit** | No tokens were sent to this treasury for the period under review. | On-chain event range, contract address, chain ID, and reporting period. |
+| **Delayed deposit** | Funds may have been remitted after the expected reconciliation window. | Timestamped deposits, payer/PBM notice, and period mapping. |
+| **Partial deposit** | Some funds were deposited, but amount completeness is unresolved. | Deposit records plus off-chain rebate or claims basis. |
+| **Relabeled value stream** | Value may have moved through administrative fees, formulary placement fees, clinical education grants, data-processing fees, network fees, or other non-rebate labels. | Contract terms, public filings, payer/PBM statements, or audited reconciliation data. |
+| **Off-ledger pass-through** | A payer or PBM may have passed value through another mechanism outside this treasury. | Signed attestation, payment records, or independently auditable reporting. |
+| **Unverifiable or legally constrained disclosure** | Data is missing because records are unavailable, confidential, disputed, or legally constrained. | Availability metadata, redaction policy, and reason code. |
+
+Public dashboards should present these as reconciliation categories, not accusations.
