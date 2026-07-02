@@ -60,7 +60,7 @@ This section analyzes the structural implementation of the smart contracts again
 * **Status**: **Partially protocol-enforced**.
 * **Analysis**:
   * Payout matching weights use approval counts rather than token size.
-  * Finalized project shares are claimable for 90 days; after that grace period, council may reclaim unclaimed shares into an internal recycled matching pool that is automatically applied to the next round.
+  * Finalized project shares are claimable for 90 days; after that grace period, council may reclaim unclaimed shares into an internal recycled matching pool that is applied by `startRound` when the next round opens.
 * **Gaps**:
   * Aggregated project votes are squared for payout weighting (`castVote` increments approval count, and finalization squares it). While non-token-weighted, this approval system amplifies majorities and does not intrinsically prevent minority project exclusion.
   * Reclaimed funds no longer enter council custody directly, but the council still controls when the next round starts and which projects are eligible.

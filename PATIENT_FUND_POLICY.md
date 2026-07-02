@@ -26,7 +26,7 @@ To prevent centralized control, the Patient Fund is allocated via a participator
 * **Credential-Gated Voting**: Registered community members cast one vote per project.
 * **Squared Vote Weighting**: The prototype allocates the matching pool in proportion to each project's squared vote count. It is not canonical contribution-based quadratic funding.
 * **Council Role**: The Council acts strictly as an eligibility and fraud gate (e.g., verifying that a project does not violate medical safety laws). The Council cannot direct matching funds or override community votes.
-* **Deadlines & Circulation**: Finalized project shares are claimable by the project recipient for a 90-day grace period. After that deadline, the Council may reclaim unclaimed shares into an internal recycled matching pool that is automatically applied to the next round. This makes a finalized share a deadline-bounded claim, not a perpetual debt, while keeping reclaimed funds inside participatory budgeting rather than council custody.
+* **Deadlines & Circulation**: Finalized project shares are claimable by the project recipient for a 90-day grace period. After that deadline, the Council may reclaim unclaimed shares into an internal recycled matching pool that is applied by `startRound` when the Council opens the next round. This makes a finalized share a deadline-bounded claim, not a perpetual debt, while keeping reclaimed funds inside participatory budgeting rather than council custody.
 
 ---
 

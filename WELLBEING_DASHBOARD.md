@@ -28,7 +28,7 @@ The front-end client queries the smart contract events, the Omission Ledger, and
 - **Key Elements**:
   - **Inflow Rate Tracker**: Live calculation of 10% gross claim pass-throughs routed directly to the `patientFund`.
   - **PB/QF Projects Board**: List of submitted community health projects, current small-dollar votes, and quadratic matching allocations.
-  - **Idle Surplus Alert**: Countdown timer for unallocated funds approaching the 90-day anti-hoarding limit, displaying when they will automatically roll over to the next PB/QF round.
+  - **Idle Surplus Alert**: Countdown timer for unallocated funds approaching the 90-day anti-hoarding limit, displaying when they become eligible for Council-triggered rollover into the next PB/QF round.
 
 ### 1.4 Ecological Impact Receipts
 - **Purpose**: Audit the verifiable material waste and logistics efficiency of projects.

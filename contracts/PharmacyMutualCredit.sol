@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title  PharmacyMutualCredit
@@ -12,7 +13,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
  * @notice Zero-sum mutual credit clearing ledger and community health voucher engine.
  *         Stabilizes independent pharmacy liquidity during reimbursement delays.
  */
-contract PharmacyMutualCredit is AccessControl, Pausable {
+contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     bytes32 public constant COUNCIL_ROLE = keccak256("COUNCIL_ROLE");
@@ -290,7 +291,10 @@ contract PharmacyMutualCredit is AccessControl, Pausable {
     // RECOVERY
     // =========================================================
 
-    function sweep(address _token, uint256 _amount) external onlyRole(COUNCIL_ROLE) {
+    /**
+     * @notice Recovers non-ledger ERC-20 tokens accidentally sent to this contract.
+     */
+    function sweep(address _token, uint256 _amount) external onlyRole(COUNCIL_ROLE) nonReentrant {
         if (_token == address(0)) revert InvalidAddress();
         if (_amount == 0) revert ZeroAmount();
         IERC20(_token).safeTransfer(msg.sender, _amount);

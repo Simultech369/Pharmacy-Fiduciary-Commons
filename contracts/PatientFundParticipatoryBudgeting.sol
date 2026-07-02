@@ -508,8 +508,8 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     /**
      * @notice Reclaims an unclaimed finalized project share after a 90-day grace period.
      * @dev    This makes finalized shares claimable until the deadline, not perpetual debts.
-     *         Reclaimed funds remain in the contract and are automatically added to the next
-     *         matching round rather than entering council custody.
+     *         Reclaimed funds remain in the contract and are applied by `startRound` to the
+     *         next matching round rather than entering council custody.
      */
     function reclaimUnclaimedMatchShare(uint256 roundId, uint256 projectId)
         external
