@@ -35,11 +35,17 @@ let treasuryAddress = DEPLOYMENT_CONFIG[31337].treasuryAddress;
 
 const PB_ABI = [
   "function currentRound() view returns (uint256)",
-  "function rounds(uint256) view returns (uint256 matchingPool, uint8 state, uint256 projectCount)",
+  "function rounds(uint256) view returns (uint256 matchingPool, uint8 state, uint256 projectCount, uint256 finalizedAt)",
   "function roundProjects(uint256, uint256) view returns (string title, address recipient, uint256 voteCount, bool active)",
   "function registeredVoters(uint256, address) view returns (bool)",
   "function castVote(uint256 roundId, uint256 projectId) external",
-  "function registerVoterWithSignature(uint256 roundId, address voter, bytes32 credentialHash, bytes32 policyVersion, uint256 deadline, bytes calldata signature) external"
+  "function registerVoterWithSignature(uint256 roundId, address voter, bytes32 credentialHash, bytes32 policyVersion, uint256 deadline, bytes calldata signature) external",
+  "function token() view returns (address)",
+  "function totalUnclaimedShares() view returns (uint256)",
+  "function recycledMatchingPool() view returns (uint256)",
+  "function council() view returns (address)",
+  "function previewFinalize(uint256 roundId) view returns (address[] projects, uint256[] expectedShares, uint256 actualBalance, uint256 totalRequiredAfterFinalize, bool isSufficient)",
+  "function finalizeRound(uint256 roundId) external"
 ];
 
 const CREDIT_ABI = [
@@ -74,6 +80,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnRegister = document.getElementById("btn-register");
   if (btnRegister) {
     btnRegister.addEventListener("click", registerWithSignature);
+  }
+
+  const btnPreview = document.getElementById("btn-preview-finalize");
+  if (btnPreview) {
+    btnPreview.addEventListener("click", previewFinalization);
+  }
+
+  const btnFinalize = document.getElementById("btn-finalize-round");
+  if (btnFinalize) {
+    btnFinalize.addEventListener("click", finalizeCurrentRound);
   }
 
   // Check if wallet is already connected
@@ -215,6 +231,94 @@ async function fetchLiveState() {
     // 4. Load QF projects
     await loadProjectsFromContract();
 
+    // 5. Query Patient Fund Liquidity and Council check
+    try {
+      const tokenAddress = await pbContract.token();
+      const tokenContract = new ethers.Contract(tokenAddress, [
+        "function balanceOf(address) view returns (uint256)",
+        "function decimals() view returns (uint8)"
+      ], signer);
+
+      const tokenDecimals = await tokenContract.decimals();
+      const divisor = 10n ** BigInt(tokenDecimals);
+
+      const actualBalRaw = await tokenContract.balanceOf(pbAddress);
+      const totalUnclaimedRaw = await pbContract.totalUnclaimedShares();
+      const recycledPoolRaw = await pbContract.recycledMatchingPool();
+
+      const round = await pbContract.rounds(activeRoundId);
+      const matchingPoolRaw = round.matchingPool;
+      const roundState = Number(round.state);
+
+      const actualBalance = Number(actualBalRaw) / Number(divisor);
+      const totalUnclaimed = Number(totalUnclaimedRaw) / Number(divisor);
+      const recycledPool = Number(recycledPoolRaw) / Number(divisor);
+      const matchingPool = Number(matchingPoolRaw) / Number(divisor);
+
+      let requiredBalance = totalUnclaimed + recycledPool;
+      if (roundState === 1) { // Active
+        requiredBalance += matchingPool;
+      }
+
+      // Update index.html TOTAL_MATCHING_POOL global variable so math renders correctly
+      window.TOTAL_MATCHING_POOL = matchingPool;
+      window.recalculateMatching();
+
+      // Show liquidity board and populate values
+      const board = document.getElementById("liquidity-board");
+      if (board) board.style.display = "block";
+
+      const actualBalEl = document.getElementById("actual-token-balance");
+      if (actualBalEl) actualBalEl.innerText = actualBalance.toFixed(2);
+
+      const reqBalEl = document.getElementById("required-accounting-balance");
+      if (reqBalEl) reqBalEl.innerText = requiredBalance.toFixed(2);
+
+      const recycledEl = document.getElementById("recycled-matching-pool-display");
+      if (recycledEl) recycledEl.innerText = recycledPool.toFixed(2);
+
+      const unclaimedEl = document.getElementById("unclaimed-shares-display");
+      if (unclaimedEl) unclaimedEl.innerText = totalUnclaimed.toFixed(2);
+
+      const warningBanner = document.getElementById("liquidity-warning-message");
+      if (warningBanner) {
+        if (actualBalance < requiredBalance) {
+          warningBanner.style.display = "block";
+          warningBanner.style.background = "rgba(239, 68, 68, 0.1)";
+          warningBanner.style.borderColor = "var(--accent-red)";
+          warningBanner.style.color = "var(--accent-red-text)";
+          warningBanner.innerText = `⚠️ LIQUIDITY DEFICIT: The actual contract balance (${actualBalance.toFixed(2)}) is lower than the required accounting balance (${requiredBalance.toFixed(2)}). Claims/finalization will fail due to depletion. Please top up the contract with ${tokenAddress}.`;
+        } else if (roundState === 1 && matchingPool === 0) {
+          warningBanner.style.display = "block";
+          warningBanner.style.background = "rgba(245, 158, 11, 0.1)";
+          warningBanner.style.borderColor = "var(--accent-orange)";
+          warningBanner.style.color = "var(--accent-orange)";
+          warningBanner.innerText = `⚠️ WARNING: Active round has zero liquidity in matching pool.`;
+        } else if (recycledPool === 0 && roundState === 0) {
+          warningBanner.style.display = "block";
+          warningBanner.style.background = "rgba(245, 158, 11, 0.1)";
+          warningBanner.style.borderColor = "var(--accent-orange)";
+          warningBanner.style.color = "var(--accent-orange)";
+          warningBanner.innerText = `⚠️ WARNING: Zero liquidity in recycled pool.`;
+        } else {
+          warningBanner.style.display = "none";
+        }
+      }
+
+      // Check if connected wallet is Council
+      const councilAddress = await pbContract.council();
+      const councilPortal = document.getElementById("council-controls");
+      if (councilPortal) {
+        if (userAddress.toLowerCase() === councilAddress.toLowerCase()) {
+          councilPortal.style.display = "block";
+        } else {
+          councilPortal.style.display = "none";
+        }
+      }
+    } catch (err) {
+      console.log("Could not query token address or balance updates:", err.message);
+    }
+
   } catch (e) {
     console.error("Error fetching live contract state:", e);
   }
@@ -335,3 +439,74 @@ window.castVote = async function(projectId) {
     alert("Voting failed: " + (e.reason || e.message));
   }
 };
+
+async function previewFinalization() {
+  try {
+    const tokenAddress = await pbContract.token();
+    const tokenContract = new ethers.Contract(tokenAddress, [
+      "function decimals() view returns (uint8)"
+    ], signer);
+    const tokenDecimals = await tokenContract.decimals();
+    const divisor = 10n ** BigInt(tokenDecimals);
+
+    console.log("Simulating round finalization (dry-run)...");
+    const results = await pbContract.previewFinalize(activeRoundId);
+    const projectsList = results.projects;
+    const sharesList = results.expectedShares;
+    const actualBal = results.actualBalance;
+    const reqBal = results.totalRequiredAfterFinalize;
+    const isSufficient = results.isSufficient;
+
+    let previewText = `Active Round ID: ${activeRoundId}\n`;
+    previewText += `Actual Contract Balance: ${(Number(actualBal) / Number(divisor)).toFixed(2)}\n`;
+    previewText += `Total Required Balance after Finalize: ${(Number(reqBal) / Number(divisor)).toFixed(2)}\n\n`;
+    previewText += `Expected Project Matching Payouts:\n`;
+
+    for (let i = 0; i < projectsList.length; i++) {
+      const shareFormatted = (Number(sharesList[i]) / Number(divisor)).toFixed(2);
+      previewText += `- Project ${i} (${projectsList[i]}): ${shareFormatted} tokens\n`;
+    }
+
+    const previewDiv = document.getElementById("finalize-preview-results");
+    const previewTextDiv = document.getElementById("finalize-preview-text");
+    const previewWarning = document.getElementById("finalize-preview-warning");
+
+    previewDiv.style.display = "block";
+    previewTextDiv.innerText = previewText;
+
+    if (isSufficient) {
+      previewWarning.style.display = "block";
+      previewWarning.style.background = "rgba(16, 185, 129, 0.1)";
+      previewWarning.style.borderColor = "var(--accent-green)";
+      previewWarning.style.color = "var(--accent-green-text)";
+      previewWarning.innerText = `✅ LIQUIDITY VERIFIED: Contract has sufficient balance to finalize and distribute.`;
+    } else {
+      previewWarning.style.display = "block";
+      previewWarning.style.background = "rgba(239, 68, 68, 0.1)";
+      previewWarning.style.borderColor = "var(--accent-red)";
+      previewWarning.style.color = "var(--accent-red-text)";
+      previewWarning.innerText = `❌ INSUFFICIENT LIQUIDITY: Finalization will cause a deficit! Please top up the contract.`;
+    }
+  } catch (err) {
+    console.error("Preview finalization failed:", err);
+    alert("Preview finalization failed: " + (err.reason || err.message));
+  }
+}
+
+async function finalizeCurrentRound() {
+  if (!confirm("Are you sure you want to finalize the current round? This will allocate matching shares to all projects based on the squared vote weights and freeze the round.")) {
+    return;
+  }
+
+  try {
+    console.log(`Finalizing round ${activeRoundId} on-chain...`);
+    const tx = await pbContract.finalizeRound(activeRoundId);
+    alert("Finalization transaction submitted. Waiting for confirmation...");
+    await tx.wait();
+    alert("Round finalized successfully!");
+    await fetchLiveState();
+  } catch (err) {
+    console.error("Finalization failed:", err);
+    alert("Finalization failed: " + (err.reason || err.message));
+  }
+}

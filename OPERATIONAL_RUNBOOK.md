@@ -1,6 +1,6 @@
 # Operational Runbook - Pharmacy Fiduciary Commons
 
-This runbook defines operational guidelines, thresholds, and emergency procedures for managing the Pharmacy Fiduciary Commons contracts in production.
+This pre-production operational runbook defines guidelines, thresholds, and emergency procedures intended for future production management of the Pharmacy Fiduciary Commons contracts. It does not override the public readiness checklist or audit warnings.
 
 ---
 
@@ -28,9 +28,11 @@ PBMRebateTreasury.fundExclusionRemediation(uint256 amount);
 
 ---
 
-## 2. Relayer EOA Key Management Policy
+## 2. Relayer Verifier Key Management Policy
 
-The Relayer EOA holds the authority to submit voter self-registration signatures to the `PatientFundParticipatoryBudgeting` contract. Protecting this key is critical to prevent Sybil registrations.
+The configured `relayerVerifier` holds the authority to authorize voter self-registration signatures in the `PatientFundParticipatoryBudgeting` contract. For local and bounded testnet trials this may be an EOA; before any public prototype, set it to a governed ERC-1271 multisig or equivalent contract wallet so authorization is not controlled by one private key.
+
+The separate trusted-issuer credential path currently verifies issuer signatures with ECDSA recovery. Do not describe ERC-1271 support as applying to every credential path unless contract issuer verification is explicitly implemented and tested.
 
 ### Key Storage Guidelines
 - **No plaintext storage:** Private keys must never be stored in plain text files, environment configuration files (`.env`), or code repositories.
@@ -38,7 +40,7 @@ The Relayer EOA holds the authority to submit voter self-registration signatures
 - **Access Delegation:** Only the automated relayer daemon service account is authorized to invoke signature operations.
 
 ### Key Rotation and Revocation
-- **Regular Rotation:** Relayer keys should be rotated every 90 days.
+- **Regular Rotation:** Relayer verifier authority should be rotated every 90 days or whenever signer membership changes.
 - **Emergency Revocation:** If a relayer key is suspected of being compromised:
   1. The Council must immediately replace the active verifier using `setRelayerVerifier` on the `PatientFundParticipatoryBudgeting` contract:
      ```solidity
@@ -98,3 +100,35 @@ Temporary timelock setup admin renounced: 0x...
 Final timelock self-admin: true
 Final external admin retained: false
 ```
+
+---
+
+## 5. Handling Patient Fund Matching Pool Depletion
+
+If the contract's actual token balance falls below the required accounting balance (due to manual withdrawals, accidental sweep operations, or general funding gaps):
+
+### Step 1: Verification & Diagnosis
+1. Identify the depletion on the public dashboard (which will display a `⚠️ LIQUIDITY DEFICIT` warning) or query the view helper `previewFinalize(roundId)` on the `PatientFundParticipatoryBudgeting` contract.
+2. Calculate the exact deficit:
+   \[\text{Deficit} = \text{Required Accounting Balance} - \text{Actual Contract Balance}\]
+   where:
+   \[\text{Required Accounting Balance} = \text{totalUnclaimedShares} + \text{recycledMatchingPool} + \text{activeRoundMatchingPool}\]
+
+### Step 2: Operational Action (Top-Up / Pause / Notify)
+1. **Top-Up**: Send the required amount of matching ERC-20 tokens directly to the contract address to cover outstanding claims:
+   ```solidity
+   IERC20(tokenAddress).transfer(pbAddress, deficitAmount);
+   ```
+2. **Pause**: If funding cannot be secured immediately and claims are failing, the Guardian must call `pause()` to halt further claims:
+   ```solidity
+   PatientFundParticipatoryBudgeting.pause();
+   ```
+3. **Notify**: Post an alert warning users on the dashboard. Ensure that the dashboard and documentation make it clear that finalized shares are accounting commitments rather than physical liquidity guarantees. No partial-payment queue or automated liquidity backstop exists or is implied.
+
+---
+
+## 6. Mutual Credit Defaults And Voucher Capacity Cleanup
+
+The current mutual-credit contract enforces registration, credit limits, issuer status, and voucher capacity accounting. It does not implement default adjudication, bad-debt socialization, write-offs, local federation solvency rules, or emergency credit freezes short of the global pause control.
+
+Expired vouchers do not free issuer capacity automatically. Anyone may call `releaseExpiredVoucher` or `releaseExpiredVouchersBatch` after expiry, but until cleanup is called the issuer's `reservedVoucherCredit` remains committed. Operators should monitor expired voucher reservations and publish cleanup transactions as maintenance, not as discretionary debt forgiveness.

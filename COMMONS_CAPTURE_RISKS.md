@@ -42,4 +42,12 @@ This document tracks, assesses, and outlines mitigations for the structural capt
 
 ## 10. Relayer Verifier Trust Root
 * **Risk**: The participatory budgeting self-registration flow depends on a Council-selected `relayerVerifier`. If that key is compromised or operated without transparent eligibility rules, it can register ineligible voters or exclude eligible advocates.
-* **Mitigation**: Treat the verifier as a bounded testnet/prototype trust root. Current tooling pins issuer provenance, binds credentials to wallets, checks type/status/expiry/revocation, and uses consumed on-chain nonces. Production still requires governed key rotation, public eligibility criteria, durable revocation publication, and an appeal path. Council should rotate the verifier immediately after suspected compromise.
+* **Mitigation**: Treat an EOA verifier as a bounded testnet/prototype trust root only. Current tooling pins issuer provenance, binds credentials to wallets, checks type/status/expiry/revocation, and uses consumed on-chain nonces. The contract accepts EOA signatures and ERC-1271 contract-wallet signatures, so a public prototype should set `relayerVerifier` to a governed multisig or equivalent signer, publish eligibility criteria, maintain durable revocation publication, and keep an appeal path. Council should rotate the verifier immediately after suspected compromise.
+
+## 11. Global Mutual-Credit Control
+* **Risk**: `PharmacyMutualCredit.sol` gives the global `COUNCIL_ROLE` authority over participant registration, credit limits, and authorized voucher issuers. If local cooperatives operate semi-autonomously, this can let the global trust root override local underwriting rules or concentrate liabilities that should stay federation-scoped.
+* **Mitigation**: Treat the current mutual-credit contract as a single-federation prototype. Before semi-autonomous federation use, add scoped local roles or separate per-federation ledgers, local issuer authority, liability partitioning, and exit/export proofs. Keep any global authority narrowly bounded to emergency pause, interoperability constraints, or timelocked constitutional changes.
+
+## 12. Mutual-Credit Default Ambiguity
+* **Risk**: The mutual-credit ledger enforces credit limits but does not define default, bad-debt write-off, loss allocation, credit freezes, or federation-level solvency procedures. Public materials could overstate mutual credit as a complete default-governance or insurance mechanism.
+* **Mitigation**: Describe the contract as credit-capacity accounting only until a ratified default policy exists. Any future default process should specify who can freeze credit, how evidence is reviewed, how losses are allocated, and how affected participants can appeal or exit.

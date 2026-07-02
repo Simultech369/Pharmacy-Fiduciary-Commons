@@ -76,18 +76,18 @@ Acceptance test:
 
 ## 3A. Patient Fund Matching Liquidity
 
-Status: needs operational enforcement before public participatory budgeting.
+Status: Operational enforcement implemented.
 
-- [ ] Verify the matching token balance is present before starting any patient-fund matching round.
-- [ ] Document whether matching pools are pre-funded, escrowed, or otherwise guaranteed before `finalizeRound`.
-- [ ] Define what happens if approved projects exceed available matching liquidity.
-- [ ] Add operator runbook steps for paused, underfunded, or partially funded rounds.
+- [x] Verify the matching token balance is present before starting any patient-fund matching round.
+- [x] Document whether matching pools are pre-funded, escrowed, or otherwise guaranteed before `finalizeRound`.
+- [x] Define what happens if approved projects exceed available matching liquidity.
+- [x] Add operator runbook steps for paused, underfunded, or partially funded rounds.
 
 Acceptance test:
 
-- [ ] A dry-run proves every registered project can claim its expected match from the funded pool.
-- [ ] Underfunded matching rounds fail before public launch or are clearly marked unresolved; no public interface implies partial-payment queueing exists.
-- [ ] Operators verify recorded matching allocations against the contract's actual token balance, distinguishing accounting shares from spendable liquidity.
+- [x] A dry-run proves every registered project can claim its expected match from the funded pool.
+- [x] Underfunded matching rounds fail before public launch or are clearly marked unresolved; no public interface implies partial-payment queueing exists.
+- [x] Operators verify recorded matching allocations against the contract's actual token balance, distinguishing accounting shares from spendable liquidity.
 
 ## 4. APIs
 

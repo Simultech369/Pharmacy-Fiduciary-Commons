@@ -4,9 +4,11 @@ pragma solidity 0.8.20;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title  PatientFundParticipatoryBudgeting
@@ -14,7 +16,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
  * @notice Governs the allocation of the Patient Fund matching pool using squared vote weights.
  *         Credential-gated voting enables community members to vote on local health projects.
  */
-contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
+contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using ECDSA for bytes32;
 
@@ -60,6 +62,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     uint256 public currentRound;
     address public relayerVerifier;
     uint256 public recycledMatchingPool;
+    uint256 public totalUnclaimedShares;
 
     // roundId -> Round details
     mapping(uint256 => Round) public rounds;
@@ -115,6 +118,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     event ProjectProposed(uint256 indexed roundId, uint256 indexed proposalId, string title, address indexed recipient);
     event ProposalSupported(uint256 indexed roundId, uint256 indexed proposalId, address indexed supporter, uint256 currentSupport);
     event ProjectSupportThresholdUpdated(uint256 newThreshold);
+    event LowBalanceDetected(uint256 requested, uint256 actual);
 
     // =========================================================
     // CUSTOM ERRORS
@@ -139,6 +143,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     error AlreadySupported();
     error ProposalDoesNotExist();
     error ReclaimGracePeriodNotElapsed();
+    error InsufficientContractBalance(uint256 requested, uint256 actual);
 
     // =========================================================
     // CONSTRUCTOR
@@ -162,7 +167,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     // ROUND ADMINISTRATION (COUNCIL ONLY)
     // =========================================================
 
-    function startRound(uint256 matchingPoolAmount) external onlyRole(COUNCIL_ROLE) whenNotPaused {
+    function startRound(uint256 matchingPoolAmount) external onlyRole(COUNCIL_ROLE) whenNotPaused nonReentrant {
         uint256 recycled = recycledMatchingPool;
         if (matchingPoolAmount == 0 && recycled == 0) revert ZeroAmount();
         if (currentRound > 0 && rounds[currentRound].state != RoundState.Finalized) {
@@ -260,8 +265,10 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
                 deadline
             )
         );
-        address signer = _hashTypedDataV4(structHash).recover(signature);
-        if (signer != relayerVerifier) revert Unauthorized();
+        bytes32 digest = _hashTypedDataV4(structHash);
+        if (!SignatureChecker.isValidSignatureNow(relayerVerifier, digest, signature)) {
+            revert Unauthorized();
+        }
 
         registrationNonces[roundId][voter] = nonce + 1;
         registeredVoters[roundId][voter] = true;
@@ -422,7 +429,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
      * @dev    Weight of project i is (votes_i)^2. Proportional share is Weight_i / TotalWeight.
      *         If totalWeight is 0, the matching pool is returned to the council address to prevent locking.
      */
-    function finalizeRound(uint256 roundId) external onlyRole(COUNCIL_ROLE) whenNotPaused {
+    function finalizeRound(uint256 roundId) external onlyRole(COUNCIL_ROLE) whenNotPaused nonReentrant {
         Round storage r = rounds[roundId];
         if (r.state != RoundState.Active) revert WrongRoundState();
 
@@ -461,6 +468,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
                 }
             }
         }
+        totalUnclaimedShares += distributed;
 
         // Refund any tiny division dust left over to the council
         if (pool > distributed) {
@@ -475,7 +483,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
      * @notice Allows claiming calculated matching pool shares for a finalized round.
      * @dev    Enforces pull-payment pattern to prevent gas exhaustion.
      */
-    function claimMatchShare(uint256 roundId, uint256 projectId) external whenNotPaused {
+    function claimMatchShare(uint256 roundId, uint256 projectId) external whenNotPaused nonReentrant {
         Round storage r = rounds[roundId];
         if (r.state != RoundState.Finalized) revert WrongRoundState();
         if (projectId >= r.projectCount) revert ProjectInactive();
@@ -483,7 +491,14 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         uint256 share = roundProjectShares[roundId][projectId];
         if (share == 0) revert ZeroAmount();
 
+        uint256 balance = token.balanceOf(address(this));
+        if (balance < share) {
+            emit LowBalanceDetected(share, balance);
+            revert InsufficientContractBalance(share, balance);
+        }
+
         roundProjectShares[roundId][projectId] = 0;
+        totalUnclaimedShares -= share;
         address recipient = roundProjects[roundId][projectId].recipient;
         token.safeTransfer(recipient, share);
 
@@ -511,13 +526,76 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
         uint256 share = roundProjectShares[roundId][projectId];
         if (share == 0) revert ZeroAmount();
 
+        uint256 balance = token.balanceOf(address(this));
+        if (balance < share) {
+            emit LowBalanceDetected(share, balance);
+            // We do NOT revert on low balance because reclaims are purely accounting-based
+            // and we want to allow recycling recorded commitments under depletion.
+        }
+
         roundProjectShares[roundId][projectId] = 0;
+        totalUnclaimedShares -= share;
         address recipient = roundProjects[roundId][projectId].recipient;
         if (recipient == address(0)) revert ProjectInactive();
 
         recycledMatchingPool += share;
 
         emit MatchShareReclaimed(roundId, projectId, recipient, share);
+    }
+
+    /**
+     * @notice Previews the finalization of a round, calculating the expected project shares,
+     *         and checking if the contract has sufficient token balance to cover them plus outstanding shares.
+     * @param roundId The ID of the active round to preview.
+     * @return projects An array of project recipient addresses.
+     * @return expectedShares An array of expected matching shares for each project.
+     * @return actualBalance The current actual token balance of the contract.
+     * @return totalRequiredAfterFinalize The total required tokens in the contract after finalization.
+     * @return isSufficient Whether the actual balance is sufficient.
+     */
+    function previewFinalize(uint256 roundId)
+        external
+        view
+        returns (
+            address[] memory projects,
+            uint256[] memory expectedShares,
+            uint256 actualBalance,
+            uint256 totalRequiredAfterFinalize,
+            bool isSufficient
+        )
+    {
+        Round storage r = rounds[roundId];
+        if (r.state != RoundState.Active) revert WrongRoundState();
+
+        uint256 count = r.projectCount;
+        projects = new address[](count);
+        expectedShares = new uint256[](count);
+
+        uint256 totalWeight = 0;
+        uint256[] memory weights = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            projects[i] = roundProjects[roundId][i].recipient;
+            uint256 votes = roundProjects[roundId][i].voteCount;
+            uint256 weight = votes * votes;
+            weights[i] = weight;
+            totalWeight += weight;
+        }
+
+        uint256 pool = r.matchingPool;
+        uint256 distributed = 0;
+        if (totalWeight > 0) {
+            for (uint256 i = 0; i < count; i++) {
+                if (weights[i] > 0) {
+                    uint256 share = (pool * weights[i]) / totalWeight;
+                    expectedShares[i] = share;
+                    distributed += share;
+                }
+            }
+        }
+
+        actualBalance = token.balanceOf(address(this));
+        totalRequiredAfterFinalize = totalUnclaimedShares + distributed;
+        isSufficient = actualBalance >= totalRequiredAfterFinalize;
     }
 
     // =========================================================
@@ -536,7 +614,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable {
     // RECOVERY
     // =========================================================
 
-    function sweep(address _token, uint256 _amount) external onlyRole(COUNCIL_ROLE) {
+    function sweep(address _token, uint256 _amount) external onlyRole(COUNCIL_ROLE) nonReentrant {
         if (_token == address(0)) revert InvalidAddress();
         if (_amount == 0) revert ZeroAmount();
         if (_token == address(token)) revert CannotSweepMatchingToken();

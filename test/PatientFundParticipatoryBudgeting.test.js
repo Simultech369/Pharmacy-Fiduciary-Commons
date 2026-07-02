@@ -226,7 +226,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
 
       await expectRevert(
         pb.claimMatchShare(1n, 0n),
-        "ERC20: transfer amount exceeds balance"
+        "InsufficientContractBalance"
       );
       expect(await pb.roundProjectShares(1n, 0n)).to.equal(toWei("8000"));
     });
@@ -334,7 +334,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
 
       await expectRevert(
         pb.claimMatchShare(2n, 0n),
-        "ERC20: transfer amount exceeds balance"
+        "InsufficientContractBalance"
       );
       expect(await pb.roundProjectShares(2n, 0n)).to.equal(toWei("10000"));
     });
@@ -433,6 +433,35 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(await pb.registrationNonces(1n, voter.address)).to.equal(1n);
     });
 
+    it("allows an ERC-1271 verifier contract to authorize voter self-registration", async function () {
+      const MockERC1271Verifier = await ethers.getContractFactory("MockERC1271Verifier");
+      const verifier = await MockERC1271Verifier.deploy(relayer.address);
+      await pb.connect(council).setRelayerVerifier(await verifier.getAddress());
+
+      const { signature, deadline } = await signRegistration();
+
+      await pb.connect(voter).registerVoterWithSignature(
+        1n, voter.address, credentialHash, policyVersion, deadline, signature
+      );
+      expect(await pb.registeredVoters(1n, voter.address)).to.be.true;
+      expect(await pb.registrationNonces(1n, voter.address)).to.equal(1n);
+    });
+
+    it("rejects signatures when the ERC-1271 verifier does not approve them", async function () {
+      const MockERC1271Verifier = await ethers.getContractFactory("MockERC1271Verifier");
+      const verifier = await MockERC1271Verifier.deploy(attacker.address);
+      await pb.connect(council).setRelayerVerifier(await verifier.getAddress());
+
+      const { signature, deadline } = await signRegistration();
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(
+          1n, voter.address, credentialHash, policyVersion, deadline, signature
+        ),
+        "Unauthorized"
+      );
+    });
+
     it("consumes relayer signatures and invalidates outstanding signatures on council revocation", async function () {
       const consumed = await signRegistration();
       await pb.connect(voter).registerVoterWithSignature(
@@ -519,7 +548,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
         pb.connect(voter).registerVoterWithSignature(
           1n, voter.address, credentialHash, policyVersion, deadline, invalidVSignature
         ),
-        "ECDSA: invalid signature"
+        "Unauthorized"
       );
 
       const curveOrder = BigInt("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
@@ -535,7 +564,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
         pb.connect(voter).registerVoterWithSignature(
           1n, voter.address, credentialHash, policyVersion, deadline, highSSignature
         ),
-        "ECDSA: invalid signature"
+        "Unauthorized"
       );
     });
 
@@ -995,7 +1024,6 @@ describe("PatientFundParticipatoryBudgeting", function () {
         "ProposalDoesNotExist"
       );
     });
-
     it("allows council to set support threshold, but restricts to council", async function () {
       await pb.connect(council).setProjectSupportThreshold(5n);
       expect(await pb.projectSupportThreshold()).to.equal(5n);
@@ -1004,6 +1032,123 @@ describe("PatientFundParticipatoryBudgeting", function () {
         pb.connect(attacker).setProjectSupportThreshold(2n),
         "AccessControl"
       );
+    });
+  });
+
+  describe("Patient Fund Balance Verification & Dry-Run Preview", function () {
+    beforeEach(async function () {
+      // Start a round with 1000 tokens
+      await pb.connect(council).startRound(toWei("1000"));
+
+      // Register voters
+      await pb.connect(council).registerVotersBatch(1n, [
+        voters[0].address,
+        voters[1].address
+      ]);
+
+      // Register projects
+      await pb.connect(council).registerProject(1n, "Project Alpha", recipientA.address);
+      await pb.connect(council).registerProject(1n, "Project Beta", recipientB.address);
+
+      // Vote
+      await pb.connect(voters[0]).castVote(1n, 0n); // Project Alpha gets 1 vote
+      await pb.connect(voters[1]).castVote(1n, 0n); // Project Alpha gets 2 votes total
+      await pb.connect(voters[0]).castVote(1n, 1n); // Project Beta gets 1 vote total
+    });
+
+    it("tracks totalUnclaimedShares correctly on finalize, claim, and reclaim", async function () {
+      // Initial unclaimed shares should be 0
+      expect(await pb.totalUnclaimedShares()).to.equal(0n);
+
+      // Finalize Round
+      // Project Alpha weight: 4. Project Beta weight: 1. Total weight: 5.
+      // Project Alpha share: 4/5 * 1000 = 800.
+      // Project Beta share: 1/5 * 1000 = 200.
+      await pb.connect(council).finalizeRound(1n);
+
+      // totalUnclaimedShares should now be 1000
+      expect(await pb.totalUnclaimedShares()).to.equal(toWei("1000"));
+
+      // User claims Project Beta share (200)
+      await pb.claimMatchShare(1n, 1n);
+      expect(await pb.totalUnclaimedShares()).to.equal(toWei("800"));
+
+      // Fast forward MATCH_RECLAIM_GRACE_PERIOD (90 days)
+      await ethers.provider.send("evm_increaseTime", [90 * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine");
+
+      // Council reclaims Project Alpha share (800)
+      await pb.connect(council).reclaimUnclaimedMatchShare(1n, 0n);
+
+      // totalUnclaimedShares should now be 0 (since it moved to recycledMatchingPool)
+      expect(await pb.totalUnclaimedShares()).to.equal(0n);
+      expect(await pb.recycledMatchingPool()).to.equal(toWei("800"));
+    });
+
+    it("verifies previewFinalize works correctly", async function () {
+      const preview = await pb.previewFinalize(1n);
+
+      expect(preview.projects[0]).to.equal(recipientA.address);
+      expect(preview.projects[1]).to.equal(recipientB.address);
+      expect(preview.expectedShares[0]).to.equal(toWei("800"));
+      expect(preview.expectedShares[1]).to.equal(toWei("200"));
+      expect(preview.actualBalance).to.equal(toWei("1000"));
+      expect(preview.totalRequiredAfterFinalize).to.equal(toWei("1000"));
+      expect(preview.isSufficient).to.be.true;
+    });
+
+    it("reverts claimMatchShare and emits event if contract is depleted", async function () {
+      // Finalize Round (allocates 800 and 200)
+      await pb.connect(council).finalizeRound(1n);
+
+      // Burn tokens from the contract to simulate depletion/theft/accident
+      // Total contract balance is 1000. Burn 900 tokens so balance is 100.
+      await token.burn(await pb.getAddress(), toWei("900"));
+
+      // Now actual balance is 100. Attempt to claim Project Beta (requires 200).
+      // Should revert with InsufficientContractBalance.
+      await expectRevert(
+        pb.claimMatchShare(1n, 1n),
+        "InsufficientContractBalance"
+      );
+
+      // Attempt to claim Project Alpha (requires 800). Should also revert.
+      await expectRevert(
+        pb.claimMatchShare(1n, 0n),
+        "InsufficientContractBalance"
+      );
+    });
+
+    it("does not revert reclaimUnclaimedMatchShare on depletion but emits LowBalanceDetected event", async function () {
+      // Finalize Round
+      await pb.connect(council).finalizeRound(1n);
+
+      // Burn tokens from contract to simulate depletion. Balance becomes 100.
+      await token.burn(await pb.getAddress(), toWei("900"));
+
+      // Fast forward MATCH_RECLAIM_GRACE_PERIOD (90 days)
+      await ethers.provider.send("evm_increaseTime", [90 * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine");
+
+      // Council reclaims Project Alpha (requires 800, balance is 100).
+      // This should succeed (not revert), set share to 0, and emit LowBalanceDetected and MatchShareReclaimed events.
+      const tx = await pb.connect(council).reclaimUnclaimedMatchShare(1n, 0n);
+
+      // Verify events in receipt
+      const receipt = await tx.wait();
+      // Find LowBalanceDetected event
+      const lowBalanceLog = receipt.logs.find(
+        (log) => pb.interface.parseLog(log)?.name === "LowBalanceDetected"
+      );
+      expect(lowBalanceLog).to.not.be.undefined;
+
+      const parsedLog = pb.interface.parseLog(lowBalanceLog);
+      expect(parsedLog.args.requested).to.equal(toWei("800"));
+      expect(parsedLog.args.actual).to.equal(toWei("100"));
+
+      // Verify state changes still succeeded
+      expect(await pb.roundProjectShares(1n, 0n)).to.equal(0n);
+      expect(await pb.recycledMatchingPool()).to.equal(toWei("800"));
     });
   });
 });

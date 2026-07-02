@@ -813,6 +813,48 @@
           </div>
         </div>
 
+        <!-- Liquidity & Accounting Balance Board -->
+        <div id="liquidity-board" style="display: none; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.25rem; margin-bottom: 1.5rem;">
+          <h4 style="font-family: var(--font-heading); font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--accent-cyan);">
+            💰 Liquidity & Accounting Balance
+          </h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Actual Contract Token Balance</div>
+              <div id="actual-token-balance" style="font-size: 1.25rem; font-weight: 700; color: #fff;">0.00</div>
+            </div>
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Required Accounting Balance</div>
+              <div id="required-accounting-balance" style="font-size: 1.25rem; font-weight: 700; color: #fff;">0.00</div>
+            </div>
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Recycled Matching Pool</div>
+              <div id="recycled-matching-pool-display" style="font-size: 1.25rem; font-weight: 700; color: var(--accent-green-text);">0.00</div>
+            </div>
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Unclaimed Finalized Shares</div>
+              <div id="unclaimed-shares-display" style="font-size: 1.25rem; font-weight: 700; color: var(--accent-purple);">0.00</div>
+            </div>
+          </div>
+          <div id="liquidity-warning-message" class="badge-unverified" style="display: none; animation: none; text-transform: none; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 0.85rem;"></div>
+        </div>
+
+        <!-- Council Controls Section -->
+        <div id="council-controls" style="display: none; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 0.5rem; padding: 1.25rem; margin-bottom: 1.5rem;">
+          <h4 style="font-family: var(--font-heading); font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--accent-orange);">
+            ⚙️ Council Operations Portal
+          </h4>
+          <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
+            <button id="btn-preview-finalize" class="btn-vote" style="background: linear-gradient(135deg, var(--accent-orange), #d97706); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); font-size: 0.85rem; padding: 0.5rem 1rem;">🔍 Preview Finalization (Dry-Run)</button>
+            <button id="btn-finalize-round" class="btn-vote" style="background: linear-gradient(135deg, var(--accent-purple), #7c3aed); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); font-size: 0.85rem; padding: 0.5rem 1rem;">🏁 Finalize Current Round</button>
+          </div>
+          <div id="finalize-preview-results" style="display: none; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 0.375rem; padding: 1rem; font-size: 0.85rem;">
+            <h5 style="font-family: var(--font-heading); font-size: 0.95rem; margin-bottom: 0.5rem; color: #fff;">Dry-Run Simulation Output:</h5>
+            <div id="finalize-preview-text" style="white-space: pre-line; font-family: monospace; color: var(--text-muted); margin-bottom: 0.5rem;"></div>
+            <div id="finalize-preview-warning" class="badge-unverified" style="display: none; animation: none; text-transform: none; border-radius: 0.25rem; padding: 0.4rem 0.6rem;"></div>
+          </div>
+        </div>
+
         <div id="voter-reg-box" class="gap-calculator" style="margin-bottom: 1.5rem; background: rgba(59, 130, 246, 0.03); border-color: rgba(59, 130, 246, 0.15);">
           <div class="gap-info">
             <h4 style="color: var(--accent-blue);">Advocate Voter Registration Status</h4>
@@ -1118,9 +1160,11 @@
         return sq;
       });
 
+      const poolAmount = window.TOTAL_MATCHING_POOL !== undefined ? window.TOTAL_MATCHING_POOL : TOTAL_MATCHING_POOL;
+
       window.projects.forEach((p, idx) => {
         const share = weights[idx] / totalWeight;
-        const matchingAmount = Math.round(share * TOTAL_MATCHING_POOL);
+        const matchingAmount = Math.round(share * poolAmount);
 
         document.getElementById(`proj-${p.id}-votes`).innerText = `${p.votes} votes`;
         document.getElementById(`proj-${p.id}-match`).innerText = `$${matchingAmount.toLocaleString()}`;

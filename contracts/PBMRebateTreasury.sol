@@ -1245,7 +1245,7 @@ contract PBMRebateTreasury is
     /**
      * @notice Sweeps accidentally sent ETH to environmentalFund.
      */
-    function sweepETH() external onlyRole(COUNCIL_ROLE) {
+    function sweepETH() external onlyRole(COUNCIL_ROLE) nonReentrant {
         uint256 balance = address(this).balance;
         if (balance == 0) revert NoETH();
         (bool ok, ) = environmentalFund.call{value: balance}("");
@@ -1262,6 +1262,7 @@ contract PBMRebateTreasury is
     function sweep(address _token, uint256 _amount)
         external
         onlyRole(COUNCIL_ROLE)
+        nonReentrant
     {
         if (_token == address(0))     revert InvalidAddress();
         if (_amount == 0)             revert ZeroAmount();
