@@ -87,6 +87,7 @@ Acceptance test:
 
 - [ ] A dry-run proves every registered project can claim its expected match from the funded pool.
 - [ ] Underfunded matching rounds fail before public launch or are clearly marked unresolved; no public interface implies partial-payment queueing exists.
+- [ ] Operators verify recorded matching allocations against the contract's actual token balance, distinguishing accounting shares from spendable liquidity.
 
 ## 4. APIs
 

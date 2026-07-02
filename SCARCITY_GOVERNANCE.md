@@ -33,6 +33,8 @@ Current implementation supports:
 
 These are partial supports, not scarcity governance. For example, the `exclusionRemediationReserve` can fund approved root-exclusion remediation without draining ordinary distribution liquidity, `PatientFundParticipatoryBudgeting` can distribute a pre-funded matching pool, and `PharmacyMutualCredit` can reserve credit capacity for vouchers. None of these mechanisms decides which patient receives scarce medicine, verifies physical inventory, creates a partial-payment queue, or replaces a ratified triage process.
 
+Recycled patient-fund shares preserve accounting continuity across rounds, but they do not restore physical token liquidity. If a finalized share is reclaimed after the matching-token balance has been depleted, the recycled amount can seed the next round's bookkeeping while later claims still revert until real tokens are present.
+
 Current implementation does **not** support:
 
 * automatic scarcity triage;

@@ -15,6 +15,7 @@ The project remains in this phase until the public-facing and operational gates 
   - Keep dashboard data synthetic or contract-backed with visible provenance labels.
   - Exercise the offline/non-digital workflow gates in `PRODUCTION_READINESS_CHECKLIST.md` with tabletop scenarios for SMS, paper voucher, trusted-proxy, delayed-sync, duplicate-receipt, forged-receipt, and lost-connectivity cases before claiming non-digital access.
   - Define privacy-safe, fraud-resistant care-continuity metric ingestion before using CRR or similar wellbeing metrics to prioritize funding.
+  - Consider a future read-only `dryRunFinalize` or equivalent preview tool for participatory-budgeting rounds so operators can compare expected project shares with actual token liquidity before finalization.
 - **Success Criteria**: Local/testnet claims remain accurate, readiness gaps are visible, and public materials do not imply audit, production, or mainnet readiness.
 
 ---
