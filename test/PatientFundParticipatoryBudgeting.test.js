@@ -305,6 +305,40 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(await pb.recycledMatchingPool()).to.equal(0n);
     });
 
+    it("documents reclaim and recycling after matching-token liquidity is depleted", async function () {
+      await pb.connect(voters[0]).castVote(1n, 0n);
+      await pb.connect(council).finalizeRound(1n);
+      expect(await pb.roundProjectShares(1n, 0n)).to.equal(toWei("10000"));
+
+      await token.burn(await pb.getAddress(), toWei("10000"));
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(0n);
+
+      await ethers.provider.send("evm_increaseTime", [90 * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine", []);
+
+      await pb.connect(council).reclaimUnclaimedMatchShare(1n, 0n);
+      expect(await pb.recycledMatchingPool()).to.equal(toWei("10000"));
+      expect(await pb.roundProjectShares(1n, 0n)).to.equal(0n);
+
+      await pb.connect(council).startRound(0n);
+      const nextRound = await pb.rounds(2n);
+      expect(nextRound.matchingPool).to.equal(toWei("10000"));
+      expect(await pb.recycledMatchingPool()).to.equal(0n);
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(0n);
+
+      await pb.connect(council).registerProject(2n, "Recycled Empty Pool", recipientA.address);
+      await pb.connect(council).registerVotersBatch(2n, [voters[0].address]);
+      await pb.connect(voters[0]).castVote(2n, 0n);
+      await pb.connect(council).finalizeRound(2n);
+      expect(await pb.roundProjectShares(2n, 0n)).to.equal(toWei("10000"));
+
+      await expectRevert(
+        pb.claimMatchShare(2n, 0n),
+        "ERC20: transfer amount exceeds balance"
+      );
+      expect(await pb.roundProjectShares(2n, 0n)).to.equal(toWei("10000"));
+    });
+
     it("lets the project recipient claim before the reclaim grace period expires", async function () {
       await pb.connect(voters[0]).castVote(1n, 0n);
       await pb.connect(council).finalizeRound(1n);
