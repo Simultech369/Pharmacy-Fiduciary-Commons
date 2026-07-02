@@ -202,6 +202,35 @@ describe("PatientFundParticipatoryBudgeting", function () {
       );
     });
 
+    it("documents underfunded finalized rounds: smaller shares can claim, larger shares revert", async function () {
+      // Project 0 receives 80% of the pool; project 1 receives 20%.
+      await pb.connect(voters[0]).castVote(1n, 0n);
+      await pb.connect(voters[1]).castVote(1n, 0n);
+      await pb.connect(voters[2]).castVote(1n, 0n);
+      await pb.connect(voters[3]).castVote(1n, 0n);
+      await pb.connect(voters[4]).castVote(1n, 1n);
+      await pb.connect(voters[5]).castVote(1n, 1n);
+
+      await pb.connect(council).finalizeRound(1n);
+      expect(await pb.roundProjectShares(1n, 0n)).to.equal(toWei("8000"));
+      expect(await pb.roundProjectShares(1n, 1n)).to.equal(toWei("2000"));
+
+      // Simulate unexpected matching-token liquidity loss after shares are committed.
+      await token.burn(await pb.getAddress(), toWei("5000"));
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("5000"));
+
+      const recipientBBefore = await token.balanceOf(recipientB.address);
+      await pb.claimMatchShare(1n, 1n);
+      expect(await token.balanceOf(recipientB.address) - recipientBBefore).to.equal(toWei("2000"));
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("3000"));
+
+      await expectRevert(
+        pb.claimMatchShare(1n, 0n),
+        "ERC20: transfer amount exceeds balance"
+      );
+      expect(await pb.roundProjectShares(1n, 0n)).to.equal(toWei("8000"));
+    });
+
     it("reverts double claims and claims for zero shares", async function () {
       // Voter casts vote for project 0
       await pb.connect(voters[0]).castVote(1n, 0n);
