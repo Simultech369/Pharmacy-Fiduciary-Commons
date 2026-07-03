@@ -10,7 +10,7 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with 0 issues and empty stderr.
 
-Live scanner refresh: Slither and Aderyn were refreshed for commit `a816e9e` on 2026-07-03 from the elevated WSL distro `Ubuntu-24.04`. The normal, non-elevated Windows shell still cannot see registered WSL distros; use the elevated WSL context for scanner reruns on this host.
+Live scanner refresh: Slither and Aderyn were refreshed for commit `a816e9e` on 2026-07-03 from the elevated WSL distro `Ubuntu-24.04`. Current HEAD `01f0c29` only refreshes scanner artifact references in this file, so the `a816e9e` reports remain current for production contract code. The normal, non-elevated Windows shell still cannot see registered WSL distros; use the elevated WSL context for scanner reruns on this host.
 
 Post-excavation verification: `npm.cmd test` passed with 135 tests. After adding treasury callback and forced-ETH tests, `npm.cmd test -- test/PBMRebateTreasury.security.test.js` passed with 36 tests.
 
@@ -89,7 +89,7 @@ Evidence:
 
 The remaining Slither signal is therefore useful as a reminder that ERC-20 callbacks are possible, but the tested callback cannot publish or mutate the pending round.
 
-Slither also reports reentrancy issues in `StartRoundReentrantToken`. Those are expected: the mock exists only to exercise adversarial callback behavior and is not deployable protocol code.
+Unfiltered exploratory Slither runs may also report reentrancy issues in `StartRoundReentrantToken`. Those are expected: the mock exists only to exercise adversarial callback behavior and is not deployable protocol code. The production-filtered artifact listed above excludes `contracts/mocks`.
 
 ## Treasury ERC-20 Callback Review
 
@@ -164,7 +164,7 @@ Residual lows, excavated:
   - `PBMRebateTreasury.BP_DENOM = 10_000`.
   - Disposition: accepted. `10_000` is clearer for basis points than `1e4`, and the related policy literals were already moved into named constants.
 
-- `PUSH0 Opcode` has 7 pragma instances.
+- `PUSH0 Opcode` has 4 pragma instances.
   - All project Solidity files use `pragma solidity 0.8.20`.
   - Mitigation: Hardhat now explicitly sets `evmVersion: "paris"` and compile output confirms `evm target: paris`.
   - Residual: Aderyn reports `EVM version - prague`, so release deployment must continue verifying bytecode target per chain.
@@ -182,3 +182,10 @@ Residual lows, excavated:
 - Keep Aderyn, Slither, and targeted Mythril artifacts under `C:\tmp` for local review evidence.
 - Before deployment, rerun scanners from a clean checkout and produce release-specific artifacts.
 - Treat new high-confidence production-contract scanner findings as blockers unless fixed or accepted here with a concrete exploitability rationale and, where practical, a regression test.
+
+## Roadmap Decisions From Residual Findings
+
+- `PBMRebateTreasury.sweepETH`: no further contract change is needed for the current prototype. Promote the operational side to roadmap/release gates: executor must be a timelock-controlled address, `environmentalFund` rotation must remain executor-gated, and release rehearsals should include a forced-ETH recovery drill.
+- Timestamp dependencies: no current contract patch is recommended because the flagged paths are deadline, expiry, and grace-period mechanics rather than randomness. Promote chain-specific deployment review to roadmap work: document timestamp tolerance, L2 sequencer assumptions, deadline boundary behavior, and operator notice windows before mainnet.
+- `PBMRebateTreasury.resolveClaim` complexity: not a scanner blocker, but worth future readability work before a formal audit. Any refactor should extract internal helpers only after preserving the existing accounting invariant and dispute-resolution regression coverage.
+- Aderyn centralization risk: accepted as a governance surface, not dismissed. Promote real Safe membership, separate root confirmer, separate guardian, timelocked executor ownership, and deployment-audit evidence to release blockers.

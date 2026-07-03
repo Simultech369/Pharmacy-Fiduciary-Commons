@@ -19,6 +19,7 @@ The project remains in this phase until the public-facing and operational gates 
   - Exercise the offline/non-digital workflow gates in `PRODUCTION_READINESS_CHECKLIST.md` with tabletop scenarios for SMS, paper voucher, trusted-proxy, delayed-sync, duplicate-receipt, forged-receipt, and lost-connectivity cases before claiming non-digital access.
   - Define privacy-safe, fraud-resistant care-continuity metric ingestion before using CRR or similar wellbeing metrics to prioritize funding.
   - Maintain scanner triage artifacts for Slither, Aderyn, and targeted Mythril runs; no unresolved high-confidence scanner finding should be carried forward without a written acceptance rationale.
+  - Preserve scanner-promoted roadmap items from `SCANNER_TRIAGE.md`: forced-ETH recovery rehearsals, chain-specific timestamp assumptions, `resolveClaim` readability review, and role-ownership evidence.
   - Consider a future read-only `dryRunFinalize` or equivalent preview tool for participatory-budgeting rounds so operators can compare expected project shares with actual token liquidity before finalization.
 - **Success Criteria**: Local/testnet claims remain accurate, readiness gaps are visible, and public materials do not imply audit, production, or mainnet readiness.
 
@@ -45,6 +46,9 @@ Mainnet deployment begins only after Phase 0 and Phase 1 gates are satisfied. Th
 - **Actions**:
   - Deploy the contract to mainnet (e.g. Arbitrum One or Base for low gas costs).
   - Configure a 3/5 Safe for `_council`, a separate root-confirmer Safe or governance address, a separate guardian, and a timelocked executor.
+  - Rehearse forced-ETH recovery through the timelocked executor and document the exact `environmentalFund` destination before accepting mainnet funds.
+  - Document selected-chain timestamp behavior and operator notice windows for root proposal expiry, recall delay, stale recovery, credential deadlines, voucher expiry, and matching-share reclaim grace periods.
+  - Review `PBMRebateTreasury.resolveClaim` for readability before formal audit; keep behavior-preserving refactors gated by the existing accounting invariant and dispute-resolution regression tests.
   - Run the first live epoch using a low daily cap (e.g. $1,000 maximum daily volume) and small deposits.
   - Launch a production-built public dashboard only after frontend hardening, accessibility, rate limiting, cache policy, error tracking, and deployment checks pass.
 - **Success Criteria**: Successful claim execution, no locked funds, no misleading production claims, and accurate tracking of contract-backed omissions or explicitly labeled submitted evidence.
