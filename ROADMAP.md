@@ -20,7 +20,7 @@ The project remains in this phase until the public-facing and operational gates 
   - Define privacy-safe, fraud-resistant care-continuity metric ingestion before using CRR or similar wellbeing metrics to prioritize funding.
   - Maintain scanner triage artifacts for Slither, Aderyn, and targeted Mythril runs; no unresolved high-confidence scanner finding should be carried forward without a written acceptance rationale.
   - Preserve scanner-promoted roadmap items from `SCANNER_TRIAGE.md`: forced-ETH recovery rehearsals, chain-specific timestamp assumptions, `resolveClaim` readability review, and role-ownership evidence.
-  - Consider a future read-only `dryRunFinalize` or equivalent preview tool for participatory-budgeting rounds so operators can compare expected project shares with actual token liquidity before finalization.
+  - Keep the read-only `dryRunFinalize` / `previewFinalize` operator path wired into dashboards so expected project shares can be compared with actual token liquidity before finalization.
 - **Success Criteria**: Local/testnet claims remain accurate, readiness gaps are visible, and public materials do not imply audit, production, or mainnet readiness.
 
 ---

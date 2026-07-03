@@ -10,9 +10,9 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with 0 issues and empty stderr.
 
-Live scanner refresh: Slither and Aderyn were refreshed for commit `a816e9e` on 2026-07-03 from the elevated WSL distro `Ubuntu-24.04`. Current HEAD `01f0c29` only refreshes scanner artifact references in this file, so the `a816e9e` reports remain current for production contract code. The normal, non-elevated Windows shell still cannot see registered WSL distros; use the elevated WSL context for scanner reruns on this host.
+Live scanner refresh: Slither and Aderyn were refreshed for commit `a816e9e` on 2026-07-03 from the elevated WSL distro `Ubuntu-24.04`. Later commits include scanner-document updates and the `dryRunFinalize` view alias, so these artifacts remain useful triage evidence but should be refreshed before deployment claims. The normal, non-elevated Windows shell still cannot see registered WSL distros; use the elevated WSL context for scanner reruns on this host.
 
-Post-excavation verification: `npm.cmd test` passed with 135 tests. After adding treasury callback and forced-ETH tests, `npm.cmd test -- test/PBMRebateTreasury.security.test.js` passed with 36 tests.
+Post-excavation verification: `npm.cmd test` passed with 135 tests. After adding treasury callback and forced-ETH tests, `npm.cmd test -- test/PBMRebateTreasury.security.test.js` passed with 36 tests. Later dry-run finalization naming work added `dryRunFinalize` as a view alias for `previewFinalize`; scanner artifacts should be refreshed again before deployment claims because that alias landed after commit `a816e9e`.
 
 ## Slither Production Triage
 

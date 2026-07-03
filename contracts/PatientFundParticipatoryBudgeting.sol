@@ -574,6 +574,38 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
             bool isSufficient
         )
     {
+        return _previewFinalize(roundId);
+    }
+
+    /**
+     * @notice Dry-runs finalization with the same output as `previewFinalize`.
+     * @dev    Alias kept for operator-facing dashboards and runbooks.
+     */
+    function dryRunFinalize(uint256 roundId)
+        external
+        view
+        returns (
+            address[] memory projects,
+            uint256[] memory expectedShares,
+            uint256 actualBalance,
+            uint256 totalRequiredAfterFinalize,
+            bool isSufficient
+        )
+    {
+        return _previewFinalize(roundId);
+    }
+
+    function _previewFinalize(uint256 roundId)
+        internal
+        view
+        returns (
+            address[] memory projects,
+            uint256[] memory expectedShares,
+            uint256 actualBalance,
+            uint256 totalRequiredAfterFinalize,
+            bool isSufficient
+        )
+    {
         Round storage r = rounds[roundId];
         if (r.state != RoundState.Active) revert WrongRoundState();
 

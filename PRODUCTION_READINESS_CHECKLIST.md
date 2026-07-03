@@ -85,13 +85,13 @@ Acceptance test:
 Status: Operational enforcement implemented.
 
 - [x] Verify the matching token balance is present before starting any patient-fund matching round.
-- [x] Document whether matching pools are pre-funded, escrowed, or otherwise guaranteed before `finalizeRound`.
+- [x] Document whether matching pools are pre-funded, escrowed, or otherwise guaranteed before `finalizeRound`; operators can use `dryRunFinalize` / `previewFinalize` to compare expected shares with actual token balance.
 - [x] Define what happens if approved projects exceed available matching liquidity.
 - [x] Add operator runbook steps for paused, underfunded, or partially funded rounds.
 
 Acceptance test:
 
-- [x] A dry-run proves every registered project can claim its expected match from the funded pool.
+- [x] A `dryRunFinalize` / `previewFinalize` dry-run proves every registered project can claim its expected match from the funded pool.
 - [x] Underfunded matching rounds fail before public launch or are clearly marked unresolved; no public interface implies partial-payment queueing exists.
 - [x] Operators verify recorded matching allocations against the contract's actual token balance, distinguishing accounting shares from spendable liquidity.
 
@@ -223,6 +223,21 @@ Acceptance test:
 - [ ] Manually test keyboard-only navigation.
 - [ ] Manually test wallet/status flows with screen-reader-friendly text.
 - [ ] Fix all critical and serious accessibility findings before public launch.
+
+## 11. Contract Security And Scanner Prep
+
+Status: scanner triage present; refresh required before public deployment claims.
+
+- [x] Preserve local scanner artifacts and dispositions in `SCANNER_TRIAGE.md`.
+- [x] Cross-check Slither, Aderyn, and targeted Mythril findings against live contract paths before making code changes.
+- [x] Add adversarial callback and forced-ETH regression coverage for accepted residual scanner findings where practical.
+- [ ] Rerun Slither, Aderyn, targeted Mythril, and GitHub-hosted SolidityScan from the exact release commit.
+- [ ] Resolve or explicitly accept any new high-confidence production-contract findings before testnet or public deployment.
+
+Acceptance test:
+
+- [ ] Release scanner artifacts are dated, commit-pinned, and linked from `SCANNER_TRIAGE.md`.
+- [ ] Any accepted residual finding has an exploitability rationale and, where practical, a regression test.
 
 ## Current Repo-Specific Next Fixes
 

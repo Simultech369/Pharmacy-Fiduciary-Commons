@@ -45,6 +45,7 @@ const PB_ABI = [
   "function recycledMatchingPool() view returns (uint256)",
   "function council() view returns (address)",
   "function previewFinalize(uint256 roundId) view returns (address[] projects, uint256[] expectedShares, uint256 actualBalance, uint256 totalRequiredAfterFinalize, bool isSufficient)",
+  "function dryRunFinalize(uint256 roundId) view returns (address[] projects, uint256[] expectedShares, uint256 actualBalance, uint256 totalRequiredAfterFinalize, bool isSufficient)",
   "function finalizeRound(uint256 roundId) external"
 ];
 
@@ -450,7 +451,7 @@ async function previewFinalization() {
     const divisor = 10n ** BigInt(tokenDecimals);
 
     console.log("Simulating round finalization (dry-run)...");
-    const results = await pbContract.previewFinalize(activeRoundId);
+    const results = await pbContract.dryRunFinalize(activeRoundId);
     const projectsList = results.projects;
     const sharesList = results.expectedShares;
     const actualBal = results.actualBalance;

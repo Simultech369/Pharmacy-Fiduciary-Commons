@@ -1151,6 +1151,17 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(preview.isSufficient).to.be.true;
     });
 
+    it("verifies dryRunFinalize matches previewFinalize", async function () {
+      const preview = await pb.previewFinalize(1n);
+      const dryRun = await pb.dryRunFinalize(1n);
+
+      expect(dryRun.projects).to.deep.equal(preview.projects);
+      expect(dryRun.expectedShares).to.deep.equal(preview.expectedShares);
+      expect(dryRun.actualBalance).to.equal(preview.actualBalance);
+      expect(dryRun.totalRequiredAfterFinalize).to.equal(preview.totalRequiredAfterFinalize);
+      expect(dryRun.isSufficient).to.equal(preview.isSufficient);
+    });
+
     it("reverts claimMatchShare and emits event if contract is depleted", async function () {
       // Finalize Round (allocates 800 and 200)
       await pb.connect(council).finalizeRound(1n);
