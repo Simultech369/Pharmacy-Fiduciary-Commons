@@ -66,3 +66,15 @@ For claiming rebates or flagging disputes:
 
 * **Migration & Exit**: When migrating to a new deployment or forking the protocol, participants can generate a ZK proof of continuity. This proves they were a valid participant in the old system without disclosing their nullifier history.
 * **Revocation**: Instead of publishing a public blacklist of stable identity hashes, credential revocation uses cryptographic accumulators (e.g., Merkle trees or cryptographic accumulators). Voters prove non-membership in the revoked accumulator in zero-knowledge.
+
+
+---
+
+## 5. Critical Profiling and Correlation Risk Warning
+
+> [!CAUTION]
+> **PROFILING VECTOR**: The current prototype’s use of stable on-chain credential hashes constitutes the highest long-term threat to participant safety.
+
+By observing repeated transactions containing the same stable hash across multiple epochs, an adversary (such as a predatory PBM, insurer, or national pharmacy chain) can correlate claims, votes, and disputes. This allows them to build a detailed operational profile of individual independent pharmacies, completely undermining on-chain anonymity and enabling targeted retaliation.
+
+Consequently, **the scoped-nullifier architecture proposed in this document is a mandatory production launch gate, not a post-launch upgrade.** The prototype must never be deployed on public networks with stable identity hashes.

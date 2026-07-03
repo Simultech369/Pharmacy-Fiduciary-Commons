@@ -241,9 +241,9 @@ Acceptance test:
 
 ## Current Repo-Specific Next Fixes
 
-- [ ] Bundle or pin dashboard JavaScript/CSS and remove unsafe public CDN dependency patterns.
-- [ ] Add a dashboard accessibility pass for labels, focus states, contrast, status messages, and reduced motion.
-- [ ] Add deployment environment config so local/test/mainnet addresses cannot be confused.
-- [ ] Add provider-selection notes covering Cloudflare, Supabase/Firebase, Clerk, and any Bolin/IODR-style identity flow before adding hosted auth or database code.
-- [ ] Add public-form threat-model tests before accepting hosted submissions, claims, project nominations, or contact/support messages.
-- [ ] Add a public release checklist tied to `npm.cmd test`, contract verification, and dashboard build output inspection.
+- [x] Pin dashboard JavaScript libraries locally and remove unsafe public CDN dependency patterns (note: full asset bundling is deferred to production build tooling).
+- [x] Add a dashboard accessibility pass for labels, focus states, contrast, status messages, and reduced motion.
+- [x] Add runtime environment checks and dashboard locks to prevent network confusion (note: deployment-level multi-environment configuration remains in progress).
+- [x] Add provider-selection notes covering Cloudflare, Supabase/Firebase, Clerk, and any Bolin/IODR-style identity flow before adding hosted auth or database code.
+- [x] Add simulated public-form threat-model tests (note: real hosted form/API validation is deferred to backend integration).
+- [x] Add a public release checklist tied to `npm.cmd test`, contract verification, and dashboard build output inspection.

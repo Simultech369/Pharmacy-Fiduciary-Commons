@@ -65,10 +65,10 @@ Coverage levels:
 
 | Claim | Current Coverage | Evidence | Gap / Next Step |
 |-------|------------------|----------|-----------------|
-| Dashboard is local/test only | Dashboard-supported | chain and contract-code checks in `dashboard/web3_integration.js` | Move addresses into environment-specific config |
-| Dashboard does not imply audit readiness | Dashboard-supported + docs | README warning and dashboard badge logic | Add shared audit-status config so all surfaces stay aligned |
+| Dashboard is local/test only | Dashboard-supported + locked | chainId and contract-code verification checks in `dashboard/web3_integration.js` | Switch to environment-specific deploy scripts |
+| Dashboard does not imply audit readiness | Dashboard-supported + docs | README warning, persistent warning banners, and badge logic | Add shared audit-status config so all surfaces stay aligned |
 | Ledger of Omissions is factual, not accusatory | Docs-only | `OMISSION_LEDGER.md` legal guardrails | Add language linter for dashboard/docs risky phrases |
-| ADA/WCAG readiness matters | Docs-only | `PRODUCTION_READINESS_CHECKLIST.md` | Run accessibility audit and add fixes |
+| ADA/WCAG readiness matters | Dashboard-supported + self-audited pass | Emojis wrapped in aria-hidden, focus-visible outlines, accessibility-compliant contrast, and aria-live announcements in `dashboard/index.html` | Maintain accessibility guidelines during future layouts |
 
 ## Portability And Credentials
 
@@ -106,7 +106,8 @@ Coverage levels:
    - Fix: enforce neutral registry language in dashboard and docs.
 
 4. **Dashboard is visually real but still prototype infrastructure.**
-   - Fix: add environment config, production build hygiene, and accessibility audit.
+   - Resolved: Implemented chainId-based environment locks, local Ethers.js bundling, and WCAG accessibility pass.
+   - Next: Add production bundler/minifier build pipelines.
 
 5. **Portability exports now verify local proof consistency, but not full chain event reconciliation yet.**
    - Fix: extend the verifier with chain ID, contract addresses, block range, and root event references.

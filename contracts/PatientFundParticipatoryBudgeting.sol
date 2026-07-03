@@ -145,6 +145,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     error ProposalDoesNotExist();
     error ReclaimGracePeriodNotElapsed();
     error InsufficientContractBalance(uint256 requested, uint256 actual);
+    error InsufficientSolvencyBalance(uint256 required, uint256 actual);
 
     // =========================================================
     // CONSTRUCTOR
@@ -441,6 +442,11 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         Round storage r = rounds[roundId];
         if (r.state != RoundState.Active) revert WrongRoundState();
 
+        uint256 pool = r.matchingPool;
+        uint256 required = totalUnclaimedShares + pool;
+        uint256 actual = token.balanceOf(address(this));
+        if (actual < required) revert InsufficientSolvencyBalance(required, actual);
+
         uint256 count = r.projectCount;
         uint256 totalWeight = 0;
 
@@ -453,7 +459,6 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
             totalWeight += weight;
         }
 
-        uint256 pool = r.matchingPool;
         r.state = RoundState.Finalized;
         r.finalizedAt = block.timestamp;
 
@@ -637,7 +642,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
 
         actualBalance = token.balanceOf(address(this));
         totalRequiredAfterFinalize = totalUnclaimedShares + distributed;
-        isSufficient = actualBalance >= totalRequiredAfterFinalize;
+        isSufficient = actualBalance >= totalUnclaimedShares + pool;
     }
 
     // =========================================================

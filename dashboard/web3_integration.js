@@ -100,6 +100,11 @@ document.addEventListener("DOMContentLoaded", () => {
 async function checkWeb3Provider() {
   if (window.ethereum) {
     provider = new ethers.BrowserProvider(window.ethereum);
+    // Listen for chain and account changes to reload page
+    if (typeof window.ethereum.on === "function") {
+      window.ethereum.on("chainChanged", () => window.location.reload());
+      window.ethereum.on("accountsChanged", () => window.location.reload());
+    }
     try {
       const accounts = await provider.listAccounts();
       if (accounts.length > 0) {
@@ -163,7 +168,7 @@ async function setupWeb3Connection(account) {
   // Update UI Elements
   const btnConnect = document.getElementById("btn-connect");
   if (btnConnect) {
-    btnConnect.innerText = `🔌 Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+    btnConnect.innerText = `\uD83D\uDD0C Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
     btnConnect.style.background = "linear-gradient(135deg, var(--accent-green), #047857)";
     btnConnect.style.boxShadow = "0 4px 12px rgba(16, 185, 129, 0.3)";
   }
@@ -174,6 +179,8 @@ async function setupWeb3Connection(account) {
     mockBadge.className = "status-badge recorded";
     mockBadge.style.animation = "none";
   }
+
+  setDashboardLocked(false);
 
   console.log(`Connected to Web3. Address: ${userAddress}`);
 
@@ -201,7 +208,46 @@ function showConnectionWarning(message) {
     voterStatus.style.color = "var(--accent-red)";
   }
 
+  setDashboardLocked(true, message);
+
   console.warn(message);
+}
+
+function setDashboardLocked(locked, warningMessage) {
+  const warningBanner = document.getElementById("network-warning-banner");
+  if (warningBanner) {
+    if (locked) {
+      warningBanner.style.display = "block";
+      if (warningMessage) {
+        warningBanner.querySelector("span").innerText = `\u26A0\uFE0F NETWORK WARNING: ${warningMessage}`;
+      }
+    } else {
+      warningBanner.style.display = "none";
+    }
+  }
+
+  // Disable or enable interactive elements
+  const elementsToLock = [
+    "btn-preview-finalize",
+    "btn-finalize-round",
+    "btn-register"
+  ];
+  elementsToLock.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = locked;
+      el.style.opacity = locked ? "0.5" : "1.0";
+      el.style.cursor = locked ? "not-allowed" : "pointer";
+    }
+  });
+
+  // Also lock all project vote buttons
+  const voteButtons = document.querySelectorAll(".projects-grid button");
+  voteButtons.forEach(btn => {
+    btn.disabled = locked;
+    btn.style.opacity = locked ? "0.5" : "1.0";
+    btn.style.cursor = locked ? "not-allowed" : "pointer";
+  });
 }
 
 async function fetchLiveState() {
@@ -288,19 +334,32 @@ async function fetchLiveState() {
           warningBanner.style.background = "rgba(239, 68, 68, 0.1)";
           warningBanner.style.borderColor = "var(--accent-red)";
           warningBanner.style.color = "var(--accent-red-text)";
-          warningBanner.innerText = `⚠️ LIQUIDITY DEFICIT: The actual contract balance (${actualBalance.toFixed(2)}) is lower than the required accounting balance (${requiredBalance.toFixed(2)}). Claims/finalization will fail due to depletion. Please top up the contract with ${tokenAddress}.`;
+          let msg = `\u26A0\uFE0F LIQUIDITY DEFICIT: The actual contract balance (${actualBalance.toFixed(2)}) is lower than the required accounting balance (${requiredBalance.toFixed(2)}).`;
+          if (roundState === 1) {
+            msg += ` Finalizing the active round will execute a council refund of up to ${matchingPool.toFixed(2)} tokens, which will leave the contract insolvent and lock out previous claimants! Please deposit at least ${(requiredBalance - actualBalance).toFixed(2)} tokens immediately.`;
+          } else {
+            msg += ` Claims/finalization will fail due to depletion. Please top up the contract with ${tokenAddress}.`;
+          }
+          warningBanner.innerText = msg;
+        } else if (roundState === 1 && actualBalance < (totalUnclaimed + matchingPool)) {
+          warningBanner.style.display = "block";
+          warningBanner.style.background = "rgba(239, 68, 68, 0.1)";
+          warningBanner.style.borderColor = "var(--accent-red)";
+          warningBanner.style.color = "var(--accent-red-text)";
+          const deficit = (totalUnclaimed + matchingPool) - actualBalance;
+          warningBanner.innerText = `\u26A0\uFE0F SOLVENCY TRAP DETECTED: The contract balance (${actualBalance.toFixed(2)}) is sufficient for current claims, but is less than totalUnclaimed + matchingPool (${(totalUnclaimed + matchingPool).toFixed(2)}). Finalizing the active round will trigger a council refund of up to ${matchingPool.toFixed(2)} tokens, which will leave the contract insolvent and lock out previous claimants! Please deposit at least ${deficit.toFixed(2)} tokens immediately.`;
         } else if (roundState === 1 && matchingPool === 0) {
           warningBanner.style.display = "block";
           warningBanner.style.background = "rgba(245, 158, 11, 0.1)";
           warningBanner.style.borderColor = "var(--accent-orange)";
           warningBanner.style.color = "var(--accent-orange)";
-          warningBanner.innerText = `⚠️ WARNING: Active round has zero liquidity in matching pool.`;
+          warningBanner.innerText = `\u26A0\uFE0F WARNING: Active round has zero liquidity in matching pool.`;
         } else if (recycledPool === 0 && roundState === 0) {
           warningBanner.style.display = "block";
           warningBanner.style.background = "rgba(245, 158, 11, 0.1)";
           warningBanner.style.borderColor = "var(--accent-orange)";
           warningBanner.style.color = "var(--accent-orange)";
-          warningBanner.innerText = `⚠️ WARNING: Zero liquidity in recycled pool.`;
+          warningBanner.innerText = `\u26A0\uFE0F WARNING: Zero liquidity in recycled pool.`;
         } else {
           warningBanner.style.display = "none";
         }
@@ -333,12 +392,12 @@ function updateVoterUI(isRegistered) {
   if (!voterStatus) return;
 
   if (isRegistered) {
-    voterStatus.innerText = "✅ REGISTERED ADVOCATE VOTER (Eligible to cast QF votes)";
+    voterStatus.innerText = "\u2705 REGISTERED ADVOCATE VOTER (Eligible to cast QF votes)";
     voterStatus.style.color = "var(--accent-green)";
     if (btnRegister) btnRegister.style.display = "none";
     if (inputSig) inputSig.style.display = "none";
   } else {
-    voterStatus.innerText = "❌ UNREGISTERED (Submit a valid relayer signature to self-register)";
+    voterStatus.innerText = "\u274C UNREGISTERED (Submit a valid relayer signature to self-register)";
     voterStatus.style.color = "var(--accent-red)";
     if (btnRegister) btnRegister.style.display = "inline-block";
     if (inputSig) inputSig.style.display = "inline-block";
@@ -475,18 +534,30 @@ async function previewFinalization() {
     previewDiv.style.display = "block";
     previewTextDiv.innerText = previewText;
 
-    if (isSufficient) {
+    const distributed = sharesList.reduce((a, b) => a + b, 0n);
+    const roundDetails = await pbContract.rounds(activeRoundId);
+    const pool = roundDetails.matchingPool;
+    const totalUnclaimedShares = reqBal - distributed;
+    const isSolvencyTrap = !isSufficient && (actualBal >= totalUnclaimedShares + distributed);
+
+    if (isSolvencyTrap) {
+      const deficit = (totalUnclaimedShares + pool) - actualBal;
+      const deficitFormatted = (Number(deficit) / Number(divisor)).toFixed(2);
+      const refundFormatted = (Number(pool - distributed) / Number(divisor)).toFixed(2);
+      const remainingFormatted = (Number(actualBal - (pool - distributed)) / Number(divisor)).toFixed(2);
+      const unclaimedFormatted = (Number(totalUnclaimedShares) / Number(divisor)).toFixed(2);
+
+      previewWarning.className = "alert-panel-red";
       previewWarning.style.display = "block";
-      previewWarning.style.background = "rgba(16, 185, 129, 0.1)";
-      previewWarning.style.borderColor = "var(--accent-green)";
-      previewWarning.style.color = "var(--accent-green-text)";
-      previewWarning.innerText = `✅ LIQUIDITY VERIFIED: Contract has sufficient balance to finalize and distribute.`;
+      previewWarning.innerText = `\u26A0\uFE0F SOLVENCY TRAP DETECTED! Although current recorded shares fit the balance, finalizing this round will trigger a council refund of ${refundFormatted} tokens. This refund will drain the contract balance to ${remainingFormatted} tokens, which is less than the outstanding unclaimed shares of ${unclaimedFormatted} tokens from prior rounds. This will leave the contract insolvent and lock out previous claimants! Please deposit at least ${deficitFormatted} tokens before finalization.`;
+    } else if (isSufficient) {
+      previewWarning.className = "alert-panel-green";
+      previewWarning.style.display = "block";
+      previewWarning.innerText = `\u2705 LIQUIDITY VERIFIED: Contract has sufficient balance to finalize and distribute.`;
     } else {
+      previewWarning.className = "alert-panel-red";
       previewWarning.style.display = "block";
-      previewWarning.style.background = "rgba(239, 68, 68, 0.1)";
-      previewWarning.style.borderColor = "var(--accent-red)";
-      previewWarning.style.color = "var(--accent-red-text)";
-      previewWarning.innerText = `❌ INSUFFICIENT LIQUIDITY: Finalization will cause a deficit! Please top up the contract.`;
+      previewWarning.innerText = `\u274C INSUFFICIENT LIQUIDITY: Finalization will cause a deficit! Please top up the contract.`;
     }
   } catch (err) {
     console.error("Preview finalization failed:", err);

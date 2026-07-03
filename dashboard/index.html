@@ -114,6 +114,43 @@
       50% { opacity: 0.6; }
     }
 
+    .alert-panel-red {
+      border: 3px solid var(--accent-red);
+      background: rgba(239, 68, 68, 0.08);
+      color: var(--accent-red-text);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1.4;
+      font-family: var(--font-body);
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+    }
+
+    .alert-panel-orange {
+      border: 2px dashed var(--accent-orange);
+      background: rgba(245, 158, 11, 0.08);
+      color: var(--accent-orange);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      line-height: 1.4;
+      font-family: var(--font-body);
+    }
+
+    .alert-panel-green {
+      border: 3px solid var(--accent-green);
+      background: rgba(16, 185, 129, 0.08);
+      color: var(--accent-green-text);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1.4;
+      font-family: var(--font-body);
+    }
+
     main {
       max-width: 1400px;
       margin: 0 auto;
@@ -811,6 +848,9 @@
           <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; font-style: italic;">
             ⚠️ Privacy Notice: Advocate registration signs and emits a stable credential hash. This creates a linkage correlation risk for on-chain identity. Refer to <a href="../OPEN_DESIGN_DECISIONS.md" style="color: var(--accent-cyan);" target="_blank">OPEN_DESIGN_DECISIONS.md</a> for active policy discussion.
           </div>
+          <div class="alert-panel-orange" style="margin-top: 0.75rem;">
+            <strong>⚠️ Scarcity & Care-Continuity Disclaimer:</strong> The Patient Fund operates as a ledger allocation engine for matching shares. It does not track, verify, or guarantee physical inventory, delivery, pharmacy stock, clinical outcomes, or patient access. Refer to <a href="../SCARCITY_GOVERNANCE.md" style="color: var(--accent-cyan);" target="_blank">SCARCITY_GOVERNANCE.md</a> and <a href="../CARE_CONTINUITY.md" style="color: var(--accent-cyan);" target="_blank">CARE_CONTINUITY.md</a>.
+          </div>
         </div>
 
         <!-- Liquidity & Accounting Balance Board -->
@@ -836,7 +876,7 @@
               <div id="unclaimed-shares-display" style="font-size: 1.25rem; font-weight: 700; color: var(--accent-purple);">0.00</div>
             </div>
           </div>
-          <div id="liquidity-warning-message" class="badge-unverified" style="display: none; animation: none; text-transform: none; border-radius: 0.375rem; padding: 0.5rem 0.75rem; font-size: 0.85rem;"></div>
+          <div id="liquidity-warning-message" class="alert-panel-red" style="display: none; margin-top: 1rem;"></div>
         </div>
 
         <!-- Council Controls Section -->
@@ -851,7 +891,7 @@
           <div id="finalize-preview-results" style="display: none; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 0.375rem; padding: 1rem; font-size: 0.85rem;">
             <h5 style="font-family: var(--font-heading); font-size: 0.95rem; margin-bottom: 0.5rem; color: #fff;">Dry-Run Simulation Output:</h5>
             <div id="finalize-preview-text" style="white-space: pre-line; font-family: monospace; color: var(--text-muted); margin-bottom: 0.5rem;"></div>
-            <div id="finalize-preview-warning" class="badge-unverified" style="display: none; animation: none; text-transform: none; border-radius: 0.25rem; padding: 0.4rem 0.6rem;"></div>
+            <div id="finalize-preview-warning" style="display: none; margin-top: 0.75rem;"></div>
           </div>
         </div>
 

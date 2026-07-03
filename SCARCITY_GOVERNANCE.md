@@ -88,3 +88,25 @@ Before mutual credit is used as crisis infrastructure, the Commons must define:
 * how bad-debt decisions are appealed and reported without exposing patient data.
 
 Until those rules exist, mutual credit should be described as a settlement and liquidity-support ledger, not as a guarantee of medicine supply or full redemption.
+
+
+---
+
+## 6. The Participatory Budgeting Solvency Trap
+
+The participatory matching system is subject to a critical solvency trap and round finalization griefing vector:
+
+### The Mathematical Discrepancy
+When a budgeting round is finalized, the contract immediately refunds the unused portion of the matching pool (`pool - distributed`, or the entire `pool` if no votes are cast) back to the council via `SafeERC20.safeTransfer`.
+
+The pre-finalization preview function (`_previewFinalize`) verifies only that the contract's token balance covers the sum of outstanding unclaimed shares from previous rounds and the current round's distributed shares (`totalUnclaimedShares + distributed`). It does not verify if the balance is sufficient to cover the council refund.
+
+If the contract is underfunded (e.g. due to accidental drain or transfer errors) but satisfies the preview check, calling `finalizeRound` will succeed, execute the council transfer, and drain the remaining treasury. This leaves the contract insolvent, making it impossible for previous claimants to reclaim their finalized shares (any subsequent `claimMatchShare` calls will revert).
+
+### Adversarial Risks
+* **Griefing Vector**: A compromised, malicious, or careless council key could call `finalizeRound` during a low-liquidity window to forcefully drain the treasury and lock out previous claimants.
+* **Re-centralization of Trust**: Because there is no autonomous recovery mechanism, the only way to restore solvency is for the council to manually deposit/top up the token balance back into the contract. This re-centralizes trust in the council to bail out the system, introducing liveness and counterparty risks.
+
+### Production Mitigation Roadmap
+1. **Hard Solvency Invariant**: Production contracts must override the finalization logic to enforce that `actualBalance >= totalUnclaimedShares + pool` before any transfer is allowed to execute.
+2. **Governed Multisig Keys**: The `COUNCIL_ROLE` must be held by a multi-signature timelocked vault with role rotation policies to prevent single-key compromises from initiating finalization races.

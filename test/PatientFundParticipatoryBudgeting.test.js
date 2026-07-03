@@ -383,14 +383,19 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await pb.connect(council).registerProject(2n, "Recycled Empty Pool", recipientA.address);
       await pb.connect(council).registerVotersBatch(2n, [voters[0].address]);
       await pb.connect(voters[0]).castVote(2n, 0n);
+      await expectRevert(
+        pb.connect(council).finalizeRound(2n),
+        "InsufficientSolvencyBalance"
+      );
+
+      // Top up the contract to satisfy the hard solvency check
+      await token.mint(await pb.getAddress(), toWei("10000"));
       await pb.connect(council).finalizeRound(2n);
       expect(await pb.roundProjectShares(2n, 0n)).to.equal(toWei("10000"));
 
-      await expectRevert(
-        pb.claimMatchShare(2n, 0n),
-        "InsufficientContractBalance"
-      );
-      expect(await pb.roundProjectShares(2n, 0n)).to.equal(toWei("10000"));
+      // Claiming Project share succeeds after top-up
+      await pb.claimMatchShare(2n, 0n);
+      expect(await pb.roundProjectShares(2n, 0n)).to.equal(0n);
     });
 
     it("lets the project recipient claim before the reclaim grace period expires", async function () {
@@ -1214,6 +1219,89 @@ describe("PatientFundParticipatoryBudgeting", function () {
       // Verify state changes still succeeded
       expect(await pb.roundProjectShares(1n, 0n)).to.equal(0n);
       expect(await pb.recycledMatchingPool()).to.equal(toWei("800"));
+    });
+
+    it("blocks underfunded finalization before council refund", async function () {
+      // Finalize Round 1 first to allow starting Round 2
+      await pb.connect(council).finalizeRound(1n);
+
+      // Start a new round (Round 2) with 1000 matching pool (council deposits 1000 tokens)
+      await pb.connect(council).startRound(toWei("1000"));
+      expect(await pb.currentRound()).to.equal(2n);
+
+      // Simulate a depletion event: burn 900 tokens from the contract.
+      // Contract balance after Round 1 finalization was 1000 (unclaimed shares for Project Alpha and Beta).
+      // Council deposits 1000 for Round 2, making balance = 2000.
+      // We burn 900 tokens, leaving exactly 1100 tokens.
+      await token.burn(await pb.getAddress(), toWei("900"));
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("1100"));
+
+      // No votes are cast for Round 2, so totalWeight is 0.
+      // Preview finalization says isSufficient = false because totalUnclaimed + pool = 2000,
+      // and actualBalance = 1100.
+      const preview = await pb.previewFinalize(2n);
+      expect(preview.isSufficient).to.be.false;
+
+      // Finalize Round 2 reverts because the contract does not satisfy the hard solvency invariant.
+      await expectRevert(
+        pb.connect(council).finalizeRound(2n),
+        "InsufficientSolvencyBalance"
+      );
+
+      // Verify that after topping up the contract with 900 tokens, finalization succeeds.
+      await token.mint(await pb.getAddress(), toWei("900"));
+      await pb.connect(council).finalizeRound(2n);
+
+      // Contract balance after Round 2 finalization (reclaiming 1000 matching pool) is 1000.
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("1000"));
+
+      // Claiming Project Alpha's share (requires 800 tokens) succeeds.
+      await pb.claimMatchShare(1n, 0n);
+    });
+
+    it("registers multiple projects and asserts gas consumption bounds to prevent sybil/DoS locks", async function () {
+      // Finalize Round 1 first to allow starting Round 2
+      await pb.connect(council).finalizeRound(1n);
+
+      // Start Round 2
+      await pb.connect(council).startRound(toWei("1000"));
+      const roundId = 2n;
+
+      // Register voters
+      const voter = voters[0];
+      await pb.connect(council).registerVoter(roundId, voter.address, true);
+
+      // Propose 20 projects to verify gas loops scale safely
+      for (let i = 0; i < 20; i++) {
+        await pb.connect(voter).proposeProject(roundId, `Project Sybil ${i}`, recipientA.address);
+      }
+
+      // Check gas used to finalize 20 projects
+      const tx = await pb.connect(council).finalizeRound(roundId);
+      const receipt = await tx.wait();
+      expect(receipt.gasUsed).to.be.lessThan(3000000n); // well below block gas limit (30M)
+    });
+
+    it("prevents double-reclaiming of matched project shares", async function () {
+      // Finalize Round 1 so that matching shares are recorded
+      await pb.connect(council).finalizeRound(1n);
+
+      // Let's fast forward 90 days
+      // and reclaim Project Beta (index 1) which has 200 mDAI share.
+      await ethers.provider.send("evm_increaseTime", [90 * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine");
+
+      // Verify original share is 200 mDAI
+      expect(await pb.roundProjectShares(1n, 1n)).to.equal(toWei("200"));
+
+      // First reclaim succeeds
+      await pb.connect(council).reclaimUnclaimedMatchShare(1n, 1n);
+
+      // Second reclaim fails with ZeroAmount because share has been set to 0
+      await expectRevert(
+        pb.connect(council).reclaimUnclaimedMatchShare(1n, 1n),
+        "ZeroAmount"
+      );
     });
   });
 });

@@ -20,6 +20,21 @@
 
 ---
 
+## What This Cannot Do (Adversarial Limitations & Disclaimers)
+
+> [!WARNING]
+> **This system is a smart contract prototype for rebate accounting and custody. It does NOT solve physical supply chain problems:**
+> * **No Physical Inventory or Delivery Guarantees:** This protocol records accounting entries and custody movements. It does not track, verify, or guarantee physical inventory, delivery, pharmacy stock, clinical outcomes, or patient access.
+> * **Mutual Credit Voucher Limits:** Mutual credit vouchers create ledger reservations only — they are not redeemable for physical medicine on-chain and do not bypass local supply shortages or distributor caps.
+> * **Centralized Governance Control:** The `COUNCIL_ROLE` retains significant administrative control. Autonomy is restricted to off-chain governance and multi-sig operations; there is no autonomous on-chain local federation execution.
+> * **Privacy and Linkage Vector:** The current implementation uses stable credential hashes on-chain. This creates a persistent identification vector that could be used for profiling or blacklisting. The zk-nullifier proposal in [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) is not yet implemented.
+> * **Participatory Budgeting Solvency Trap (Griefing Vector):** The finalization preview is optimistic; it checks if the contract balance covers currently active claims, but ignores pending council refunds. In underfunded rounds, a finalization can successfully drain the remaining treasury back to the council, leaving the contract insolvent and locking out prior rounds' claimants. Recovery requires manual council deposits, re-centralizing trust and exposing liveness risks.
+> * **No Professional Advice:** All outputs, files, and dashboards are for local prototype demonstration only. None of the contents constitute legal, financial, or medical advice.
+>
+> For deeper documentation on safety, scarcity, and threat boundaries, see [SCARCITY_GOVERNANCE.md](SCARCITY_GOVERNANCE.md), [CARE_CONTINUITY.md](CARE_CONTINUITY.md), and [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md).
+
+---
+
 ## Status Summary
 
 The current checkpoint is a prototype with tested treasury, voting, mutual-credit, portability, and dashboard surfaces, but it is not audited, not mainnet deployed, and not public-wallet ready. Runtime behavior and policy boundaries are tracked in [MECHANISM_COVERAGE.md](MECHANISM_COVERAGE.md); care-continuity and participant-safety boundaries are documented in [CARE_CONTINUITY.md](CARE_CONTINUITY.md), [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md), and [SCARCITY_GOVERNANCE.md](SCARCITY_GOVERNANCE.md). Public launch remains blocked by [PRODUCTION_READINESS_CHECKLIST.md](PRODUCTION_READINESS_CHECKLIST.md).

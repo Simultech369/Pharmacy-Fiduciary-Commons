@@ -6,7 +6,7 @@ The Patient Fund is an on-chain, community-directed treasury designed to fund pr
 
 ## 1. Preventative Economics
 
-The fund operates on the principle that keeping people healthy and providing access to medically necessary care prevents downstream crisis costs (hospitalization, emergency room visits) and keeps community pharmacy infrastructure viable. 
+The fund operates on the principle that keeping people healthy and providing access to medically necessary care prevents downstream crisis costs (hospitalization, emergency room visits) and keeps community pharmacy infrastructure viable.
 
 ---
 
@@ -60,3 +60,14 @@ Projects must align with resource-efficient, low-waste health access. Eligible p
 * **Safe Disposal Programs**: Community drug take-back boxes and eco-friendly disposal kits to keep active pharmaceuticals out of local water systems.
 * **Low-Waste Refill Logistics**: Transitioning to bulk refill dispensing and reusable container packaging where permitted by health codes.
 * **Disaster-Resilient Medication Access**: Pre-positioned emergency medicine supplies and secure mobile pharmacy units for deployment during severe weather events.
+
+
+---
+
+## 7. Solvency Warning and Liveness Risk
+
+Budgeting allocations and matched project shares are digital ledger records only. They do not guarantee the immediate availability of physical tokens.
+
+If a round is finalized when the contract is underfunded, the council matching-pool refund is executed first and can drain the contract's actual token balance. This leaves the contract insolvent, locking out previous rounds' claimants from withdrawing their shares.
+
+Recovery is dependent on manual council deposits to top up the balance and restore solvency. Consequently, claimants face liveness and counterparty risks. Participants must verify actual contract token balances on the dashboard rather than assuming that the matching preview is a guarantee of solvent liquidity.

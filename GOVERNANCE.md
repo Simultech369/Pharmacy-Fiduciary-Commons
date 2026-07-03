@@ -92,3 +92,18 @@ The current credential issuer and registry are prototype trust roots. Before pub
 * **Revocation**: Revoked credential IDs remain in the revocation registry across key rotations. Removing an issuer key does not erase prior revocation history.
 * **Freshness**: Direct issuer-signed voter registration must include the current registration nonce and an expiration deadline. Council registration or revocation advances the nonce and invalidates outstanding signatures.
 * **Production Gate**: No credentialed public vote should be represented as production-ready until issuer custody, backup, rotation, revocation publication, and emergency replacement procedures are documented and rehearsed. Future credential designs will integrate the [Identity Nullifier Design](IDENTITY_NULLIFIER_DESIGN.md) to protect participant privacy.
+
+---
+
+## 11. Governance Hardening & Decentralization Roadmap
+
+To prevent centralized capture and mitigate administrative abuse, the Commons is committed to the following governance roadmap before public launch:
+
+### Council Power Mitigation
+* **Multi-Sig to Timelocked Governance**: Transition the `COUNCIL_ROLE` from a static multisig to a timelocked, identity-gated, or cooperative-based governance model. This enforces a mandatory delay (e.g. 7 days) on all administrative actions, giving the community time to veto malicious proposals.
+* **Annual Council Seat Rotations**: Mandate that Council signer seats are rotated among verified independent pharmacies and patient advocacy groups every 12 months. No individual or entity may hold a Council seat for more than two consecutive terms.
+* **Automated Refund Guard**: Implement smart-contract constraints on round finalizations to prevent underfunded balance depletion, ensuring the council's refund cannot be executed if it violates the treasury's outstanding solvency obligations.
+
+### Local Subsidiarity & Local Autonomy
+* **Federated Ledger Subsidiarity**: Transition `PharmacyMutualCredit` configurations (credit limits, participant registration, voucher issuer status) from global Council control to local federation multisigs. Under this model, local pharmacy cooperatives govern their own credit lines, defaults, and voucher limits, isolating local failures from the wider network.
+* **Autonomous Dispute Resolution**: Establish decentralized, randomly selected community juries to resolve local pharmacy disputes and sanction appeals, rather than relying on a centralized Council audit board.
