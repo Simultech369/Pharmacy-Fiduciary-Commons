@@ -347,7 +347,7 @@ async function fetchLiveState() {
           warningBanner.style.borderColor = "var(--accent-red)";
           warningBanner.style.color = "var(--accent-red-text)";
           const deficit = (totalUnclaimed + matchingPool) - actualBalance;
-          warningBanner.innerText = `\u26A0\uFE0F SOLVENCY TRAP DETECTED: The contract balance (${actualBalance.toFixed(2)}) is sufficient for current claims, but is less than totalUnclaimed + matchingPool (${(totalUnclaimed + matchingPool).toFixed(2)}). Finalizing the active round will trigger a council refund of up to ${matchingPool.toFixed(2)} tokens, which will leave the contract insolvent and lock out previous claimants! Please deposit at least ${deficit.toFixed(2)} tokens immediately.`;
+          warningBanner.innerText = `\u26A0\uFE0F SOLVENCY LOCK DETECTED: The contract balance (${actualBalance.toFixed(2)}) is less than totalUnclaimed + matchingPool (${(totalUnclaimed + matchingPool).toFixed(2)}). Finalizing this round will revert on-chain due to the solvency invariant check! Please top up the contract by depositing at least ${deficit.toFixed(2)} tokens to allow finalization.`;
         } else if (roundState === 1 && matchingPool === 0) {
           warningBanner.style.display = "block";
           warningBanner.style.background = "rgba(245, 158, 11, 0.1)";
