@@ -4,19 +4,34 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 ## Current Artifacts
 
-- Slither: `C:\tmp\pbm-slither-report-excavated-triage.json`
-- Aderyn: `C:\tmp\pbm-aderyn-report-excavated-triage.md`
+- Slither: `C:\tmp\pbm-slither-report-a816e9e.json`
+- Aderyn: `C:\tmp\pbm-aderyn-report-a816e9e.md`
 - Mythril: `C:\tmp\pbm-mythril-patientfund-bytecode-excavated-triage.json`
 
 The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with 0 issues and empty stderr.
 
-Scanner refresh blocker: this Windows host currently has `wsl.exe`, but no installed Linux distro, and no native `slither`, `aderyn`, `mythril`, or `docker` command. The dispositions below use the latest available artifacts plus current code review and regression tests. Re-run scanner artifacts after WSL/Docker scanner setup is restored.
+Live scanner refresh: Slither and Aderyn were refreshed for commit `a816e9e` on 2026-07-03 from the elevated WSL distro `Ubuntu-24.04`. The normal, non-elevated Windows shell still cannot see registered WSL distros; use the elevated WSL context for scanner reruns on this host.
 
 Post-excavation verification: `npm.cmd test` passed with 135 tests. After adding treasury callback and forced-ETH tests, `npm.cmd test -- test/PBMRebateTreasury.security.test.js` passed with 36 tests.
 
 ## Slither Production Triage
 
-Latest available Slither artifact count: 114 total detector entries, 38 involving production contracts.
+Live Slither command:
+
+`wsl.exe -d Ubuntu-24.04 -u root -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && slither . --exclude-dependencies --filter-paths 'node_modules|contracts/mocks|artifacts|cache' --json /mnt/c/tmp/pbm-slither-report-a816e9e.json"`
+
+Live Slither artifact count: 36 production-filtered detector entries.
+
+Grouped count:
+
+- 1 `arbitrary-send-eth` high
+- 2 `incorrect-equality` medium
+- 1 `reentrancy-no-eth` medium
+- 2 `reentrancy-benign` low
+- 18 `timestamp` low
+- 3 `cyclomatic-complexity` informational
+- 1 `low-level-calls` informational
+- 8 `naming-convention` informational
 
 Production high/medium entries:
 
@@ -52,9 +67,6 @@ Production low/informational entries:
 
 - `naming-convention`: underscore-prefixed external parameters in sweep/environment setter helpers.
   - Disposition: accepted style noise. Names are local parameters only.
-
-- `pragma` / `solc-version`: Solidity `0.8.20`.
-  - Disposition: accepted with compiler target mitigation. Hardhat explicitly sets `evmVersion: "paris"`.
 
 ## StartRound Reentrancy Review
 
@@ -97,6 +109,12 @@ Evidence:
 
 ## Aderyn High Issues
 
+Live Aderyn command:
+
+`wsl.exe -d Ubuntu-24.04 -u root -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && aderyn . -x contracts/mocks,node_modules,artifacts,cache -o /mnt/c/tmp/pbm-aderyn-report-a816e9e.md"`
+
+Live Aderyn count: 1 high, 6 lows.
+
 ### H-1: ETH transferred without address checks
 
 Instances: `PBMRebateTreasury.depositRebate`, `fundExclusionRemediation`, and `claim`.
@@ -119,8 +137,6 @@ Disposition: fixed.
 Rationale: the proposal title and recipient are now copied into local variables before setting `prop.registered` and calling `_registerProject`. The final Aderyn report no longer includes this high.
 
 ## Aderyn Low Issues
-
-Final Aderyn count: 1 high, 6 lows.
 
 Fixed lows from the earlier report:
 
