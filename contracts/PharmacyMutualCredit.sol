@@ -19,6 +19,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
     bytes32 public constant COUNCIL_ROLE = keccak256("COUNCIL_ROLE");
     bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
     uint256 public constant ISSUER_GRACE_PERIOD = 30 days;
+    uint256 public constant MAX_VOUCHER_RELEASE_BATCH = 100;
 
     struct Voucher {
         address issuer;
@@ -72,6 +73,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
     error InvalidAddress();
     error VoucherNotExpired();
     error GuardianMustDifferFromCouncil();
+    error BatchTooLarge();
 
     // =========================================================
     // CONSTRUCTOR
@@ -242,7 +244,10 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
      * @dev Anyone may perform expiry cleanup; no value is transferred.
      */
     function releaseExpiredVouchersBatch(bytes32[] calldata voucherIds) external whenNotPaused {
-        for (uint256 i = 0; i < voucherIds.length; i++) {
+        uint256 count = voucherIds.length;
+        if (count > MAX_VOUCHER_RELEASE_BATCH) revert BatchTooLarge();
+
+        for (uint256 i = 0; i < count; i++) {
             bytes32 voucherId = voucherIds[i];
             Voucher storage v = vouchers[voucherId];
             if (v.issuer == address(0)) revert VoucherDoesNotExist();
@@ -294,7 +299,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
     /**
      * @notice Recovers non-ledger ERC-20 tokens accidentally sent to this contract.
      */
-    function sweep(address _token, uint256 _amount) external onlyRole(COUNCIL_ROLE) nonReentrant {
+    function sweep(address _token, uint256 _amount) external nonReentrant onlyRole(COUNCIL_ROLE) {
         if (_token == address(0)) revert InvalidAddress();
         if (_amount == 0) revert ZeroAmount();
         IERC20(_token).safeTransfer(msg.sender, _amount);

@@ -43,3 +43,11 @@ Current behavior: root-exclusion disputes are checked against current daily and 
 Decision still needed: decide whether remediation should be governed by current safety caps, historical caps from flag time, or a separate remediation-specific cap. Current behavior favors live blast-radius control but can strand older exclusion remediation after an emergency cap reduction.
 
 Required evidence: operator playbooks for cap reductions, participant notice before dismissing stranded remediation, and dashboard/readiness warnings that approved exclusion claims can remain unpaid while current caps are lower than the approved amount.
+
+## Hosted Provider, Auth, And Form Intake Boundaries
+
+Current behavior: the repository is local/testnet oriented and does not yet include a production database, hosted auth provider, public intake forms, or server API for user records. Deployment scripts consume environment variables, and `scripts/check-readiness.js` fails when a project-root `.env` file exists.
+
+Decision still needed: choose whether production public surfaces use Cloudflare, Supabase, Firebase, Clerk, a Bolin/IODR-style identity provider, a self-hosted stack, or a narrower static-dashboard-only approach. No provider should be treated as safe by brand alone; the decision must specify who can read logs, secrets, metadata, hosted submissions, identity events, and support/admin records.
+
+Required evidence: provider threat model, secret classification, database/RLS or Firebase Security Rules tests, Clerk/auth webhook validation plan if used, public-form abuse controls, hidden-field tamper tests, preview-deployment isolation, incident response plan for leaked keys, and a privacy review proving no patient, credential, pharmacy, vote, export, or support-form data is exposed beyond the intended trust boundary.

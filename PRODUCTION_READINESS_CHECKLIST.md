@@ -26,17 +26,23 @@ Acceptance test:
 
 Status: not present yet.
 
-- [ ] Choose database and auth provider before storing user or patient-adjacent records.
+- [ ] Choose database and auth provider before storing user or patient-adjacent records; document why the selected stack is acceptable for this project's privacy, exit, and retaliation-resistance goals.
+- [ ] Treat Cloudflare, Supabase, Firebase, Clerk, and any Bolin/IODR-style identity provider as candidates until a trust-boundary review is complete.
 - [ ] Enable Row Level Security (RLS) before launch.
 - [ ] Write RLS policies for every table containing user, pharmacy, patient, credential, vote, or export data.
 - [ ] Add tests proving users cannot read or mutate records they do not own.
 - [ ] Separate admin/service-role access from normal authenticated user access.
 - [ ] Never expose service-role database keys to the browser.
+- [ ] Do not rely on identity-provider login alone for authorization; enforce resource ownership and role checks in the database, API, or contract-aware backend.
+- [ ] Classify every key as publishable/client-safe or secret/server-only before use. Clerk secret keys, Supabase secret/service-role keys, Firebase service account keys, RPC provider secrets, and deployer private keys must remain server-side.
+- [ ] If Firebase is selected, deploy locked-down Security Rules and emulator/unit tests before storing protected records.
 
 Acceptance test:
 
 - [ ] Run unauthorized read/write tests against every protected table.
 - [ ] Confirm anonymous and authenticated users receive only the minimum intended rows.
+- [ ] Inspect built frontend assets for service-role keys, secret keys, private keys, RPC secrets, webhook secrets, and provider admin tokens.
+- [ ] Prove provider-specific authorization cannot be bypassed by changing client-side user IDs, wallet addresses, route params, or form fields.
 
 ## 2A. Offline And Non-Digital Workflow Safety
 
@@ -96,6 +102,9 @@ Status: not present yet.
 - [ ] Define every public API route and auth requirement.
 - [ ] Validate all request bodies, query parameters, and path parameters.
 - [ ] Enforce authorization server-side, not only in the UI.
+- [ ] Treat public forms as untrusted input. Hidden honeypot fields may be used as a secondary spam signal, but never as the only abuse control or authorization check.
+- [ ] Prevent hidden form fields from carrying trusted prices, roles, wallet addresses, patient status, credential claims, or payout destinations without server-side recomputation or verification.
+- [ ] Add CSRF/session-origin protections for state-changing browser flows once cookies or hosted auth sessions exist.
 - [ ] Do not return sensitive internal errors to clients.
 - [ ] Log security-relevant events without logging secrets or protected data.
 - [ ] Add contract/API compatibility tests where APIs call smart contracts.
@@ -105,6 +114,7 @@ Acceptance test:
 - [ ] Unauthorized users cannot access protected API routes.
 - [ ] Malformed requests fail safely.
 - [ ] API logs do not include tokens, private keys, raw credentials, or protected patient data.
+- [ ] Bot/spam tests show that honeypot bypass, direct POSTs, replayed submissions, and modified hidden fields fail safely.
 
 ## 5. Hosting And Deployment
 
@@ -113,6 +123,10 @@ Status: needs definition before public launch.
 - [ ] Define target environments: local, testnet/staging, production.
 - [ ] Use separate config and secrets for each environment.
 - [ ] Store secrets in a managed secret store, not files committed to Git.
+- [ ] Do not share a full server `.env` file with the browser, docs, issue reports, screenshots, support tickets, or public build logs.
+- [ ] If using Cloudflare Workers/Pages, store sensitive values as Cloudflare secrets and fail deploys when required secrets are missing.
+- [ ] If using Supabase/Firebase/Clerk, document which keys are publishable and which are server-only, then verify that server-only keys are absent from client bundles.
+- [ ] Keep preview deployments isolated from production data, webhooks, RPC keys, and admin/provider secrets.
 - [ ] Enforce HTTPS.
 - [ ] Set security headers: CSP, HSTS, X-Content-Type-Options, Referrer-Policy, and frame restrictions.
 - [ ] Confirm deployed contract addresses and chain IDs are environment-specific.
@@ -124,6 +138,7 @@ Acceptance test:
 - [ ] Production deploy uses production config only.
 - [ ] Staging/testnet deploy cannot accidentally present itself as audited mainnet infrastructure.
 - [ ] Security headers are present on public routes.
+- [ ] Secret scanning of repo, build output, and deployment logs finds no server-only provider keys or private keys.
 
 ## 6. Rate Limiting And Abuse Controls
 
@@ -214,4 +229,6 @@ Acceptance test:
 - [ ] Bundle or pin dashboard JavaScript/CSS and remove unsafe public CDN dependency patterns.
 - [ ] Add a dashboard accessibility pass for labels, focus states, contrast, status messages, and reduced motion.
 - [ ] Add deployment environment config so local/test/mainnet addresses cannot be confused.
+- [ ] Add provider-selection notes covering Cloudflare, Supabase/Firebase, Clerk, and any Bolin/IODR-style identity flow before adding hosted auth or database code.
+- [ ] Add public-form threat-model tests before accepting hosted submissions, claims, project nominations, or contact/support messages.
 - [ ] Add a public release checklist tied to `npm.cmd test`, contract verification, and dashboard build output inspection.

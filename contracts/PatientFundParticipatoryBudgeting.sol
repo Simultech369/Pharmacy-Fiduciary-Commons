@@ -23,6 +23,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     bytes32 public constant COUNCIL_ROLE = keccak256("COUNCIL_ROLE");
     bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
     uint256 public constant MAX_PROJECTS_PER_ROUND = 50;
+    uint256 public constant MAX_VOTERS_PER_BATCH = 200;
     uint256 public constant MATCH_RECLAIM_GRACE_PERIOD = 90 days;
     bytes32 public constant REGISTRATION_TYPEHASH = keccak256(
         "VoterRegistration(uint256 roundId,address voter,uint256 nonce,bytes32 credentialHash,bytes32 policyVersion,uint256 deadline)"
@@ -126,12 +127,12 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     error InvalidAddress();
     error ZeroAmount();
     error NotActive();
-    error AlreadyFinalized();
     error AlreadyVoted();
     error ProjectInactive();
     error Unauthorized();
     error WrongRoundState();
     error ArrayEmpty();
+    error BatchTooLarge();
     error AuthorizationExpired();
     error InvalidAuthorizationMetadata();
     error UnsupportedCredentialPolicy();
@@ -167,25 +168,28 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     // ROUND ADMINISTRATION (COUNCIL ONLY)
     // =========================================================
 
-    function startRound(uint256 matchingPoolAmount) external onlyRole(COUNCIL_ROLE) whenNotPaused nonReentrant {
+    function startRound(uint256 matchingPoolAmount) external nonReentrant onlyRole(COUNCIL_ROLE) whenNotPaused {
         uint256 recycled = recycledMatchingPool;
         if (matchingPoolAmount == 0 && recycled == 0) revert ZeroAmount();
         if (currentRound > 0 && rounds[currentRound].state != RoundState.Finalized) {
             revert RoundAlreadyActive();
         }
 
-        currentRound += 1;
-        uint256 roundId = currentRound;
+        uint256 roundId = currentRound + 1;
+        uint256 totalMatchingPool = matchingPoolAmount + recycled;
 
+        if (recycled > 0) {
+            recycledMatchingPool = 0;
+        }
+
+        // Pull fresh funds before publishing the round so callbacks cannot observe a half-open round.
         if (matchingPoolAmount > 0) {
             token.safeTransferFrom(msg.sender, address(this), matchingPoolAmount);
         }
+        currentRound = roundId;
         if (recycled > 0) {
-            recycledMatchingPool = 0;
             emit RecycledMatchingPoolApplied(roundId, recycled);
         }
-
-        uint256 totalMatchingPool = matchingPoolAmount + recycled;
 
         rounds[roundId] = Round({
             matchingPool: totalMatchingPool,
@@ -219,10 +223,12 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     }
 
     function registerVotersBatch(uint256 roundId, address[] calldata voters) external onlyRole(COUNCIL_ROLE) whenNotPaused {
-        if (voters.length == 0) revert ArrayEmpty();
+        uint256 count = voters.length;
+        if (count == 0) revert ArrayEmpty();
+        if (count > MAX_VOTERS_PER_BATCH) revert BatchTooLarge();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
 
-        for (uint256 i = 0; i < voters.length; i++) {
+        for (uint256 i = 0; i < count; i++) {
             address voter = voters[i];
             if (voter == address(0)) revert InvalidAddress();
             registeredVoters[roundId][voter] = true;
@@ -369,8 +375,10 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         emit ProposalSupported(roundId, proposalId, msg.sender, prop.supportCount);
 
         if (prop.supportCount >= projectSupportThreshold) {
+            string memory title = prop.title;
+            address recipient = prop.recipient;
             prop.registered = true;
-            _registerProject(roundId, prop.title, prop.recipient);
+            _registerProject(roundId, title, recipient);
         }
     }
 
@@ -429,7 +437,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
      * @dev    Weight of project i is (votes_i)^2. Proportional share is Weight_i / TotalWeight.
      *         If totalWeight is 0, the matching pool is returned to the council address to prevent locking.
      */
-    function finalizeRound(uint256 roundId) external onlyRole(COUNCIL_ROLE) whenNotPaused nonReentrant {
+    function finalizeRound(uint256 roundId) external nonReentrant onlyRole(COUNCIL_ROLE) whenNotPaused {
         Round storage r = rounds[roundId];
         if (r.state != RoundState.Active) revert WrongRoundState();
 
@@ -483,7 +491,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
      * @notice Allows claiming calculated matching pool shares for a finalized round.
      * @dev    Enforces pull-payment pattern to prevent gas exhaustion.
      */
-    function claimMatchShare(uint256 roundId, uint256 projectId) external whenNotPaused nonReentrant {
+    function claimMatchShare(uint256 roundId, uint256 projectId) external nonReentrant whenNotPaused {
         Round storage r = rounds[roundId];
         if (r.state != RoundState.Finalized) revert WrongRoundState();
         if (projectId >= r.projectCount) revert ProjectInactive();
@@ -491,15 +499,17 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         uint256 share = roundProjectShares[roundId][projectId];
         if (share == 0) revert ZeroAmount();
 
+        address recipient = roundProjects[roundId][projectId].recipient;
+        if (recipient == address(0)) revert ProjectInactive();
+        roundProjectShares[roundId][projectId] = 0;
+        totalUnclaimedShares -= share;
+
         uint256 balance = token.balanceOf(address(this));
         if (balance < share) {
             emit LowBalanceDetected(share, balance);
             revert InsufficientContractBalance(share, balance);
         }
 
-        roundProjectShares[roundId][projectId] = 0;
-        totalUnclaimedShares -= share;
-        address recipient = roundProjects[roundId][projectId].recipient;
         token.safeTransfer(recipient, share);
 
         emit MatchDistributed(roundId, projectId, recipient, share);
@@ -513,6 +523,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
      */
     function reclaimUnclaimedMatchShare(uint256 roundId, uint256 projectId)
         external
+        nonReentrant
         onlyRole(COUNCIL_ROLE)
         whenNotPaused
     {
@@ -526,19 +537,18 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         uint256 share = roundProjectShares[roundId][projectId];
         if (share == 0) revert ZeroAmount();
 
+        address recipient = roundProjects[roundId][projectId].recipient;
+        if (recipient == address(0)) revert ProjectInactive();
+        roundProjectShares[roundId][projectId] = 0;
+        totalUnclaimedShares -= share;
+        recycledMatchingPool += share;
+
         uint256 balance = token.balanceOf(address(this));
         if (balance < share) {
             emit LowBalanceDetected(share, balance);
             // We do NOT revert on low balance because reclaims are purely accounting-based
             // and we want to allow recycling recorded commitments under depletion.
         }
-
-        roundProjectShares[roundId][projectId] = 0;
-        totalUnclaimedShares -= share;
-        address recipient = roundProjects[roundId][projectId].recipient;
-        if (recipient == address(0)) revert ProjectInactive();
-
-        recycledMatchingPool += share;
 
         emit MatchShareReclaimed(roundId, projectId, recipient, share);
     }
@@ -614,7 +624,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     // RECOVERY
     // =========================================================
 
-    function sweep(address _token, uint256 _amount) external onlyRole(COUNCIL_ROLE) nonReentrant {
+    function sweep(address _token, uint256 _amount) external nonReentrant onlyRole(COUNCIL_ROLE) {
         if (_token == address(0)) revert InvalidAddress();
         if (_amount == 0) revert ZeroAmount();
         if (_token == address(token)) revert CannotSweepMatchingToken();

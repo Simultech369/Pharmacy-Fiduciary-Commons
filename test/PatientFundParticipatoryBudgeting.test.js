@@ -81,6 +81,49 @@ describe("PatientFundParticipatoryBudgeting", function () {
       );
     });
 
+    it("does not expose a pending round to malicious token callbacks during startRound", async function () {
+      const ReentrantToken = await ethers.getContractFactory("StartRoundReentrantToken");
+      const reentrantToken = await ReentrantToken.deploy();
+      await reentrantToken.waitForDeployment();
+
+      const PB = await ethers.getContractFactory("PatientFundParticipatoryBudgeting");
+      const reentrantPb = await PB.deploy(await reentrantToken.getAddress(), council.address, guardian.address);
+      await reentrantPb.waitForDeployment();
+
+      await reentrantToken.setTarget(await reentrantPb.getAddress());
+      await reentrantToken.mint(council.address, toWei("50000"));
+      await reentrantToken.connect(council).approve(await reentrantPb.getAddress(), toWei("50000"));
+
+      const councilRole = await reentrantPb.COUNCIL_ROLE();
+      await reentrantPb.connect(council).grantRole(councilRole, await reentrantToken.getAddress());
+
+      await reentrantPb.connect(council).startRound(toWei("1000"));
+      await reentrantPb.connect(council).finalizeRound(1n);
+      expect((await reentrantPb.rounds(1n)).state).to.equal(2n); // RoundState.Finalized
+
+      await reentrantToken.setAttackEnabled(true);
+      await reentrantPb.connect(council).startRound(toWei("2000"));
+
+      expect(await reentrantToken.callbackCount()).to.equal(1n);
+      expect(await reentrantToken.observedCurrentRound()).to.equal(1n);
+      expect(await reentrantToken.observedNextRoundState()).to.equal(0n); // RoundState.Inactive during callback
+      expect(await reentrantToken.observedNextRoundProjectCount()).to.equal(0n);
+      expect(await reentrantToken.unexpectedSuccessCount()).to.equal(0n);
+      expect(await reentrantToken.recursiveStartRoundBlocked()).to.be.true;
+      expect(await reentrantToken.registerVoterBlocked()).to.be.true;
+      expect(await reentrantToken.registerVotersBatchBlocked()).to.be.true;
+      expect(await reentrantToken.registerProjectBlocked()).to.be.true;
+      expect(await reentrantToken.proposeProjectBlocked()).to.be.true;
+      expect(await reentrantToken.supportProposalBlocked()).to.be.true;
+      expect(await reentrantToken.castVoteBlocked()).to.be.true;
+
+      expect(await reentrantPb.currentRound()).to.equal(2n);
+      const r = await reentrantPb.rounds(2n);
+      expect(r.matchingPool).to.equal(toWei("2000"));
+      expect(r.state).to.equal(1n); // RoundState.Active after transfer succeeds
+      expect(r.projectCount).to.equal(0n);
+    });
+
     it("allows council to register projects", async function () {
       await pb.connect(council).startRound(toWei("10000"));
       await pb.connect(council).registerProject(1n, "Solar Grid", recipientA.address);
@@ -114,6 +157,17 @@ describe("PatientFundParticipatoryBudgeting", function () {
       for (const voter of voters) {
         expect(await pb.registeredVoters(1n, voter.address)).to.be.true;
       }
+    });
+
+    it("caps voter registration batch size", async function () {
+      await pb.connect(council).startRound(toWei("10000"));
+      const maxBatch = Number(await pb.MAX_VOTERS_PER_BATCH());
+      const oversizedBatch = Array.from({ length: maxBatch + 1 }, () => voters[0].address);
+
+      await expectRevert(
+        pb.connect(council).registerVotersBatch(1n, oversizedBatch),
+        "BatchTooLarge"
+      );
     });
   });
 

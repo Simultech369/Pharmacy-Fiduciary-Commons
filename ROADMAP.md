@@ -11,10 +11,14 @@ The project remains in this phase until the public-facing and operational gates 
 - **Actions**:
   - Keep the contract test suite green on a supported Node runtime.
   - Resolve production-readiness checklist items for frontend minification, private source maps, secrets, database/RLS, API authorization, rate limiting, caching, scaling, error tracking, and ADA/WCAG accessibility before public launch.
+  - Select hosting, database, auth, and form-intake providers only after a documented trust-boundary review. Cloudflare, Supabase, Firebase, Clerk, and any Bolin/IODR-style identity provider remain candidates, not settled architecture.
   - Document any intentionally undecided policy choices in `OPEN_DESIGN_DECISIONS.md` instead of implying they are settled.
   - Keep dashboard data synthetic or contract-backed with visible provenance labels.
+  - Treat public forms as hostile intake surfaces: require server-side validation, abuse controls, and privacy review before collecting user, pharmacy, patient, credential, vote, or export data.
+  - Keep secrets out of committed files and browser bundles. Server-side `.env` files are local deployment inputs only; production secrets must live in provider secret stores with environment separation.
   - Exercise the offline/non-digital workflow gates in `PRODUCTION_READINESS_CHECKLIST.md` with tabletop scenarios for SMS, paper voucher, trusted-proxy, delayed-sync, duplicate-receipt, forged-receipt, and lost-connectivity cases before claiming non-digital access.
   - Define privacy-safe, fraud-resistant care-continuity metric ingestion before using CRR or similar wellbeing metrics to prioritize funding.
+  - Maintain scanner triage artifacts for Slither, Aderyn, and targeted Mythril runs; no unresolved high-confidence scanner finding should be carried forward without a written acceptance rationale.
   - Consider a future read-only `dryRunFinalize` or equivalent preview tool for participatory-budgeting rounds so operators can compare expected project shares with actual token liquidity before finalization.
 - **Success Criteria**: Local/testnet claims remain accurate, readiness gaps are visible, and public materials do not imply audit, production, or mainnet readiness.
 

@@ -122,7 +122,6 @@ contract PBMRebateTreasury is
     error NoRootPublished();
     error RecallDelayNotElapsed();
     error NothingToRecall();
-    error PoolMismatch();
     error ExceedsReserve();
     error NoETH();
     error ETHTransferFailed();
@@ -166,6 +165,9 @@ contract PBMRebateTreasury is
     // =========================================================
 
     uint256 private constant BP_DENOM = 10_000;
+    uint256 private constant MIN_PATIENT_CLAIM_BP = 500;
+    uint256 private constant MAX_PATIENT_CLAIM_BP = 3_000;
+    uint256 private constant MAX_GOVERNANCE_BP = 500;
 
     /// @notice Governance reserve taken at deposit time (1%).
     uint256 public governanceBP = 100;
@@ -203,7 +205,7 @@ contract PBMRebateTreasury is
     // MUTABLE (executor-governed)
     // =========================================================
 
-    /// @notice Receives accidentally sent ETH. Non-payout token sweeps go to patientFund.
+    /// @notice Receives forced/accidentally sent ETH. Non-payout token sweeps go to patientFund.
     address public environmentalFund;
 
     // =========================================================
@@ -384,6 +386,8 @@ contract PBMRebateTreasury is
 
     event HardCapReduced(uint256 indexed oldCap, uint256 indexed newCap);
     event DailyCapUpdated(uint256 indexed oldCap, uint256 indexed newCap);
+    event PatientClaimBPUpdated(uint256 indexed oldBP, uint256 indexed newBP);
+    event GovernanceBPUpdated(uint256 indexed oldBP, uint256 indexed newBP);
 
     event SanctionUpdated(address indexed account, bool status, string reason);
     event SanctionAppealed(address indexed account, string reason, bytes32 indexed evidenceHash);
@@ -890,8 +894,8 @@ contract PBMRebateTreasury is
         bytes32            evidenceHash
     )
         external
-        onlyRole(COUNCIL_ROLE)
         nonReentrant
+        onlyRole(COUNCIL_ROLE)
     {
         if (evidenceHash == bytes32(0)) revert ZeroEvidenceHash();
         uint256 amount = flaggedAmount[epoch][pharmacy];
@@ -1043,8 +1047,8 @@ contract PBMRebateTreasury is
      */
     function recallUnclaimed(uint256 epoch)
         external
-        onlyRole(COUNCIL_ROLE)
         nonReentrant
+        onlyRole(COUNCIL_ROLE)
     {
         if (epoch >= currentEpoch)  revert EpochNotFinalized();
         if (epochRecalled[epoch])   revert AlreadyRecalled();
@@ -1078,8 +1082,8 @@ contract PBMRebateTreasury is
      */
     function withdrawGovernanceReserve(address recipient, uint256 amount)
         external
-        onlyRole(EXECUTOR_ROLE)
         nonReentrant
+        onlyRole(EXECUTOR_ROLE)
     {
         if (recipient == address(0)) revert InvalidAddress();
         if (amount == 0)             revert ZeroAmount();
@@ -1103,8 +1107,8 @@ contract PBMRebateTreasury is
      */
     function recoverStaleDistributionPool(address recipient, uint256 amount)
         external
-        onlyRole(EXECUTOR_ROLE)
         nonReentrant
+        onlyRole(EXECUTOR_ROLE)
     {
         if (recipient == address(0)) revert InvalidAddress();
         if (recipient != patientFund) revert InvalidAddress();
@@ -1181,8 +1185,10 @@ contract PBMRebateTreasury is
         external
         onlyRole(EXECUTOR_ROLE)
     {
-        if (newBP < 500 || newBP > 3000) revert OutOfRange();
+        if (newBP < MIN_PATIENT_CLAIM_BP || newBP > MAX_PATIENT_CLAIM_BP) revert OutOfRange();
+        uint256 oldBP = patientClaimBP;
         patientClaimBP = newBP;
+        emit PatientClaimBPUpdated(oldBP, newBP);
     }
 
     /**
@@ -1195,8 +1201,10 @@ contract PBMRebateTreasury is
         external
         onlyRole(EXECUTOR_ROLE)
     {
-        if (newBP > 500) revert OutOfRange();
+        if (newBP > MAX_GOVERNANCE_BP) revert OutOfRange();
+        uint256 oldBP = governanceBP;
         governanceBP = newBP;
+        emit GovernanceBPUpdated(oldBP, newBP);
     }
 
     /**
@@ -1243,9 +1251,9 @@ contract PBMRebateTreasury is
     // =========================================================
 
     /**
-     * @notice Sweeps accidentally sent ETH to environmentalFund.
+     * @notice Timelocked recovery for forced/accidentally sent ETH to environmentalFund.
      */
-    function sweepETH() external onlyRole(COUNCIL_ROLE) nonReentrant {
+    function sweepETH() external nonReentrant onlyRole(EXECUTOR_ROLE) {
         uint256 balance = address(this).balance;
         if (balance == 0) revert NoETH();
         (bool ok, ) = environmentalFund.call{value: balance}("");
@@ -1261,8 +1269,8 @@ contract PBMRebateTreasury is
      */
     function sweep(address _token, uint256 _amount)
         external
-        onlyRole(COUNCIL_ROLE)
         nonReentrant
+        onlyRole(COUNCIL_ROLE)
     {
         if (_token == address(0))     revert InvalidAddress();
         if (_amount == 0)             revert ZeroAmount();
@@ -1466,7 +1474,7 @@ contract PBMRebateTreasury is
      *         monitors do not report funds as recoverable while a current root is live
      *         or a pending root proposal remains unexpired.
      */
-    function getRecoverableStaleAmount() public view returns (uint256) {
+    function getRecoverableStaleAmount() external view returns (uint256) {
         if (epochMerkleRoot[currentEpoch] != bytes32(0)) {
             return 0;
         }

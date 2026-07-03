@@ -337,6 +337,19 @@ describe("PharmacyMutualCredit", function () {
       );
     });
 
+    it("caps batch voucher reservation release size", async function () {
+      const maxBatch = Number(await credit.MAX_VOUCHER_RELEASE_BATCH());
+      const oversizedBatch = Array.from(
+        { length: maxBatch + 1 },
+        (_, i) => ethers.keccak256(ethers.toUtf8Bytes(`voucher-release-${i}`))
+      );
+
+      await expectRevert(
+        credit.connect(attacker).releaseExpiredVouchersBatch(oversizedBatch),
+        "BatchTooLarge"
+      );
+    });
+
     it("reverts batch release if any voucher is not expired, redeemed, or non-existent", async function () {
       const voucherId1 = ethers.keccak256(ethers.toUtf8Bytes("voucher-001"));
       const voucherId2 = ethers.keccak256(ethers.toUtf8Bytes("voucher-002"));

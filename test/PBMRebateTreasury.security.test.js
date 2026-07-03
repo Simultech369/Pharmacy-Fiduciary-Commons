@@ -93,6 +93,44 @@ describe("PBMRebateTreasury security baseline", function () {
     await treasury.connect(depositor).depositRebate(amount, "Q1 2026 seed");
   }
 
+  async function deployReentrantTreasury() {
+    const ReentrantToken = await ethers.getContractFactory("TreasuryReentrantToken");
+    const reentrantToken = await ReentrantToken.deploy();
+    await reentrantToken.waitForDeployment();
+
+    const Treasury = await ethers.getContractFactory("PBMRebateTreasury");
+    const reentrantTreasury = await Treasury.deploy(
+      await reentrantToken.getAddress(),
+      patientFund.address,
+      environmentalFund.address,
+      toWei("1000"),
+      toWei("1"),
+      council.address,
+      council2.address,
+      await timelock.getAddress(),
+      guardian.address
+    );
+    await reentrantTreasury.waitForDeployment();
+
+    await reentrantToken.setTarget(await reentrantTreasury.getAddress());
+    await reentrantToken.mint(depositor.address, toWei("5000"));
+
+    return { reentrantToken, reentrantTreasury };
+  }
+
+  async function expectGuardedReentrantAttemptsBlocked(reentrantToken) {
+    expect(await reentrantToken.unexpectedSuccessCount()).to.equal(0n);
+    expect(await reentrantToken.depositRebateBlocked()).to.be.true;
+    expect(await reentrantToken.fundExclusionRemediationBlocked()).to.be.true;
+    expect(await reentrantToken.claimBlocked()).to.be.true;
+    expect(await reentrantToken.resolveClaimBlocked()).to.be.true;
+    expect(await reentrantToken.recallUnclaimedBlocked()).to.be.true;
+    expect(await reentrantToken.withdrawGovernanceReserveBlocked()).to.be.true;
+    expect(await reentrantToken.recoverStaleDistributionPoolBlocked()).to.be.true;
+    expect(await reentrantToken.sweepETHBlocked()).to.be.true;
+    expect(await reentrantToken.sweepBlocked()).to.be.true;
+  }
+
   async function publishSingleLeafRoot(grossAmount, eligibleCap) {
     const leaf = merkleLeaf(pharmacy.address, grossAmount, eligibleCap);
     await treasury.connect(council).proposeRoot(leaf, grossAmount);
@@ -280,6 +318,29 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(await treasury.totalRebateDeposited()).to.equal(toWei("1000"));
   });
 
+  it("keeps rebate deposit accounting unpublished during payout token callbacks", async function () {
+    const { reentrantToken, reentrantTreasury } = await deployReentrantTreasury();
+    const amount = toWei("1000");
+
+    await reentrantToken.connect(depositor).approve(await reentrantTreasury.getAddress(), amount);
+    await reentrantToken.configureAttack(1, ethers.ZeroAddress, true); // Deposit
+
+    await reentrantTreasury.connect(depositor).depositRebate(amount, "callback deposit");
+
+    expect(await reentrantToken.callbackCount()).to.equal(1n);
+    expect(await reentrantToken.observedDistributionPool()).to.equal(0n);
+    expect(await reentrantToken.observedGovernanceReserve()).to.equal(0n);
+    expect(await reentrantToken.observedTotalRebateDeposited()).to.equal(0n);
+    expect(await reentrantToken.observedRebateDepositCount()).to.equal(0n);
+    await expectGuardedReentrantAttemptsBlocked(reentrantToken);
+
+    expect(await reentrantTreasury.distributionPool()).to.equal(toWei("990"));
+    expect(await reentrantTreasury.governanceReserve()).to.equal(toWei("10"));
+    expect(await reentrantTreasury.totalRebateDeposited()).to.equal(amount);
+    expect(await reentrantTreasury.rebateDepositCount()).to.equal(1n);
+    expect(await reentrantToken.balanceOf(await reentrantTreasury.getAddress())).to.equal(amount);
+  });
+
   it("recovers stale unallocated distribution liquidity only through timelock after long inactivity", async function () {
     await seedDeposit(toWei("1000"));
 
@@ -458,6 +519,40 @@ describe("PBMRebateTreasury security baseline", function () {
       treasury.connect(pharmacy).claim(gross, gross, []),
       "AlreadyClaimed"
     );
+  });
+
+  it("settles claim state before payout token callbacks can reenter", async function () {
+    const { reentrantToken, reentrantTreasury } = await deployReentrantTreasury();
+    const depositAmount = toWei("1000");
+    const gross = toWei("100");
+
+    await reentrantToken.connect(depositor).approve(await reentrantTreasury.getAddress(), depositAmount);
+    await reentrantTreasury.connect(depositor).depositRebate(depositAmount, "claim callback seed");
+
+    const leaf = merkleLeaf(pharmacy.address, gross, gross);
+    await reentrantTreasury.connect(council).proposeRoot(leaf, gross);
+    await reentrantTreasury.connect(council2).confirmRoot(0);
+    await reentrantToken.configureAttack(3, pharmacy.address, true); // Claim
+
+    const patientBefore = await reentrantToken.balanceOf(patientFund.address);
+    const pharmacyBefore = await reentrantToken.balanceOf(pharmacy.address);
+
+    await reentrantTreasury.connect(pharmacy).claim(gross, gross, []);
+
+    expect(await reentrantToken.callbackCount()).to.equal(1n);
+    expect(await reentrantToken.observedCurrentEpoch()).to.equal(0n);
+    expect(await reentrantToken.observedHasClaimed()).to.be.true;
+    expect(await reentrantToken.observedEpochEscrow()).to.equal(0n);
+    expect(await reentrantToken.observedTotalEscrowed()).to.equal(0n);
+    expect(await reentrantToken.observedEpochClaimedTotal()).to.equal(gross);
+    expect(await reentrantToken.observedEpochRootClaimedTotal()).to.equal(gross);
+    expect(await reentrantToken.observedPharmacyClaimed()).to.equal(gross);
+    await expectGuardedReentrantAttemptsBlocked(reentrantToken);
+
+    expect(await reentrantToken.balanceOf(patientFund.address) - patientBefore).to.equal(toWei("10"));
+    expect(await reentrantToken.balanceOf(pharmacy.address) - pharmacyBefore).to.equal(toWei("90"));
+    expect(await reentrantTreasury.hasClaimed(0, pharmacy.address)).to.be.true;
+    expect(await reentrantTreasury.epochEscrow(0)).to.equal(0n);
   });
 
   it("applies the current patient share at claim and dispute resolution time", async function () {
@@ -714,6 +809,23 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(await treasury.epochEscrow(0)).to.equal(gross);
   });
 
+  it("keeps exclusion remediation reserve unpublished during payout token callbacks", async function () {
+    const { reentrantToken, reentrantTreasury } = await deployReentrantTreasury();
+    const amount = toWei("50");
+
+    await reentrantToken.connect(depositor).approve(await reentrantTreasury.getAddress(), amount);
+    await reentrantToken.configureAttack(2, ethers.ZeroAddress, true); // Remediation
+
+    await reentrantTreasury.connect(depositor).fundExclusionRemediation(amount);
+
+    expect(await reentrantToken.callbackCount()).to.equal(1n);
+    expect(await reentrantToken.observedExclusionRemediationReserve()).to.equal(0n);
+    await expectGuardedReentrantAttemptsBlocked(reentrantToken);
+
+    expect(await reentrantTreasury.exclusionRemediationReserve()).to.equal(amount);
+    expect(await reentrantToken.balanceOf(await reentrantTreasury.getAddress())).to.equal(amount);
+  });
+
   it("keeps approved exclusion payouts bound to current cap ratchets", async function () {
     await seedDeposit(toWei("1000"));
     const gross = toWei("100");
@@ -808,6 +920,33 @@ describe("PBMRebateTreasury security baseline", function () {
       ),
       "underlying transaction reverted"
     );
+  });
+
+  it("recovers forced ETH only through the timelock executor", async function () {
+    const forcedEth = ethers.parseEther("1");
+
+    await expectRevert(
+      council.sendTransaction({ to: await treasury.getAddress(), value: forcedEth }),
+      "ETHNotAccepted"
+    );
+
+    const ForceETH = await ethers.getContractFactory("ForceETH");
+    const forceETH = await ForceETH.deploy({ value: forcedEth });
+    await forceETH.waitForDeployment();
+    await forceETH.forceSend(await treasury.getAddress());
+
+    expect(await ethers.provider.getBalance(await treasury.getAddress())).to.equal(forcedEth);
+
+    await expectRevert(treasury.connect(council).sweepETH(), "AccessControl");
+
+    const environmentalBefore = await ethers.provider.getBalance(environmentalFund.address);
+    await timelockExecute(
+      await treasury.getAddress(),
+      treasury.interface.encodeFunctionData("sweepETH")
+    );
+
+    expect(await ethers.provider.getBalance(await treasury.getAddress())).to.equal(0n);
+    expect(await ethers.provider.getBalance(environmentalFund.address) - environmentalBefore).to.equal(forcedEth);
   });
 
   it("resolves dismissed dispute by sending funds to patientFund if recall has already occurred", async function () {
