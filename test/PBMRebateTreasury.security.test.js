@@ -496,6 +496,25 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(await treasury.epochRootTotal(0)).to.equal(gross);
   });
 
+  it("preserves council/guardian/admin separation during role rotation", async function () {
+    const councilRole = await treasury.councilRole();
+    const guardianRole = await treasury.guardianRole();
+    const defaultAdminRole = ethers.ZeroHash;
+
+    await expectRevert(
+      treasury.connect(council).grantRole(guardianRole, council.address),
+      "GovernanceRoleSeparationViolation"
+    );
+    await expectRevert(
+      treasury.connect(council).grantRole(councilRole, guardian.address),
+      "GovernanceRoleSeparationViolation"
+    );
+    await expectRevert(
+      treasury.connect(council).grantRole(defaultAdminRole, guardian.address),
+      "GovernanceRoleSeparationViolation"
+    );
+  });
+
   it("routes claims 90/10 and blocks double claim", async function () {
     await seedDeposit(toWei("1000"));
 

@@ -484,7 +484,9 @@ contract PBMRebateTreasury is
     function _grantRole(bytes32 role, address account) internal override {
         if (
             (role == ROOT_CONFIRMER_ROLE && hasRole(COUNCIL_ROLE, account)) ||
-            (role == COUNCIL_ROLE && hasRole(ROOT_CONFIRMER_ROLE, account))
+            (role == COUNCIL_ROLE && hasRole(ROOT_CONFIRMER_ROLE, account)) ||
+            (role == GUARDIAN_ROLE && (hasRole(COUNCIL_ROLE, account) || hasRole(DEFAULT_ADMIN_ROLE, account))) ||
+            ((role == COUNCIL_ROLE || role == DEFAULT_ADMIN_ROLE) && hasRole(GUARDIAN_ROLE, account))
         ) {
             revert GovernanceRoleSeparationViolation();
         }

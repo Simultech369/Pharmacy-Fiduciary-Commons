@@ -465,6 +465,25 @@ describe("PharmacyMutualCredit", function () {
       );
     });
 
+    it("preserves council/guardian/admin separation during role rotation", async function () {
+      const councilRole = await credit.COUNCIL_ROLE();
+      const guardianRole = await credit.GUARDIAN_ROLE();
+      const defaultAdminRole = ethers.ZeroHash;
+
+      await expectRevert(
+        credit.connect(council).grantRole(guardianRole, council.address),
+        "GovernanceRoleSeparationViolation"
+      );
+      await expectRevert(
+        credit.connect(council).grantRole(councilRole, guardian.address),
+        "GovernanceRoleSeparationViolation"
+      );
+      await expectRevert(
+        credit.connect(council).grantRole(defaultAdminRole, guardian.address),
+        "GovernanceRoleSeparationViolation"
+      );
+    });
+
     it("allows guardian to pause and blocks all credit and voucher actions, then council can unpause", async function () {
       await credit.connect(council).registerParticipant(pharmacyA.address, 1000n);
       await credit.connect(council).registerParticipant(pharmacyB.address, 1000n);

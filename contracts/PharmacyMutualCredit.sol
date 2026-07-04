@@ -76,6 +76,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
     error GuardianMustDifferFromCouncil();
     error BatchTooLarge();
     error VoucherExpiryTooLong();
+    error GovernanceRoleSeparationViolation();
 
     // =========================================================
     // CONSTRUCTOR
@@ -87,6 +88,16 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
         _grantRole(DEFAULT_ADMIN_ROLE, _council);
         _grantRole(COUNCIL_ROLE, _council);
         _grantRole(GUARDIAN_ROLE, _guardian);
+    }
+
+    function _grantRole(bytes32 role, address account) internal override {
+        if (
+            (role == GUARDIAN_ROLE && (hasRole(COUNCIL_ROLE, account) || hasRole(DEFAULT_ADMIN_ROLE, account))) ||
+            ((role == COUNCIL_ROLE || role == DEFAULT_ADMIN_ROLE) && hasRole(GUARDIAN_ROLE, account))
+        ) {
+            revert GovernanceRoleSeparationViolation();
+        }
+        super._grantRole(role, account);
     }
 
     // =========================================================

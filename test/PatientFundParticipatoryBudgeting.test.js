@@ -381,7 +381,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(await pb.recycledMatchingPool()).to.equal(0n);
     });
 
-    it("documents reclaim and recycling after matching-token liquidity is depleted", async function () {
+    it("blocks recycled rounds until reclaimed liquidity is backed by real balance", async function () {
       await pb.connect(voters[0]).castVote(1n, 0n);
       await pb.connect(council).finalizeRound(1n);
       expect(await pb.roundProjectShares(1n, 0n)).to.equal(toWei("10000"));
@@ -396,22 +396,21 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(await pb.recycledMatchingPool()).to.equal(toWei("10000"));
       expect(await pb.roundProjectShares(1n, 0n)).to.equal(0n);
 
+      await expectRevert(
+        pb.connect(council).startRound(0n),
+        "InsufficientSolvencyBalance"
+      );
+
+      await token.mint(await pb.getAddress(), toWei("10000"));
       await pb.connect(council).startRound(0n);
       const nextRound = await pb.rounds(2n);
       expect(nextRound.matchingPool).to.equal(toWei("10000"));
       expect(await pb.recycledMatchingPool()).to.equal(0n);
-      expect(await token.balanceOf(await pb.getAddress())).to.equal(0n);
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("10000"));
 
       await pb.connect(council).registerProject(2n, "Recycled Empty Pool", recipientA.address);
       await pb.connect(council).registerVotersBatch(2n, [voters[0].address]);
       await pb.connect(voters[0]).castVote(2n, 0n);
-      await expectRevert(
-        pb.connect(council).finalizeRound(2n),
-        "InsufficientSolvencyBalance"
-      );
-
-      // Top up the contract to satisfy the hard solvency check
-      await token.mint(await pb.getAddress(), toWei("10000"));
       await pb.connect(council).finalizeRound(2n);
       expect(await pb.roundProjectShares(2n, 0n)).to.equal(toWei("10000"));
 
@@ -725,6 +724,25 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await expectRevert(
         PB.deploy(await token.getAddress(), council.address, council.address),
         "GuardianMustDifferFromCouncil"
+      );
+    });
+
+    it("preserves council/guardian/admin separation during role rotation", async function () {
+      const councilRole = await pb.COUNCIL_ROLE();
+      const guardianRole = await pb.GUARDIAN_ROLE();
+      const defaultAdminRole = ethers.ZeroHash;
+
+      await expectRevert(
+        pb.connect(council).grantRole(guardianRole, council.address),
+        "GovernanceRoleSeparationViolation"
+      );
+      await expectRevert(
+        pb.connect(council).grantRole(councilRole, guardian.address),
+        "GovernanceRoleSeparationViolation"
+      );
+      await expectRevert(
+        pb.connect(council).grantRole(defaultAdminRole, guardian.address),
+        "GovernanceRoleSeparationViolation"
       );
     });
 
@@ -1279,6 +1297,20 @@ describe("PatientFundParticipatoryBudgeting", function () {
 
       // Claiming Project Alpha's share (requires 800 tokens) succeeds.
       await pb.claimMatchShare(1n, 0n);
+    });
+
+    it("blocks opening a new round while existing shares are underbacked", async function () {
+      await pb.connect(council).finalizeRound(1n);
+      await token.burn(await pb.getAddress(), 1n);
+
+      await expectRevert(
+        pb.connect(council).startRound(toWei("1000")),
+        "InsufficientSolvencyBalance"
+      );
+
+      await token.mint(await pb.getAddress(), 1n);
+      await pb.connect(council).startRound(toWei("1000"));
+      expect(await pb.currentRound()).to.equal(2n);
     });
 
     it("registers multiple projects and asserts gas consumption bounds to prevent sybil/DoS locks", async function () {

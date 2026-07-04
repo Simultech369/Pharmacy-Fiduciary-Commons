@@ -148,6 +148,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     error InsufficientContractBalance(uint256 requested, uint256 actual);
     error InsufficientSolvencyBalance(uint256 required, uint256 actual);
     error TokenTransferAmountMismatch(uint256 expected, uint256 actual);
+    error GovernanceRoleSeparationViolation();
 
     // =========================================================
     // CONSTRUCTOR
@@ -167,6 +168,16 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         _grantRole(GUARDIAN_ROLE, _guardian);
     }
 
+    function _grantRole(bytes32 role, address account) internal override {
+        if (
+            (role == GUARDIAN_ROLE && (hasRole(COUNCIL_ROLE, account) || hasRole(DEFAULT_ADMIN_ROLE, account))) ||
+            ((role == COUNCIL_ROLE || role == DEFAULT_ADMIN_ROLE) && hasRole(GUARDIAN_ROLE, account))
+        ) {
+            revert GovernanceRoleSeparationViolation();
+        }
+        super._grantRole(role, account);
+    }
+
     // =========================================================
     // ROUND ADMINISTRATION (COUNCIL ONLY)
     // =========================================================
@@ -179,6 +190,11 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         }
 
         uint256 roundId = currentRound + 1;
+        uint256 requiredExisting = totalUnclaimedShares + recycled;
+        uint256 actualBefore = token.balanceOf(address(this));
+        if (actualBefore < requiredExisting) {
+            revert InsufficientSolvencyBalance(requiredExisting, actualBefore);
+        }
 
         if (recycled > 0) {
             recycledMatchingPool = 0;
@@ -186,7 +202,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
 
         // Pull fresh funds before publishing the round so callbacks cannot observe a half-open round.
         if (matchingPoolAmount > 0) {
-            uint256 balanceBefore = token.balanceOf(address(this));
+            uint256 balanceBefore = actualBefore;
             token.safeTransferFrom(msg.sender, address(this), matchingPoolAmount);
             uint256 balanceAfter = token.balanceOf(address(this));
             uint256 received = balanceAfter >= balanceBefore ? balanceAfter - balanceBefore : 0;
