@@ -4,28 +4,29 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 ## Current Artifacts
 
-- Slither: `C:\tmp\pbm-slither-report-a816e9e.json`
-- Aderyn: `C:\tmp\pbm-aderyn-report-a816e9e.md`
-- Mythril: `C:\tmp\pbm-mythril-patientfund-bytecode-excavated-triage.json`
+- Slither: `C:\tmp\pbm-slither-report-4015b3f.json`
+- Aderyn: `C:\tmp\pbm-aderyn-report-4015b3f.md`
+- Mythril: `C:\tmp\pbm-mythril-patientfund-bytecode-4015b3f.json`
 
-The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with 0 issues and empty stderr.
+The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with `{"success": true, "issues": []}` and empty stderr. The bytecode helper is `C:\tmp\pbm-patientfund-runtime-4015b3f.hex`.
 
-Live scanner refresh: Slither and Aderyn were refreshed for commit `a816e9e` on 2026-07-03 from the elevated WSL distro `Ubuntu-24.04`. Later commits include scanner-document updates, the `dryRunFinalize` view alias, and `startRound` fee-on-transfer hardening, so these artifacts remain useful triage evidence but should be refreshed before deployment claims. The normal, non-elevated Windows shell still cannot see registered WSL distros; use the elevated WSL context for scanner reruns on this host.
+Live scanner refresh: Slither, Aderyn, and a bounded Mythril PatientFund runtime-bytecode check were refreshed for commit `4015b3f` on 2026-07-03 from the WSL distro `Ubuntu-24.04`. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
 
-Post-excavation verification: `npm.cmd test` passed with 135 tests. After adding treasury callback and forced-ETH tests, `npm.cmd test -- test/PBMRebateTreasury.security.test.js` passed with 36 tests. Later dry-run finalization naming work added `dryRunFinalize` as a view alias for `previewFinalize`; scanner artifacts should be refreshed again before deployment claims because that alias landed after commit `a816e9e`.
+Post-excavation verification: `npm.cmd test` passed with 146 tests after adding the fee-on-transfer start-round regression. `npm.cmd test -- test/PatientFundParticipatoryBudgeting.test.js` passed with 54 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
 
 ## Slither Production Triage
 
 Live Slither command:
 
-`wsl.exe -d Ubuntu-24.04 -u root -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && slither . --exclude-dependencies --filter-paths 'node_modules|contracts/mocks|artifacts|cache' --json /mnt/c/tmp/pbm-slither-report-a816e9e.json"`
+`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && slither . --exclude-dependencies --filter-paths 'node_modules|contracts/mocks|artifacts|cache' --json /mnt/c/tmp/pbm-slither-report-4015b3f.json"`
 
-Live Slither artifact count: 36 production-filtered detector entries.
+Live Slither artifact count: 37 production-filtered detector entries.
 
 Grouped count:
 
 - 1 `arbitrary-send-eth` high
 - 2 `incorrect-equality` medium
+- 1 `reentrancy-balance` medium
 - 1 `reentrancy-no-eth` medium
 - 2 `reentrancy-benign` low
 - 18 `timestamp` low
@@ -51,6 +52,10 @@ Production high/medium entries:
 - `reentrancy-no-eth`: `PatientFundParticipatoryBudgeting.startRound`.
   - Disposition: mitigated and regression-tested. See StartRound Reentrancy Review below.
 
+- `reentrancy-balance`: `PatientFundParticipatoryBudgeting.startRound`.
+  - Disposition: intentional balance-delta guard, mitigated and regression-tested. See StartRound Reentrancy Review below.
+  - Rationale: the balance read before `safeTransferFrom` and comparison after `safeTransferFrom` are the fee-on-transfer defense. Short-paid matching tokens revert before a round is opened, and the transaction rollback reverts token-side effects from the failed funding attempt.
+
 Production low/informational entries:
 
 - `reentrancy-benign`: `PBMRebateTreasury.depositRebate` and `fundExclusionRemediation`.
@@ -70,7 +75,7 @@ Production low/informational entries:
 
 ## StartRound Reentrancy Review
 
-Slither continues to report `PatientFundParticipatoryBudgeting.startRound(uint256)` as `reentrancy-no-eth` because `token.safeTransferFrom(...)` occurs before `currentRound` and `rounds[roundId]` are written.
+Slither continues to report `PatientFundParticipatoryBudgeting.startRound(uint256)` as `reentrancy-no-eth` because `token.safeTransferFrom(...)` occurs before `currentRound` and `rounds[roundId]` are written. After the fee-on-transfer fix, Slither also reports `reentrancy-balance` because `startRound` reads the contract token balance before and after `safeTransferFrom`.
 
 Disposition: mitigated and regression-tested residual warning.
 
@@ -114,9 +119,9 @@ Evidence:
 
 Live Aderyn command:
 
-`wsl.exe -d Ubuntu-24.04 -u root -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && aderyn . -x contracts/mocks,node_modules,artifacts,cache -o /mnt/c/tmp/pbm-aderyn-report-a816e9e.md"`
+`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && aderyn . -x contracts/mocks,node_modules,artifacts,cache -o /mnt/c/tmp/pbm-aderyn-report-4015b3f.md"`
 
-Live Aderyn count: 1 high, 6 lows.
+Live Aderyn count: 2 highs, 6 lows.
 
 ### H-1: ETH transferred without address checks
 
@@ -131,13 +136,19 @@ Rationale:
 - `claim` transfers the configured ERC-20 payout token to `patientFund` and `claimant`; `claimant` is `msg.sender` in the public entry point, and `patientFund` is constructor-validated.
 - ETH is rejected by `receive()` and `fallback()`. The intentional ETH path is `sweepETH`, which is executor-gated, `nonReentrant`, and sends only to constructor/executor-validated `environmentalFund`.
 
-### H-2: Storage Array Edited with Memory
+### H-2: Reentrancy: State change after external call
 
-Previous instance: `_registerProject(roundId, prop.title, prop.recipient)` in `PatientFundParticipatoryBudgeting.supportProposal`.
+Instances: `PatientFundParticipatoryBudgeting.startRound` balance reads around the fresh token pull, and `PatientFundParticipatoryBudgeting.finalizeRound` solvency balance read.
 
-Disposition: fixed.
+Disposition: accepted residual warning; the state-changing paths are guarded by explicit invariants and regression tests.
 
-Rationale: the proposal title and recipient are now copied into local variables before setting `prop.registered` and calling `_registerProject`. The final Aderyn report no longer includes this high.
+Rationale:
+
+- `startRound` intentionally reads balance before and after `safeTransferFrom` to reject fee-on-transfer, rebasing, or otherwise short-paid matching tokens. The round is not published until after the transfer and exact-delta check succeeds.
+- `startRound` remains `nonReentrant`, and the malicious-token regression proves callbacks cannot publish or mutate the pending round.
+- `finalizeRound` reads token balance before finalization state changes to enforce `actualBalance >= totalUnclaimedShares + matchingPool`. This prevents an underfunded finalization from refunding council liquidity ahead of prior unclaimed shares.
+- `IERC20.balanceOf` is a view call compiled as a static call; it is used only as an invariant check, not as an authorization decision or random source.
+- Regression coverage: `test/PatientFundParticipatoryBudgeting.test.js` covers malicious `startRound` token callbacks, fee-on-transfer rejection before opening a round, and underfunded finalization blocking before council refund.
 
 ## Aderyn Low Issues
 
