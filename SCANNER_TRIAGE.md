@@ -4,33 +4,33 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 ## Current Artifacts
 
-- Slither: `C:\tmp\pbm-slither-report-4015b3f.json`
-- Aderyn: `C:\tmp\pbm-aderyn-report-4015b3f.md`
-- Mythril: `C:\tmp\pbm-mythril-patientfund-bytecode-4015b3f.json`
+- Slither: `C:\tmp\pbm-slither-report-ba5a984.json`
+- Aderyn: `C:\tmp\pbm-aderyn-report-ba5a984.md`
+- Mythril: `C:\tmp\pbm-mythril-patientfund-bytecode-ba5a984.json`
 
-The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with `{"success": true, "issues": []}` and empty stderr. The bytecode helper is `C:\tmp\pbm-patientfund-runtime-4015b3f.hex`.
+The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with `{"success": true, "issues": []}` and empty stderr. The bytecode helper is `C:\tmp\pbm-patientfund-runtime-ba5a984.hex`.
 
-Last scanner refresh: Slither, Aderyn, and a bounded Mythril PatientFund runtime-bytecode check were refreshed for commit `4015b3f` on 2026-07-03 from the WSL distro `Ubuntu-24.04`. Commit `9195644` changed only this triage document relative to `4015b3f`, so those artifacts still describe the target Solidity snapshot. Any later contract hardening worktree must be rescanned before a public deployment claim. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
+Last scanner refresh: Slither, Aderyn, and a bounded Mythril PatientFund runtime-bytecode check were refreshed for commit `ba5a984` on 2026-07-04 from the WSL distro `Ubuntu-24.04`. Commit `ba5a984` includes treasury inbound token delta guards, fresh/recycled matching-pool custody separation, the voucher lifetime cap, and a CEI-only accounting-order cleanup for recycled refunds. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
 
-Post-excavation verification: `npm.cmd test` passed with 146 tests after adding the fee-on-transfer start-round regression. `npm.cmd test -- test/PatientFundParticipatoryBudgeting.test.js` passed with 54 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
+Post-hardening verification: `npm.cmd test` passed with 151 tests. `npm.cmd test -- test/PatientFundParticipatoryBudgeting.test.js` passed with 56 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
 
 ## Slither Production Triage
 
 Live Slither command:
 
-`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && slither . --exclude-dependencies --filter-paths 'node_modules|contracts/mocks|artifacts|cache' --json /mnt/c/tmp/pbm-slither-report-4015b3f.json"`
+`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && slither . --exclude-dependencies --filter-paths 'node_modules|contracts/mocks|artifacts|cache' --json /mnt/c/tmp/pbm-slither-report-ba5a984.json"`
 
-Live Slither artifact count: 37 production-filtered detector entries.
+Live Slither artifact count: 41 production-filtered detector entries.
 
 Grouped count:
 
 - 1 `arbitrary-send-eth` high
+- 3 `reentrancy-balance` high
 - 2 `incorrect-equality` medium
-- 1 `reentrancy-balance` medium
 - 1 `reentrancy-no-eth` medium
 - 2 `reentrancy-benign` low
-- 18 `timestamp` low
-- 3 `cyclomatic-complexity` informational
+- 19 `timestamp` low
+- 4 `cyclomatic-complexity` informational
 - 1 `low-level-calls` informational
 - 8 `naming-convention` informational
 
@@ -49,12 +49,13 @@ Production high/medium entries:
   - Disposition: accepted empty-balance guard.
   - Rationale: this is a direct no-op guard before a forced-ETH recovery sweep. It does not compare application state for randomness, authorization, or economic thresholds.
 
+- `reentrancy-balance`: `PBMRebateTreasury.depositRebate`, `PBMRebateTreasury.fundExclusionRemediation`, and `PatientFundParticipatoryBudgeting.startRound`.
+  - Disposition: intentional receive-delta guards, mitigated and regression-tested.
+  - Rationale: these functions read token balance before `safeTransferFrom` and compare it after `safeTransferFrom` to reject fee-on-transfer, rebasing, or otherwise short-paid deposits before internal accounting is published. Short-paid transfers revert with `TokenTransferAmountMismatch`, and transaction rollback reverts token-side effects from the failed funding attempt.
+  - Regression: `test/PBMRebateTreasury.delta.test.js` proves treasury deposits and remediation funding reject short-paid fee-on-transfer tokens. `test/PatientFundParticipatoryBudgeting.test.js` proves matching-pool funding rejects fee-on-transfer tokens before opening a round.
+
 - `reentrancy-no-eth`: `PatientFundParticipatoryBudgeting.startRound`.
   - Disposition: mitigated and regression-tested. See StartRound Reentrancy Review below.
-
-- `reentrancy-balance`: `PatientFundParticipatoryBudgeting.startRound`.
-  - Disposition: intentional balance-delta guard, mitigated and regression-tested. See StartRound Reentrancy Review below.
-  - Rationale: the balance read before `safeTransferFrom` and comparison after `safeTransferFrom` are the fee-on-transfer defense. Short-paid matching tokens revert before a round is opened, and the transaction rollback reverts token-side effects from the failed funding attempt.
 
 Production low/informational entries:
 
@@ -67,7 +68,7 @@ Production low/informational entries:
 - `low-level-calls`: `PBMRebateTreasury.sweepETH`.
   - Disposition: accepted because sending ETH requires `.call{value: ...}`. The path is `nonReentrant`, executor-gated, and sends to validated `environmentalFund`.
 
-- `cyclomatic-complexity`: `PBMRebateTreasury` constructor, `flagClaim`, and `resolveClaim`.
+- `cyclomatic-complexity`: `PBMRebateTreasury` constructor, `flagClaim`, `resolveClaim`, and `PatientFundParticipatoryBudgeting.finalizeRound`.
   - Disposition: accepted for now. These functions encode explicit governance and dispute checks; refactoring them would be readability work, not a scanner blocker.
 
 - `naming-convention`: underscore-prefixed external parameters in sweep/environment setter helpers.
@@ -75,7 +76,7 @@ Production low/informational entries:
 
 ## StartRound Reentrancy Review
 
-Slither continues to report `PatientFundParticipatoryBudgeting.startRound(uint256)` as `reentrancy-no-eth` because `token.safeTransferFrom(...)` occurs before `currentRound` and `rounds[roundId]` are written. After the fee-on-transfer fix, Slither also reports `reentrancy-balance` because `startRound` reads the contract token balance before and after `safeTransferFrom`.
+Slither continues to report `PatientFundParticipatoryBudgeting.startRound(uint256)` as `reentrancy-no-eth` because `token.safeTransferFrom(...)` occurs before `currentRound` and `rounds[roundId]` are written. Slither also reports `reentrancy-balance` because `startRound` reads the contract token balance before and after `safeTransferFrom`.
 
 Disposition: mitigated and regression-tested residual warning.
 
@@ -110,6 +111,7 @@ Evidence:
 - `contracts/mocks/TreasuryReentrantToken.sol` reenters the treasury during both inbound `transferFrom` calls and outbound `transfer` calls.
 - During `depositRebate`, the malicious token observes that `distributionPool`, `governanceReserve`, `totalRebateDeposited`, and `rebateDepositCount` are still unchanged while the token pull is in progress.
 - During `fundExclusionRemediation`, the malicious token observes that `exclusionRemediationReserve` is still unchanged while the token pull is in progress.
+- `depositRebate` and `fundExclusionRemediation` now exact-check the received token delta, and `test/PBMRebateTreasury.delta.test.js` proves fee-on-transfer tokens revert with `TokenTransferAmountMismatch`.
 - During `claim`, the malicious token observes that claim effects are already settled before payout transfer callbacks: `hasClaimed == true`, `epochEscrow == 0`, `totalEscrowed == 0`, and root/claim totals already include the gross claim.
 - In each callback phase, the mock attempts the guarded value-moving entry points: `depositRebate`, `fundExclusionRemediation`, `claim`, `resolveClaim`, `recallUnclaimed`, `withdrawGovernanceReserve`, `recoverStaleDistributionPool`, `sweepETH`, and `sweep`.
 - All guarded reentry attempts are blocked and `unexpectedSuccessCount == 0`.
@@ -119,7 +121,7 @@ Evidence:
 
 Live Aderyn command:
 
-`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && aderyn . -x contracts/mocks,node_modules,artifacts,cache -o /mnt/c/tmp/pbm-aderyn-report-4015b3f.md"`
+`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && aderyn . -x contracts/mocks,node_modules,artifacts,cache -o /mnt/c/tmp/pbm-aderyn-report-ba5a984.md"`
 
 Live Aderyn count: 2 highs, 6 lows.
 
@@ -138,17 +140,18 @@ Rationale:
 
 ### H-2: Reentrancy: State change after external call
 
-Instances: `PatientFundParticipatoryBudgeting.startRound` balance reads around the fresh token pull, and `PatientFundParticipatoryBudgeting.finalizeRound` solvency balance read.
+Instances: `PBMRebateTreasury.depositRebate` and `fundExclusionRemediation` receive-delta balance reads, `PatientFundParticipatoryBudgeting.startRound` balance reads around the fresh token pull, and `PatientFundParticipatoryBudgeting.finalizeRound` solvency balance read.
 
 Disposition: accepted residual warning; the state-changing paths are guarded by explicit invariants and regression tests.
 
 Rationale:
 
+- `depositRebate` and `fundExclusionRemediation` intentionally read balance before and after `safeTransferFrom` to reject fee-on-transfer, rebasing, or otherwise short-paid inbound treasury tokens. Treasury accounting is not published until after the transfer and exact-delta check succeeds.
 - `startRound` intentionally reads balance before and after `safeTransferFrom` to reject fee-on-transfer, rebasing, or otherwise short-paid matching tokens. The round is not published until after the transfer and exact-delta check succeeds.
 - `startRound` remains `nonReentrant`, and the malicious-token regression proves callbacks cannot publish or mutate the pending round.
 - `finalizeRound` reads token balance before finalization state changes to enforce `actualBalance >= totalUnclaimedShares + matchingPool`. This prevents an underfunded finalization from refunding council liquidity ahead of prior unclaimed shares.
 - `IERC20.balanceOf` is a view call compiled as a static call; it is used only as an invariant check, not as an authorization decision or random source.
-- Regression coverage: `test/PatientFundParticipatoryBudgeting.test.js` covers malicious `startRound` token callbacks, fee-on-transfer rejection before opening a round, and underfunded finalization blocking before council refund.
+- Regression coverage: `test/PBMRebateTreasury.delta.test.js` covers treasury fee-on-transfer rejection. `test/PBMRebateTreasury.security.test.js` covers treasury callback behavior. `test/PatientFundParticipatoryBudgeting.test.js` covers malicious `startRound` token callbacks, fee-on-transfer rejection before opening a round, underfunded finalization blocking before council refund, and recycled-pool custody on zero-vote/dust paths.
 
 ## Aderyn Low Issues
 
