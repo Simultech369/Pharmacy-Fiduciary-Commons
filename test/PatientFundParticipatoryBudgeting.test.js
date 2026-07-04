@@ -74,6 +74,28 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("10000"));
     });
 
+    it("rejects fee-on-transfer matching tokens before opening a round", async function () {
+      const FeeToken = await ethers.getContractFactory("MockFeeOnTransferERC20");
+      const feeToken = await FeeToken.deploy();
+      await feeToken.waitForDeployment();
+
+      const PB = await ethers.getContractFactory("PatientFundParticipatoryBudgeting");
+      const feePb = await PB.deploy(await feeToken.getAddress(), council.address, guardian.address);
+      await feePb.waitForDeployment();
+
+      await feeToken.mint(council.address, toWei("50000"));
+      await feeToken.connect(council).approve(await feePb.getAddress(), toWei("50000"));
+
+      await expectRevert(
+        feePb.connect(council).startRound(toWei("1000")),
+        "TokenTransferAmountMismatch"
+      );
+
+      expect(await feePb.currentRound()).to.equal(0n);
+      expect((await feePb.rounds(1n)).state).to.equal(0n); // RoundState.Inactive
+      expect(await feeToken.balanceOf(await feePb.getAddress())).to.equal(0n);
+    });
+
     it("restricts startRound to council", async function () {
       await expectRevert(
         pb.connect(attacker).startRound(toWei("10000")),

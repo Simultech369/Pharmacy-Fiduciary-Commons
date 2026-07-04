@@ -146,6 +146,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     error ReclaimGracePeriodNotElapsed();
     error InsufficientContractBalance(uint256 requested, uint256 actual);
     error InsufficientSolvencyBalance(uint256 required, uint256 actual);
+    error TokenTransferAmountMismatch(uint256 expected, uint256 actual);
 
     // =========================================================
     // CONSTRUCTOR
@@ -177,7 +178,6 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         }
 
         uint256 roundId = currentRound + 1;
-        uint256 totalMatchingPool = matchingPoolAmount + recycled;
 
         if (recycled > 0) {
             recycledMatchingPool = 0;
@@ -185,8 +185,15 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
 
         // Pull fresh funds before publishing the round so callbacks cannot observe a half-open round.
         if (matchingPoolAmount > 0) {
+            uint256 balanceBefore = token.balanceOf(address(this));
             token.safeTransferFrom(msg.sender, address(this), matchingPoolAmount);
+            uint256 balanceAfter = token.balanceOf(address(this));
+            uint256 received = balanceAfter >= balanceBefore ? balanceAfter - balanceBefore : 0;
+            if (received != matchingPoolAmount) {
+                revert TokenTransferAmountMismatch(matchingPoolAmount, received);
+            }
         }
+        uint256 totalMatchingPool = matchingPoolAmount + recycled;
         currentRound = roundId;
         if (recycled > 0) {
             emit RecycledMatchingPoolApplied(roundId, recycled);

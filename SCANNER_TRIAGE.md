@@ -10,7 +10,7 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with 0 issues and empty stderr.
 
-Live scanner refresh: Slither and Aderyn were refreshed for commit `a816e9e` on 2026-07-03 from the elevated WSL distro `Ubuntu-24.04`. Later commits include scanner-document updates and the `dryRunFinalize` view alias, so these artifacts remain useful triage evidence but should be refreshed before deployment claims. The normal, non-elevated Windows shell still cannot see registered WSL distros; use the elevated WSL context for scanner reruns on this host.
+Live scanner refresh: Slither and Aderyn were refreshed for commit `a816e9e` on 2026-07-03 from the elevated WSL distro `Ubuntu-24.04`. Later commits include scanner-document updates, the `dryRunFinalize` view alias, and `startRound` fee-on-transfer hardening, so these artifacts remain useful triage evidence but should be refreshed before deployment claims. The normal, non-elevated Windows shell still cannot see registered WSL distros; use the elevated WSL context for scanner reruns on this host.
 
 Post-excavation verification: `npm.cmd test` passed with 135 tests. After adding treasury callback and forced-ETH tests, `npm.cmd test -- test/PBMRebateTreasury.security.test.js` passed with 36 tests. Later dry-run finalization naming work added `dryRunFinalize` as a view alias for `previewFinalize`; scanner artifacts should be refreshed again before deployment claims because that alias landed after commit `a816e9e`.
 
@@ -78,14 +78,17 @@ Evidence:
 
 - `startRound` now computes `roundId` locally and does not publish `currentRound` or the active round struct until after the fresh token pull succeeds.
 - `recycledMatchingPool` is cleared before the external token call, with rollback on transfer failure.
+- The fresh token pull is balance-delta checked. Fee-on-transfer or otherwise short-paid matching tokens revert with `TokenTransferAmountMismatch` before `currentRound` advances or a round struct is published.
 - `nonReentrant` is the first modifier on `startRound`.
 - `contracts/mocks/StartRoundReentrantToken.sol` deliberately reenters during `transferFrom`.
+- `contracts/mocks/MockFeeOnTransferERC20.sol` simulates a 1% transfer fee.
 - `test/PatientFundParticipatoryBudgeting.test.js` grants the malicious token `COUNCIL_ROLE`, starts a second round after a finalized first round, and proves that during the callback:
   - `currentRound` still points to the previous finalized round;
   - the next round is still `Inactive`;
   - recursive `startRound` is blocked;
   - reentrant voter/project/proposal/vote mutations all fail;
   - `unexpectedSuccessCount == 0`.
+- `test/PatientFundParticipatoryBudgeting.test.js` also proves fee-on-transfer matching tokens are rejected before opening a round, leaving `currentRound == 0`, the next round `Inactive`, and the budgeting contract with no retained fee-token balance.
 
 The remaining Slither signal is therefore useful as a reminder that ERC-20 callbacks are possible, but the tested callback cannot publish or mutate the pending round.
 
