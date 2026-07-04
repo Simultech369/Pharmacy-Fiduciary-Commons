@@ -10,7 +10,7 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with `{"success": true, "issues": []}` and empty stderr. The bytecode helper is `C:\tmp\pbm-patientfund-runtime-4015b3f.hex`.
 
-Live scanner refresh: Slither, Aderyn, and a bounded Mythril PatientFund runtime-bytecode check were refreshed for commit `4015b3f` on 2026-07-03 from the WSL distro `Ubuntu-24.04`. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
+Last scanner refresh: Slither, Aderyn, and a bounded Mythril PatientFund runtime-bytecode check were refreshed for commit `4015b3f` on 2026-07-03 from the WSL distro `Ubuntu-24.04`. Commit `9195644` changed only this triage document relative to `4015b3f`, so those artifacts still describe the target Solidity snapshot. Any later contract hardening worktree must be rescanned before a public deployment claim. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
 
 Post-excavation verification: `npm.cmd test` passed with 146 tests after adding the fee-on-transfer start-round regression. `npm.cmd test -- test/PatientFundParticipatoryBudgeting.test.js` passed with 54 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
 

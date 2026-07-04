@@ -56,6 +56,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         RoundState state;
         uint256 projectCount;
         uint256 finalizedAt;
+        uint256 freshMatchingPool;
     }
 
     IERC20 public immutable token;
@@ -203,7 +204,8 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
             matchingPool: totalMatchingPool,
             state: RoundState.Active,
             projectCount: 0,
-            finalizedAt: 0
+            finalizedAt: 0,
+            freshMatchingPool: matchingPoolAmount
         });
 
         emit RoundStarted(roundId, totalMatchingPool);
@@ -471,7 +473,14 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
 
         // 2. Handle zero vote edge case
         if (totalWeight == 0) {
-            token.safeTransfer(council, pool);
+            uint256 fresh = r.freshMatchingPool;
+            if (fresh > 0) {
+                token.safeTransfer(council, fresh);
+            }
+            uint256 recycled = pool - fresh;
+            if (recycled > 0) {
+                recycledMatchingPool += recycled;
+            }
             emit RoundFinalized(roundId, 0);
             return;
         }
@@ -493,7 +502,15 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         // Refund any tiny division dust left over to the council
         if (pool > distributed) {
             uint256 dust = pool - distributed;
-            token.safeTransfer(council, dust);
+            uint256 freshLimit = r.freshMatchingPool;
+            uint256 councilRefund = (dust * freshLimit) / pool;
+            if (councilRefund > 0) {
+                token.safeTransfer(council, councilRefund);
+            }
+            uint256 recycledRefund = dust - councilRefund;
+            if (recycledRefund > 0) {
+                recycledMatchingPool += recycledRefund;
+            }
         }
 
         emit RoundFinalized(roundId, totalWeight);

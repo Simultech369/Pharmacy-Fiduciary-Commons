@@ -251,7 +251,7 @@ describe("PharmacyMutualCredit", function () {
 
     it("resets issuer deauthorization timestamps across reauthorization cycles", async function () {
       const latestBlock = await ethers.provider.getBlock("latest");
-      const longExpiry = BigInt(latestBlock.timestamp) + 120n * 24n * 60n * 60n;
+      const longExpiry = BigInt(latestBlock.timestamp) + 60n * 24n * 60n * 60n;
       const oldVoucher = ethers.keccak256(ethers.toUtf8Bytes("old-cycle-voucher"));
       const newVoucher = ethers.keccak256(ethers.toUtf8Bytes("new-cycle-voucher"));
 
@@ -444,6 +444,15 @@ describe("PharmacyMutualCredit", function () {
       await credit.connect(pharmacyA).redeemVoucher(voucherId);
       expect(await credit.balances(pharmacyA.address)).to.equal(amount);
       expect(await credit.balances(pharmacyB.address)).to.equal(0n);
+    });
+
+    it("reverts if attempting to create a voucher exceeding MAX_VOUCHER_LIFETIME", async function () {
+      const longExpiryId = ethers.keccak256(ethers.toUtf8Bytes("voucher-too-long"));
+      const tooLongExpiry = expiry + 91n * 24n * 60n * 60n; // 91 days
+      await expectRevert(
+        credit.connect(advocate).createVoucher(longExpiryId, pharmacyA.address, amount, tooLongExpiry),
+        "VoucherExpiryTooLong"
+      );
     });
   });
 

@@ -20,6 +20,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
     bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
     uint256 public constant ISSUER_GRACE_PERIOD = 30 days;
     uint256 public constant MAX_VOUCHER_RELEASE_BATCH = 100;
+    uint256 public constant MAX_VOUCHER_LIFETIME = 90 days;
 
     struct Voucher {
         address issuer;
@@ -74,6 +75,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
     error VoucherNotExpired();
     error GuardianMustDifferFromCouncil();
     error BatchTooLarge();
+    error VoucherExpiryTooLong();
 
     // =========================================================
     // CONSTRUCTOR
@@ -170,6 +172,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
         if (vouchers[voucherId].issuer != address(0)) revert AlreadyRegistered();
         if (amount == 0) revert ZeroAmount();
         if (expiry <= block.timestamp) revert VoucherExpired();
+        if (expiry > block.timestamp + MAX_VOUCHER_LIFETIME) revert VoucherExpiryTooLong();
         if (!_capacityCovers(msg.sender, amount, creditLimits[msg.sender])) revert CreditLimitExceeded();
 
         reservedVoucherCredit[msg.sender] += amount;

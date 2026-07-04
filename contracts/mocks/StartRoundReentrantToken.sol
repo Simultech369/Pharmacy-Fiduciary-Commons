@@ -8,7 +8,13 @@ interface IStartRoundReentryTarget {
     function rounds(uint256 roundId)
         external
         view
-        returns (uint256 matchingPool, uint8 state, uint256 projectCount, uint256 finalizedAt);
+        returns (
+            uint256 matchingPool,
+            uint8 state,
+            uint256 projectCount,
+            uint256 finalizedAt,
+            uint256 freshMatchingPool
+        );
     function startRound(uint256 matchingPoolAmount) external;
     function registerVoter(uint256 roundId, address voter, bool status) external;
     function registerVotersBatch(uint256 roundId, address[] calldata voters) external;
@@ -73,7 +79,7 @@ contract StartRoundReentrantToken is ERC20 {
         callbackCount += 1;
         observedCurrentRound = target.currentRound();
         uint256 nextRound = observedCurrentRound + 1;
-        (, uint8 state, uint256 projectCount,) = target.rounds(nextRound);
+        (, uint8 state, uint256 projectCount,,) = target.rounds(nextRound);
         observedNextRoundState = state;
         observedNextRoundProjectCount = projectCount;
 

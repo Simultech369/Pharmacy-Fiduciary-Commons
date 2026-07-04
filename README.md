@@ -138,7 +138,7 @@ flowchart LR
 
 `PBMRebateTreasury` is an Ethereum smart contract that:
 
-- records rebate deposits on-chain with depositor identity, amount, quarter, drug class, and source;
+- records rebate deposits on-chain with depositor identity, amount, timestamp, and a free-form source string (which may encode quarter and drug class);
 - routes captured funds to independent pharmacies through Merkle-proof claims;
 - allocates 10% of every gross claim to a dedicated patient fund at claim time;
 - makes missing deposits visible through a Ledger of Omissions;

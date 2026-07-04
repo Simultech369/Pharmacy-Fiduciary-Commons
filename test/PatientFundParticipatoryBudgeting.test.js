@@ -1315,7 +1315,6 @@ describe("PatientFundParticipatoryBudgeting", function () {
 
       // Verify original share is 200 mDAI
       expect(await pb.roundProjectShares(1n, 1n)).to.equal(toWei("200"));
-
       // First reclaim succeeds
       await pb.connect(council).reclaimUnclaimedMatchShare(1n, 1n);
 
@@ -1324,6 +1323,81 @@ describe("PatientFundParticipatoryBudgeting", function () {
         pb.connect(council).reclaimUnclaimedMatchShare(1n, 1n),
         "ZeroAmount"
       );
+    });
+
+    it("recycled matching pool remains patient-bound on zero-vote rounds", async function () {
+      // Finalize Round 1 so that we can reclaim and recycle matching shares
+      await pb.connect(council).finalizeRound(1n);
+
+      // Fast forward 90 days to reclaim
+      await ethers.provider.send("evm_increaseTime", [90 * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine");
+
+      // Reclaim project Alpha's share (800 tokens) -> recycledMatchingPool becomes 800
+      await pb.connect(council).reclaimUnclaimedMatchShare(1n, 0n);
+      expect(await pb.recycledMatchingPool()).to.equal(toWei("800"));
+
+      // Start Round 2 with 200 tokens fresh matching pool (total pool becomes 1000)
+      await pb.connect(council).startRound(toWei("200"));
+      expect(await pb.currentRound()).to.equal(2n);
+
+      const councilBalanceBefore = await token.balanceOf(council.address);
+
+      // Finalize Round 2 with 0 votes
+      await pb.connect(council).finalizeRound(2n);
+
+      // Verify only fresh funds (200) are refunded to council, and recycled (800) returns to recycledMatchingPool
+      const councilBalanceAfter = await token.balanceOf(council.address);
+      expect(councilBalanceAfter - councilBalanceBefore).to.equal(toWei("200"));
+      expect(await pb.recycledMatchingPool()).to.equal(toWei("800"));
+    });
+
+    it("handles dust refunds proportionally when there is a mix of fresh and recycled funds", async function () {
+      // Finalize Round 1 and reclaim project Beta's share (200 tokens)
+      await pb.connect(council).finalizeRound(1n);
+      await ethers.provider.send("evm_increaseTime", [90 * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine");
+      await pb.connect(council).reclaimUnclaimedMatchShare(1n, 1n);
+      expect(await pb.recycledMatchingPool()).to.equal(toWei("200"));
+
+      // Start Round 2 with 5 tokens fresh matching pool (total pool becomes 205 tokens)
+      await pb.connect(council).startRound(5n);
+      const roundId = 2n;
+
+      // Register voters
+      await pb.connect(council).registerVoter(roundId, voters[0].address, true);
+      await pb.connect(council).registerVoter(roundId, voters[1].address, true);
+
+      // Register projects
+      await pb.connect(council).registerProject(roundId, "Proj A", recipientA.address);
+      await pb.connect(council).registerProject(roundId, "Proj B", recipientB.address);
+
+      // Vote so we have totalWeight > 0 but division leaves dust
+      // Project A gets 1 vote, Project B gets 1 vote.
+      // Total weight = 1^2 + 1^2 = 2.
+      // Proportional shares:
+      // Project A share = 205 * 1 / 2 = 102 tokens.
+      // Project B share = 205 * 1 / 2 = 102 tokens.
+      // Total distributed = 204 tokens.
+      // Dust = 205 - 204 = 1 token.
+      // Fresh contribution = 5 tokens.
+      // Council refund = 1 * 5 / 205 = 0 tokens.
+      // Recycled refund = 1 token.
+      await pb.connect(voters[0]).castVote(roundId, 0n);
+      await pb.connect(voters[1]).castVote(roundId, 1n);
+
+      const councilBalanceBefore = await token.balanceOf(council.address);
+      const recycledBefore = await pb.recycledMatchingPool();
+
+      await pb.connect(council).finalizeRound(roundId);
+
+      const councilBalanceAfter = await token.balanceOf(council.address);
+      const recycledAfter = await pb.recycledMatchingPool();
+
+      // Council should receive none of this mixed-pool dust after proportional rounding.
+      expect(councilBalanceAfter).to.equal(councilBalanceBefore);
+      // The dust remains patient-bound in the recycled matching pool.
+      expect(recycledAfter - recycledBefore).to.equal(1n);
     });
   });
 });

@@ -35,7 +35,7 @@ let treasuryAddress = DEPLOYMENT_CONFIG[31337].treasuryAddress;
 
 const PB_ABI = [
   "function currentRound() view returns (uint256)",
-  "function rounds(uint256) view returns (uint256 matchingPool, uint8 state, uint256 projectCount, uint256 finalizedAt)",
+  "function rounds(uint256) view returns (uint256 matchingPool, uint8 state, uint256 projectCount, uint256 finalizedAt, uint256 freshMatchingPool)",
   "function roundProjects(uint256, uint256) view returns (string title, address recipient, uint256 voteCount, bool active)",
   "function registeredVoters(uint256, address) view returns (bool)",
   "function castVote(uint256 roundId, uint256 projectId) external",

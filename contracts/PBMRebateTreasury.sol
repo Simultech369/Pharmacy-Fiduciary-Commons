@@ -142,6 +142,7 @@ contract PBMRebateTreasury is
     error MinimumEpochVolumeExceedsDailyCap();
     error GovernanceRoleSeparationViolation();
     error ZeroEvidenceHash();
+    error TokenTransferAmountMismatch(uint256 expected, uint256 actual);
 
     // =========================================================
     // ROLES
@@ -526,7 +527,13 @@ contract PBMRebateTreasury is
         uint256 srcLen = bytes(source).length;
         if (srcLen == 0 || srcLen > 256) revert InvalidSource();
 
+        uint256 balanceBefore = token.balanceOf(address(this));
         token.safeTransferFrom(msg.sender, address(this), amount);
+        uint256 balanceAfter = token.balanceOf(address(this));
+        uint256 received = balanceAfter >= balanceBefore ? balanceAfter - balanceBefore : 0;
+        if (received != amount) {
+            revert TokenTransferAmountMismatch(amount, received);
+        }
 
         uint256 forGovernance   = (amount * governanceBP) / BP_DENOM;
         uint256 forDistribution = amount - forGovernance;
@@ -558,7 +565,13 @@ contract PBMRebateTreasury is
         whenNotPaused
     {
         if (amount == 0) revert ZeroAmount();
+        uint256 balanceBefore = token.balanceOf(address(this));
         token.safeTransferFrom(msg.sender, address(this), amount);
+        uint256 balanceAfter = token.balanceOf(address(this));
+        uint256 received = balanceAfter >= balanceBefore ? balanceAfter - balanceBefore : 0;
+        if (received != amount) {
+            revert TokenTransferAmountMismatch(amount, received);
+        }
         exclusionRemediationReserve += amount;
         emit ExclusionRemediationFunded(msg.sender, amount);
     }
@@ -569,7 +582,7 @@ contract PBMRebateTreasury is
 
     /**
      * @notice First council member proposes a Merkle root for the current epoch.
-     * @dev    Root does not go live until a second, distinct COUNCIL_ROLE member
+     * @dev    Root does not go live until a member with ROOT_CONFIRMER_ROLE
      *         calls confirmRoot(). This is the highest-stakes action in the contract -
      *         the root determines who gets paid.
      *
