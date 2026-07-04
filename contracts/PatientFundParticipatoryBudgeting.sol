@@ -474,12 +474,12 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         // 2. Handle zero vote edge case
         if (totalWeight == 0) {
             uint256 fresh = r.freshMatchingPool;
-            if (fresh > 0) {
-                token.safeTransfer(council, fresh);
-            }
             uint256 recycled = pool - fresh;
             if (recycled > 0) {
                 recycledMatchingPool += recycled;
+            }
+            if (fresh > 0) {
+                token.safeTransfer(council, fresh);
             }
             emit RoundFinalized(roundId, 0);
             return;
@@ -504,12 +504,12 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
             uint256 dust = pool - distributed;
             uint256 freshLimit = r.freshMatchingPool;
             uint256 councilRefund = (dust * freshLimit) / pool;
-            if (councilRefund > 0) {
-                token.safeTransfer(council, councilRefund);
-            }
             uint256 recycledRefund = dust - councilRefund;
             if (recycledRefund > 0) {
                 recycledMatchingPool += recycledRefund;
+            }
+            if (councilRefund > 0) {
+                token.safeTransfer(council, councilRefund);
             }
         }
 
