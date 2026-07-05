@@ -4,21 +4,21 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 ## Current Artifacts
 
-- Slither: `C:\tmp\pbm-slither-report-ba5a984.json`
-- Aderyn: `C:\tmp\pbm-aderyn-report-ba5a984.md`
-- Mythril: `C:\tmp\pbm-mythril-patientfund-bytecode-ba5a984.json`
+- Slither: `C:\tmp\pbm-slither-report-46107f9.json`
+- Aderyn: `C:\tmp\pbm-aderyn-report-46107f9.md`
+- Mythril: `C:\tmp\pbm-mythril-patientfund-bytecode-46107f9.json`
 
-The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with `{"success": true, "issues": []}` and empty stderr. The bytecode helper is `C:\tmp\pbm-patientfund-runtime-ba5a984.hex`.
+The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with `{"success": true, "issues": []}` and empty stderr. The bytecode helper is `C:\tmp\pbm-patientfund-runtime-46107f9.hex`.
 
-Last scanner refresh: Slither, Aderyn, and a bounded Mythril PatientFund runtime-bytecode check were refreshed for commit `ba5a984` on 2026-07-04 from the WSL distro `Ubuntu-24.04`. Commit `ba5a984` includes treasury inbound token delta guards, fresh/recycled matching-pool custody separation, the voucher lifetime cap, and a CEI-only accounting-order cleanup for recycled refunds. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
+Last scanner refresh: Slither, Aderyn, and a bounded Mythril PatientFund runtime-bytecode check were refreshed for commit `46107f9` on 2026-07-04 from the WSL distro `Ubuntu-24.04`. Commit `46107f9` preserves council/guardian/admin role separation post-deployment and blocks budgeting round activation while outstanding recycled matching obligations are under-backed. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
 
-Post-hardening verification: `npm.cmd test` passed with 151 tests. `npm.cmd test -- test/PatientFundParticipatoryBudgeting.test.js` passed with 56 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
+Post-hardening verification: `npm.cmd test` passed with 155 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
 
 ## Slither Production Triage
 
 Live Slither command:
 
-`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && slither . --exclude-dependencies --filter-paths 'node_modules|contracts/mocks|artifacts|cache' --json /mnt/c/tmp/pbm-slither-report-ba5a984.json"`
+`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && slither . --exclude-dependencies --filter-paths 'node_modules|contracts/mocks|artifacts|cache' --json /mnt/c/tmp/pbm-slither-report-46107f9.json"`
 
 Live Slither artifact count: 41 production-filtered detector entries.
 
@@ -121,7 +121,7 @@ Evidence:
 
 Live Aderyn command:
 
-`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && aderyn . -x contracts/mocks,node_modules,artifacts,cache -o /mnt/c/tmp/pbm-aderyn-report-ba5a984.md"`
+`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && aderyn . -x contracts/mocks,node_modules,artifacts,cache -o /mnt/c/tmp/pbm-aderyn-report-46107f9.md"`
 
 Live Aderyn count: 2 highs, 6 lows.
 
