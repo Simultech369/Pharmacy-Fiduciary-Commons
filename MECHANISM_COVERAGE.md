@@ -30,6 +30,8 @@ Coverage levels:
 | Exclusion payouts cannot distort root-unclaimed reporting | Contract-enforced + tested | `epochRootClaimedTotal`, `epochExclusionPaidTotal`, `epochAccounting`, and security tests | Surface the provenance-aware fields in any future dashboard |
 | Issued vouchers reserve mutual-credit capacity until redemption or expiry cleanup | Contract-enforced + tested | `reservedVoucherCredit`, `releaseExpiredVoucher`, transfer and limit-update checks | Expired capacity is not auto-released; add operational monitoring for expired reservations awaiting cleanup |
 | Flagged normal disputes reserve cap volume until resolved | Contract-enforced + tested | `resolveClaim` resets volume, security tests | Covered by cap-reservation regression tests |
+| Flagged disputes can be retracted by the claimant pharmacy after a 30-day timeout | Contract-enforced + tested | `retractClaimDispute`, `ClaimDisputeRetracted`, and dispute-timeout tests | Handles both recalled (sent to patientFund) and unrecalled (returned to escrow) states; re-flagging after retract is fully supported |
+| Stale unrooted epochs can be bypassed by the timelock executor after 180 days | Contract-enforced + tested | `skipStaleUnrootedEpoch`, `StaleUnrootedEpochSkipped`, and stale recovery tests | Advances currentEpoch and deletes expired proposals to prevent permanent deadlock |
 | Voucher IDs cannot be stolen and redeemed by another participant | Contract-enforced + tested | Recipient stored in `Voucher`; `redeemVoucher` requires the intended recipient | Add cancellation and reissuance only if real workflows require it |
 
 ## Governance And Trust Roots
@@ -84,7 +86,7 @@ Coverage levels:
 
 | Claim | Current Coverage | Evidence | Gap / Next Step |
 |-------|------------------|----------|-----------------|
-| Tests run locally | Tested | `npm.cmd test` currently passes 40 tests | Keep CI green |
+| Tests run locally | Tested | `npm.cmd test` currently passes 166 tests | Keep CI green |
 | Tests run on GitHub | CI-configured | `.github/workflows/test.yml` | Confirm first workflow run after push |
 | Dependencies are monitored | GitHub-configured | `.github/dependabot.yml` | Review Dependabot PRs before merging |
 | Production frontend build exists | Not implemented | checklist only | Add bundler/minifier, no public source maps, no unsafe CDN dependency |
