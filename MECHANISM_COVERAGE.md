@@ -22,6 +22,7 @@ Coverage levels:
 | Pharmacy payouts use Merkle proofs | Contract-enforced + script-supported | `claim`, `flagClaim`, `tools/merkle/allocations.js`, and `scripts/verify-export.js` | Add chain/RPC event reconciliation for exported claims |
 | Patient fund receives 10% of gross claims | Contract-enforced | `PBMRebateTreasury.claim` routes patient share | Add dashboard visibility for patient-fund inflows |
 | Unclaimed epoch funds can be recalled to patient fund | Contract-enforced | `recallUnclaimed` | Add release/demo scenario showing recall lifecycle |
+| Patient-fund tokens routed directly to participatory budgeting become matching liquidity | Contract-enforced + tested | `PatientFundParticipatoryBudgeting.startRound`, `ExternalPatientFundsApplied`, and PB Sink Model tests | Deployment must choose and document whether `patientFund` is a Safe/intermediate treasury or the budgeting contract itself |
 | Daily/hard volume caps reduce treasury blast radius | Contract-enforced | `dailyVolumeCap`, `hardAbsoluteVolumeCap`, `reduceHardCap`, `updateDailyCap` | Add operator-facing simulator before root confirmation |
 | Epoch finalization supports payout tokens with different decimals | Contract-enforced + tested | Constructor-configured `minimumEpochVolume` and six-decimal token regression test | Deployment must express thresholds in token base units |
 | Disputed dismissed claims do not poison caps or lock recalled funds | Contract-enforced + tested | `resolveClaim` and security tests | Keep as regression test in CI |

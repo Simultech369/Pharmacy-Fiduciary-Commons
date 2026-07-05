@@ -105,10 +105,18 @@ Final external admin retained: false
 
 ## 5. Handling Patient Fund Matching Pool Depletion
 
+### Patient Fund Address Models
+Deployment must choose and publish one of two patient-fund address models:
+
+1. **Safe / Intermediate Treasury Model:** `patientFund` is a governed Safe or treasury address. Treasury claim shares and recalled funds accumulate there until operators intentionally fund participatory-budgeting rounds.
+2. **PB Sink Model:** `patientFund` is the `PatientFundParticipatoryBudgeting` contract itself. Any payout-token surplus in that contract beyond `totalUnclaimedShares + recycledMatchingPool` is treated as patient-bound matching liquidity on the next `startRound` call, emits `ExternalPatientFundsApplied`, and is not refundable to the council as fresh matching funds.
+
+Accidental direct payout-token transfers into `PatientFundParticipatoryBudgeting` follow the same PB Sink rule. Non-payout tokens remain governed by the contract's sweep policy.
+
 If the contract's actual token balance falls below the required accounting balance (due to manual withdrawals, accidental sweep operations, or general funding gaps):
 
 ### Step 1: Verification & Diagnosis
-1. Identify the depletion on the public dashboard (which will display a `⚠️ LIQUIDITY DEFICIT` warning) or query the view helper `previewFinalize(roundId)` on the `PatientFundParticipatoryBudgeting` contract.
+1. Identify the depletion on the public dashboard (which will display a `LIQUIDITY DEFICIT` warning) or query the view helper `previewFinalize(roundId)` on the `PatientFundParticipatoryBudgeting` contract.
 2. Calculate the exact deficit:
    \[\text{Deficit} = \text{Required Accounting Balance} - \text{Actual Contract Balance}\]
    where:

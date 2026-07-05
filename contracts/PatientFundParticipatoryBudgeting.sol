@@ -115,6 +115,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     event MatchDistributed(uint256 indexed roundId, uint256 indexed projectId, address indexed recipient, uint256 amount);
     event MatchShareReclaimed(uint256 indexed roundId, uint256 indexed projectId, address indexed recipient, uint256 amount);
     event RecycledMatchingPoolApplied(uint256 indexed roundId, uint256 amount);
+    event ExternalPatientFundsApplied(uint256 indexed roundId, uint256 amount);
     event RelayerVerifierUpdated(address indexed newVerifier);
     event Sweep(address indexed tokenAddr, address indexed recipient, uint256 amount);
     event ProjectProposed(uint256 indexed roundId, uint256 indexed proposalId, string title, address indexed recipient);
@@ -184,7 +185,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
 
     function startRound(uint256 matchingPoolAmount) external nonReentrant onlyRole(COUNCIL_ROLE) whenNotPaused {
         uint256 recycled = recycledMatchingPool;
-        if (matchingPoolAmount == 0 && recycled == 0) revert ZeroAmount();
+        uint256 recordedRecycled = recycled;
         if (currentRound > 0 && rounds[currentRound].state != RoundState.Finalized) {
             revert RoundAlreadyActive();
         }
@@ -196,9 +197,14 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
             revert InsufficientSolvencyBalance(requiredExisting, actualBefore);
         }
 
-        if (recycled > 0) {
-            recycledMatchingPool = 0;
+        uint256 externalSurplus = actualBefore - requiredExisting;
+        if (externalSurplus > 0) {
+            recycled += externalSurplus;
+            emit ExternalPatientFundsApplied(roundId, externalSurplus);
         }
+        if (matchingPoolAmount == 0 && recycled == 0) revert ZeroAmount();
+
+        recycledMatchingPool = 0;
 
         // Pull fresh funds before publishing the round so callbacks cannot observe a half-open round.
         if (matchingPoolAmount > 0) {
@@ -212,8 +218,8 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         }
         uint256 totalMatchingPool = matchingPoolAmount + recycled;
         currentRound = roundId;
-        if (recycled > 0) {
-            emit RecycledMatchingPoolApplied(roundId, recycled);
+        if (recordedRecycled > 0) {
+            emit RecycledMatchingPoolApplied(roundId, recordedRecycled);
         }
 
         rounds[roundId] = Round({
@@ -461,7 +467,8 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     /**
      * @notice Finalizes the voting round, calculates squared vote weights, and distributes matching pool.
      * @dev    Weight of project i is (votes_i)^2. Proportional share is Weight_i / TotalWeight.
-     *         If totalWeight is 0, the matching pool is returned to the council address to prevent locking.
+     *         If totalWeight is 0, only fresh council-funded liquidity is returned to council; recycled
+     *         and externally routed patient-fund liquidity remains patient-bound for future rounds.
      */
     function finalizeRound(uint256 roundId) external nonReentrant onlyRole(COUNCIL_ROLE) whenNotPaused {
         Round storage r = rounds[roundId];
@@ -515,7 +522,8 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         }
         totalUnclaimedShares += distributed;
 
-        // Refund any tiny division dust left over to the council
+        // Split tiny division dust according to provenance: fresh dust returns to council, while
+        // recycled or externally routed patient-fund dust remains patient-bound for future rounds.
         if (pool > distributed) {
             uint256 dust = pool - distributed;
             uint256 freshLimit = r.freshMatchingPool;

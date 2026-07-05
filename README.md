@@ -174,6 +174,8 @@ This is infrastructure for transparent rebate pass-through. It is not legal, fin
 | Unclaimed epoch funds after recall delay | 100% routed to `patientFund` |
 | Non-payout token sweeps | 100% routed to `patientFund` |
 
+If `patientFund` is configured directly as the `PatientFundParticipatoryBudgeting` contract, payout-token inflows and direct payout-token surplus in that contract are treated as patient-bound matching liquidity for the next round and logged with `ExternalPatientFundsApplied`. They are not treated as council-refundable funds.
+
 ## Roles
 
 | Role | Holder | Permissions |

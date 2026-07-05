@@ -193,6 +193,88 @@ describe("PatientFundParticipatoryBudgeting", function () {
     });
   });
 
+  describe("PB Sink Model External Patient Funds", function () {
+    it("opens a round from external patient funds only", async function () {
+      const externalFunds = toWei("750");
+      await token.mint(await pb.getAddress(), externalFunds);
+
+      const tx = await pb.connect(council).startRound(0n);
+      const receipt = await tx.wait();
+      const event = receipt.logs.find(x => x.fragment && x.fragment.name === "ExternalPatientFundsApplied");
+      expect(event).to.not.be.undefined;
+      expect(event.args[0]).to.equal(1n);
+      expect(event.args[1]).to.equal(externalFunds);
+
+      const round = await pb.rounds(1n);
+      expect(round.matchingPool).to.equal(externalFunds);
+      expect(round.freshMatchingPool).to.equal(0n);
+      expect(await pb.recycledMatchingPool()).to.equal(0n);
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(externalFunds);
+    });
+
+    it("combines external patient funds with a fresh council contribution", async function () {
+      const externalFunds = toWei("300");
+      const freshFunds = toWei("700");
+      await token.mint(await pb.getAddress(), externalFunds);
+
+      const councilBefore = await token.balanceOf(council.address);
+      const tx = await pb.connect(council).startRound(freshFunds);
+      const receipt = await tx.wait();
+      const externalEvent = receipt.logs.find(x => x.fragment && x.fragment.name === "ExternalPatientFundsApplied");
+      const recycledEvent = receipt.logs.find(x => x.fragment && x.fragment.name === "RecycledMatchingPoolApplied");
+
+      expect(externalEvent).to.not.be.undefined;
+      expect(externalEvent.args[1]).to.equal(externalFunds);
+      expect(recycledEvent).to.be.undefined;
+
+      const round = await pb.rounds(1n);
+      expect(round.matchingPool).to.equal(toWei("1000"));
+      expect(round.freshMatchingPool).to.equal(freshFunds);
+      expect(await pb.recycledMatchingPool()).to.equal(0n);
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("1000"));
+      expect(councilBefore - await token.balanceOf(council.address)).to.equal(freshFunds);
+    });
+
+    it("absorbs only surplus above outstanding unclaimed shares", async function () {
+      await pb.connect(council).startRound(toWei("1000"));
+      await pb.connect(council).registerProject(1n, "Existing Claim", recipientA.address);
+      await pb.connect(council).registerVoter(1n, voters[0].address, true);
+      await pb.connect(voters[0]).castVote(1n, 0n);
+      await pb.connect(council).finalizeRound(1n);
+
+      expect(await pb.totalUnclaimedShares()).to.equal(toWei("1000"));
+      await token.mint(await pb.getAddress(), toWei("250"));
+
+      const tx = await pb.connect(council).startRound(0n);
+      const receipt = await tx.wait();
+      const event = receipt.logs.find(x => x.fragment && x.fragment.name === "ExternalPatientFundsApplied");
+      expect(event).to.not.be.undefined;
+      expect(event.args[0]).to.equal(2n);
+      expect(event.args[1]).to.equal(toWei("250"));
+
+      const round = await pb.rounds(2n);
+      expect(round.matchingPool).to.equal(toWei("250"));
+      expect(round.freshMatchingPool).to.equal(0n);
+      expect(await pb.totalUnclaimedShares()).to.equal(toWei("1000"));
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("1250"));
+    });
+
+    it("recycles external patient funds on zero-vote rounds and refunds only fresh council funds", async function () {
+      const externalFunds = toWei("800");
+      const freshFunds = toWei("200");
+      await token.mint(await pb.getAddress(), externalFunds);
+      await pb.connect(council).startRound(freshFunds);
+
+      const councilBefore = await token.balanceOf(council.address);
+      await pb.connect(council).finalizeRound(1n);
+      const councilAfter = await token.balanceOf(council.address);
+
+      expect(councilAfter - councilBefore).to.equal(freshFunds);
+      expect(await pb.recycledMatchingPool()).to.equal(externalFunds);
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(externalFunds);
+    });
+  });
+
   describe("Squared Vote Weight & Payout Distribution", function () {
     beforeEach(async function () {
       await pb.connect(council).startRound(toWei("10000"));
