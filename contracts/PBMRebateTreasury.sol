@@ -142,6 +142,7 @@ contract PBMRebateTreasury is
     error MinimumEpochVolumeExceedsDailyCap();
     error GovernanceRoleSeparationViolation();
     error ZeroEvidenceHash();
+    error DisputeTimeoutNotElapsed();
     error TokenTransferAmountMismatch(uint256 expected, uint256 actual);
 
     // =========================================================
@@ -183,6 +184,9 @@ contract PBMRebateTreasury is
 
     /// @notice Minimum delay after root publish before council may recall unclaimed funds.
     uint256 private constant RECALL_DELAY = 30 days;
+
+    /// @notice Delay after which a claimant may retract an unresolved dispute.
+    uint256 public constant DISPUTE_TIMEOUT = 30 days;
 
     /// @notice Proposed roots expire if not co-signed within this window.
     uint256 private constant ROOT_PROPOSAL_EXPIRY = 3 days;
@@ -319,6 +323,9 @@ contract PBMRebateTreasury is
     ///         flaggedAmount[epoch][pharmacy] > 0 means a dispute is open.
     mapping(uint256 => mapping(address => uint256)) public flaggedAmount;
 
+    /// @notice Timestamp when each dispute was raised, used for claimant timeout retraction.
+    mapping(uint256 => mapping(address => uint256)) public disputeFlaggedTimestamp;
+
     /// @notice Independent approval required before an exclusion dispute can receive funds.
     mapping(uint256 => mapping(address => bool)) public exclusionApproved;
 
@@ -398,6 +405,13 @@ contract PBMRebateTreasury is
     event ClaimFlagged(uint256 indexed epoch, address indexed pharmacy, uint256 amount, bytes32 indexed evidenceHash);
     event ExclusionClaimFlagged(uint256 indexed epoch, address indexed pharmacy, uint256 amount, bytes32 indexed evidenceHash);
     event ExclusionClaimApproved(uint256 indexed epoch, address indexed pharmacy, uint256 amount, address approver);
+    event ClaimDisputeRetracted(
+        uint256 indexed epoch,
+        address indexed pharmacy,
+        uint256 amount,
+        bool isExclusion,
+        bool epochWasRecalled
+    );
     event ClaimResolved(
         uint256 indexed epoch,
         address indexed pharmacy,
@@ -832,6 +846,7 @@ contract PBMRebateTreasury is
         epochClaimedTotal[epoch]                    += amount;
         epochRootClaimedTotal[epoch]                += amount;
         flaggedAmount[epoch][msg.sender]             = amount;
+        disputeFlaggedTimestamp[epoch][msg.sender]   = block.timestamp;
         epochEscrow[epoch]                           -= amount;
         totalEscrowed                                -= amount;
         totalFlaggedNormal                           += amount;
@@ -867,6 +882,7 @@ contract PBMRebateTreasury is
 
         hasClaimed[epoch][msg.sender]         = true;
         flaggedAmount[epoch][msg.sender]      = amount;
+        disputeFlaggedTimestamp[epoch][msg.sender] = block.timestamp;
         isExclusionDispute[epoch][msg.sender] = true;
         totalFlaggedExclusion                += amount;
 
@@ -888,6 +904,59 @@ contract PBMRebateTreasury is
 
         exclusionApproved[epoch][pharmacy] = true;
         emit ExclusionClaimApproved(epoch, pharmacy, amount, msg.sender);
+    }
+
+    /**
+     * @notice Allows a pharmacy to retract an unresolved dispute after the timeout.
+     * @dev Normal disputes reverse claim-volume accounting. If the epoch has already
+     *      been recalled, the quarantined funds follow the recall destination.
+     *
+     * @param epoch The epoch whose unresolved dispute should be retracted.
+     */
+    function retractClaimDispute(uint256 epoch)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        address pharmacy = msg.sender;
+        uint256 amount = flaggedAmount[epoch][pharmacy];
+        if (amount == 0) revert NoFlaggedClaim();
+
+        uint256 flaggedAt = disputeFlaggedTimestamp[epoch][pharmacy];
+        if (block.timestamp < flaggedAt + DISPUTE_TIMEOUT) revert DisputeTimeoutNotElapsed();
+
+        bool isExclusion = isExclusionDispute[epoch][pharmacy];
+
+        hasClaimed[epoch][pharmacy] = false;
+        flaggedAmount[epoch][pharmacy] = 0;
+        disputeFlaggedTimestamp[epoch][pharmacy] = 0;
+
+        if (isExclusion) {
+            isExclusionDispute[epoch][pharmacy] = false;
+            exclusionApproved[epoch][pharmacy] = false;
+            totalFlaggedExclusion -= amount;
+
+            emit ClaimDisputeRetracted(epoch, pharmacy, amount, true, false);
+            return;
+        }
+
+        epochClaimedTotal[epoch] -= amount;
+        epochRootClaimedTotal[epoch] -= amount;
+        pharmacyClaimedThisEpoch[epoch][pharmacy] -= amount;
+        if (epoch == currentEpoch) {
+            epochVolume -= amount;
+        }
+        totalFlaggedNormal -= amount;
+
+        bool wasRecalled = epochRecalled[epoch];
+        if (wasRecalled) {
+            emit ClaimDisputeRetracted(epoch, pharmacy, amount, false, true);
+            token.safeTransfer(patientFund, amount);
+        } else {
+            epochEscrow[epoch] += amount;
+            totalEscrowed += amount;
+            emit ClaimDisputeRetracted(epoch, pharmacy, amount, false, false);
+        }
     }
 
     /**
@@ -931,6 +1000,7 @@ contract PBMRebateTreasury is
 
         // Effects first
         flaggedAmount[epoch][pharmacy] = 0;
+        disputeFlaggedTimestamp[epoch][pharmacy] = 0;
         if (isExclusion) {
             isExclusionDispute[epoch][pharmacy] = false;
             exclusionApproved[epoch][pharmacy] = false;
