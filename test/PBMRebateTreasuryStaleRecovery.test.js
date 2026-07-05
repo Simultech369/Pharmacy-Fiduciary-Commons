@@ -268,4 +268,111 @@ describe("PBMRebateTreasury Stale Recovery & Timer Checks", function () {
     const expectedDist = await treasury.distributionPool();
     expect(await treasury.getRecoverableStaleAmount()).to.equal(expectedDist);
   });
+
+  describe("skipStaleUnrootedEpoch", function () {
+    it("reverts if called by non-executor role", async function () {
+      await expectRevert(
+        treasury.connect(council).skipStaleUnrootedEpoch(),
+        "AccessControl"
+      );
+    });
+
+    it("reverts if 180 days have not elapsed", async function () {
+      await seedDeposit(toWei("1000"));
+
+      // Fast forward 179 days
+      await ethers.provider.send("evm_increaseTime", [179 * 24 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+
+      await expectRevert(
+        timelockExecute(
+          await treasury.getAddress(),
+          treasury.interface.encodeFunctionData("skipStaleUnrootedEpoch", [])
+        ),
+        "underlying transaction reverted"
+      );
+    });
+
+    it("succeeds after 180 days and transitions state correctly", async function () {
+      await seedDeposit(toWei("1000"));
+
+      // Fast forward 181 days
+      await ethers.provider.send("evm_increaseTime", [181 * 24 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+
+      const prevEpoch = await treasury.currentEpoch();
+      expect(prevEpoch).to.equal(0n);
+
+      const tx = await timelockExecute(
+        await treasury.getAddress(),
+        treasury.interface.encodeFunctionData("skipStaleUnrootedEpoch", [])
+      );
+      
+      // Check state transitions
+      expect(await treasury.currentEpoch()).to.equal(1n);
+      expect(await treasury.epochVolume()).to.equal(0n);
+      
+      // Verify events from transaction receipt
+      const receipt = await tx.wait();
+      const block = await ethers.provider.getBlock(receipt.blockNumber);
+      expect(await treasury.epochStartTimestamp()).to.equal(BigInt(block.timestamp));
+    });
+
+    it("reverts if a Merkle root is already live for the current epoch", async function () {
+      await seedDeposit(toWei("1000"));
+
+      const root = merkleLeaf(pharmacy.address, toWei("100"), toWei("100"));
+      await treasury.connect(council).proposeRoot(root, toWei("100"));
+      await treasury.connect(council2).confirmRoot(0);
+
+      // Fast forward 181 days
+      await ethers.provider.send("evm_increaseTime", [181 * 24 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+
+      await expectRevert(
+        timelockExecute(
+          await treasury.getAddress(),
+          treasury.interface.encodeFunctionData("skipStaleUnrootedEpoch", [])
+        ),
+        "underlying transaction reverted"
+      );
+    });
+
+    it("reverts if a proposal is pending and unexpired, but succeeds and deletes it once expired", async function () {
+      await seedDeposit(toWei("1000"));
+
+      // Fast forward 181 days
+      await ethers.provider.send("evm_increaseTime", [181 * 24 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+
+      const root = merkleLeaf(pharmacy.address, toWei("100"), toWei("100"));
+      await treasury.connect(council).proposeRoot(root, toWei("100"));
+
+      // Proposal is active, should revert
+      await expectRevert(
+        timelockExecute(
+          await treasury.getAddress(),
+          treasury.interface.encodeFunctionData("skipStaleUnrootedEpoch", [])
+        ),
+        "underlying transaction reverted"
+      );
+
+      // Fast forward 4 more days -> proposal expired
+      await ethers.provider.send("evm_increaseTime", [4 * 24 * 60 * 60]);
+      await ethers.provider.send("evm_mine", []);
+
+      // Now it should succeed
+      await timelockExecute(
+        await treasury.getAddress(),
+        treasury.interface.encodeFunctionData("skipStaleUnrootedEpoch", [])
+      );
+
+      expect(await treasury.currentEpoch()).to.equal(1n);
+
+      // Verify proposal was deleted
+      const pending = await treasury.pendingRoot(0);
+      expect(pending.proposer).to.equal(ethers.ZeroAddress);
+      expect(pending.proposedAt).to.equal(0n);
+    });
+  });
 });

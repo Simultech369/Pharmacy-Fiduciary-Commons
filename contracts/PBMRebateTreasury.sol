@@ -410,6 +410,7 @@ contract PBMRebateTreasury is
     event GovernanceReserveWithdrawn(address indexed recipient, uint256 amount);
     event StaleDistributionPoolRecovered(address indexed recipient, uint256 amount);
     event ExclusionRemediationFunded(address indexed funder, uint256 amount);
+    event StaleUnrootedEpochSkipped(uint256 indexed skippedEpoch, address indexed executor, uint256 timestamp);
 
     event Sweep(address indexed tokenAddr, address indexed recipient, uint256 amount);
     event EnvironmentalFundUpdated(address indexed oldFund, address indexed newFund);
@@ -1144,6 +1145,41 @@ contract PBMRebateTreasury is
         token.safeTransfer(recipient, amount);
 
         emit StaleDistributionPoolRecovered(recipient, amount);
+    }
+
+    /**
+     * @notice Timelocked emergency path to skip a stale epoch for which no Merkle root was ever proposed/published,
+     *         preventing a permanent freeze of the state machine.
+     * @dev    Gated by EXECUTOR_ROLE (timelock controller). Requires STALE_DISTRIBUTION_RECOVERY_DELAY to have elapsed.
+     */
+    function skipStaleUnrootedEpoch()
+        external
+        nonReentrant
+        onlyRole(EXECUTOR_ROLE)
+    {
+        uint256 epoch = currentEpoch;
+        if (epochMerkleRoot[epoch] != bytes32(0)) revert RootAlreadyLive();
+        if (epochEscrow[epoch] != 0) revert InvalidAddress(); // Defensive check: unrooted epoch must have 0 escrowed
+        if (block.timestamp < epochStartTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
+            revert RecoveryDelayNotElapsed();
+        }
+
+        PendingRoot storage pr = pendingRoot[epoch];
+        if (pr.proposedAt != 0 && block.timestamp <= pr.proposedAt + ROOT_PROPOSAL_EXPIRY) {
+            revert ProposalPendingOrNotExpired();
+        }
+
+        // Tidy up any expired pending root data
+        delete pendingRoot[epoch];
+
+        emit StaleUnrootedEpochSkipped(epoch, msg.sender, block.timestamp);
+        emit EpochFinalized(epoch, epochVolume, 0, block.timestamp);
+
+        unchecked { currentEpoch = epoch + 1; }
+        epochVolume         = 0;
+        epochStartTimestamp = block.timestamp;
+
+        emit EpochStarted(currentEpoch, block.timestamp);
     }
 
     // =========================================================

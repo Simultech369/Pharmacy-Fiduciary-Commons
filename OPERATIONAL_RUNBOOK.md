@@ -132,3 +132,13 @@ If the contract's actual token balance falls below the required accounting balan
 The current mutual-credit contract enforces registration, credit limits, issuer status, and voucher capacity accounting. It does not implement default adjudication, bad-debt socialization, write-offs, local federation solvency rules, or emergency credit freezes short of the global pause control.
 
 Expired vouchers do not free issuer capacity automatically. Anyone may call `releaseExpiredVoucher` or `releaseExpiredVouchersBatch` after expiry, but until cleanup is called the issuer's `reservedVoucherCredit` remains committed. Operators should monitor expired voucher reservations and publish cleanup transactions as maintenance, not as discretionary debt forgiveness.
+
+---
+
+## 7. Calibration of Daily Volume Cap (`dailyVolumeCap`)
+
+Despite its name, `dailyVolumeCap` operates as an **epoch-wide claim volume cap** (effectively an epoch volume cap parameter) at the contract level because `epochVolume` accumulates claims across the entire epoch (usually 30 days) and is only reset on finalization. The variable name is legacy/misleading.
+
+### Calibrating the Parameter:
+- Do **NOT** set `dailyVolumeCap` to your target daily volume (e.g. `$10,000`). If you do, the contract will block all claims once cumulative monthly claims exceed `$10,000`.
+- **Parameter Calculation:** Set the parameter to represent the target maximum volume for the **entire epoch** rather than a single day. For example, a target of `$10,000` daily volume over a 30-day epoch requires setting the `dailyVolumeCap` parameter to at least `$300,000`.
