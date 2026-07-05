@@ -10,7 +10,7 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with `{"success": true, "issues": []}` and empty stderr. The bytecode helper is `C:\tmp\pbm-patientfund-runtime-46107f9.hex`.
 
-Last scanner refresh: Slither, Aderyn, and a bounded Mythril PatientFund runtime-bytecode check were refreshed for commit `7f27f16` on 2026-07-05 from the WSL distro `Ubuntu-24.04`. Commit `7f27f16` implements the timelocked unrooted-epoch bypass skipStaleUnrootedEpoch and calibrates runbook documentation for the dailyVolumeCap. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
+Last scanner refresh: Slither and Aderyn reports were refreshed for commit `7f27f16` on 2026-07-05 from the WSL distro `Ubuntu-24.04`. The bounded PatientFund Mythril bytecode check remains valid from commit `46107f9` because `PatientFundParticipatoryBudgeting` was not modified in the subsequent commits. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
 
 Post-hardening verification: `npm.cmd test` passed with 160 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
 
