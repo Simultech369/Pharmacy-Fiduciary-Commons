@@ -4,23 +4,23 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 ## Current Artifacts
 
-- Slither: `C:\tmp\pbm-slither-report-7f27f16.json`
-- Aderyn: `C:\tmp\pbm-aderyn-report-7f27f16.md`
+- Slither: `C:\tmp\pbm-slither-report-90936db.json`
+- Aderyn: `C:\tmp\pbm-aderyn-report-90936db.md`
 - Mythril: `C:\tmp\pbm-mythril-patientfund-bytecode-46107f9.json`
 
 The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with `{"success": true, "issues": []}` and empty stderr. The bytecode helper is `C:\tmp\pbm-patientfund-runtime-46107f9.hex`.
 
-Last scanner refresh: Slither and Aderyn reports were refreshed for commit `7f27f16` on 2026-07-05 from the WSL distro `Ubuntu-24.04`. The bounded PatientFund Mythril bytecode check remains valid from commit `46107f9` because `PatientFundParticipatoryBudgeting` was not modified in the subsequent commits. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
+Last scanner refresh: Slither and Aderyn reports were refreshed for commit `90936db` on 2026-07-05 from the WSL distro `Ubuntu-24.04`. The bounded PatientFund Mythril bytecode check remains valid from commit `46107f9` because `PatientFundParticipatoryBudgeting` was not modified in the subsequent commits. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
 
-Post-hardening verification: `npm.cmd test` passed with 160 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
+Post-hardening verification: `npm.cmd test` passed with 166 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
 
 ## Slither Production Triage
 
 Live Slither command:
 
-`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && slither . --exclude-dependencies --filter-paths 'node_modules|contracts/mocks|artifacts|cache' --json /mnt/c/tmp/pbm-slither-report-7f27f16.json"`
+`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && slither . --exclude-dependencies --filter-paths 'node_modules|contracts/mocks|artifacts|cache' --json /mnt/c/tmp/pbm-slither-report-90936db.json"`
 
-Live Slither artifact count: 42 production-filtered detector entries.
+Live Slither artifact count: 43 production-filtered detector entries.
 
 Grouped count:
 
@@ -29,7 +29,7 @@ Grouped count:
 - 2 `incorrect-equality` medium
 - 1 `reentrancy-no-eth` medium
 - 2 `reentrancy-benign` low
-- 20 `timestamp` low
+- 21 `timestamp` low
 - 4 `cyclomatic-complexity` informational
 - 1 `low-level-calls` informational
 - 8 `naming-convention` informational
@@ -121,7 +121,7 @@ Evidence:
 
 Live Aderyn command:
 
-`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && aderyn . -x contracts/mocks,node_modules,artifacts,cache -o /mnt/c/tmp/pbm-aderyn-report-7f27f16.md"`
+`wsl.exe -d Ubuntu-24.04 -- bash -lc "cd /mnt/c/Users/Josh/Desktop/PBMRebateTreasuryFinal && aderyn . -x contracts/mocks,node_modules,artifacts,cache -o /mnt/c/tmp/pbm-aderyn-report-90936db.md"`
 
 Live Aderyn count: 2 highs, 6 lows.
 
