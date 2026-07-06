@@ -34,6 +34,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     bytes32 public constant ACCEPTED_CREDENTIAL_POLICY_VERSION = keccak256(
         "fiduciary-credential-policy-v1"
     );
+    bytes32 public constant MOCK_ZK_PROOF_DOMAIN = keccak256(
+        "fiduciary-mock-zk-proof-v1"
+    );
 
     enum RoundState { Inactive, Active, Finalized }
 
@@ -57,6 +60,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         uint256 projectCount;
         uint256 finalizedAt;
         uint256 freshMatchingPool;
+        bool isZKMode;
     }
 
     IERC20 public immutable token;
@@ -80,6 +84,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
 
     // roundId => voter => next relayer authorization nonce
     mapping(uint256 => mapping(address => uint256)) public registrationNonces;
+
+    // roundId => nullifier => consumed in mock ZK-mode registration
+    mapping(uint256 => mapping(bytes32 => bool)) public roundNullifiersUsed;
 
     // roundId => projectId => matching share amount
     mapping(uint256 => mapping(uint256 => uint256)) public roundProjectShares;
@@ -111,6 +118,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         bytes32 policyVersion,
         uint256 deadline
     );
+    event MockZKRegistrationUsed(uint256 indexed roundId, bytes32 indexed nullifier);
     event VoteCast(uint256 indexed roundId, uint256 indexed projectId, address indexed voter);
     event MatchDistributed(uint256 indexed roundId, uint256 indexed projectId, address indexed recipient, uint256 amount);
     event MatchShareReclaimed(uint256 indexed roundId, uint256 indexed projectId, address indexed recipient, uint256 amount);
@@ -150,6 +158,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     error InsufficientSolvencyBalance(uint256 required, uint256 actual);
     error TokenTransferAmountMismatch(uint256 expected, uint256 actual);
     error GovernanceRoleSeparationViolation();
+    error RoundModeMismatch();
+    error NullifierAlreadyUsed();
+    error InvalidProof();
 
     // =========================================================
     // CONSTRUCTOR
@@ -184,6 +195,14 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     // =========================================================
 
     function startRound(uint256 matchingPoolAmount) external nonReentrant onlyRole(COUNCIL_ROLE) whenNotPaused {
+        _startRound(matchingPoolAmount, false);
+    }
+
+    function startZKRound(uint256 matchingPoolAmount) external nonReentrant onlyRole(COUNCIL_ROLE) whenNotPaused {
+        _startRound(matchingPoolAmount, true);
+    }
+
+    function _startRound(uint256 matchingPoolAmount, bool isZKMode) internal {
         uint256 recycled = recycledMatchingPool;
         uint256 recordedRecycled = recycled;
         if (currentRound > 0 && rounds[currentRound].state != RoundState.Finalized) {
@@ -227,7 +246,8 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
             state: RoundState.Active,
             projectCount: 0,
             finalizedAt: 0,
-            freshMatchingPool: matchingPoolAmount
+            freshMatchingPool: matchingPoolAmount,
+            isZKMode: isZKMode
         });
 
         emit RoundStarted(roundId, totalMatchingPool);
@@ -248,6 +268,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     function registerVoter(uint256 roundId, address voter, bool status) external onlyRole(COUNCIL_ROLE) whenNotPaused {
         if (voter == address(0)) revert InvalidAddress();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
+        if (rounds[roundId].isZKMode) revert RoundModeMismatch();
 
         registeredVoters[roundId][voter] = status;
         registrationNonces[roundId][voter] += 1;
@@ -259,6 +280,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         if (count == 0) revert ArrayEmpty();
         if (count > MAX_VOTERS_PER_BATCH) revert BatchTooLarge();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
+        if (rounds[roundId].isZKMode) revert RoundModeMismatch();
 
         for (uint256 i = 0; i < count; i++) {
             address voter = voters[i];
@@ -280,6 +302,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         if (voter == address(0)) revert InvalidAddress();
         if (msg.sender != voter) revert Unauthorized();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
+        if (rounds[roundId].isZKMode) revert RoundModeMismatch();
         if (relayerVerifier == address(0)) revert InvalidAddress();
         if (credentialHash == bytes32(0) || policyVersion == bytes32(0)) {
             revert InvalidAuthorizationMetadata();
@@ -329,6 +352,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         bytes calldata issuerSignature
     ) external whenNotPaused {
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
+        if (rounds[roundId].isZKMode) revert RoundModeMismatch();
         if (credentialHash == bytes32(0) || policyVersion == bytes32(0)) {
             revert InvalidAuthorizationMetadata();
         }
@@ -359,6 +383,46 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         registrationNonces[roundId][msg.sender] = nonce + 1;
         emit VoterRegistered(roundId, msg.sender, true);
         emit RegistrationAuthorizationUsed(roundId, msg.sender, credentialHash, policyVersion, deadline);
+    }
+
+    /**
+     * @notice Mock ZK registration path used to prove nullifier-mode semantics before real circuits.
+     * @dev This does not provide production privacy: msg.sender and transaction metadata remain public.
+     *      The mock proof only anchors the expected public input shape for tests and future verifier design.
+     */
+    function registerVoterWithMockZK(
+        uint256 roundId,
+        bytes32 nullifier,
+        bytes calldata proof
+    ) external whenNotPaused {
+        if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
+        if (!rounds[roundId].isZKMode) revert RoundModeMismatch();
+        if (nullifier == bytes32(0)) revert InvalidAuthorizationMetadata();
+        if (roundNullifiersUsed[roundId][nullifier]) revert NullifierAlreadyUsed();
+        if (!_isValidMockZKProof(roundId, msg.sender, nullifier, proof)) revert InvalidProof();
+
+        roundNullifiersUsed[roundId][nullifier] = true;
+        registeredVoters[roundId][msg.sender] = true;
+        emit MockZKRegistrationUsed(roundId, nullifier);
+    }
+
+    function _isValidMockZKProof(
+        uint256 roundId,
+        address voter,
+        bytes32 nullifier,
+        bytes calldata proof
+    ) internal view returns (bool) {
+        bytes32 expectedProofHash = keccak256(
+            abi.encode(
+                MOCK_ZK_PROOF_DOMAIN,
+                block.chainid,
+                address(this),
+                roundId,
+                voter,
+                nullifier
+            )
+        );
+        return proof.length != 0 && keccak256(proof) == expectedProofHash;
     }
 
     function setProjectSupportThreshold(uint256 threshold) external onlyRole(COUNCIL_ROLE) whenNotPaused {

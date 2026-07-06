@@ -70,6 +70,19 @@ describe("PatientFundParticipatoryBudgeting", function () {
       const r = await pb.rounds(1n);
       expect(r.matchingPool).to.equal(toWei("10000"));
       expect(r.state).to.equal(1n); // RoundState.Active is enum value 1
+      expect(r.isZKMode).to.be.false;
+
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("10000"));
+    });
+
+    it("allows council to start a ZK-mode round and locks tokens", async function () {
+      await pb.connect(council).startZKRound(toWei("10000"));
+      expect(await pb.currentRound()).to.equal(1n);
+
+      const r = await pb.rounds(1n);
+      expect(r.matchingPool).to.equal(toWei("10000"));
+      expect(r.state).to.equal(1n); // RoundState.Active is enum value 1
+      expect(r.isZKMode).to.be.true;
 
       expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("10000"));
     });
@@ -99,6 +112,11 @@ describe("PatientFundParticipatoryBudgeting", function () {
     it("restricts startRound to council", async function () {
       await expectRevert(
         pb.connect(attacker).startRound(toWei("10000")),
+        "AccessControl"
+      );
+
+      await expectRevert(
+        pb.connect(attacker).startZKRound(toWei("10000")),
         "AccessControl"
       );
     });
@@ -787,6 +805,130 @@ describe("PatientFundParticipatoryBudgeting", function () {
           1n, voter.address, credentialHash, unsupportedPolicy, deadline, signature
         ),
         "UnsupportedCredentialPolicy"
+      );
+    });
+  });
+
+  describe("Mock ZK Voter Registration", function () {
+    let voter;
+    let otherVoter;
+    const nullifier = ethers.keccak256(ethers.toUtf8Bytes("round-1-nullifier"));
+    const otherNullifier = ethers.keccak256(ethers.toUtf8Bytes("round-1-other-nullifier"));
+    const policyVersion = ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v1"));
+
+    beforeEach(async function () {
+      voter = voters[0];
+      otherVoter = voters[1];
+      await pb.connect(council).startZKRound(toWei("10000"));
+    });
+
+    async function mockZKProof(roundId, signer, proofNullifier) {
+      const { chainId } = await ethers.provider.getNetwork();
+      return ethers.AbiCoder.defaultAbiCoder().encode(
+        ["bytes32", "uint256", "address", "uint256", "address", "bytes32"],
+        [
+          await pb.MOCK_ZK_PROOF_DOMAIN(),
+          chainId,
+          await pb.getAddress(),
+          roundId,
+          signer.address,
+          proofNullifier
+        ]
+      );
+    }
+
+    async function authorizationDeadline(offset = 3600n) {
+      const block = await ethers.provider.getBlock("latest");
+      return BigInt(block.timestamp) + offset;
+    }
+
+    it("registers a voter in ZK mode with a valid mock proof and consumes the nullifier", async function () {
+      const proof = await mockZKProof(1n, voter, nullifier);
+      const tx = await pb.connect(voter).registerVoterWithMockZK(1n, nullifier, proof);
+
+      expect(await pb.registeredVoters(1n, voter.address)).to.be.true;
+      expect(await pb.roundNullifiersUsed(1n, nullifier)).to.be.true;
+
+      const receipt = await tx.wait();
+      const parsedNames = receipt.logs
+        .map((log) => {
+          try {
+            return pb.interface.parseLog(log).name;
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean);
+      expect(parsedNames).to.include("MockZKRegistrationUsed");
+      expect(parsedNames).to.not.include("RegistrationAuthorizationUsed");
+      expect(parsedNames).to.not.include("VoterRegistered");
+    });
+
+    it("rejects nullifier reuse across voters in the same round", async function () {
+      await pb.connect(voter).registerVoterWithMockZK(1n, nullifier, await mockZKProof(1n, voter, nullifier));
+
+      await expectRevert(
+        pb.connect(otherVoter).registerVoterWithMockZK(1n, nullifier, await mockZKProof(1n, otherVoter, nullifier)),
+        "NullifierAlreadyUsed"
+      );
+    });
+
+    it("rejects invalid mock proofs and zero nullifiers", async function () {
+      await expectRevert(
+        pb.connect(voter).registerVoterWithMockZK(1n, nullifier, await mockZKProof(1n, otherVoter, nullifier)),
+        "InvalidProof"
+      );
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithMockZK(1n, ethers.ZeroHash, await mockZKProof(1n, voter, ethers.ZeroHash)),
+        "InvalidAuthorizationMetadata"
+      );
+    });
+
+    it("rejects legacy registration paths in ZK-mode rounds", async function () {
+      const deadline = await authorizationDeadline();
+
+      await expectRevert(
+        pb.connect(council).registerVoter(1n, voter.address, true),
+        "RoundModeMismatch"
+      );
+
+      await expectRevert(
+        pb.connect(council).registerVotersBatch(1n, [voter.address]),
+        "RoundModeMismatch"
+      );
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithSignature(
+          1n,
+          voter.address,
+          otherNullifier,
+          policyVersion,
+          deadline,
+          "0x"
+        ),
+        "RoundModeMismatch"
+      );
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithCredential(
+          1n,
+          otherNullifier,
+          policyVersion,
+          deadline,
+          "0x"
+        ),
+        "RoundModeMismatch"
+      );
+    });
+
+    it("rejects mock ZK registration in legacy rounds", async function () {
+      await pb.connect(council).finalizeRound(1n);
+      await pb.connect(council).startRound(toWei("10000"));
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithMockZK(2n, nullifier, await mockZKProof(2n, voter, nullifier)),
+        "RoundModeMismatch"
       );
     });
   });
