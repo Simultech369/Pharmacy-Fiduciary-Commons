@@ -1,23 +1,26 @@
 # Antigravity ZK Roadmap Handoff
 
-Prepared for Antigravity against live checkout `52e6a0d8a543293fda81d9709afaa264dbc2bce7` on branch `main`.
+Prepared for Antigravity against live checkout `a8754e1c32e0fe2b19bbf9d8bb91b0aa3d36d9c9` on branch `main`.
 
 ## 1. Current Repo State
 
 - Repo: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
 - Branch: `main`
-- Current HEAD: `52e6a0d8a543293fda81d9709afaa264dbc2bce7`
-- Current untracked working files:
+- Current HEAD: `a8754e1c32e0fe2b19bbf9d8bb91b0aa3d36d9c9`
+- Handoff/design files committed in the current snapshot:
   - `ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md`
   - `PRIVACY_CONTINUITY_INTERVENTION_HANDOFF.md`
   - `REVIEW_ITERATION_PROCESS.md`
   - `ANTIGRAVITY_ZK_HANDOFF.md`
   - `MIESSLER_INTEGRATION_TRIAGE.md`
-- Current tracked-file modifications after Antigravity review:
+- Current tracked-file modifications after OpenClaude/Antigravity reconciliation:
   - `contracts/PatientFundParticipatoryBudgeting.sol`
   - `test/PatientFundParticipatoryBudgeting.test.js`
+  - `ANTIGRAVITY_ZK_HANDOFF.md`
+  - `ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md`
 - Last known full test run before this handoff phase: `npm.cmd test` passed with 170 passing tests.
-- Focused verification after the mock ZK implementation: `npm.cmd test -- --grep "PatientFundParticipatoryBudgeting"` passed with 68 passing tests.
+- Full verification after OpenClaude/Antigravity reconciliation patches: `npm.cmd test` passed with 182 passing tests.
+- Focused verification after OpenClaude/Antigravity reconciliation patches: `npm.cmd test -- --grep "PatientFundParticipatoryBudgeting"` passed with 74 passing tests.
 
 ## 2. Why This Handoff Exists
 
@@ -28,7 +31,7 @@ The project was moving toward ZK/nullifier privacy work, then received several o
 - `REVIEW_ITERATION_PROCESS.md`: lightweight review loop for snapshot anchoring, no-edits review, claim reconciliation, deterministic gates, and high-sensitivity handling.
 - `MIESSLER_INTEGRATION_TRIAGE.md`: triages an Antigravity-provided integration note into promoted, deferred, and unsafe items without changing the ZK roadmap.
 
-The goal now is to get back to the roadmap: review the docs and first mock-verifier implementation, reconcile any defects against live code, then decide whether to commit this slice or patch it before broader ZK work.
+The goal now is to keep the roadmap honest: review the patched mock-verifier implementation, verify that reviewer-identified defects are covered, then run the full suite before committing the reconciliation patch.
 
 ## 3. Primary Direction
 
@@ -38,12 +41,17 @@ Immediate target: do not build real Circom/snarkjs circuits yet. The first verif
 
 - `startRound(...)` remains legacy by default;
 - `startZKRound(...)` creates an explicit ZK-mode round;
-- `registerVoterWithMockZK(...)` accepts/rejects deterministic mock proofs;
+- `setMockZKVerifier(...)` configures a rotatable mock verifier authority;
+- `setRoundMockZKRoot(...)` configures the active mock membership root for a ZK-mode round;
+- `registerVoterWithMockZK(...)` accepts/rejects verifier-signed mock attestations over round, voter, nullifier, verifier version, and root;
 - `roundNullifiersUsed(roundId, nullifier)` rejects nullifier reuse within the same round;
+- public self-computed proof bytes and known-nullifier theft attempts are rejected;
+- stale roots and unsupported verifier versions are rejected;
 - legacy council, batch, relayer-signature, and trusted-issuer registration paths revert in ZK-mode rounds;
+- council can still revoke a ZK-mode voter with `registerVoter(roundId, voter, false)`;
 - mock ZK registration reverts in legacy rounds;
 - the mock ZK registration path emits `MockZKRegistrationUsed(roundId, nullifier)` and does not emit the legacy credential-hash authorization event;
-- this still does not provide production unlinkability because `msg.sender`, transaction metadata, gas source, and RPC metadata remain public.
+- this still does not provide production unlinkability because `msg.sender`, `VoteCast(..., voter)`, transaction metadata, gas source, timestamps, and RPC metadata remain public.
 
 ## 4. Important Live-Repo Facts To Preserve
 
@@ -53,7 +61,7 @@ Immediate target: do not build real Circom/snarkjs circuits yet. The first verif
 - Direct trusted-issuer registration uses Solidity ECDSA issuer verification and does not read the local revocation JSON.
 - Historical public events cannot be made private retroactively.
 - `MECHANISM_COVERAGE.md` currently classifies voter/claim privacy via scoped nullifiers as docs-only/proposed.
-- The first mock ZK voter-registration slice is implemented, but production ZK/nullifier privacy is still docs-only/proposed.
+- The first mock ZK voter-registration slice is implemented and patched after reviewer findings, but production ZK/nullifier privacy is still docs-only/proposed.
 - Core accounting, role separation, Merkle claim, epoch escrow, dispute, patient-fund sink, and mutual-credit capacity behavior should not be weakened.
 - No upgradeable-contract pattern is assumed or recommended.
 
@@ -145,15 +153,13 @@ Review the current local repo as lead planner and no-edits reviewer. Do not modi
 Snapshot:
 - Repo: C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
 - Branch: main
-- Expected HEAD: 52e6a0d8a543293fda81d9709afaa264dbc2bce7
-- Expected untracked docs: ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md, PRIVACY_CONTINUITY_INTERVENTION_HANDOFF.md, REVIEW_ITERATION_PROCESS.md, ANTIGRAVITY_ZK_HANDOFF.md
-- Additional expected untracked doc if present: MIESSLER_INTEGRATION_TRIAGE.md
-- Expected modified tracked files: contracts/PatientFundParticipatoryBudgeting.sol and test/PatientFundParticipatoryBudgeting.test.js
+- Expected HEAD: a8754e1c32e0fe2b19bbf9d8bb91b0aa3d36d9c9
+- Expected modified tracked files: contracts/PatientFundParticipatoryBudgeting.sol, test/PatientFundParticipatoryBudgeting.test.js, ANTIGRAVITY_ZK_HANDOFF.md, ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md
 
 First verify branch, HEAD, and git status. If the snapshot differs, report SNAPSHOT_MISMATCH and stop unless the only differences are explicitly listed above.
 
 Primary mission:
-Get the project back onto the ZK/nullifier roadmap. Review whether the new docs, this handoff, and the first mock-verifier implementation accurately convert the recent side inputs into a focused next plan: no-edits review, live-repo reconciliation, then incremental ZK/nullifier work before any real circuits.
+Review the patched mock ZK/nullifier milestone after OpenClaude and Antigravity reconciliation. Verify that the implementation now models verifier/root/version gating, rejects public self-computed proofs and known-nullifier theft, preserves council revocation, and still avoids production-privacy overclaims.
 
 Key files to review:
 - ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md

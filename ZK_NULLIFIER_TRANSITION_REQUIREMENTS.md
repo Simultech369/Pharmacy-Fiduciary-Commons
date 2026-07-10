@@ -46,18 +46,18 @@ The goal is to name the decisions that must be settled before implementation. Th
 
 Before real circuits, build a verifier-mock milestone that proves the desired contract and workflow semantics.
 
-Implementation status after Antigravity review: the first mock slice is implemented in `PatientFundParticipatoryBudgeting.sol` and covered by focused tests in `PatientFundParticipatoryBudgeting.test.js`. It adds explicit ZK-mode rounds, mock proof acceptance/rejection, per-round nullifier reuse protection, and guards that reject legacy registration paths in ZK-mode rounds. This remains a semantic mock only; it does not provide production unlinkability because `msg.sender`, transaction gas source, timestamps, and RPC metadata remain public.
+Implementation status after OpenClaude and Antigravity reconciliation: the first mock slice is implemented in `PatientFundParticipatoryBudgeting.sol` and covered by focused tests in `PatientFundParticipatoryBudgeting.test.js`. It adds explicit ZK-mode rounds, a rotatable mock verifier, per-round mock membership roots, verifier-version/root-bound attestations, per-round nullifier reuse protection, council revocation in ZK mode, and guards that reject legacy registration paths in ZK-mode rounds. This remains a semantic mock only; it does not provide production unlinkability because `msg.sender`, `VoteCast(..., voter)`, transaction gas source, timestamps, and RPC metadata remain public.
 
 Required properties:
 
-- A mock verifier interface accepts or rejects proofs without importing Circom or snarkjs.
+- A mock verifier interface accepts or rejects verifier-signed attestations without importing Circom or snarkjs.
 - Registration uses a round-scoped nullifier and rejects nullifier reuse within the same round.
 - Public events do not emit canonical credential hashes.
 - Legacy and ZK rounds are explicitly separated so no one can mistake old stable-hash history for anonymized history.
 - Tests fail if the privacy target requires unlinkability but registration or voting still emits a stable wallet identity.
-- Tests cover verifier version or policy version rejection.
+- Tests cover verifier version rejection.
 - Tests cover stale, missing, or intentionally rejected proof roots.
-- Tests cover council emergency pause and verifier rotation expectations.
+- Tests cover council revocation and verifier/root governance expectations.
 - Dashboard and CLI fixtures demonstrate the post-ZK public payload shape without raw credentials, witness material, or stable hashes.
 
 The mock milestone should answer the interface and auditability questions before the project pays the complexity cost of real proof generation.
@@ -149,8 +149,9 @@ Before transition:
 Verifier-mock milestone:
 
 - Reject reused round nullifiers.
-- Reject invalid mock proofs.
+- Reject invalid mock proofs and public self-computed proof bytes.
 - Reject unsupported verifier or policy versions.
+- Reject known-nullifier theft when the verifier attestation is bound to another voter.
 - Emit only approved public fields.
 - Keep legacy and ZK rounds separated in state, events, and tests.
 - Fail tests if `credentialHash` appears in the ZK registration event path.
@@ -177,6 +178,6 @@ After real ZK integration:
 
 ## 9. Recommended Next Step
 
-Implement the verifier-mock milestone as the next code checkpoint only after the decisions in section 4 have owners and provisional answers. The first implementation should be small: define a mock proof interface, replace the ZK-mode registration event shape, enforce round-scoped nullifier uniqueness, and add tests proving no credential hash is emitted in the mock ZK path.
+The verifier-mock milestone is now the active code checkpoint. The next step is to run the full suite, review the patched mock verifier/root/version semantics, and decide whether the current mock is sufficient as a pre-circuit interface harness.
 
-Before that code work starts, run the no-edits reviewer loop in `REVIEW_ITERATION_PROCESS.md` against this requirements document. The review should attack missing assumptions around wallet identity, issuer compromise, revocation freshness, support-flow leakage, degraded/offline operations, and whether each proposed milestone has a deterministic test or fixture gate.
+Before any real circuit work starts, run another no-edits reviewer loop in `REVIEW_ITERATION_PROCESS.md`. The review should attack remaining assumptions around wallet identity, issuer compromise, revocation freshness, support-flow leakage, degraded/offline operations, and whether each proposed milestone has a deterministic test or fixture gate.

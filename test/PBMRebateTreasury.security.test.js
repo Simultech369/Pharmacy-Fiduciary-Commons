@@ -1653,16 +1653,7 @@ describe("PBMRebateTreasury security baseline", function () {
         const govRes = await treasury.governanceReserve();
         const exclRes = await treasury.exclusionRemediationReserve();
 
-        let contractEscrowsAndFlags = 0n;
-        for (let ep = 0n; ep <= activeEpoch; ep++) {
-          contractEscrowsAndFlags += await treasury.epochEscrow(ep);
-          for (const p of pharmacies) {
-            const isEx = await treasury.isExclusionDispute(ep, p.address);
-            if (!isEx) {
-              contractEscrowsAndFlags += await treasury.flaggedAmount(ep, p.address);
-            }
-          }
-        }
+        const contractEscrowsAndFlags = actualEscrowed + actualFlaggedNormal;
 
         const expectedBalance = distPool + govRes + exclRes + contractEscrowsAndFlags;
         expect(contractBalance).to.equal(expectedBalance, `Step ${step}: overall balance invariant broken`);

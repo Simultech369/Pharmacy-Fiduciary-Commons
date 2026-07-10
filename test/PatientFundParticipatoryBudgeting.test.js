@@ -812,6 +812,8 @@ describe("PatientFundParticipatoryBudgeting", function () {
   describe("Mock ZK Voter Registration", function () {
     let voter;
     let otherVoter;
+    let zkVerifier;
+    let mockRoot;
     const nullifier = ethers.keccak256(ethers.toUtf8Bytes("round-1-nullifier"));
     const otherNullifier = ethers.keccak256(ethers.toUtf8Bytes("round-1-other-nullifier"));
     const policyVersion = ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v1"));
@@ -819,10 +821,40 @@ describe("PatientFundParticipatoryBudgeting", function () {
     beforeEach(async function () {
       voter = voters[0];
       otherVoter = voters[1];
+      zkVerifier = voters[2];
+      mockRoot = ethers.keccak256(ethers.toUtf8Bytes("mock-round-1-membership-root"));
       await pb.connect(council).startZKRound(toWei("10000"));
+      await pb.connect(council).setMockZKVerifier(zkVerifier.address);
+      await pb.connect(council).setRoundMockZKRoot(1n, mockRoot);
     });
 
-    async function mockZKProof(roundId, signer, proofNullifier) {
+    async function mockZKProof(roundId, signer, proofNullifier, options = {}) {
+      const { chainId } = await ethers.provider.getNetwork();
+      const domain = {
+        name: "Pharmacy Fiduciary Commons",
+        version: "1",
+        chainId,
+        verifyingContract: await pb.getAddress()
+      };
+      const types = {
+        MockZKRegistration: [
+          { name: "roundId", type: "uint256" },
+          { name: "voter", type: "address" },
+          { name: "nullifier", type: "bytes32" },
+          { name: "verifierVersion", type: "bytes32" },
+          { name: "root", type: "bytes32" }
+        ]
+      };
+      return (options.signer ?? zkVerifier).signTypedData(domain, types, {
+        roundId,
+        voter: signer.address,
+        nullifier: proofNullifier,
+        verifierVersion: options.verifierVersion ?? await pb.MOCK_ZK_VERIFIER_VERSION(),
+        root: options.root ?? mockRoot
+      });
+    }
+
+    async function publicSelfComputedProof(roundId, signer, proofNullifier) {
       const { chainId } = await ethers.provider.getNetwork();
       return ethers.AbiCoder.defaultAbiCoder().encode(
         ["bytes32", "uint256", "address", "uint256", "address", "bytes32"],
@@ -864,6 +896,17 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(parsedNames).to.not.include("VoterRegistered");
     });
 
+    it("rejects public self-computed proof bytes from an arbitrary address", async function () {
+      await expectRevert(
+        pb.connect(attacker).registerVoterWithMockZK(
+          1n,
+          otherNullifier,
+          await publicSelfComputedProof(1n, attacker, otherNullifier)
+        ),
+        "InvalidProof"
+      );
+    });
+
     it("rejects nullifier reuse across voters in the same round", async function () {
       await pb.connect(voter).registerVoterWithMockZK(1n, nullifier, await mockZKProof(1n, voter, nullifier));
 
@@ -871,6 +914,20 @@ describe("PatientFundParticipatoryBudgeting", function () {
         pb.connect(otherVoter).registerVoterWithMockZK(1n, nullifier, await mockZKProof(1n, otherVoter, nullifier)),
         "NullifierAlreadyUsed"
       );
+    });
+
+    it("rejects known-nullifier theft when the verifier attestation is bound to another voter", async function () {
+      await expectRevert(
+        pb.connect(attacker).registerVoterWithMockZK(
+          1n,
+          nullifier,
+          await mockZKProof(1n, voter, nullifier)
+        ),
+        "InvalidProof"
+      );
+
+      await pb.connect(voter).registerVoterWithMockZK(1n, nullifier, await mockZKProof(1n, voter, nullifier));
+      expect(await pb.roundNullifiersUsed(1n, nullifier)).to.be.true;
     });
 
     it("rejects invalid mock proofs and zero nullifiers", async function () {
@@ -881,6 +938,38 @@ describe("PatientFundParticipatoryBudgeting", function () {
 
       await expectRevert(
         pb.connect(voter).registerVoterWithMockZK(1n, ethers.ZeroHash, await mockZKProof(1n, voter, ethers.ZeroHash)),
+        "InvalidAuthorizationMetadata"
+      );
+    });
+
+    it("rejects unsupported verifier versions and stale roots", async function () {
+      const badVersion = ethers.keccak256(ethers.toUtf8Bytes("fiduciary-mock-zk-verifier-v2"));
+      await expectRevert(
+        pb.connect(voter).registerVoterWithMockZK(
+          1n,
+          nullifier,
+          await mockZKProof(1n, voter, nullifier, { verifierVersion: badVersion })
+        ),
+        "InvalidProof"
+      );
+
+      const staleRoot = mockRoot;
+      const freshRoot = ethers.keccak256(ethers.toUtf8Bytes("mock-round-1-membership-root-updated"));
+      const staleProof = await mockZKProof(1n, voter, nullifier, { root: staleRoot });
+      await pb.connect(council).setRoundMockZKRoot(1n, freshRoot);
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithMockZK(1n, nullifier, staleProof),
+        "InvalidProof"
+      );
+    });
+
+    it("requires a configured mock verifier and round root", async function () {
+      await pb.connect(council).finalizeRound(1n);
+      await pb.connect(council).startZKRound(toWei("10000"));
+
+      await expectRevert(
+        pb.connect(voter).registerVoterWithMockZK(2n, nullifier, await mockZKProof(2n, voter, nullifier)),
         "InvalidAuthorizationMetadata"
       );
     });
@@ -922,6 +1011,19 @@ describe("PatientFundParticipatoryBudgeting", function () {
       );
     });
 
+    it("allows council revocation but not council registration in ZK-mode rounds", async function () {
+      await pb.connect(voter).registerVoterWithMockZK(1n, nullifier, await mockZKProof(1n, voter, nullifier));
+      expect(await pb.registeredVoters(1n, voter.address)).to.be.true;
+
+      await pb.connect(council).registerVoter(1n, voter.address, false);
+      expect(await pb.registeredVoters(1n, voter.address)).to.be.false;
+
+      await expectRevert(
+        pb.connect(council).registerVoter(1n, voter.address, true),
+        "RoundModeMismatch"
+      );
+    });
+
     it("rejects mock ZK registration in legacy rounds", async function () {
       await pb.connect(council).finalizeRound(1n);
       await pb.connect(council).startRound(toWei("10000"));
@@ -930,6 +1032,39 @@ describe("PatientFundParticipatoryBudgeting", function () {
         pb.connect(voter).registerVoterWithMockZK(2n, nullifier, await mockZKProof(2n, voter, nullifier)),
         "RoundModeMismatch"
       );
+    });
+
+    it("runs a ZK-mode budgeting flow while preserving public wallet/vote linkability", async function () {
+      await pb.connect(council).setProjectSupportThreshold(1n);
+      await pb.connect(voter).registerVoterWithMockZK(1n, nullifier, await mockZKProof(1n, voter, nullifier));
+      await pb.connect(otherVoter).registerVoterWithMockZK(
+        1n,
+        otherNullifier,
+        await mockZKProof(1n, otherVoter, otherNullifier)
+      );
+
+      await pb.connect(voter).proposeProject(1n, "ZK-mode clinic", recipientA.address);
+      await pb.connect(otherVoter).supportProposal(1n, 0n);
+      const voteTx = await pb.connect(voter).castVote(1n, 0n);
+      await pb.connect(otherVoter).castVote(1n, 0n);
+      await pb.connect(council).finalizeRound(1n);
+
+      expect(await pb.roundProjectShares(1n, 0n)).to.equal(toWei("10000"));
+      const recipientBefore = await token.balanceOf(recipientA.address);
+      await pb.claimMatchShare(1n, 0n);
+      expect(await token.balanceOf(recipientA.address) - recipientBefore).to.equal(toWei("10000"));
+
+      const voteReceipt = await voteTx.wait();
+      const voteEvent = voteReceipt.logs
+        .map((log) => {
+          try {
+            return pb.interface.parseLog(log);
+          } catch {
+            return null;
+          }
+        })
+        .find((event) => event?.name === "VoteCast");
+      expect(voteEvent.args.voter).to.equal(voter.address);
     });
   });
 

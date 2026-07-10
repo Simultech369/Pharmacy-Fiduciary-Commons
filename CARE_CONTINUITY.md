@@ -49,6 +49,11 @@ To keep feedback loops connected to operational reality, the project defines the
 * **Target**: Support at least `20%` of transactions offline to prevent digital exclusion.
 * **Current Status**: Aspirational / policy target. The repository does not yet include SMS, paper-voucher, or offline-receipt auditing tools.
 
+### 3.4 Medication Choice Autonomy (MCA)
+* **Definition**: Measures the degree of patient and pharmacist agency to substitute alternative generics or adapt care pathways when faced with payer formulary shifts or distributor stockouts, preventing hyper-optimization of financial margins at the cost of patient choice.
+* **Target**: `> 90%` of exclusions resolved with patient-approved alternative substitutions.
+* **Current Status**: Policy guideline for cooperative formulary coordination.
+
 ---
 
 ## 4. Operationalizing Capabilities: Community Juries

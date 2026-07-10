@@ -43,3 +43,25 @@ These are policy triggers, not executable contract controls at this checkpoint. 
 1. **Admin Overhead Exception**: If $Fees_{\text{admin}} > 15\%$ for a finalized epoch, council should log a manual adjustment, fee-reduction patch, or explicit waiver before continuing surplus allocations.
 2. **Savings Dispersion Drop**: If the cooperative savings spread ($S_{coop}$) falls below **10%** for 3 consecutive epochs, the council should open a review loop, publish the pricing-list evidence packet, and document whether Dizzy was used as an advisory analysis layer.
 3. **Sybil Vote Concentration**: If any project receives more than **80%** of its votes from accounts registered within the same 24-hour window, operators should pause the affected voting round until credential-collusion evidence is reviewed.
+
+---
+
+## 5. Multi-Dimensional Complexity of Value Indicators
+
+To avoid the pitfalls of hyper-optimizing for simple, single-dimensional proxies (Goodhart's Law), the Commons tracks the following non-reductive indicators:
+
+### Medication Access Precarity Index (MAPI)
+* **Definition**: A multi-dimensional measure of a patient's risk of access disruption, incorporating credit capacity constraints, pharmacy proximity, and historical formulary shifts.
+* **Calculation**:
+  $$MAPI_i = 1 - \left( \frac{\text{CreditAvailable}_i}{\text{AvgMonthlyDrugCost}_i} \times \text{PharmacyDensity}_i \times (1 - \text{PastFormularyShifts}_i) \right)$$
+* **Usage**: Guides the Council in prioritizing credit expansions to pharmacies in high-precarity areas, prioritizing patient safety over credit ledger optimization.
+
+### Systemic Trust Dispersion (STD)
+* **Definition**: Evaluates the diversity of cooperative voting behaviors across participating entities to check for sybil correlation.
+* **Calculation**: Measures the cosine similarity of voting vectors across registered accounts. An STD near 1 indicates diverse, independent consensus; an STD near 0 indicates tight, coordinated collusion.
+* **Usage**: Triggers matching-subsidy penalties when collusion is detected.
+
+### Cooperative Liquidity Balance (CLB)
+* **Definition**: Assesses whether the mutual credit ledger behaves as a positive-sum clearing network rather than a zero-sum, extractive system.
+* **Calculation**: The velocity of voucher redemptions relative to outstanding capacity.
+* **Usage**: Ensures that the ledger is facilitating trade and care continuity, rather than hoarding or credit stagnation.
