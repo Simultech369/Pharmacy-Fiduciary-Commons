@@ -1,6 +1,6 @@
 # Miessler Integration Triage
 
-Prepared against live checkout `52e6a0d8a543293fda81d9709afaa264dbc2bce7` on branch `main`.
+Originally prepared against live checkout `52e6a0d8a543293fda81d9709afaa264dbc2bce7` on branch `main`. Treat snapshot-specific claims here as historical context unless rechecked against the active checkout.
 
 Source artifact reviewed:
 

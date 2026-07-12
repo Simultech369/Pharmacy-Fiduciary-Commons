@@ -29,7 +29,7 @@
 > * **Mutual Credit Clearing ≠ Guaranteed Supply:** The mutual credit clearing mechanism operates as a liquid accounting framework for settlements and liquidity support between pharmacies. It does not guarantee physical supply, logistics, or distribution capacity.
 > * **Scarcity Triage = Proposed Only:** Scarcity-based triage policies and design proposals are theoretical frameworks. They are not executed autonomously on-chain or enforced by smart contracts.
 > * **Centralized Governance Control:** The `COUNCIL_ROLE` retains significant administrative control. Autonomy is restricted to off-chain governance and multi-sig operations; there is no autonomous on-chain local federation execution.
-> * **Privacy and Linkage Risks:** The current implementation uses stable credential hashes on-chain. This creates a persistent identification vector that could be used for profiling or blacklisting. The zk-nullifier proposal in [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) remains a design specification only and is not implemented in the live code.
+> * **Privacy and Linkage Risks:** Legacy registration still uses stable credential hashes on-chain, creating a persistent identification vector that could be used for profiling or blacklisting. A mock ZK/nullifier registration slice now exists for semantic testing in `PatientFundParticipatoryBudgeting`, but it is not production privacy: `msg.sender`, public voting events, transaction gas source, timing, and RPC metadata remain linkable. The production zk-nullifier design in [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) remains a design specification only.
 > * **Participatory Budgeting Solvency Lock (Liveness & Trust Risk):** The contract enforces a hard solvency invariant on-chain: finalization is blocked and will revert if the contract balance is insufficient to cover both outstanding unclaimed shares from previous rounds and the active round's matching pool. While this protects prior claimants from being orphaned or drained, it introduces a liveness lock. If the contract is depleted, finalization is blocked until the council or a donor manually deposits/tops up tokens to cover the deficit. Recovery relies entirely on manual council intervention, exposing trust and liveness risks.
 > * **No Professional Advice:** All outputs, files, and dashboards are for local prototype demonstration only. None of the contents constitute legal, financial, or medical advice.
 >
@@ -49,7 +49,9 @@ The current checkpoint is a prototype with tested treasury, voting, mutual-credi
 |---------|--------|
 | `PBMRebateTreasury` | Working Solidity contract with epoch escrow, Merkle claims, dispute handling, sanctions, recall, pause, and cap controls |
 | `PatientFundParticipatoryBudgeting` | Working patient-fund voting prototype with council registration and relayer-assisted voter self-registration |
+| Mock ZK/nullifier registration | Semantic mock only: verifier/root/version-gated registration and nullifier reuse tests exist, but production unlinkability is not implemented |
 | `PharmacyMutualCredit` | Working decoupled mutual-credit prototype with reserved-capacity, recipient-bound vouchers |
+| Experimental governance/manifold drafts | Draft prototypes deployed only in focused tests for review; not integrated into treasury/PB/mutual-credit runtime and not production mechanisms |
 | Tests | Compile and unit tests run in CI; run locally with `npm.cmd test` |
 | Dashboard | Static prototype with local/test Web3 integration, synthetic-data labels, accessibility improvements, and offline verifier panel |
 | Merkle tooling | Allocation root/proof generator |

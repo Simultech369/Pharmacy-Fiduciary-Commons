@@ -7,7 +7,8 @@ pragma solidity ^0.8.20;
  * Synthesizes: Perpetual MPC setups + Pairwise QF Correlation Discounts + Subjective Peer-Attestations.
  * 
  * NOTE: This is a draft implementation for architectural design review and is not
- * intended for immediate production use.
+ * intended for immediate production use. Deploy with at least attestationThreshold
+ * bootstrap participants or the peer-attestation path cannot grow.
  */
 contract CooperativeParticipatoryBudgeting {
     
@@ -55,12 +56,21 @@ contract CooperativeParticipatoryBudgeting {
     error ThresholdNotMet();
     error InvalidRoot();
     error RoundFinalized();
+    error InvalidParticipant();
 
-    constructor(address initialParticipant) {
-        participants[initialParticipant].registered = true;
-        participantList.push(initialParticipant);
-        participantIndices[initialParticipant] = 0;
-        emit ParticipantRegistered(initialParticipant);
+    constructor(address[] memory initialParticipants) {
+        if (initialParticipants.length < attestationThreshold) revert ThresholdNotMet();
+
+        for (uint256 i = 0; i < initialParticipants.length; i++) {
+            address participant = initialParticipants[i];
+            if (participant == address(0)) revert InvalidParticipant();
+            if (participants[participant].registered) revert AlreadyRegistered();
+
+            participants[participant].registered = true;
+            participantIndices[participant] = participantList.length;
+            participantList.push(participant);
+            emit ParticipantRegistered(participant);
+        }
     }
 
     /**
@@ -68,6 +78,7 @@ contract CooperativeParticipatoryBudgeting {
      */
     function attestParticipant(address target) external {
         if (!participants[msg.sender].registered) revert NotRegistered();
+        if (target == address(0)) revert InvalidParticipant();
         if (participants[target].registered) revert AlreadyRegistered();
         if (peerAttestations[target][msg.sender]) revert AlreadyAttested();
 

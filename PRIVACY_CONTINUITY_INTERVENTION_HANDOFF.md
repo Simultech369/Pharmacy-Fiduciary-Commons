@@ -1,6 +1,6 @@
 # Privacy Continuity Intervention Handoff
 
-Prepared against live checkout `52e6a0d8a543293fda81d9709afaa264dbc2bce7` on `main`.
+Originally prepared against live checkout `52e6a0d8a543293fda81d9709afaa264dbc2bce7` on `main`. Treat snapshot-specific claims here as historical context unless rechecked against the active checkout.
 
 The incoming handoff note named `ca88314072ce414392ced7b1c9494ffcf79f90e4`, which is present locally but one commit behind the live checkout. This document uses the live checkout because it includes the Patient Fund solvency fix and PB Sink Model tests.
 

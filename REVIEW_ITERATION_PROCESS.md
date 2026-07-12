@@ -1,6 +1,6 @@
 # Review Iteration Process
 
-Prepared against live checkout `52e6a0d8a543293fda81d9709afaa264dbc2bce7` on `main`.
+Originally prepared against live checkout `52e6a0d8a543293fda81d9709afaa264dbc2bce7` on `main`. Refresh every snapshot-specific prompt below against the active checkout before reuse.
 
 This process keeps reviewer, agent, and implementation work useful without putting any model or automation inside the project's trust boundary. It is intended for ZK/nullifier work, privacy-continuity interventions, governance legitimacy review, and future operations tooling.
 
@@ -84,7 +84,7 @@ Review the current local repo as an independent no-edits reviewer. Do not modify
 Snapshot:
 - Repo: C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
 - Branch: main
-- Expected HEAD: 52e6a0d8a543293fda81d9709afaa264dbc2bce7
+- Expected HEAD: <fill with current `git rev-parse HEAD` before sending>
 - First verify branch, HEAD, and git status. If the snapshot differs, report SNAPSHOT_MISMATCH and stop unless the only differences are explicitly listed below.
 
 Known working files to review:

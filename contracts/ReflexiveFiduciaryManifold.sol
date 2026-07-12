@@ -23,6 +23,7 @@ contract ReflexiveFiduciaryManifold {
     }
 
     PIDParameters public creditLimitPID;
+    address public immutable controller;
     
     // Safety boundaries
     int256 public constant SCALE_DECIMALS = 1e8;
@@ -32,7 +33,10 @@ contract ReflexiveFiduciaryManifold {
     event PIDParametersUpdated(int256 Kp, int256 Ki, int256 Kd);
     event FiduciaryManifoldAdjusted(int256 error, int256 integral, int256 derivative, int256 controlOutput);
 
+    error UnauthorizedController();
+
     constructor(int256 _Kp, int256 _Ki, int256 _Kd) {
+        controller = msg.sender;
         creditLimitPID.Kp = _Kp;
         creditLimitPID.Ki = _Ki;
         creditLimitPID.Kd = _Kd;
@@ -49,6 +53,8 @@ contract ReflexiveFiduciaryManifold {
         int256 targetSolvencyMargin,
         int256 actualSolvencyMargin
     ) external returns (int256 capacityAdjustmentFactor) {
+        if (msg.sender != controller) revert UnauthorizedController();
+
         PIDParameters storage pid = creditLimitPID;
         uint256 timeDelta = block.timestamp - pid.lastUpdate;
         
@@ -66,8 +72,8 @@ contract ReflexiveFiduciaryManifold {
         pid.integral = pid.integral + (error * int256(timeDelta));
         int256 iTerm = (pid.Ki * pid.integral) / SCALE_DECIMALS;
 
-        // Derivative term (rate of change of error)
-        int256 derivative = (error - pid.lastError) / int256(timeDelta);
+        // Derivative term (rate of change of error), scaled before division to preserve precision.
+        int256 derivative = ((error - pid.lastError) * SCALE_DECIMALS) / int256(timeDelta);
         int256 dTerm = (pid.Kd * derivative) / SCALE_DECIMALS;
 
         // Save states
@@ -100,6 +106,7 @@ contract ReflexiveFiduciaryManifold {
         uint256 matchingTarget
     ) external pure returns (uint256 scaleFactor) {
         if (treasuryBalance == 0) return 0;
+        if (matchingTarget == 0) return 0;
 
         // Calculate solvency ratio: free treasury reserves / target matching allocations
         int256 reserveSolvency = int256(treasuryBalance) - int256(totalEscrowed);
