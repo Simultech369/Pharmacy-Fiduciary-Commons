@@ -78,3 +78,22 @@ For claiming rebates or flagging disputes:
 By observing repeated transactions containing the same stable hash across multiple epochs, an adversary (such as a predatory PBM, insurer, or national pharmacy chain) can correlate claims, votes, and disputes. This allows them to build a detailed operational profile of individual independent pharmacies, completely undermining on-chain anonymity and enabling targeted retaliation.
 
 Consequently, **the scoped-nullifier architecture proposed in this document is a mandatory production launch gate, not a post-launch upgrade.** The prototype must never be deployed on public networks with stable identity hashes.
+
+---
+
+## 6. Implemented Design Fixture and Test Gate
+
+A static ZK/nullifier design fixture and test gate has been implemented to make pre-circuit privacy boundaries executable before real proof work begins. These assertions are evaluated in `test/ZKNullifierFixtureGate.test.js` using the fixtures located under `test/fixtures/`.
+
+### Verified Properties
+1. **Payload Boundaries**: Any payload declaring the `unlinkable` target must not contain wallet address, stable credential hash, NPI, NCPDP, secrets, witnesses, or co-expose voter identity.
+2. **Domain Separation**: Verification that distinct, unique nullifiers are generated for `round_voting`, `epoch_claim`, `dispute`, `portability_export`, `migration`, and `emergency_burn_revocation` to prevent cross-workflow correlation.
+3. **Governance States**: Rules enforcing governance metadata (activation windows, quorum thresholds, and upgrade redirection pointers) for active and deprecated verifiers.
+4. **Metadata Leakage Budget**: Checking that exact timestamps, gas source wallet addresses, raw RPC credentials, and support ticket identifiers are banned from privacy-claimed payloads.
+
+### Remaining Open Design Decisions
+The following areas are intentionally undecided and must be finalized before circuit implementation:
+- **Participant Identity Unit**: Selecting the exact entity to bind eligibility to (NPI/NCPDP, wallet, credential, physical location, legal entity, etc.).
+- **Secret Custody/Recovery Model**: Selecting safe mechanisms for backup, rotation, recovery, and device loss without introducing backdoors.
+- **Verifier/Root Governance**: Specifying multi-signature thresholds, pause governance, and revocation freshness verification.
+- **Hosted Provider and Metadata Limits**: Ensuring hosted database logs (Supabase, Firebase, Clerk) and relayer metadata do not compromise the on-chain ZK shield.

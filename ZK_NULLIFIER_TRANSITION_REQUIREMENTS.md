@@ -181,3 +181,20 @@ After real ZK integration:
 The verifier-mock milestone is now the active code checkpoint. The next step is to run the full suite, review the patched mock verifier/root/version semantics, and decide whether the current mock is sufficient as a pre-circuit interface harness.
 
 Before any real circuit work starts, run another no-edits reviewer loop in `REVIEW_ITERATION_PROCESS.md`. The review should attack remaining assumptions around wallet identity, issuer compromise, revocation freshness, support-flow leakage, degraded/offline operations, and whether each proposed milestone has a deterministic test or fixture gate.
+
+## 10. Implemented ZK/Nullifier Design Fixture and Test Gate
+
+A static ZK/nullifier design fixture and test gate has been implemented to make pre-circuit constraints on future public payloads, domain separation, governance lifecycles, and metadata leakage rules executable. This test gate is defined in `test/ZKNullifierFixtureGate.test.js` and asserts that:
+- Any payload claiming the `unlinkable` privacy target must strictly omit all forbidden identifiers (wallet address, stable credential hash, NPI/NCPDP, credential secret, witness, and voter-nullifier co-exposure).
+- Unique, domain-separated nullifiers are used across all workflows (voting, claims, disputes, portability, migration, emergency burn/revocation).
+- Verifier and root lifecycle states (proposed, active, deprecated, emergency-paused, sunset) are defined with strict validation of quorum and upgrade pathways.
+- The metadata leakage budget restricts the exposure of exact timestamps, gas payers, and raw RPC/ticket identifiers in privacy-claimed payloads.
+
+### Remaining Open Design Decisions
+
+The following key architectural decisions remain undecided and must be settled before any real circuit work:
+1. **Participant Identity Unit**: What exact unit maps to eligibility (wallet, credential, pharmacy location, license, NPI/NCPDP, legal entity, or owner group)?
+2. **Secret Custody, Recovery, Rotation, and Loss Model**: Who generates/stores/rotates secrets, and how are devices recovered without exposing backdoors?
+3. **Verifier/Root/Non-Revocation Governance**: Who configures roots, rotates/deprecates verifiers, pauses compromised circuits, and validates revocation freshness?
+4. **Hosted Auth/Database Provider Selection**: What SaaS/database boundaries are used, and how do we prevent hosted provider logs from deanonymizing the ZK layer?
+5. **Metadata Leakage Mitigation**: How are transaction and network metadata leaks (batch timing, gas funding, RPC IP addresses) strictly eliminated?

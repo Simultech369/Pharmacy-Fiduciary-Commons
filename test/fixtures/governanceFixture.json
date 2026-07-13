@@ -1,0 +1,35 @@
+{
+  "states": [
+    "proposed",
+    "active",
+    "deprecated",
+    "emergency-paused",
+    "sunset"
+  ],
+  "activeVerifier": {
+    "circuitId": "round-voting-circuit",
+    "version": "fiduciary-zk-verifier-v1",
+    "state": "active",
+    "activationWindow": {
+      "startTime": 1783900800,
+      "endTime": 1815456000
+    },
+    "governanceSigner": "0x1111111111111111111111111111111111111111",
+    "quorumThreshold": 3,
+    "deprecationReason": null,
+    "replacementPointer": null
+  },
+  "deprecatedVerifier": {
+    "circuitId": "round-voting-circuit",
+    "version": "fiduciary-zk-verifier-v0-beta",
+    "state": "deprecated",
+    "activationWindow": {
+      "startTime": 1752364800,
+      "endTime": 1783900800
+    },
+    "governanceSigner": "0x1111111111111111111111111111111111111111",
+    "quorumThreshold": 3,
+    "deprecationReason": "Upgrade to v1 to resolve proof soundness edge case",
+    "replacementPointer": "fiduciary-zk-verifier-v1"
+  }
+}

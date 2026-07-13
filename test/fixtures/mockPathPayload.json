@@ -1,0 +1,23 @@
+{
+  "privacyTarget": "semantic-wallet-linkable",
+  "domain": "voter-registration",
+  "scopeId": "1",
+  "nullifier": "0x5f812cb28d107a685e8d89e5a1b18bf8d6ec7b98d1a1b1a8f9463c6d4ba4c81a",
+  "membershipRoot": "0x4078dfab1c8567114ee28ab305fe8c93a8d9b1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+  "verifierVersion": "fiduciary-mock-zk-verifier-v1",
+  "circuitId": "mock-registration-circuit",
+  "publicSignals": [
+    "0x5f812cb28d107a685e8d89e5a1b18bf8d6ec7b98d1a1b1a8f9463c6d4ba4c81a",
+    "0x4078dfab1c8567114ee28ab305fe8c93a8d9b1a2b3c4d5e6f7a8b9c0d1e2f3a4"
+  ],
+  "walletAddress": "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc",
+  "stableCredentialHash": "0x7a312ba3c4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1",
+  "npi": "1982736450",
+  "ncpdp": "5567890",
+  "metadataLeakageBudget": {
+    "allowsWalletAddress": true,
+    "allowsStableHash": true,
+    "allowsExactTimestamp": true,
+    "allowsNpiOrNcpdp": true
+  }
+}

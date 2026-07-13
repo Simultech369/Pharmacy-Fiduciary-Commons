@@ -1,0 +1,34 @@
+{
+  "allowedPublicFields": [
+    "timestampBucket",
+    "chainId",
+    "contractAddress",
+    "relayerPolicy",
+    "nullifier",
+    "membershipRoot",
+    "verifierVersion"
+  ],
+  "forbiddenPrivacyClaimedFields": [
+    "exactTimestamp",
+    "gasPayer",
+    "gasPayerAddress",
+    "rawRpcIdentifier",
+    "rawRpcIpAddress",
+    "rawRpcApiKey",
+    "supportTicketId",
+    "walletAddress",
+    "npi",
+    "ncpdp",
+    "stableCredentialHash",
+    "rawCredential",
+    "credentialSecret",
+    "witnessMaterial",
+    "issuerSideRealWorldIdentifier",
+    "voterNullifierCoExposure"
+  ],
+  "rules": {
+    "timestampBucketResolution": "hourly-or-daily",
+    "gasFundingType": "relayed-only",
+    "rpcTrafficType": "shielded-proxy"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "privacyTarget": "unlinkable",
+  "domain": "round_voting",
+  "scopeId": "round-1",
+  "nullifier": "0x9ab8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8",
+  "membershipRoot": "0x5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d",
+  "verifierVersion": "fiduciary-zk-verifier-v1",
+  "circuitId": "round-voting-circuit",
+  "publicSignals": [
+    "0x9ab8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8",
+    "0x5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d"
+  ],
+  "metadataLeakageBudget": {
+    "allowsWalletAddress": false,
+    "allowsStableHash": false,
+    "allowsExactTimestamp": false,
+    "allowsNpiOrNcpdp": false
+  },
+  "domainSeparation": {
+    "round_voting": {
+      "domain": "round_voting",
+      "scopeId": "round-1",
+      "nullifier": "0x9ab8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8"
+    },
+    "epoch_claim": {
+      "domain": "epoch_claim",
+      "scopeId": "epoch-10",
+      "nullifier": "0x11223344556677889900aabbccddeeff0011223344556677889900aabbccddee"
+    },
+    "dispute": {
+      "domain": "dispute",
+      "scopeId": "dispute-102",
+      "nullifier": "0xffeeddccbbaa0099887766554433221100ffeeddccbbaa009988776655443322"
+    },
+    "portability_export": {
+      "domain": "portability_export",
+      "scopeId": "export-v1",
+      "nullifier": "0xabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabcd"
+    },
+    "migration": {
+      "domain": "migration",
+      "scopeId": "migration-v1-to-v2",
+      "nullifier": "0x00112233445566778899aabbee99887766554433221100aabbccddeeff001122"
+    },
+    "emergency_burn_revocation": {
+      "domain": "emergency_burn_revocation",
+      "scopeId": "burn-voter-4",
+      "nullifier": "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+    }
+  }
+}
