@@ -1,0 +1,36 @@
+{
+  "network": {
+    "name": "sepolia",
+    "chainId": 11155111,
+    "deploymentEnvironment": "testnet"
+  },
+  "roles": {
+    "councilSafe": {
+      "address": "<3_of_5_safe_address>",
+      "threshold": 3,
+      "owners": [
+        "<council_owner_1>",
+        "<council_owner_2>",
+        "<council_owner_3>",
+        "<council_owner_4>",
+        "<council_owner_5>"
+      ]
+    },
+    "rootConfirmer": "<separate_root_confirmer_address>",
+    "guardian": "<separate_guardian_address>",
+    "environmentalFund": "<environmental_fund_address>",
+    "patientFund": "<patient_fund_address>"
+  },
+  "timelock": {
+    "minDelaySeconds": 172800,
+    "admin": "<temporary_deployer_or_timelock_admin>",
+    "renounceSetupAdmin": true,
+    "allowOpenExecutor": false,
+    "proposers": [
+      "<3_of_5_safe_address>"
+    ],
+    "executors": [
+      "<timelock_executor_address>"
+    ]
+  }
+}

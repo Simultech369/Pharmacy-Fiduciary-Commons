@@ -31,6 +31,20 @@ function uncheckedItems(markdown) {
     .filter(item => /^\s*-\s+\[\s\]\s+/.test(item.line));
 }
 
+function walkFiles(dir) {
+  const files = [];
+  if (!fs.existsSync(dir)) return files;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...walkFiles(fullPath));
+    } else {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
 function checkMechanicalSafety() {
   let failed = false;
 
@@ -41,20 +55,20 @@ function checkMechanicalSafety() {
     failed = true;
   }
 
-  // 2. Check for .map files in dashboard
-  const dashboardDir = path.resolve(process.cwd(), "dashboard");
-  if (fs.existsSync(dashboardDir)) {
-    const files = fs.readdirSync(dashboardDir);
-    for (const file of files) {
-      if (file.endsWith(".map")) {
-        console.error(`Safety violation: source map file found in dashboard: ${file}`);
+  // 2. Check for .map files in dashboard source and production build output.
+  for (const scanDir of ["dashboard", path.join("dist", "dashboard")]) {
+    const dashboardDir = path.resolve(process.cwd(), scanDir);
+    for (const filePath of walkFiles(dashboardDir)) {
+      if (filePath.endsWith(".map")) {
+        console.error(`Safety violation: source map file found: ${path.relative(process.cwd(), filePath)}`);
         failed = true;
       }
     }
   }
 
   // 3. Scan dashboard/index.html for innerHTML and CDN integrity
-  const indexPath = path.resolve(dashboardDir, "index.html");
+  const sourceDashboardDir = path.resolve(process.cwd(), "dashboard");
+  const indexPath = path.resolve(sourceDashboardDir, "index.html");
   if (fs.existsSync(indexPath)) {
     const htmlContent = fs.readFileSync(indexPath, "utf8");
 

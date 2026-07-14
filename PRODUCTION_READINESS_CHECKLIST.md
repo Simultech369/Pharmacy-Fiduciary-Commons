@@ -8,7 +8,7 @@ This checklist is a deployment gate for moving the Pharmacy Fiduciary Commons be
 
 Status: needs implementation before public wallet use.
 
-- [ ] Build dashboard assets through a production bundler/minifier.
+- [x] Build dashboard assets through a production bundler/minifier (`npm.cmd run build:dashboard` writes `dist/dashboard` with local script assets and an asset manifest).
 - [ ] Do not expose private keys, API secrets, RPC provider secrets, or admin addresses in client-side code.
 - [ ] Disable public source map publishing for production builds.
 - [ ] If source maps are needed for debugging, upload them only to the private error-tracking service.
@@ -21,12 +21,13 @@ Acceptance test:
 - [ ] Inspect built assets and confirm no `.map` files are publicly served.
 - [ ] Search built assets for known secret names and private key patterns.
 - [ ] Confirm wallet-facing JavaScript is bundled/pinned or protected by SRI.
+- [x] Run `npm.cmd run check:frontend` against the generated dashboard build.
 
 ## 2. Database And Authentication
 
 Status: not present yet.
 
-- [ ] Choose database and auth provider before storing user or patient-adjacent records; document why the selected stack is acceptable for this project's privacy, exit, and retaliation-resistance goals.
+- [ ] Choose database and auth provider before storing user or patient-adjacent records; document why the selected stack is acceptable for this project's privacy, exit, and retaliation-resistance goals. Use `deployment/trust-boundary-review.md` as the decision record.
 - [ ] Treat Cloudflare, Supabase, Firebase, Clerk, and any Bolin/IODR-style identity provider as candidates until a trust-boundary review is complete.
 - [ ] Enable Row Level Security (RLS) before launch.
 - [ ] Write RLS policies for every table containing user, pharmacy, patient, credential, vote, or export data.
@@ -132,6 +133,7 @@ Status: needs definition before public launch.
 - [ ] Confirm deployed contract addresses and chain IDs are environment-specific.
 - [ ] Confirm cap and minimum-epoch values use the selected payout token's base units and decimals.
 - [ ] Document release and rollback steps.
+- [x] Add example static-hosting security headers and cache policy in `deployment/hosting.headers.example.json`.
 
 Acceptance test:
 
@@ -196,6 +198,7 @@ Status: not present yet.
 - [ ] Redact secrets, wallet signatures, credentials, patient data, and auth tokens from logs.
 - [ ] Add uptime checks for hosted dashboard and APIs.
 - [ ] Add alerts for failed deploys, API spikes, repeated auth failures, and contract integration failures.
+- [ ] Select an error-tracking provider only after `deployment/trust-boundary-review.md` is completed; private source maps must not be public.
 
 Acceptance test:
 
@@ -247,3 +250,5 @@ Acceptance test:
 - [x] Add provider-selection notes covering Cloudflare, Supabase/Firebase, Clerk, and any Bolin/IODR-style identity flow before adding hosted auth or database code.
 - [x] Add simulated public-form threat-model tests (note: real hosted form/API validation is deferred to backend integration).
 - [x] Add a public release checklist tied to `npm.cmd test`, contract verification, and dashboard build output inspection.
+- [x] Add dashboard production build and frontend hygiene check scripts.
+- [x] Add privacy/trust-boundary review, parameter calibration, and governance-role templates under `deployment/`.

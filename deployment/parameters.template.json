@@ -1,0 +1,33 @@
+{
+  "network": {
+    "name": "sepolia",
+    "chainId": 11155111,
+    "deploymentEnvironment": "testnet"
+  },
+  "payoutToken": {
+    "symbol": "USDC",
+    "address": "<erc20_token_address>",
+    "decimals": 6
+  },
+  "treasuryParameters": {
+    "initialDailyCapHuman": "1000",
+    "minimumEpochVolumeHuman": "100",
+    "governanceBP": 100,
+    "patientClaimBP": 1000,
+    "recallDelaySeconds": 2592000,
+    "rootProposalExpirySeconds": 259200,
+    "staleDistributionRecoveryDelaySeconds": 15552000
+  },
+  "merkleProofDistribution": {
+    "rootPublisher": "council",
+    "rootConfirmer": "separate-root-confirmer",
+    "proofTransport": "operator-distributed-json",
+    "pharmacyIdentityBinding": "address-amount-eligibleCap",
+    "prePublicationChecks": [
+      "allocation total equals proposed root total",
+      "each leaf uses double-hashed fixed-size fields",
+      "proof package excludes PHI and raw credential material",
+      "root proposal and confirmer approval are archived"
+    ]
+  }
+}

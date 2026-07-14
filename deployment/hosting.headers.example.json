@@ -1,0 +1,24 @@
+{
+  "surface": "static-dashboard",
+  "status": "example-config",
+  "notes": [
+    "Apply equivalent headers in the selected host before public launch.",
+    "Tighten connect-src to the selected RPC and error-reporting endpoints after provider selection.",
+    "Do not add unsafe-inline for scripts; the current dashboard uses an inline script, so public deployment should move inline JavaScript to a local asset before enforcing this CSP."
+  ],
+  "headers": {
+    "Content-Security-Policy": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.walletconnect.com https://*.infura.io https://*.alchemy.com; form-action 'none'; upgrade-insecure-requests",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "X-Frame-Options": "DENY",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin"
+  },
+  "cachePolicy": {
+    "html": "no-cache",
+    "versionedAssets": "public, max-age=31536000, immutable",
+    "personalizedOrExportData": "no-store"
+  }
+}

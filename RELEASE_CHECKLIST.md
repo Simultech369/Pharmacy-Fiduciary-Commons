@@ -23,6 +23,11 @@ No release tag may be created while compile warnings or failing tests exist.
   ```bash
   node scripts/check-readiness.js --env local
   ```
+- [ ] **Deployment Template Validation**:
+  Confirm that parameter and governance templates still pass shape/range checks:
+  ```bash
+  npm.cmd run check:deployment-config
+  ```
 
 ---
 
@@ -34,8 +39,14 @@ No release tag may be created while compile warnings or failing tests exist.
   # In PowerShell, confirm file size is approximately 522 KB (522,095 bytes)
   (Get-Item dashboard/ethers.umd.min.js).Length
   ```
+- [ ] **Production Dashboard Build**:
+  Generate static production assets with local script files and an asset manifest:
+  ```bash
+  npm.cmd run build:dashboard
+  npm.cmd run check:frontend
+  ```
 - [ ] **No Public Source Maps**:
-  Ensure no `.map` files are present in the `dashboard/` directory.
+  Ensure no `.map` files are present in `dashboard/` or `dist/dashboard/`.
 - [ ] **Strict CDN & HTML Inspection**:
   Verify that `dashboard/index.html` has no un-hashed third-party script CDNs (all external script calls must contain `integrity` attributes).
 

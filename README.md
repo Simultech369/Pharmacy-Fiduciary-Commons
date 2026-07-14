@@ -320,7 +320,7 @@ expected current values; otherwise the original deployment cap values are used.
 | Internal review | Complete enough for prototype iteration |
 | External audit | Pending |
 | Mainnet deployment | Not deployed |
-| Production frontend build | Pending |
+| Production frontend build | Build/check scripts present; public deployment still pending |
 | Database/API/RLS surface | Not present yet |
 | Rate limiting, caching, scaling, observability | Design gate only; not implemented yet |
 | ADA/WCAG production audit | Pending |
