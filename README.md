@@ -56,6 +56,7 @@ The current checkpoint is a prototype with tested treasury, voting, mutual-credi
 | Dashboard | Static prototype with local/test Web3 integration, synthetic-data labels, accessibility improvements, and offline verifier panel |
 | Merkle tooling | Allocation root/proof generator |
 | Portability export | Prototype JSON export plus offline and optional RPC-backed verifier for claims, proofs, votes, and receipts |
+| Continuity artifacts | Draft Node.js tool for local paper-voucher and relay-intake artifacts; not a standalone air-gapped kit and not on-chain settlement authority |
 | Mainnet | Not deployed |
 | External audit | Pending |
 
@@ -97,6 +98,8 @@ npm.cmd run verify:export -- --file exports/<participant_address>.json
 ```
 
 Offline verification requires proof material when claims are present. Use `--allow-incomplete` only when intentionally inspecting an incomplete export; add `--rpc <url>` for chain-provenance verification.
+
+Draft continuity tooling is available at `tools/resilience/continuity-engine.mjs`. It requires Node.js and a local `LOCAL_MAC_SECRET`, fails closed on missing or invalid MACs, and produces review/intake artifacts only. It is not a standalone air-gapped kit, live proxy relay, live redemption path, or production ZK proof generator.
 
 ---
 

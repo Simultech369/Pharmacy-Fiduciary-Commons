@@ -7,8 +7,11 @@ pragma solidity 0.8.20;
  * Synthesizes: Perpetual MPC setups + Pairwise QF Correlation Discounts + Subjective Peer-Attestations.
  * 
  * NOTE: This is a draft implementation for architectural design review and is not
- * intended for immediate production use. Deploy with at least attestationThreshold
- * bootstrap participants or the peer-attestation path cannot grow.
+ * intended for immediate production use. It is compiled for focused tests/review
+ * only, is not referenced by deployment scripts, and is not integrated into the
+ * treasury, patient-fund, or mutual-credit runtime. Deploy with at least
+ * attestationThreshold bootstrap participants or the peer-attestation path cannot
+ * grow.
  */
 contract CooperativeParticipatoryBudgeting {
     

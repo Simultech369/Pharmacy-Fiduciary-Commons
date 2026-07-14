@@ -11,7 +11,9 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
  * Inspired by RAI Reflexer Finance PID feedback loops for redemption rates.
  * 
  * NOTE: This is a draft implementation for architectural design review and is not
- * intended for immediate production use.
+ * intended for immediate production use. It is compiled for focused tests/review
+ * only, is not referenced by deployment scripts, and is not integrated into the
+ * treasury, patient-fund, or mutual-credit runtime.
  */
 contract ReflexiveFiduciaryManifold {
 
