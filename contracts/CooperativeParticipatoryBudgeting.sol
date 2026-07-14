@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
 
 /**
  * @title CooperativeParticipatoryBudgeting
@@ -39,7 +39,9 @@ contract CooperativeParticipatoryBudgeting {
     // Track peer attestations for registration
     // target => peer => attestation status
     mapping(address => mapping(address => bool)) public peerAttestations;
-    uint256 public attestationThreshold = 3;
+    uint256 public constant attestationThreshold = 3;
+    uint160 private constant CORRELATION_BUCKET_MODULUS = 5;
+    uint256 private constant CORRELATION_DISCOUNT_DENOMINATOR = 10;
 
     // Track project support vectors to compute pairwise correlation
     // project => voter => support weight
@@ -138,7 +140,9 @@ contract CooperativeParticipatoryBudgeting {
                     address voterB = voters[j];
                     if (isCorrelated(voterA, voterB)) {
                         // Apply correlation discount penalty
-                        correlationDiscountSum += (sqrt(supportA) * sqrt(projectSupport[projectId][voterB])) / 10;
+                        correlationDiscountSum +=
+                            (sqrt(supportA) * sqrt(projectSupport[projectId][voterB])) /
+                            CORRELATION_DISCOUNT_DENOMINATOR;
                     }
                 }
             }
@@ -158,7 +162,7 @@ contract CooperativeParticipatoryBudgeting {
     function isCorrelated(address a, address b) public pure returns (bool) {
         // In production, this checks if voter A and voter B consistently vote for the identical projects
         // via correlation matrices or off-chain cluster verification.
-        return uint160(a) % 5 == uint160(b) % 5;
+        return uint160(a) % CORRELATION_BUCKET_MODULUS == uint160(b) % CORRELATION_BUCKET_MODULUS;
     }
 
     // Helper math function

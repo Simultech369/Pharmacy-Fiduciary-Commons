@@ -508,6 +508,21 @@ contract PBMRebateTreasury is
         super._grantRole(role, account);
     }
 
+    function _hasReachedDelay(uint256 startedAt, uint256 delaySeconds) private view returns (bool) {
+        if (block.timestamp < startedAt) return false;
+        return block.timestamp - startedAt >= delaySeconds;
+    }
+
+    function _hasPassedDelay(uint256 startedAt, uint256 delaySeconds) private view returns (bool) {
+        if (block.timestamp <= startedAt) return false;
+        return block.timestamp - startedAt > delaySeconds;
+    }
+
+    function _deadlineAt(uint256 startedAt, uint256 delaySeconds) private pure returns (uint256) {
+        if (startedAt > type(uint256).max - delaySeconds) return type(uint256).max;
+        return startedAt + delaySeconds;
+    }
+
     receive()  external payable { revert ETHNotAccepted(); }
     fallback() external payable { revert NoFallback(); }
 
@@ -621,7 +636,7 @@ contract PBMRebateTreasury is
         if (epochMerkleRoot[epoch] != bytes32(0)) revert RootAlreadyLive();
 
         PendingRoot storage pr = pendingRoot[epoch];
-        if (pr.proposedAt != 0 && block.timestamp <= pr.proposedAt + ROOT_PROPOSAL_EXPIRY) {
+        if (pr.proposedAt != 0 && !_hasPassedDelay(pr.proposedAt, ROOT_PROPOSAL_EXPIRY)) {
             revert ProposalPendingOrNotExpired();
         }
         if (root == bytes32(0))  revert InvalidRoot();
@@ -637,7 +652,7 @@ contract PBMRebateTreasury is
             proposedAt:  block.timestamp
         });
 
-        emit RootProposed(epoch, root, totalAmount, msg.sender, block.timestamp + ROOT_PROPOSAL_EXPIRY);
+        emit RootProposed(epoch, root, totalAmount, msg.sender, _deadlineAt(block.timestamp, ROOT_PROPOSAL_EXPIRY));
     }
 
     /**
@@ -658,7 +673,7 @@ contract PBMRebateTreasury is
 
         PendingRoot storage pr = pendingRoot[epoch];
         if (pr.proposedAt == 0)            revert NoPendingRoot();
-        if (block.timestamp > pr.proposedAt + ROOT_PROPOSAL_EXPIRY) revert ProposalExpired();
+        if (_hasPassedDelay(pr.proposedAt, ROOT_PROPOSAL_EXPIRY)) revert ProposalExpired();
         if (epochMerkleRoot[epoch] != bytes32(0)) revert RootAlreadyLive();
 
         // Re-verify caps and escrow at confirmation time - conditions may have changed
@@ -691,7 +706,7 @@ contract PBMRebateTreasury is
     function clearExpiredProposal(uint256 epoch) external {
         PendingRoot storage pr = pendingRoot[epoch];
         if (pr.proposedAt == 0) revert NoPendingRoot();
-        if (block.timestamp <= pr.proposedAt + ROOT_PROPOSAL_EXPIRY) revert NotExpired();
+        if (!_hasPassedDelay(pr.proposedAt, ROOT_PROPOSAL_EXPIRY)) revert NotExpired();
         delete pendingRoot[epoch];
         emit RootProposalExpired(epoch);
     }
@@ -923,7 +938,7 @@ contract PBMRebateTreasury is
         if (amount == 0) revert NoFlaggedClaim();
 
         uint256 flaggedAt = disputeFlaggedTimestamp[epoch][pharmacy];
-        if (block.timestamp < flaggedAt + DISPUTE_TIMEOUT) revert DisputeTimeoutNotElapsed();
+        if (!_hasReachedDelay(flaggedAt, DISPUTE_TIMEOUT)) revert DisputeTimeoutNotElapsed();
 
         bool isExclusion = isExclusionDispute[epoch][pharmacy];
 
@@ -1080,7 +1095,7 @@ contract PBMRebateTreasury is
     {
         uint256 epoch = currentEpoch;
         if (epochMerkleRoot[epoch] == bytes32(0)) revert NoRootPublished();
-        if (block.timestamp < epochStartTimestamp + MIN_EPOCH_DURATION) revert EpochTooShort();
+        if (!_hasReachedDelay(epochStartTimestamp, MIN_EPOCH_DURATION)) revert EpochTooShort();
         if (epochVolume < minimumEpochVolume) revert EpochVolumeTooLow();
 
         emit EpochFinalized(epoch, epochVolume, epochEscrow[epoch], block.timestamp);
@@ -1106,9 +1121,9 @@ contract PBMRebateTreasury is
         uint256 epoch = currentEpoch;
         uint256 publishedAt = epochPublishedTimestamp[epoch];
         if (publishedAt == 0) revert NoRootPublished();
-        if (block.timestamp < epochStartTimestamp + MIN_EPOCH_DURATION) revert EpochTooShort();
+        if (!_hasReachedDelay(epochStartTimestamp, MIN_EPOCH_DURATION)) revert EpochTooShort();
         if (epochVolume >= minimumEpochVolume) revert EpochVolumeMeetsMinimum();
-        if (block.timestamp < publishedAt + RECALL_DELAY) revert RecallDelayNotElapsed();
+        if (!_hasReachedDelay(publishedAt, RECALL_DELAY)) revert RecallDelayNotElapsed();
 
         emit StaleEpochFinalizedForRecall(epoch, epochVolume, epochEscrow[epoch], block.timestamp);
         emit EpochFinalized(epoch, epochVolume, epochEscrow[epoch], block.timestamp);
@@ -1141,7 +1156,7 @@ contract PBMRebateTreasury is
 
         uint256 publishedAt = epochPublishedTimestamp[epoch];
         if (publishedAt == 0) revert NoRootPublished();
-        if (block.timestamp < publishedAt + RECALL_DELAY) revert RecallDelayNotElapsed();
+        if (!_hasReachedDelay(publishedAt, RECALL_DELAY)) revert RecallDelayNotElapsed();
 
         uint256 unclaimed = epochEscrow[epoch];
         if (unclaimed == 0) revert NothingToRecall();
@@ -1200,12 +1215,12 @@ contract PBMRebateTreasury is
         if (recipient != patientFund) revert InvalidAddress();
         if (amount == 0)             revert ZeroAmount();
         if (epochMerkleRoot[currentEpoch] != bytes32(0)) revert RootAlreadyLive();
-        if (block.timestamp < epochStartTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
+        if (!_hasReachedDelay(epochStartTimestamp, STALE_DISTRIBUTION_RECOVERY_DELAY)) {
             revert RecoveryDelayNotElapsed();
         }
 
         PendingRoot storage pr = pendingRoot[currentEpoch];
-        if (pr.proposedAt != 0 && block.timestamp <= pr.proposedAt + ROOT_PROPOSAL_EXPIRY) {
+        if (pr.proposedAt != 0 && !_hasPassedDelay(pr.proposedAt, ROOT_PROPOSAL_EXPIRY)) {
             revert ProposalPendingOrNotExpired();
         }
 
@@ -1230,12 +1245,12 @@ contract PBMRebateTreasury is
         uint256 epoch = currentEpoch;
         if (epochMerkleRoot[epoch] != bytes32(0)) revert RootAlreadyLive();
         if (epochEscrow[epoch] != 0) revert InvalidAddress(); // Defensive check: unrooted epoch must have 0 escrowed
-        if (block.timestamp < epochStartTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
+        if (!_hasReachedDelay(epochStartTimestamp, STALE_DISTRIBUTION_RECOVERY_DELAY)) {
             revert RecoveryDelayNotElapsed();
         }
 
         PendingRoot storage pr = pendingRoot[epoch];
-        if (pr.proposedAt != 0 && block.timestamp <= pr.proposedAt + ROOT_PROPOSAL_EXPIRY) {
+        if (pr.proposedAt != 0 && !_hasPassedDelay(pr.proposedAt, ROOT_PROPOSAL_EXPIRY)) {
             revert ProposalPendingOrNotExpired();
         }
 
@@ -1438,7 +1453,7 @@ contract PBMRebateTreasury is
 
         uint256 publishedAt = epochPublishedTimestamp[epoch];
         if (publishedAt == 0)        return false;
-        if (block.timestamp < publishedAt + RECALL_DELAY) return false;
+        if (!_hasReachedDelay(publishedAt, RECALL_DELAY)) return false;
 
         return epochEscrow[epoch] > 0;
     }
@@ -1553,8 +1568,8 @@ contract PBMRebateTreasury is
         totalAmount = pr.totalAmount;
         proposer    = pr.proposer;
         proposedAt  = pr.proposedAt;
-        expiresAt   = pr.proposedAt > 0 ? pr.proposedAt + ROOT_PROPOSAL_EXPIRY : 0;
-        expired     = pr.proposedAt > 0 && block.timestamp > pr.proposedAt + ROOT_PROPOSAL_EXPIRY;
+        expiresAt   = pr.proposedAt > 0 ? _deadlineAt(pr.proposedAt, ROOT_PROPOSAL_EXPIRY) : 0;
+        expired     = pr.proposedAt > 0 && _hasPassedDelay(pr.proposedAt, ROOT_PROPOSAL_EXPIRY);
     }
 
     /// @notice Current bucket balances.
@@ -1601,11 +1616,11 @@ contract PBMRebateTreasury is
         }
 
         PendingRoot storage pr = pendingRoot[currentEpoch];
-        if (pr.proposedAt != 0 && block.timestamp <= pr.proposedAt + ROOT_PROPOSAL_EXPIRY) {
+        if (pr.proposedAt != 0 && !_hasPassedDelay(pr.proposedAt, ROOT_PROPOSAL_EXPIRY)) {
             return 0;
         }
 
-        if (block.timestamp >= epochStartTimestamp + STALE_DISTRIBUTION_RECOVERY_DELAY) {
+        if (_hasReachedDelay(epochStartTimestamp, STALE_DISTRIBUTION_RECOVERY_DELAY)) {
             return distributionPool;
         }
         return 0;

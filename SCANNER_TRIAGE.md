@@ -4,15 +4,74 @@ This file records local scanner results and dispositions. It is not a formal aud
 
 ## Current Artifacts
 
-- Slither: `C:\tmp\pbm-slither-report-90936db.json`
-- Aderyn: `C:\tmp\pbm-aderyn-report-90936db.md`
-- Mythril: `C:\tmp\pbm-mythril-patientfund-bytecode-46107f9.json`
+- Slither: Antigravity reported a successful Slither run against the pre-excavation `4ac02e9` snapshot on 2026-07-13. No critical bugs were reported; the surfaced items were Solidity `0.8.20`/`^0.8.20` version warnings, `CooperativeParticipatoryBudgeting.attestationThreshold` as a constant candidate, and the checked low-level ETH call in `PBMRebateTreasury.sweepETH`.
+- Aderyn pre-excavation: `C:\tmp\pbm-aderyn-report-4ac02e9.md`
+- Aderyn post-excavation: `C:\tmp\pbm-aderyn-report-4ac02e9-excavated.md`
+- Mythril pre-excavation runtime-bytecode reports:
+  - `C:\tmp\pbm-mythril-treasury-runtime-4ac02e9.json`
+  - `C:\tmp\pbm-mythril-patientfund-runtime-4ac02e9.json`
+  - `C:\tmp\pbm-mythril-cooperative-runtime-4ac02e9.json`
+  - `C:\tmp\pbm-mythril-pharmacy-runtime-4ac02e9.json`
+  - `C:\tmp\pbm-mythril-reflexive-runtime-4ac02e9.json`
+- Mythril post-excavation runtime-bytecode reports:
+  - `C:\tmp\pbm-mythril-treasury-runtime-4ac02e9-excavated.json`
+  - `C:\tmp\pbm-mythril-patientfund-runtime-4ac02e9-excavated.json`
+  - `C:\tmp\pbm-mythril-cooperative-runtime-4ac02e9-excavated.json`
+  - `C:\tmp\pbm-mythril-pharmacy-runtime-4ac02e9-excavated.json`
+  - `C:\tmp\pbm-mythril-reflexive-runtime-4ac02e9-excavated.json`
+- Mythril post-excavation bytecode helpers:
+  - `C:\tmp\pbm-pbmrebatetreasury-runtime-4ac02e9-excavated.hex`
+  - `C:\tmp\pbm-patientfundparticipatorybudgeting-runtime-4ac02e9-excavated.hex`
+  - `C:\tmp\pbm-cooperativeparticipatorybudgeting-runtime-4ac02e9-excavated.hex`
+  - `C:\tmp\pbm-pharmacymutualcredit-runtime-4ac02e9-excavated.hex`
+  - `C:\tmp\pbm-reflexivefiduciarymanifold-runtime-4ac02e9-excavated.hex`
+- Older pre-excavation bytecode helpers:
+  - `C:\tmp\pbm-pbmrebatetreasury-runtime-4ac02e9.hex`
+  - `C:\tmp\pbm-patientfundparticipatorybudgeting-runtime-4ac02e9.hex`
+  - `C:\tmp\pbm-cooperativeparticipatorybudgeting-runtime-4ac02e9.hex`
+  - `C:\tmp\pbm-pharmacymutualcredit-runtime-4ac02e9.hex`
+  - `C:\tmp\pbm-reflexivefiduciarymanifold-runtime-4ac02e9.hex`
 
-The final Mythril run is a bounded PatientFund runtime-bytecode check, not full-project symbolic execution. It completed with `{"success": true, "issues": []}` and empty stderr. The bytecode helper is `C:\tmp\pbm-patientfund-runtime-46107f9.hex`.
+Last scanner refresh: Aderyn and bounded Mythril runtime-bytecode checks were refreshed on 2026-07-13 from the modified working tree based on commit `4ac02e9d6388739c9cf7ca8ab4550d8776e5558a`. The scanner-excavation patch is not part of that commit until committed. WSL distro: `Ubuntu-24.04`. Aderyn version: `0.6.8`. Mythril ran from the existing local Docker image `mythril/myth:latest` (`sha256:49e11758e359d0b410f648df5bbcba28a52e091a78e4772b5c02b9043666b4ff`, created 2024-03-27). The sandboxed PowerShell context could not see WSL distros, but the escalated local context could see `Ubuntu`, `Ubuntu-24.04`, and `UbuntuScanners`.
 
-Last scanner refresh: Slither and Aderyn reports were refreshed for commit `90936db` on 2026-07-05 from the WSL distro `Ubuntu-24.04`. The bounded PatientFund Mythril bytecode check remains valid from commit `46107f9` because `PatientFundParticipatoryBudgeting` was not modified in the subsequent commits. The normal, non-elevated Windows shell may still differ from the elevated WSL scanner context; use the WSL context for scanner reruns on this host.
+The Mythril runs are bounded runtime-bytecode checks, not full-project symbolic execution. Command shape: `myth analyze -f <runtime.hex> --bin-runtime -o json -t 2 --execution-timeout 120-240 --solver-timeout 10000 --no-onchain-data`.
 
-Post-hardening verification: `npm.cmd test` passed with 166 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
+## 2026-07-13 Excavation Summary
+
+Post-excavation Mythril summary:
+
+- `PBMRebateTreasury`: reduced from `8` findings (`3` high `SWC-101`, `5` low `SWC-116`) to `3` low `SWC-116` timestamp-dependence findings. All remaining Mythril findings map to `getRecoverableStaleAmount()`, a view helper that intentionally reports stale-recovery eligibility based on `block.timestamp`.
+- `PatientFundParticipatoryBudgeting`: remained clean, `0` issues.
+- `CooperativeParticipatoryBudgeting`: reduced from `2` high findings in `attestParticipant(address)` to `0` issues after pinning the pragma, making `attestationThreshold` constant, and replacing draft literals with named constants.
+- `PharmacyMutualCredit`: reduced from `2` low timestamp findings to `0` issues after rewriting voucher lifetime/grace checks to avoid `storedTimestamp + delay` arithmetic.
+- `ReflexiveFiduciaryManifold`: reduced from `3` high arithmetic findings in `computeDynamicRebateScale(uint256,uint256,uint256)` to `0` issues after removing `uint256 -> int256` casts and using unsigned full-precision `Math.mulDiv`.
+
+Post-excavation Aderyn summary:
+
+- Aderyn now reports 2 high categories and 6 low categories, down from 2 high and 9 low.
+- Retired Aderyn low categories: `Literal Instead of Constant`, `State Variable Could Be Constant`, and `Unspecific Solidity Pragma`.
+- Remaining Aderyn highs: `ETH transferred without address checks` and `Reentrancy: State change after external call`.
+- Remaining Aderyn lows: centralization risk, costly operations inside loops, large numeric literal, PUSH0 opcode, loop contains require/revert, and unused import.
+
+Excavation dispositions:
+
+- Mythril treasury high arithmetic: fixed by replacing direct `storedTimestamp + delay` comparisons with elapsed-time helpers in `PBMRebateTreasury`. The helpers preserve exact boundary semantics: proposal expiry remains strict `>`, while recall/finalization/recovery delays allow the exact elapsed boundary.
+- Mythril Cooperative highs: fixed by making `attestationThreshold` constant, pinning `pragma solidity 0.8.20`, and replacing draft correlation literals with named constants. The post-excavation runtime-bytecode check reports `0` issues.
+- Mythril Reflexive highs: fixed. The old `computeDynamicRebateScale` cast unbounded `uint256` inputs to `int256` and multiplied by `1e18`. It now checks undercollateralization in unsigned space, caps full scale before multiplication, and uses `Math.mulDiv` for fractional scaling. Regression coverage exercises max-uint and fractional cases.
+- Mythril Pharmacy lows: fixed by rewriting voucher lifetime and issuer-grace checks to compare elapsed time via subtraction rather than adding a delay to a stored timestamp. Expiry remains intentionally timestamp-based.
+- Mythril PatientFund: no findings before or after. Its reclaim grace-period check now also uses an elapsed-time helper for consistency.
+- Remaining Mythril treasury lows: accepted residual timestamp dependence in `getRecoverableStaleAmount()`. This view function exists to answer whether a stale-recovery deadline has elapsed, so `block.timestamp` is the point, not a randomness or authorization source.
+- Aderyn H-1: accepted detector mismatch. The flagged treasury functions are ERC-20 payout-token flows, not unchecked ETH transfers. `retractClaimDispute` may transfer payout tokens to `patientFund` only after state is cleared and only for already-recalled normal disputes.
+- Aderyn H-2: accepted residual invariant pattern. Treasury deposit/remediation paths use before/after balance reads to reject short-paid tokens before publishing accounting; PatientFund finalization reads token balance before finalizing to enforce solvency. These paths are covered by fee-on-transfer, callback, and solvency tests.
+- Aderyn centralization risk: accepted governance surface. Release readiness depends on Safe/timelock/root-confirmer/guardian separation and operational evidence, not removing roles from the prototype.
+- Aderyn loop findings: accepted because the loops are bounded (`MAX_VOTERS_PER_BATCH`, `MAX_PROJECTS_PER_ROUND`, `MAX_VOUCHER_RELEASE_BATCH`) and intentionally atomic where malformed batches should revert.
+- Aderyn large numeric literal: accepted for `BP_DENOM = 10_000`; it is already a named basis-point constant.
+- Aderyn PUSH0 opcode: accepted with release caveat. Hardhat compile output confirms `evm target: paris`; Aderyn still reports `EVM version - prague`, so deployment bytecode target remains a release checklist item.
+- Aderyn unused import: accepted artifact shim. `OZTimelockControllerImport.sol` intentionally forces a local Hardhat artifact for deployment scripts/tests.
+
+Current verification: `npm.cmd run compile` compiled 5 Solidity files successfully with `evm target: paris`. `npm.cmd test` passed with 208 tests. Post-excavation Aderyn and bounded Mythril checks completed from WSL. `git diff --check` passed with only normal LF-to-CRLF warnings.
+
+Previous post-hardening verification baseline: `npm.cmd test` passed with 166 tests. `npm.cmd run check:readiness -- --env local` passed. `git diff --check` passed with only normal CRLF warnings.
 
 ## Slither Production Triage
 

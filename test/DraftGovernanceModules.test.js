@@ -43,6 +43,7 @@ describe("Draft governance modules", function () {
       bootstrapC.address,
     ]);
     await cooperative.waitForDeployment();
+    expect(await cooperative.attestationThreshold()).to.equal(3n);
 
     await cooperative.connect(bootstrapA).attestParticipant(target.address);
     await cooperative.connect(bootstrapB).attestParticipant(target.address);
@@ -88,6 +89,24 @@ describe("Draft governance modules", function () {
     await tx.wait();
 
     expect((await manifold.creditLimitPID()).integral).to.not.equal(0n);
+  });
+
+  it("bounds reflexive rebate scaling without signed casts or multiplication overflow", async function () {
+    const ReflexiveFiduciaryManifold = await ethers.getContractFactory("ReflexiveFiduciaryManifold");
+    const manifold = await ReflexiveFiduciaryManifold.deploy(1n, 1n, 1n);
+    await manifold.waitForDeployment();
+
+    const scale = await manifold.REBATE_SCALE_DECIMALS();
+    const max = ethers.MaxUint256;
+
+    expect(await manifold.computeDynamicRebateScale(100n, 100n, 1n)).to.equal(0n);
+    expect(await manifold.computeDynamicRebateScale(200n, 100n, 1n)).to.equal(0n);
+    expect(await manifold.computeDynamicRebateScale(0n, 100n, 200n)).to.equal(scale / 2n);
+    expect(await manifold.computeDynamicRebateScale(0n, max, max)).to.equal(scale);
+
+    const nearFullScale = await manifold.computeDynamicRebateScale(0n, max - 1n, max);
+    expect(nearFullScale).to.be.greaterThan(0n);
+    expect(nearFullScale).to.be.lessThan(scale);
   });
 
   it("preserves fractional PID derivative precision before applying Kd", async function () {

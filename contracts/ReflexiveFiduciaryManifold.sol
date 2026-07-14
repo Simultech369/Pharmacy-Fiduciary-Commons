@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.20;
+
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  * @title ReflexiveFiduciaryManifold
@@ -27,6 +29,7 @@ contract ReflexiveFiduciaryManifold {
     
     // Safety boundaries
     int256 public constant SCALE_DECIMALS = 1e8;
+    uint256 public constant REBATE_SCALE_DECIMALS = 1e18;
     int256 public constant MAX_CONTROL_ADJUSTMENT = 50 * 1e8; // Max 50% adjustment per step
     int256 public constant MIN_CONTROL_ADJUSTMENT = -50 * 1e8;
 
@@ -105,26 +108,17 @@ contract ReflexiveFiduciaryManifold {
         uint256 treasuryBalance,
         uint256 matchingTarget
     ) external pure returns (uint256 scaleFactor) {
-        if (treasuryBalance == 0) return 0;
+        if (treasuryBalance <= totalEscrowed) return 0;
         if (matchingTarget == 0) return 0;
 
         // Calculate solvency ratio: free treasury reserves / target matching allocations
-        int256 reserveSolvency = int256(treasuryBalance) - int256(totalEscrowed);
+        uint256 reserveSolvency = treasuryBalance - totalEscrowed;
 
-        if (reserveSolvency <= 0) {
-            // Undercollateralized: scaling rebate matching to 0 to prevent exhaustion
-            return 0;
+        if (reserveSolvency >= matchingTarget) {
+            // Overcollateralized: scale rebates at 100%.
+            return REBATE_SCALE_DECIMALS;
         }
 
-        // Target ratio = matchingTarget / reserveSolvency
-        uint256 solvencyRatio = (uint256(reserveSolvency) * 1e18) / matchingTarget;
-
-        if (solvencyRatio >= 1e18) {
-            // Overcollateralized: scale rebates at 100% (1e18)
-            return 1e18;
-        } else {
-            // Scale rebate down proportionally to the solvency ratio
-            return solvencyRatio;
-        }
+        return Math.mulDiv(reserveSolvency, REBATE_SCALE_DECIMALS, matchingTarget);
     }
 }

@@ -202,6 +202,11 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         super._grantRole(role, account);
     }
 
+    function _hasReachedDelay(uint256 startedAt, uint256 delaySeconds) private view returns (bool) {
+        if (block.timestamp < startedAt) return false;
+        return block.timestamp - startedAt >= delaySeconds;
+    }
+
     // =========================================================
     // ROUND ADMINISTRATION (COUNCIL ONLY)
     // =========================================================
@@ -676,7 +681,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         Round storage r = rounds[roundId];
         if (r.state != RoundState.Finalized) revert WrongRoundState();
         if (projectId >= r.projectCount) revert ProjectInactive();
-        if (block.timestamp < r.finalizedAt + MATCH_RECLAIM_GRACE_PERIOD) {
+        if (!_hasReachedDelay(r.finalizedAt, MATCH_RECLAIM_GRACE_PERIOD)) {
             revert ReclaimGracePeriodNotElapsed();
         }
 

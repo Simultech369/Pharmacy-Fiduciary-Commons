@@ -100,6 +100,11 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
         super._grantRole(role, account);
     }
 
+    function _hasPassedDelay(uint256 startedAt, uint256 delaySeconds) private view returns (bool) {
+        if (block.timestamp <= startedAt) return false;
+        return block.timestamp - startedAt > delaySeconds;
+    }
+
     // =========================================================
     // GOVERNANCE SETTERS
     // =========================================================
@@ -183,7 +188,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
         if (vouchers[voucherId].issuer != address(0)) revert AlreadyRegistered();
         if (amount == 0) revert ZeroAmount();
         if (expiry <= block.timestamp) revert VoucherExpired();
-        if (expiry > block.timestamp + MAX_VOUCHER_LIFETIME) revert VoucherExpiryTooLong();
+        if (expiry - block.timestamp > MAX_VOUCHER_LIFETIME) revert VoucherExpiryTooLong();
         if (!_capacityCovers(msg.sender, amount, creditLimits[msg.sender])) revert CreditLimitExceeded();
 
         reservedVoucherCredit[msg.sender] += amount;
@@ -222,7 +227,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
             if (
                 deregTime == 0 ||
                 v.createdAt >= deregTime ||
-                block.timestamp > deregTime + ISSUER_GRACE_PERIOD
+                _hasPassedDelay(deregTime, ISSUER_GRACE_PERIOD)
             ) {
                 revert Unauthorized();
             }
