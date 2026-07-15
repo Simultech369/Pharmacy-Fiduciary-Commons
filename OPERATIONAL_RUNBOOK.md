@@ -66,7 +66,7 @@ In the event of an identified contract exploit, front-end compromise, or mathema
   PBMRebateTreasury.pause();
   ```
 - *Note:* The Council cannot pause the contract; this is a safety separation of concerns.
-- *Boundary:* Pause is not a full custody freeze. Timelock/council recovery paths such as recall, stale recovery, reserve withdrawal, and ETH sweep remain callable so operators can finish explicitly authorized containment or cleanup actions.
+- *Boundary:* Pause is not a full custody freeze. Timelock/council recovery paths such as recall, stale recovery, reserve withdrawal, and ETH sweep remain callable so operators can finish explicitly authorized containment or cleanup actions. Recall moves only finalized unclaimed epoch escrow; proof-backed dispute amounts remain quarantined in `flaggedAmount` until unpause and either council resolution or post-timeout pharmacy retraction.
 
 ### Step 2: Investigation & Diagnostics
 - Monitor contract state invariants:

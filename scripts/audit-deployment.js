@@ -5,7 +5,11 @@ const hre = require("hardhat");
 const SAFE_ABI = [
   "function getOwners() view returns (address[])",
   "function getThreshold() view returns (uint256)",
+  "function getModulesPaginated(address start, uint256 pageSize) view returns (address[] memory array, address next)",
 ];
+
+const SAFE_SENTINEL = "0x0000000000000000000000000000000000000001";
+const SAFE_SINGLETON_SLOT = 0;
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -34,6 +38,21 @@ function normalizeList(items) {
   return items.map(normalized);
 }
 
+function normalizeHash(value) {
+  if (!hre.ethers.isHexString(value, 32)) {
+    throw new Error(`Invalid bytes32 hash: ${value}`);
+  }
+  return value.toLowerCase();
+}
+
+function normalizeHashList(items) {
+  return items.map(normalizeHash);
+}
+
+function addressFromStorageSlot(value) {
+  return normalized(`0x${value.slice(-40)}`);
+}
+
 async function main() {
   const expected = {
     timelock: normalized(requireEnv("TIMELOCK_ADDRESS")),
@@ -59,13 +78,17 @@ async function main() {
     treasuryExecutors: normalizeList(parseAddressList(process.env.EXPECTED_TREASURY_EXECUTORS ?? requireEnv("TIMELOCK_ADDRESS"))),
     guardians: normalizeList(parseAddressList(process.env.EXPECTED_GUARDIANS ?? requireEnv("GUARDIAN"))),
     councilSafeOwners: normalizeList(parseAddressList(process.env.COUNCIL_SAFE_OWNERS ?? "")),
+    councilSafeModules: normalizeList(parseAddressList(process.env.COUNCIL_SAFE_MODULES ?? "")),
+    councilSafeProxyCodeHash: process.env.COUNCIL_SAFE_PROXY_CODE_HASH ? normalizeHash(process.env.COUNCIL_SAFE_PROXY_CODE_HASH) : "",
+    councilSafeSingleton: process.env.COUNCIL_SAFE_SINGLETON ? normalized(process.env.COUNCIL_SAFE_SINGLETON) : "",
+    councilSafeModuleCodeHashes: normalizeHashList(parseAddressList(process.env.COUNCIL_SAFE_MODULE_CODE_HASHES ?? "")),
     councilSafeThreshold: Number(process.env.COUNCIL_SAFE_THRESHOLD ?? "3"),
   };
 
   const provider = hre.ethers.provider;
   const network = await provider.getNetwork();
   const isLocalNetwork = network.chainId === 31337n || network.chainId === 1337n;
-  const strictDeployment = !isLocalNetwork && process.env.DEPLOYMENT_ENV !== "demo";
+  const strictDeployment = !isLocalNetwork;
   const timelock = await hre.ethers.getContractAt("TimelockController", expected.timelock);
   const treasury = await hre.ethers.getContractAt("PBMRebateTreasury", expected.treasury);
 
@@ -105,6 +128,62 @@ async function main() {
     }
     compareAddressSet(label, actual, expectedMembers);
   }
+  async function getSafeModules(safe) {
+    const modules = [];
+    let cursor = SAFE_SENTINEL;
+    for (let page = 0; page < 20; page++) {
+      const result = await safe.getModulesPaginated(cursor, 100);
+      modules.push(...Array.from(result[0]));
+      cursor = result[1];
+      if (normalized(cursor) === SAFE_SENTINEL) return modules;
+    }
+    throw new Error("Safe module pagination did not terminate");
+  }
+  async function verifyCodeHash(address, expectedHash, label) {
+    const code = await provider.getCode(address);
+    if (code === "0x") {
+      fail(`${label} has no contract code: ${address}`);
+      return;
+    }
+    const actualHash = hre.ethers.keccak256(code).toLowerCase();
+    if (!expectedHash) {
+      fail(`${label} code hash must be pinned in strict deployments`);
+    } else if (actualHash !== expectedHash) {
+      fail(`${label} code hash: expected ${expectedHash}, found ${actualHash}`);
+    } else {
+      pass(`${label} code hash pinned: ${actualHash}`);
+    }
+  }
+  async function requireCodeHashAllowlisted(address, allowedHashes, label) {
+    const code = await provider.getCode(address);
+    if (code === "0x") {
+      fail(`${label} has no contract code: ${address}`);
+      return;
+    }
+    const actualHash = hre.ethers.keccak256(code).toLowerCase();
+    if (allowedHashes.length === 0) {
+      fail(`${label} code hash allowlist is empty`);
+    } else if (!new Set(allowedHashes).has(actualHash)) {
+      fail(`${label} code hash is not allowlisted: ${actualHash}`);
+    } else {
+      pass(`${label} code hash allowlisted: ${actualHash}`);
+    }
+  }
+  async function getControllerSigners(address, label) {
+    const code = await provider.getCode(address);
+    if (code === "0x") {
+      return [address];
+    }
+
+    const wallet = new hre.ethers.Contract(address, SAFE_ABI, provider);
+    try {
+      const owners = await wallet.getOwners();
+      return owners.map(normalized);
+    } catch (error) {
+      fail(`${label} is a contract but does not expose Safe owners for overlap audit: ${error.message}`);
+      return [address];
+    }
+  }
   async function auditCouncilSafe() {
     const code = await provider.getCode(expected.council);
     if (code === "0x") {
@@ -116,27 +195,69 @@ async function main() {
     try {
       const owners = await safe.getOwners();
       const threshold = Number(await safe.getThreshold());
+      await verifyCodeHash(expected.council, expected.councilSafeProxyCodeHash, "Council Safe proxy");
+
+      if (!expected.councilSafeSingleton) {
+        fail("Strict deployment audit requires COUNCIL_SAFE_SINGLETON");
+      } else {
+        const singletonSlot = await provider.getStorage(expected.council, SAFE_SINGLETON_SLOT);
+        const singleton = addressFromStorageSlot(singletonSlot);
+        if (singleton !== expected.councilSafeSingleton) {
+          fail(`Council Safe singleton: expected ${expected.councilSafeSingleton}, found ${singleton}`);
+        } else {
+          pass(`Council Safe singleton pinned: ${singleton}`);
+        }
+      }
+
       if (threshold !== expected.councilSafeThreshold) {
         fail(`Council Safe threshold: expected ${expected.councilSafeThreshold}, found ${threshold}`);
       } else {
         pass(`Council Safe threshold: ${threshold}`);
       }
 
-      if (expected.councilSafeOwners.length > 0) {
-        compareAddressSet("Council Safe owners", owners, expected.councilSafeOwners);
-      } else if (owners.length !== 5 || threshold !== 3) {
-        fail(`Council Safe must be 3/5 when COUNCIL_SAFE_OWNERS is not supplied; found ${threshold}/${owners.length}`);
+      if (expected.councilSafeOwners.length === 0) {
+        fail("Strict deployment audit requires COUNCIL_SAFE_OWNERS for exact owner verification");
       } else {
-        pass("Council Safe shape: 3/5");
+        compareAddressSet("Council Safe owners", owners, expected.councilSafeOwners);
+      }
+
+      const ownerSet = new Set(owners.map((owner) => normalized(owner).toLowerCase()));
+      for (const [label, accounts] of [
+        ["root confirmer", expected.rootConfirmers],
+        ["guardian", expected.guardians],
+      ]) {
+        for (const account of accounts) {
+          const signers = await getControllerSigners(account, label);
+          for (const signer of signers) {
+            if (ownerSet.has(signer.toLowerCase())) {
+              fail(`Council Safe owner set overlaps ${label} controller signer: ${signer}`);
+            }
+          }
+        }
+      }
+
+      const modules = await getSafeModules(safe);
+      compareAddressSet("Council Safe modules", modules, expected.councilSafeModules);
+      if (modules.length > 0 && expected.councilSafeModuleCodeHashes.length === 0) {
+        fail("Approved Council Safe modules require COUNCIL_SAFE_MODULE_CODE_HASHES");
+      }
+      for (let i = 0; i < modules.length; i++) {
+        await requireCodeHashAllowlisted(
+          normalized(modules[i]),
+          expected.councilSafeModuleCodeHashes,
+          `Council Safe module ${i}`
+        );
       }
     } catch (error) {
-      fail(`Council address does not expose Safe owner/threshold interface: ${error.message}`);
+      fail(`Council address does not expose required Safe audit interface: ${error.message}`);
     }
   }
 
   console.log("==================================================");
   console.log("RUNNING ON-CHAIN DEPLOYMENT AUDIT");
   console.log(`Network: ${hre.network.name} (${network.chainId})`);
+  console.log(`Deployment environment: ${process.env.DEPLOYMENT_ENV || "unspecified"}`);
+  console.log(`Strict deployment: ${strictDeployment}`);
   console.log(`Timelock: ${expected.timelock}`);
   console.log(`Treasury: ${expected.treasury}`);
   console.log("==================================================");
@@ -173,8 +294,10 @@ async function main() {
 
     if (strictDeployment) {
       await auditCouncilSafe();
+    } else if (isLocalNetwork) {
+      pass("Council Safe owner/threshold audit skipped on local network");
     } else {
-      pass("Council Safe owner/threshold audit skipped outside strict deployment mode");
+      fail("Council Safe owner/threshold audit cannot be skipped on non-local networks");
     }
   } catch (error) {
     fail(`Treasury audit could not complete: ${error.message}`);
@@ -199,8 +322,8 @@ async function main() {
     }
 
     const isOpenExecutor = await timelock.hasRole(EXECUTOR_ROLE, hre.ethers.ZeroAddress);
-    if (isOpenExecutor && !isLocalNetwork && process.env.DEPLOYMENT_ENV !== "demo") {
-      fail("Open timelock execution is enabled on a non-local, non-demo network");
+    if (isOpenExecutor && !isLocalNetwork) {
+      fail("Open timelock execution is enabled on a non-local network");
     } else {
       pass(`Open executor policy is acceptable for this environment: ${isOpenExecutor}`);
     }

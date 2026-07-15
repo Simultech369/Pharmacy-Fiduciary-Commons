@@ -310,6 +310,10 @@ memberships, role administrators, timelock delay, proposers, executors, and
 external-admin state. After legitimate cap ratchets, set
 `EXPECTED_DAILY_VOLUME_CAP` and `EXPECTED_HARD_ABSOLUTE_VOLUME_CAP` to the
 expected current values; otherwise the original deployment cap values are used.
+On non-local networks the audit is strict and also requires `COUNCIL_SAFE_OWNERS`,
+`COUNCIL_SAFE_PROXY_CODE_HASH`, and `COUNCIL_SAFE_SINGLETON`; if any Safe modules
+are intentionally enabled, set `COUNCIL_SAFE_MODULES` and matching
+`COUNCIL_SAFE_MODULE_CODE_HASHES`.
 
 ---
 

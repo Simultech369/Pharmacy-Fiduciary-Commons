@@ -17,7 +17,13 @@
       ]
     },
     "rootConfirmer": "<separate_root_confirmer_address>",
+    "rootConfirmerControllerOwners": [
+      "<root_confirmer_owner_or_eoa>"
+    ],
     "guardian": "<separate_guardian_address>",
+    "guardianControllerOwners": [
+      "<guardian_owner_or_eoa>"
+    ],
     "environmentalFund": "<environmental_fund_address>",
     "patientFund": "<patient_fund_address>"
   },

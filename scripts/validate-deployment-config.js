@@ -136,11 +136,44 @@ function validateGovernance(governance, allowPlaceholders) {
 
   const rootConfirmer = address(roles.rootConfirmer, "roles.rootConfirmer", allowPlaceholders);
   const guardian = address(roles.guardian, "roles.guardian", allowPlaceholders);
+  const rootConfirmerControllerOwners = roles.rootConfirmerControllerOwners ?? [];
+  const guardianControllerOwners = roles.guardianControllerOwners ?? [];
+  if (!Array.isArray(rootConfirmerControllerOwners) || rootConfirmerControllerOwners.length === 0) {
+    throw new Error("roles.rootConfirmerControllerOwners must list the EOA or Safe owners controlling rootConfirmer");
+  }
+  if (!Array.isArray(guardianControllerOwners) || guardianControllerOwners.length === 0) {
+    throw new Error("roles.guardianControllerOwners must list the EOA or Safe owners controlling guardian");
+  }
+  const normalizedRootConfirmerOwners = rootConfirmerControllerOwners.map((owner, index) =>
+    address(owner, `roles.rootConfirmerControllerOwners[${index}]`, allowPlaceholders)
+  );
+  const normalizedGuardianOwners = guardianControllerOwners.map((owner, index) =>
+    address(owner, `roles.guardianControllerOwners[${index}]`, allowPlaceholders)
+  );
   address(roles.environmentalFund, "roles.environmentalFund", allowPlaceholders);
   address(roles.patientFund, "roles.patientFund", allowPlaceholders);
 
   if (!allowPlaceholders) {
     assertUnique([council, rootConfirmer, guardian], "council, rootConfirmer, and guardian");
+    assertUnique(normalizedRootConfirmerOwners, "root confirmer controller owners");
+    assertUnique(normalizedGuardianOwners, "guardian controller owners");
+    const ownerSet = new Set(normalizedOwners.map((owner) => owner.toLowerCase()));
+    if (ownerSet.has(rootConfirmer.toLowerCase())) {
+      throw new Error("roles.councilSafe.owners must not include the root confirmer role holder");
+    }
+    if (ownerSet.has(guardian.toLowerCase())) {
+      throw new Error("roles.councilSafe.owners must not include the guardian role holder");
+    }
+    for (const owner of normalizedRootConfirmerOwners) {
+      if (ownerSet.has(owner.toLowerCase())) {
+        throw new Error("roles.councilSafe.owners must not overlap root confirmer controller owners");
+      }
+    }
+    for (const owner of normalizedGuardianOwners) {
+      if (ownerSet.has(owner.toLowerCase())) {
+        throw new Error("roles.councilSafe.owners must not overlap guardian controller owners");
+      }
+    }
   }
 
   const minDelay = Number(timelock.minDelaySeconds);

@@ -699,6 +699,70 @@ describe("PBMRebateTreasury security baseline", function () {
     );
   });
 
+  it("allows paused recall without draining quarantined dispute funds", async function () {
+    await seedDeposit(toWei("1000"));
+    const disputed = toWei("100");
+    const unclaimed = toWei("80");
+    const { root, proofA } = makeTwoLeafTree(
+      pharmacy.address,
+      disputed,
+      disputed,
+      attacker.address,
+      unclaimed,
+      unclaimed
+    );
+
+    await treasury.connect(council).proposeRoot(root, disputed + unclaimed);
+    await treasury.connect(council2).confirmRoot(0);
+    await treasury.connect(pharmacy).flagClaim(
+      0,
+      disputed,
+      disputed,
+      proofA,
+      evidenceHash("paused-recall-flag")
+    );
+
+    expect(await treasury.epochEscrow(0)).to.equal(unclaimed);
+    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(disputed);
+
+    await ethers.provider.send("evm_increaseTime", [24 * 60 * 60]);
+    await ethers.provider.send("evm_mine", []);
+    await treasury.connect(council).finalizeEpoch();
+
+    await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60]);
+    await ethers.provider.send("evm_mine", []);
+    await treasury.connect(guardian).pause();
+
+    const patientBeforeRecall = await token.balanceOf(patientFund.address);
+    await treasury.connect(council).recallUnclaimed(0);
+
+    expect(await token.balanceOf(patientFund.address) - patientBeforeRecall).to.equal(unclaimed);
+    expect(await treasury.epochEscrow(0)).to.equal(0n);
+    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(disputed);
+    expect(await treasury.totalFlaggedNormal()).to.equal(disputed);
+
+    await expectRevert(
+      treasury.connect(council).resolveClaim(
+        0,
+        pharmacy.address,
+        0,
+        evidenceHash("paused-recall-resolution")
+      ),
+      "Pausable: paused"
+    );
+
+    await treasury.connect(council).unpause();
+    await treasury.connect(council).resolveClaim(
+      0,
+      pharmacy.address,
+      0,
+      evidenceHash("unpaused-recall-resolution")
+    );
+
+    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(0n);
+    expect(await treasury.totalFlaggedNormal()).to.equal(0n);
+  });
+
   it("restricts cap governance to executor and enforces bounds", async function () {
     await expectRevert(
       treasury.connect(attacker).updateDailyCap(toWei("1")),

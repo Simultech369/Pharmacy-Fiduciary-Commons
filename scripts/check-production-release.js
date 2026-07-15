@@ -109,6 +109,12 @@ function main() {
   if (!deploymentAudit.includes("AUDIT PASSED")) {
     throw new Error("deployment-audit must include AUDIT PASSED evidence");
   }
+  if (!deploymentAudit.includes("Strict deployment: true")) {
+    throw new Error("deployment-audit must prove strict non-demo deployment auditing");
+  }
+  if (/Deployment environment:\s*demo/i.test(deploymentAudit)) {
+    throw new Error("deployment-audit must not be generated in demo mode");
+  }
 
   run("production readiness", process.execPath, ["scripts/check-readiness.js", "--env", "production"]);
   run("real deployment config", process.execPath, [
