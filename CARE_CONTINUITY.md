@@ -47,7 +47,7 @@ To keep feedback loops connected to operational reality, the project defines the
 ### 3.3 Non-Digital Workflow Adoption (NDWA)
 * **Definition**: The volume of claims, vouchers, or disputes processed via SMS, physical paper, or trusted cooperative proxies, relative to direct web-connected wallet interactions.
 * **Target**: Support at least `20%` of transactions offline to prevent digital exclusion.
-* **Current Status**: Aspirational / policy target. The repository does not yet include SMS, paper-voucher, or offline-receipt auditing tools.
+* **Current Status**: Partially implemented. The repository contains draft offline voucher generation (`continuity-engine.mjs`) and deterministic offline-receipt reconciliation (`reconcile-vouchers.mjs`) tools (local integrity evidence only). SMS integration and live, production-grade on-chain reconciliation workflows remain unimplemented.
 
 ### 3.4 Medication Choice Autonomy (MCA)
 * **Definition**: Measures the degree of patient and pharmacist agency to substitute alternative generics or adapt care pathways when faced with payer formulary shifts or distributor stockouts, preventing hyper-optimization of financial margins at the cost of patient choice.

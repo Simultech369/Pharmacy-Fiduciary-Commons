@@ -326,4 +326,95 @@ describe("Continuity and adversarial draft tools", function () {
     expect(result.status).to.equal(1);
     expect(result.stderr).to.include("possibleMnemonic");
   });
+
+  it("reconciles and classifies offline vouchers deterministically", async function () {
+    const { reconcileVouchers } = await import("../tools/resilience/reconcile-vouchers.mjs");
+
+    const vouchers = [
+      { roundId: 1, nullifier: "0xaaaa" + "0".repeat(60) }, // Will be reconciled
+      { roundId: 1, nullifier: "0xbbbb" + "0".repeat(60) }, // Will be duplicate_conflict
+      { roundId: 1, nullifier: "0xbbbb" + "0".repeat(60) }, // Will be duplicate_conflict
+      { roundId: 1, nullifier: "0xcccc" + "0".repeat(60) }, // Will be unresolved
+      { roundId: 2, nullifier: "0xaaaa" + "0".repeat(60) }  // Will be unresolved (different round)
+    ];
+
+    const onChainEvents = [
+      { roundId: 1, nullifier: "0xaaaa" + "0".repeat(60) },
+      { roundId: 2, nullifier: "0xdddd" + "0".repeat(60) }
+    ];
+
+    const results = reconcileVouchers(vouchers, onChainEvents);
+
+    expect(results).to.have.lengthOf(5);
+
+    // 0xaaaa on round 1 should be reconciled
+    expect(results[0].roundId).to.equal(1);
+    expect(results[0].nullifier).to.equal("0xaaaa" + "0".repeat(60));
+    expect(results[0].classification).to.equal("reconciled");
+    expect(results[0].detail).to.include("Successfully matched");
+
+    // 0xbbbb on round 1 should be duplicate_conflict
+    expect(results[1].classification).to.equal("duplicate_conflict");
+    expect(results[1].detail).to.include("Duplicate nullifier");
+    expect(results[2].classification).to.equal("duplicate_conflict");
+
+    // 0xcccc on round 1 should be unresolved
+    expect(results[3].classification).to.equal("unresolved");
+    expect(results[3].detail).to.include("local-only");
+
+    // 0xaaaa on round 2 should be unresolved (since event was on round 1)
+    expect(results[4].classification).to.equal("unresolved");
+  });
+
+  it("runs the reconciliation CLI tool and prints JSON report", function () {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "reconcile-cli-"));
+    const reconcileTool = path.join(repoRoot, "tools", "resilience", "reconcile-vouchers.mjs");
+
+    const vouchers = [
+      { roundId: 1, nullifier: "0x1111" + "0".repeat(60) },
+      { roundId: 1, nullifier: "0x2222" + "0".repeat(60) }
+    ];
+    const events = [
+      { roundId: 1, nullifier: "0x1111" + "0".repeat(60) }
+    ];
+
+    const vouchersFile = path.join(tempDir, "vouchers.json");
+    const eventsFile = path.join(tempDir, "events.json");
+
+    fs.writeFileSync(vouchersFile, JSON.stringify(vouchers, null, 2));
+    fs.writeFileSync(eventsFile, JSON.stringify(events, null, 2));
+
+    const result = nodeTool([reconcileTool, vouchersFile, eventsFile]);
+
+    expect(result.status).to.equal(0);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed).to.have.lengthOf(2);
+    expect(parsed[0].classification).to.equal("reconciled");
+    expect(parsed[1].classification).to.equal("unresolved");
+  });
+
+  it("accepts wrapped entries for reconciliation event exports", function () {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "reconcile-wrapped-events-"));
+    const reconcileTool = path.join(repoRoot, "tools", "resilience", "reconcile-vouchers.mjs");
+
+    const vouchersFile = path.join(tempDir, "vouchers.json");
+    const eventsFile = path.join(tempDir, "events.json");
+    const nullifier = "0x3333" + "0".repeat(60);
+
+    fs.writeFileSync(
+      vouchersFile,
+      JSON.stringify({ entries: [{ roundId: 1, nullifier }] }, null, 2)
+    );
+    fs.writeFileSync(
+      eventsFile,
+      JSON.stringify({ entries: [{ roundId: 1, nullifier }] }, null, 2)
+    );
+
+    const result = nodeTool([reconcileTool, vouchersFile, eventsFile]);
+
+    expect(result.status).to.equal(0);
+    const parsed = JSON.parse(result.stdout);
+    expect(parsed).to.have.lengthOf(1);
+    expect(parsed[0].classification).to.equal("reconciled");
+  });
 });

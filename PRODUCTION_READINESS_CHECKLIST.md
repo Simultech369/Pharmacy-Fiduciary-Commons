@@ -47,18 +47,18 @@ Acceptance test:
 
 ## 2A. Offline And Non-Digital Workflow Safety
 
-Status: not present yet.
+Status: partially present (draft offline voucher generation, proxy validation, and deterministic local reconciliation scripts exist; SMS integration and live reconciliation remain unimplemented).
 
 - [ ] Define the SMS, paper voucher, or trusted-proxy workflows before claiming non-digital access.
 - [ ] Add receipt identifiers that can be reconciled without exposing PHI or patient precarity.
-- [ ] Add an offline-receipt audit script or documented reconciliation procedure.
+- [x] Add an offline-receipt audit script or documented reconciliation procedure.
 - [ ] Define who can enter offline claims, who reviews them, and how disputes are handled.
 - [ ] Test duplicate receipt, forged receipt, delayed sync, and lost-connectivity cases.
 - [ ] Define a privacy-safe, fraud-resistant data collection protocol for care-continuity metrics such as Continuous Refill Ratio (CRR).
 
 Acceptance test:
 
-- [ ] Offline receipts can be reconciled to on-chain events or explicitly marked unresolved.
+- [x] Offline receipts can be reconciled to on-chain events or explicitly marked unresolved (local deterministic script classifies them as reconciled, duplicate_conflict, or unresolved).
 - [ ] Offline workflows do not publish diagnosis, income, immigration, disability, or stigmatized medication data.
 - [ ] Operators can measure Non-Digital Workflow Adoption without exposing protected participant data.
 - [ ] Care-continuity metrics can be audited without exposing patient identity, diagnosis, income, or stigmatized medication category, and without relying solely on self-reported pharmacy data.
