@@ -10,7 +10,7 @@
     "decimals": 6
   },
   "treasuryParameters": {
-    "initialDailyCapHuman": "1000",
+    "initialEpochVolumeCapHuman": "1000",
     "minimumEpochVolumeHuman": "100",
     "governanceBP": 100,
     "patientClaimBP": 1000,

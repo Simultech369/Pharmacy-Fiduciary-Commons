@@ -59,7 +59,7 @@ Summary: Slither analyzed the production-scope contracts with 101 detectors and 
 
 | Detector | Count | Local disposition |
 | --- | ---: | --- |
-| `arbitrary-send-eth` | 1 | Bounded: `sweepETH` is council-gated, sends only to configured `environmentalFund`, and checks the low-level call result. Still keep this visible because ETH sweeps are governance-sensitive. |
+| `arbitrary-send-eth` | 1 | Bounded: `sweepETH` is executor/timelock-gated, sends only to configured `environmentalFund`, and checks the low-level call result. Still keep this visible because ETH sweeps are governance-sensitive. |
 | `incorrect-equality` | 2 | Bounded / false positive: `balance == 0` is a zero-value guard, and `publishedAt == 0` is a sentinel in a view eligibility helper. |
 | `reentrancy-no-eth` | 1 | Bounded / false positive: `PatientFundParticipatoryBudgeting.startRound` is `nonReentrant`; the external token pull happens before the new round and recycled matching state are activated, and callback senders do not satisfy council/voter gates. |
 | `reentrancy-benign` | 2 | Bounded / false positive: `depositRebate` and `fundExclusionRemediation` are already `nonReentrant`; Slither still reports state writes after `safeTransferFrom`. |

@@ -142,8 +142,13 @@ function verifyPayload(payload, options = {}) {
     receiptsByHash.set(receipt.hash.toLowerCase(), receipt);
   }
 
+  if (payload.claims.length > 0 || payload.votes.length > 0 || payload.receipts.length > 0) {
+    warnings.push("Offline mode checks untrusted export self-consistency only; use --rpc and confirmed roots for chain provenance.");
+  }
+
   for (const claim of payload.claims) {
     const demoFields = claim.syntheticDemoFields || claim;
+    const receipt = receiptsByHash.get(String(claim.transactionHash || "").toLowerCase());
     let pharmacy;
     try {
       pharmacy = ethers.getAddress(claim.pharmacyAddress);
@@ -156,8 +161,10 @@ function verifyPayload(payload, options = {}) {
       fail(errors, `Claim ${claim.claimId || "(unknown)"} pharmacyAddress does not match exporter.`);
     }
 
-    if (!receiptsByHash.has(String(claim.transactionHash || "").toLowerCase())) {
+    if (!receipt) {
       fail(errors, `Claim ${claim.claimId || "(unknown)"} is missing a matching receipt.`);
+    } else if (receipt.details?.type !== "Claimed") {
+      fail(errors, `Claim ${claim.claimId || "(unknown)"} matching receipt is not a Claimed event.`);
     }
 
     if (demoFields.metadataProvenance !== "synthetic-placeholder" && demoFields.ndc === "unavailable-off-chain") {
@@ -185,6 +192,32 @@ function verifyPayload(payload, options = {}) {
       }
     } catch (err) {
       fail(errors, `Merkle proof at index ${proof.leafIndex} is malformed: ${err.message}`);
+    }
+  }
+
+  for (const claim of payload.claims) {
+    const receipt = receiptsByHash.get(String(claim.transactionHash || "").toLowerCase());
+    if (!receipt || receipt.details?.type !== "Claimed") continue;
+    const matchingProofs = payload.merkle_proofs.filter((proof) => {
+      try {
+        return (
+          Number(proof.blockNumber) === Number(receipt.blockNumber) &&
+          ethers.getAddress(proof.pharmacy) === ethers.getAddress(claim.pharmacyAddress)
+        );
+      } catch {
+        return false;
+      }
+    });
+    if (matchingProofs.length !== 1) {
+      if (options.allowIncomplete && payload.merkle_proofs.length === 0) {
+        continue;
+      }
+      fail(errors, `Claim ${claim.claimId || "(unknown)"} must have exactly one matching Merkle proof for its receipt block and pharmacy.`);
+      continue;
+    }
+    const proof = matchingProofs[0];
+    if (String(proof.grossAmount) !== String(receipt.details.grossAmount)) {
+      fail(errors, `Claim ${claim.claimId || "(unknown)"} proof grossAmount does not match receipt details.`);
     }
   }
 
@@ -281,15 +314,42 @@ async function verifyPayloadOnChain(payload, options = {}) {
         if (!claim || ethers.getAddress(parsed.args.pharmacy) !== ethers.getAddress(claim.pharmacyAddress)) {
           fail(errors, `Transaction ${exportedReceipt.hash} claim participant does not match the on-chain event.`);
         }
-        const proof = payload.merkle_proofs.find(item => Number(item.blockNumber) === receipt.blockNumber);
-        if (proof) {
+        if (
+          String(parsed.args.grossAmount) !== String(exportedReceipt.details.grossAmount) ||
+          String(parsed.args.netToPharmacy) !== String(exportedReceipt.details.netToPharmacy) ||
+          String(parsed.args.patientShare) !== String(exportedReceipt.details.patientShare)
+        ) {
+          fail(errors, `Transaction ${exportedReceipt.hash} claim amounts do not match the on-chain event.`);
+        }
+        const matchingProofs = payload.merkle_proofs.filter((item) => {
+          try {
+            return (
+              Number(item.blockNumber) === receipt.blockNumber &&
+              ethers.getAddress(item.pharmacy) === ethers.getAddress(parsed.args.pharmacy)
+            );
+          } catch {
+            return false;
+          }
+        });
+        if (matchingProofs.length !== 1) {
+          fail(errors, `Transaction ${exportedReceipt.hash} must have exactly one matching Merkle proof.`);
+        } else {
+          const proof = matchingProofs[0];
           const onChainRoot = await treasury.epochMerkleRoot(parsed.args.epoch);
           if (onChainRoot.toLowerCase() !== proof.claimRoot.toLowerCase()) {
             fail(errors, `Epoch ${parsed.args.epoch} Merkle root does not match the confirmed on-chain root.`);
           }
         }
-      } else if (parsed.name === "VoteCast" && ethers.getAddress(parsed.args.voter) !== ethers.getAddress(payload.exporter)) {
-        fail(errors, `Transaction ${exportedReceipt.hash} voter does not match exporter.`);
+      } else if (parsed.name === "VoteCast") {
+        if (ethers.getAddress(parsed.args.voter) !== ethers.getAddress(payload.exporter)) {
+          fail(errors, `Transaction ${exportedReceipt.hash} voter does not match exporter.`);
+        }
+        if (
+          Number(parsed.args.roundId) !== Number(exportedReceipt.details.roundId) ||
+          Number(parsed.args.projectId) !== Number(exportedReceipt.details.projectId)
+        ) {
+          fail(errors, `Transaction ${exportedReceipt.hash} vote round/project does not match the on-chain event.`);
+        }
       }
     } catch (err) {
       fail(errors, `Transaction ${exportedReceipt.hash} event could not be decoded: ${err.message}`);

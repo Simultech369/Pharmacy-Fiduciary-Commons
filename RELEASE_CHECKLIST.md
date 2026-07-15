@@ -1,6 +1,6 @@
 # Public Release Verification Checklist
 
-This runbook defines the required gate checks before tagging a public commit or releasing contract/dashboard code to staging or production networks. 
+This runbook defines the required gate checks before tagging a public source checkpoint or releasing contract/dashboard code to staging or production networks. A local/source checkpoint is not a production release. Production release requires the dedicated production gate in section 5.
 
 ---
 
@@ -14,19 +14,19 @@ No release tag may be created while compile warnings or failing tests exist.
   npm run compile
   ```
 - [ ] **Full Test Suite Execution**:
-  Run all contract and threat-model tests, confirming 145+ passing tests:
+  Run all contract and threat-model tests, confirming the full suite passes:
   ```bash
   npm test
   ```
-- [ ] **Readiness Script Pass**:
-  Confirm that the mechanical readiness script passes under the targeted environment:
+- [ ] **Prototype Readiness Script Pass**:
+  For local/source checkpoints only, confirm that mechanical checks pass while open production items remain visible:
   ```bash
   node scripts/check-readiness.js --env local
   ```
 - [ ] **Deployment Template Validation**:
-  Confirm that parameter and governance templates still pass shape/range checks:
+  Confirm that parameter and governance templates still pass shape/range checks. This is not a deployment-ready config check:
   ```bash
-  npm.cmd run check:deployment-config
+  npm.cmd run check:deployment-template
   ```
 
 ---
@@ -63,10 +63,28 @@ No release tag may be created while compile warnings or failing tests exist.
 
 ---
 
-## 4. Release Tagging
+## 4. Source Checkpoint Tagging
 
-Once all checks pass, tag the exact commit with a semantic version (prefixed with `v`) and push:
+Once local/source-checkpoint checks pass, tag the exact commit only as a prototype/source checkpoint unless section 5 also passes:
 ```bash
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
+git tag -a prototype-v1.0.0 -m "Prototype source checkpoint v1.0.0"
+git push origin prototype-v1.0.0
+```
+
+Do not use a production-looking tag for a commit that only passed local readiness or template validation.
+
+---
+
+## 5. Production Release Gate
+
+No staging/production-network release tag may be created unless this gate passes against the exact release commit. It requires production readiness, non-template deployment config without `--allow-placeholders`, exact-commit scanner evidence, published independent-audit evidence, frontend build hygiene, and an on-chain deployment audit log.
+
+```bash
+npm.cmd run build:dashboard
+npm.cmd run check:release:production -- `
+  --parameters deployment/parameters.production.json `
+  --governance deployment/governance-roles.production.json `
+  --audit-report audits/independent-audit-<commit>.md `
+  --scanner-report audits/scanner-evidence-<commit>.md `
+  --deployment-audit artifacts/deployment-audit-<commit>.log
 ```

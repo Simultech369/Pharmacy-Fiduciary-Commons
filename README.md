@@ -55,7 +55,7 @@ The current checkpoint is a prototype with tested treasury, voting, mutual-credi
 | Tests | Compile and unit tests run in CI; run locally with `npm.cmd test` |
 | Dashboard | Static prototype with local/test Web3 integration, synthetic-data labels, accessibility improvements, and offline verifier panel |
 | Merkle tooling | Allocation root/proof generator |
-| Portability export | Prototype JSON export plus offline and optional RPC-backed verifier for claims, proofs, votes, and receipts |
+| Portability export | Prototype JSON export plus offline self-consistency checks; RPC-backed verification is required for chain provenance |
 | Continuity artifacts | Draft Node.js tool for local paper-voucher and relay-intake artifacts; not a standalone air-gapped kit and not on-chain settlement authority |
 | Mainnet | Not deployed |
 | External audit | Pending |
@@ -97,7 +97,7 @@ Verify a portability export:
 npm.cmd run verify:export -- --file exports/<participant_address>.json
 ```
 
-Offline verification requires proof material when claims are present. Use `--allow-incomplete` only when intentionally inspecting an incomplete export; add `--rpc <url>` for chain-provenance verification.
+Offline verification requires proof material when claims are present, but it only checks untrusted export self-consistency and Merkle math. Use `--allow-incomplete` only when intentionally inspecting an incomplete export; add `--rpc <url>` for chain-provenance verification.
 
 Draft continuity tooling is available at `tools/resilience/continuity-engine.mjs`. It requires Node.js and a local `LOCAL_MAC_SECRET`, fails closed on missing or invalid MACs, and produces review/intake artifacts only. It is not a standalone air-gapped kit, live proxy relay, live redemption path, or production ZK proof generator.
 
@@ -146,7 +146,7 @@ flowchart LR
 - records rebate deposits on-chain with depositor identity, amount, timestamp, and a free-form source string (which may encode quarter and drug class);
 - routes captured funds to independent pharmacies through Merkle-proof claims;
 - allocates 10% of every gross claim to a dedicated patient fund at claim time;
-- makes missing deposits visible through a Ledger of Omissions;
+- makes ledger absences visible when paired with independently sourced expected-deposit records;
 - separates treasury custody from adjacent prototypes such as mutual credit, vouchers, dashboard tooling, and participatory budgeting.
 
 This is infrastructure for transparent rebate pass-through. It is not legal, financial, medical, or investment advice.
@@ -376,4 +376,4 @@ Independent pharmacies serve communities that large chains abandon. They dispens
 
 This repository explores that ledger.
 
-Every deposit is permanent. Every omission is visible. The machine comes first; the mission can stand on it.
+Every deposit is permanent. Every ledger absence is visible; calling it an omission requires independent expected-deposit evidence. The machine comes first; the mission can stand on it.

@@ -34,3 +34,6 @@ jobs:
 
       - name: Run local readiness check
         run: node scripts/check-readiness.js --env local
+
+      - name: Validate deployment templates
+        run: npm run check:deployment-template

@@ -7,7 +7,7 @@
     "Do not add unsafe-inline for scripts; the current dashboard uses an inline script, so public deployment should move inline JavaScript to a local asset before enforcing this CSP."
   ],
   "headers": {
-    "Content-Security-Policy": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.walletconnect.com https://*.infura.io https://*.alchemy.com; form-action 'none'; upgrade-insecure-requests",
+    "Content-Security-Policy": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://*.walletconnect.com https://*.infura.io https://*.alchemy.com; form-action 'none'; upgrade-insecure-requests",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",

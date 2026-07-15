@@ -235,6 +235,7 @@ Status: scanner triage present; refresh required before public deployment claims
 - [x] Cross-check Slither, Aderyn, and targeted Mythril findings against live contract paths before making code changes.
 - [x] Add adversarial callback and forced-ETH regression coverage for accepted residual scanner findings where practical.
 - [ ] Rerun Slither, Aderyn, targeted Mythril, and GitHub-hosted SolidityScan from the exact release commit.
+- [ ] Complete, publish, and pin an independent smart-contract audit report to the exact release commit before any production-network release or real-funds use.
 - [ ] Resolve or explicitly accept any new high-confidence production-contract findings before testnet or public deployment.
 
 Acceptance test:

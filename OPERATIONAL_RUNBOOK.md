@@ -60,12 +60,13 @@ The separate trusted-issuer credential path currently verifies issuer signatures
 In the event of an identified contract exploit, front-end compromise, or mathematical invariant violation:
 
 ### Step 1: Pausing the Contract (Guardian)
-- The separately configured **Guardian** EOA or multisig must call the `pause` function immediately to halt all token deposits, claims, and resolutions:
+- The separately configured **Guardian** EOA or multisig must call the `pause` function immediately to halt token deposits, direct claims, and dispute-resolution payouts:
   ```solidity
   // Call from Guardian EOA
   PBMRebateTreasury.pause();
   ```
 - *Note:* The Council cannot pause the contract; this is a safety separation of concerns.
+- *Boundary:* Pause is not a full custody freeze. Timelock/council recovery paths such as recall, stale recovery, reserve withdrawal, and ETH sweep remain callable so operators can finish explicitly authorized containment or cleanup actions.
 
 ### Step 2: Investigation & Diagnostics
 - Monitor contract state invariants:

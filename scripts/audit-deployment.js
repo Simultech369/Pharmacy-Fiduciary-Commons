@@ -2,6 +2,11 @@
 
 const hre = require("hardhat");
 
+const SAFE_ABI = [
+  "function getOwners() view returns (address[])",
+  "function getThreshold() view returns (uint256)",
+];
+
 function requireEnv(name) {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required env var: ${name}`);
@@ -25,6 +30,10 @@ function normalized(address) {
   return hre.ethers.getAddress(address);
 }
 
+function normalizeList(items) {
+  return items.map(normalized);
+}
+
 async function main() {
   const expected = {
     timelock: normalized(requireEnv("TIMELOCK_ADDRESS")),
@@ -44,11 +53,19 @@ async function main() {
     timelockDelay: BigInt(process.env.TIMELOCK_MIN_DELAY_SECONDS ?? "172800"),
     proposers: parseAddressList(process.env.TIMELOCK_PROPOSERS ?? requireEnv("COUNCIL")).map(normalized),
     executors: resolveExpectedExecutors().map(normalized),
+    defaultAdmins: normalizeList(parseAddressList(process.env.EXPECTED_DEFAULT_ADMINS ?? requireEnv("COUNCIL"))),
+    councilMembers: normalizeList(parseAddressList(process.env.EXPECTED_COUNCIL_MEMBERS ?? requireEnv("COUNCIL"))),
+    rootConfirmers: normalizeList(parseAddressList(process.env.EXPECTED_ROOT_CONFIRMERS ?? requireEnv("ROOT_CONFIRMER"))),
+    treasuryExecutors: normalizeList(parseAddressList(process.env.EXPECTED_TREASURY_EXECUTORS ?? requireEnv("TIMELOCK_ADDRESS"))),
+    guardians: normalizeList(parseAddressList(process.env.EXPECTED_GUARDIANS ?? requireEnv("GUARDIAN"))),
+    councilSafeOwners: normalizeList(parseAddressList(process.env.COUNCIL_SAFE_OWNERS ?? "")),
+    councilSafeThreshold: Number(process.env.COUNCIL_SAFE_THRESHOLD ?? "3"),
   };
 
   const provider = hre.ethers.provider;
   const network = await provider.getNetwork();
   const isLocalNetwork = network.chainId === 31337n || network.chainId === 1337n;
+  const strictDeployment = !isLocalNetwork && process.env.DEPLOYMENT_ENV !== "demo";
   const timelock = await hre.ethers.getContractAt("TimelockController", expected.timelock);
   const treasury = await hre.ethers.getContractAt("PBMRebateTreasury", expected.treasury);
 
@@ -71,6 +88,51 @@ async function main() {
     if (await contract.hasRole(role, member)) pass(`${label}: ${member}`);
     else fail(`${label} missing: ${member}`);
   }
+  function compareAddressSet(label, actualMembers, expectedMembers) {
+    const actual = actualMembers.map(normalized).sort((a, b) => a.localeCompare(b));
+    const wanted = expectedMembers.map(normalized).sort((a, b) => a.localeCompare(b));
+    if (actual.length !== wanted.length || actual.some((item, index) => item !== wanted[index])) {
+      fail(`${label}: expected exactly [${wanted.join(", ")}], found [${actual.join(", ")}]`);
+    } else {
+      pass(`${label}: exact membership [${actual.join(", ")}]`);
+    }
+  }
+  async function requireExactEnumerableRole(contract, role, expectedMembers, label) {
+    const count = Number(await contract.getRoleMemberCount(role));
+    const actual = [];
+    for (let i = 0; i < count; i++) {
+      actual.push(await contract.getRoleMember(role, i));
+    }
+    compareAddressSet(label, actual, expectedMembers);
+  }
+  async function auditCouncilSafe() {
+    const code = await provider.getCode(expected.council);
+    if (code === "0x") {
+      fail("Council is not a contract wallet/Safe");
+      return;
+    }
+
+    const safe = new hre.ethers.Contract(expected.council, SAFE_ABI, provider);
+    try {
+      const owners = await safe.getOwners();
+      const threshold = Number(await safe.getThreshold());
+      if (threshold !== expected.councilSafeThreshold) {
+        fail(`Council Safe threshold: expected ${expected.councilSafeThreshold}, found ${threshold}`);
+      } else {
+        pass(`Council Safe threshold: ${threshold}`);
+      }
+
+      if (expected.councilSafeOwners.length > 0) {
+        compareAddressSet("Council Safe owners", owners, expected.councilSafeOwners);
+      } else if (owners.length !== 5 || threshold !== 3) {
+        fail(`Council Safe must be 3/5 when COUNCIL_SAFE_OWNERS is not supplied; found ${threshold}/${owners.length}`);
+      } else {
+        pass("Council Safe shape: 3/5");
+      }
+    } catch (error) {
+      fail(`Council address does not expose Safe owner/threshold interface: ${error.message}`);
+    }
+  }
 
   console.log("==================================================");
   console.log("RUNNING ON-CHAIN DEPLOYMENT AUDIT");
@@ -83,7 +145,7 @@ async function main() {
     compare("Treasury token", await treasury.token(), expected.token);
     compare("Treasury patient fund", await treasury.patientFund(), expected.patientFund);
     compare("Treasury environmental fund", await treasury.environmentalFund(), expected.environmentalFund);
-    compare("Treasury daily cap", await treasury.dailyVolumeCap(), expected.dailyCap);
+    compare("Treasury epoch volume cap (dailyVolumeCap legacy variable)", await treasury.dailyVolumeCap(), expected.dailyCap);
     compare("Treasury hard cap", await treasury.hardAbsoluteVolumeCap(), expected.hardCap);
     compare("Treasury minimum epoch volume", await treasury.minimumEpochVolume(), expected.minimumEpochVolume);
 
@@ -93,11 +155,11 @@ async function main() {
     const EXECUTOR_ROLE = await treasury.executorRole();
     const GUARDIAN_ROLE = await treasury.guardianRole();
 
-    await requireRole(treasury, DEFAULT_ADMIN_ROLE, expected.council, "Treasury default admin");
-    await requireRole(treasury, COUNCIL_ROLE, expected.council, "Treasury council");
-    await requireRole(treasury, ROOT_CONFIRMER_ROLE, expected.rootConfirmer, "Treasury root confirmer");
-    await requireRole(treasury, EXECUTOR_ROLE, expected.timelock, "Treasury executor");
-    await requireRole(treasury, GUARDIAN_ROLE, expected.guardian, "Treasury guardian");
+    await requireExactEnumerableRole(treasury, DEFAULT_ADMIN_ROLE, expected.defaultAdmins, "Treasury default admins");
+    await requireExactEnumerableRole(treasury, COUNCIL_ROLE, expected.councilMembers, "Treasury council members");
+    await requireExactEnumerableRole(treasury, ROOT_CONFIRMER_ROLE, expected.rootConfirmers, "Treasury root confirmers");
+    await requireExactEnumerableRole(treasury, EXECUTOR_ROLE, expected.treasuryExecutors, "Treasury executors");
+    await requireExactEnumerableRole(treasury, GUARDIAN_ROLE, expected.guardians, "Treasury guardians");
 
     compare("EXECUTOR_ROLE administrator", await treasury.getRoleAdmin(EXECUTOR_ROLE), EXECUTOR_ROLE);
     compare("ROOT_CONFIRMER_ROLE administrator", await treasury.getRoleAdmin(ROOT_CONFIRMER_ROLE), EXECUTOR_ROLE);
@@ -106,6 +168,14 @@ async function main() {
     else pass("Council and root confirmer are separate");
     if (expected.council === expected.guardian) fail("Council and guardian are identical");
     else pass("Council and guardian are separate");
+    if (expected.rootConfirmer === expected.guardian) fail("Root confirmer and guardian are identical");
+    else pass("Root confirmer and guardian are separate");
+
+    if (strictDeployment) {
+      await auditCouncilSafe();
+    } else {
+      pass("Council Safe owner/threshold audit skipped outside strict deployment mode");
+    }
   } catch (error) {
     fail(`Treasury audit could not complete: ${error.message}`);
   }
@@ -115,7 +185,11 @@ async function main() {
     const PROPOSER_ROLE = await timelock.PROPOSER_ROLE();
     const EXECUTOR_ROLE = await timelock.EXECUTOR_ROLE();
 
-    compare("Timelock minimum delay", await timelock.getMinDelay(), expected.timelockDelay);
+    const actualDelay = await timelock.getMinDelay();
+    compare("Timelock minimum delay", actualDelay, expected.timelockDelay);
+    if (strictDeployment && actualDelay < 86400n) {
+      fail(`Timelock minimum delay must be at least 86400 seconds for strict deployments, found ${actualDelay}`);
+    }
     await requireRole(timelock, TIMELOCK_ADMIN_ROLE, expected.timelock, "Timelock self-administrator");
     for (const proposer of expected.proposers) {
       await requireRole(timelock, PROPOSER_ROLE, proposer, "Timelock proposer");
@@ -131,10 +205,18 @@ async function main() {
       pass(`Open executor policy is acceptable for this environment: ${isOpenExecutor}`);
     }
 
+    if (strictDeployment && process.env.RENOUNCE_TIMELOCK_ADMIN !== "true") {
+      fail("Strict deployments must set RENOUNCE_TIMELOCK_ADMIN=true");
+    }
+    if (strictDeployment && !process.env.TIMELOCK_ADMIN) {
+      fail("Strict deployments must provide TIMELOCK_ADMIN so retained setup-admin state can be audited");
+    }
     if (process.env.TIMELOCK_ADMIN) {
       const externalAdmin = normalized(process.env.TIMELOCK_ADMIN);
       const retained = await timelock.hasRole(TIMELOCK_ADMIN_ROLE, externalAdmin);
-      if (process.env.RENOUNCE_TIMELOCK_ADMIN === "true" && retained) {
+      if (strictDeployment && retained) {
+        fail(`Temporary timelock administrator was retained in strict deployment: ${externalAdmin}`);
+      } else if (process.env.RENOUNCE_TIMELOCK_ADMIN === "true" && retained) {
         fail(`Temporary timelock administrator was not renounced: ${externalAdmin}`);
       } else if (process.env.RENOUNCE_TIMELOCK_ADMIN !== "true" && !retained) {
         fail(`Expected retained timelock administrator is missing: ${externalAdmin}`);

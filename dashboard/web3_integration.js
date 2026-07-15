@@ -105,14 +105,6 @@ async function checkWeb3Provider() {
       window.ethereum.on("chainChanged", () => window.location.reload());
       window.ethereum.on("accountsChanged", () => window.location.reload());
     }
-    try {
-      const accounts = await provider.listAccounts();
-      if (accounts.length > 0) {
-        await setupWeb3Connection(accounts[0]);
-      }
-    } catch (e) {
-      console.log("Check Web3 account failed:", e);
-    }
   }
 }
 
@@ -135,8 +127,9 @@ async function connectWallet() {
 }
 
 async function setupWeb3Connection(account) {
-  signer = await provider.getSigner();
-  userAddress = account.address;
+  const requestedAddress = typeof account === "string" ? account : account?.address;
+  signer = requestedAddress ? await provider.getSigner(requestedAddress) : await provider.getSigner();
+  userAddress = await signer.getAddress();
 
   const network = await provider.getNetwork();
   const chainId = Number(network.chainId);
@@ -182,7 +175,7 @@ async function setupWeb3Connection(account) {
 
   setDashboardLocked(false);
 
-  console.log(`Connected to Web3. Address: ${userAddress}`);
+  console.log("Connected to Web3.");
 
   // Fetch live state from contracts
   await fetchLiveState();

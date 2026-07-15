@@ -92,6 +92,13 @@ function checkMechanicalSafety() {
         failed = true;
       }
     }
+
+    const linkRegex = /<link\s+[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>/gi;
+    while ((match = linkRegex.exec(htmlContent)) !== null) {
+      const lines = htmlContent.substring(0, match.index).split("\n");
+      console.error(`Safety violation: remote link resource in dashboard/index.html at line ${lines.length}: ${match[0].trim()}`);
+      failed = true;
+    }
   }
 
   return !failed;

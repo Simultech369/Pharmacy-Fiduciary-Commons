@@ -81,10 +81,14 @@ function validateParameters(parameters, allowPlaceholders) {
   }
   address(token.address, "payoutToken.address", allowPlaceholders);
 
-  const initialDailyCap = parseUnitsHuman(treasury.initialDailyCapHuman, decimals, "treasuryParameters.initialDailyCapHuman", allowPlaceholders);
+  if (!allowPlaceholders && treasury.initialDailyCapHuman !== undefined) {
+    throw new Error("treasuryParameters.initialDailyCapHuman is legacy wording; use initialEpochVolumeCapHuman for real deployment configs");
+  }
+  const epochVolumeCapHuman = treasury.initialEpochVolumeCapHuman ?? treasury.initialDailyCapHuman;
+  const initialEpochVolumeCap = parseUnitsHuman(epochVolumeCapHuman, decimals, "treasuryParameters.initialEpochVolumeCapHuman", allowPlaceholders);
   const minimumEpochVolume = parseUnitsHuman(treasury.minimumEpochVolumeHuman, decimals, "treasuryParameters.minimumEpochVolumeHuman", allowPlaceholders);
-  if (initialDailyCap !== null && minimumEpochVolume !== null && initialDailyCap < minimumEpochVolume) {
-    throw new Error("initialDailyCapHuman must be greater than or equal to minimumEpochVolumeHuman");
+  if (initialEpochVolumeCap !== null && minimumEpochVolume !== null && initialEpochVolumeCap < minimumEpochVolume) {
+    throw new Error("initialEpochVolumeCapHuman must be greater than or equal to minimumEpochVolumeHuman");
   }
 
   const governanceBP = Number(treasury.governanceBP);
@@ -114,7 +118,7 @@ function validateParameters(parameters, allowPlaceholders) {
     throw new Error("merkleProofDistribution.prePublicationChecks must list concrete checks");
   }
 
-  return { initialDailyCap, minimumEpochVolume };
+  return { initialEpochVolumeCap, minimumEpochVolume };
 }
 
 function validateGovernance(governance, allowPlaceholders) {
@@ -180,7 +184,7 @@ function main() {
   console.log("Deployment configuration validation passed.");
   if (!allowPlaceholders) {
     console.log("Derived deployment environment values:");
-    console.log(`INITIAL_DAILY_CAP=${derived.initialDailyCap.toString()}`);
+    console.log(`INITIAL_DAILY_CAP=${derived.initialEpochVolumeCap.toString()} # legacy contract env; epoch-volume cap`);
     console.log(`MINIMUM_EPOCH_VOLUME=${derived.minimumEpochVolume.toString()}`);
     console.log(`GOVERNANCE_BP=${parameters.treasuryParameters.governanceBP}`);
     console.log(`RECALL_DELAY_SECONDS=${parameters.treasuryParameters.recallDelaySeconds}`);

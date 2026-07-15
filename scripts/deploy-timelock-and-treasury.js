@@ -38,11 +38,14 @@ async function main() {
   const networkConfig = await hre.ethers.provider.getNetwork();
   const chainId = networkConfig.chainId;
   const isLocalNetwork = chainId === 31337n || chainId === 1337n;
+  const minDelaySeconds = BigInt(process.env.TIMELOCK_MIN_DELAY_SECONDS ?? "172800"); // 2 days
   if (!isLocalNetwork) {
     const renounceSetupAdmin = process.env.RENOUNCE_TIMELOCK_ADMIN === "true";
-    const allowRetainedAdmin = process.env.ALLOW_RETAINED_TIMELOCK_ADMIN === "true";
-    if (!renounceSetupAdmin && !allowRetainedAdmin) {
-      throw new Error("Safety violation: RENOUNCE_TIMELOCK_ADMIN=true must be specified for non-local network deployments, or ALLOW_RETAINED_TIMELOCK_ADMIN=true to retain external admin.");
+    if (!renounceSetupAdmin) {
+      throw new Error("Safety violation: RENOUNCE_TIMELOCK_ADMIN=true must be specified for non-local network deployments.");
+    }
+    if (minDelaySeconds < 86400n) {
+      throw new Error("Safety violation: TIMELOCK_MIN_DELAY_SECONDS must be at least 86400 for non-local deployments.");
     }
 
     const hasOpenExecutor = timelockExecutors.some(
@@ -69,7 +72,6 @@ async function main() {
     throw new Error("MINIMUM_EPOCH_VOLUME must be a non-zero integer in token base units.");
   }
 
-  const minDelaySeconds = BigInt(process.env.TIMELOCK_MIN_DELAY_SECONDS ?? "172800"); // 2 days
   const timelockProposers = parseAddressList(process.env.TIMELOCK_PROPOSERS ?? council);
   const timelockAdmin = requireEnv("TIMELOCK_ADMIN");
   const renounceSetupAdmin = process.env.RENOUNCE_TIMELOCK_ADMIN === "true";
@@ -81,7 +83,7 @@ async function main() {
   console.log("Council:", council);
   console.log("Root confirmer:", rootConfirmer);
   console.log("Guardian:", guardian);
-  console.log("Initial daily cap:", initialDailyCap.toString());
+  console.log("Initial epoch volume cap (INITIAL_DAILY_CAP legacy env):", initialDailyCap.toString());
   console.log("Minimum epoch volume:", minimumEpochVolume.toString());
   console.log("Timelock min delay (s):", minDelaySeconds.toString());
   console.log("Timelock proposers:", timelockProposers);

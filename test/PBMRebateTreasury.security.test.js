@@ -219,6 +219,24 @@ describe("PBMRebateTreasury security baseline", function () {
     );
   });
 
+  it("rejects constructor setup when root confirmer equals guardian", async function () {
+    const Treasury = await ethers.getContractFactory("PBMRebateTreasury");
+    await expectRevert(
+      Treasury.deploy(
+        await token.getAddress(),
+        patientFund.address,
+        environmentalFund.address,
+        toWei("1000"),
+        toWei("1"),
+        council.address,
+        guardian.address,
+        await timelock.getAddress(),
+        guardian.address
+      ),
+      "GovernanceRoleSeparationViolation"
+    );
+  });
+
   it("rejects a minimum epoch volume above the initial daily cap", async function () {
     const Treasury = await ethers.getContractFactory("PBMRebateTreasury");
     await expectRevert(
@@ -637,6 +655,48 @@ describe("PBMRebateTreasury security baseline", function () {
 
     await treasury.connect(council).unpause();
     await treasury.connect(depositor).depositRebate(toWei("1"), "post-unpause");
+  });
+
+  it("blocks dispute resolution payouts while paused", async function () {
+    await seedDeposit(toWei("1000"));
+    const gross = toWei("100");
+    const { root, proofA } = makeTwoLeafTree(
+      pharmacy.address,
+      gross,
+      gross,
+      attacker.address,
+      gross,
+      gross
+    );
+
+    await treasury.connect(council).proposeRoot(root, toWei("200"));
+    await treasury.connect(council2).confirmRoot(0);
+    await treasury.connect(pharmacy).flagClaim(
+      0,
+      gross,
+      gross,
+      proofA,
+      evidenceHash("paused-resolution-claim")
+    );
+
+    await treasury.connect(guardian).pause();
+    await expectRevert(
+      treasury.connect(council).resolveClaim(
+        0,
+        pharmacy.address,
+        0,
+        evidenceHash("paused-resolution")
+      ),
+      "Pausable: paused"
+    );
+
+    await treasury.connect(council).unpause();
+    await treasury.connect(council).resolveClaim(
+      0,
+      pharmacy.address,
+      0,
+      evidenceHash("unpaused-resolution")
+    );
   });
 
   it("restricts cap governance to executor and enforces bounds", async function () {

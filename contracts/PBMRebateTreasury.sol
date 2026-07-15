@@ -32,7 +32,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  * Independent pharmacies are further extracted via DIR fee clawbacks applied
  * retroactively after dispensing. This contract makes rebate flows permanently
  * visible on-chain and routes captured value back to independent pharmacies
- * and patients. PBM silence is the evidence.
+ * and patients. Absence from this voluntary ledger is only meaningful when
+ * paired with independent expected-deposit evidence.
  *
  * LIFECYCLE:
  * 1. PBM (or any party) calls depositRebate() - funds enter escrow, source logged forever.
@@ -343,7 +344,7 @@ contract PBMRebateTreasury is
     }
 
     /// @notice Permanent public log of every rebate deposit - the Ledger of Omissions.
-    ///         PBM silence is the evidence. Every zero quarter is a documented omission.
+    ///         Missing entries are ledger absences, not standalone proof of off-chain nonpayment.
     RebateDeposit[] public rebateDeposits;
 
     /// @notice Cumulative total of all rebate tokens ever deposited.
@@ -444,7 +445,7 @@ contract PBMRebateTreasury is
      * @param _rootConfirmer     Separate Safe or governance address that confirms roots.
      * @param _executor          TimelockController - receives EXECUTOR_ROLE.
      * @param _guardian          Separate fast-response EOA or 2/3 Safe - GUARDIAN_ROLE only.
-     * @dev  GUARDIAN_ROLE and ROOT_CONFIRMER_ROLE must be held separately from council.
+     * @dev  GUARDIAN_ROLE, ROOT_CONFIRMER_ROLE, and council must be separate controllers.
      */
     constructor(
         address _token,
@@ -469,6 +470,7 @@ contract PBMRebateTreasury is
         if (_minimumEpochVolume == 0)         revert ZeroAmount();
         if (_minimumEpochVolume > _initialDailyCap) revert MinimumEpochVolumeExceedsDailyCap();
         if (_rootConfirmer     == _council)   revert RootConfirmerMustDifferFromCouncil();
+        if (_rootConfirmer     == _guardian)  revert GovernanceRoleSeparationViolation();
 
         token             = IERC20(_token);
         patientFund       = _patientFund;
@@ -499,8 +501,10 @@ contract PBMRebateTreasury is
     function _grantRole(bytes32 role, address account) internal override {
         if (
             (role == ROOT_CONFIRMER_ROLE && hasRole(COUNCIL_ROLE, account)) ||
+            (role == ROOT_CONFIRMER_ROLE && hasRole(GUARDIAN_ROLE, account)) ||
             (role == COUNCIL_ROLE && hasRole(ROOT_CONFIRMER_ROLE, account)) ||
             (role == GUARDIAN_ROLE && (hasRole(COUNCIL_ROLE, account) || hasRole(DEFAULT_ADMIN_ROLE, account))) ||
+            (role == GUARDIAN_ROLE && hasRole(ROOT_CONFIRMER_ROLE, account)) ||
             ((role == COUNCIL_ROLE || role == DEFAULT_ADMIN_ROLE) && hasRole(GUARDIAN_ROLE, account))
         ) {
             revert GovernanceRoleSeparationViolation();
@@ -543,8 +547,8 @@ contract PBMRebateTreasury is
      *         the deposit event clean - the full deposited amount is visible as
      *         entering the system, with deductions occurring only at verified distribution.
      *
-     *         This is the core transparency primitive. A PBM that receives rebates
-     *         and does not call this function is creating a documented omission.
+     *         This is the core transparency primitive. Treat non-deposit as an
+     *         omission only when paired with independently sourced expected-deposit evidence.
      *
      * @param amount Amount of `token` to deposit.
      * @param source Human-readable source label (1-256 bytes).
@@ -996,6 +1000,7 @@ contract PBMRebateTreasury is
         external
         nonReentrant
         onlyRole(COUNCIL_ROLE)
+        whenNotPaused
     {
         if (evidenceHash == bytes32(0)) revert ZeroEvidenceHash();
         uint256 amount = flaggedAmount[epoch][pharmacy];

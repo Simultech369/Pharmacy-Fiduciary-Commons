@@ -48,6 +48,14 @@ function checkScriptTags(html) {
   }
 }
 
+function checkRemoteLinkTags(html) {
+  const linkRegex = /<link\s+[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    fail(`Frontend build uses remote link resource: ${match[1]}`);
+  }
+}
+
 function checkHeadersConfig() {
   if (!fs.existsSync(headersPath)) {
     fail("Missing deployment/hosting.headers.example.json.");
@@ -65,6 +73,14 @@ function checkHeadersConfig() {
     if (!headers.headers || !headers.headers[key]) {
       fail(`Hosting headers example is missing ${key}.`);
     }
+  }
+
+  const csp = headers.headers["Content-Security-Policy"];
+  if (/fonts\.googleapis|fonts\.gstatic/i.test(csp)) {
+    fail("Hosting headers example allows remote Google font providers.");
+  }
+  if (!/font-src 'self'/.test(csp)) {
+    fail("Hosting headers example must restrict font-src to self.");
   }
 }
 
@@ -99,6 +115,7 @@ function main() {
 
     if (path.basename(file) === "index.html") {
       checkScriptTags(content);
+      checkRemoteLinkTags(content);
     }
   }
 

@@ -1,6 +1,6 @@
 # The Ledger of Omissions: Political-Economic Meaning & Policies
 
-The `PBMRebateTreasury` contract maintains a permanent, on-chain registry of every rebate deposit (`rebateDeposits`). Equally important is the empty space: the missing deposits. This is the **Ledger of Omissions**.
+The `PBMRebateTreasury` contract maintains a permanent, on-chain registry of every rebate deposit (`rebateDeposits`). Equally important is the empty space: deposits absent from this voluntary ledger. A ledger absence becomes an actionable omission only when paired with independently sourced expected-deposit evidence. This is the **Ledger of Omissions**.
 
 ---
 
