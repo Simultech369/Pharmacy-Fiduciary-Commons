@@ -1021,6 +1021,23 @@
         </div>
     </section>
 
+    <!-- 4A. On-Chain Commons Activity Log (Gate 10 Pagination) -->
+    <section class="panel" id="onchain-events-panel" style="display: none;">
+      <div class="panel-title">
+        On-Chain Commons Activity Log
+        <span class="status-badge recorded" id="onchain-events-status" style="font-size: 0.75rem; padding: 0.2rem 0.6rem; animation: none;">Disconnected</span>
+      </div>
+      <div class="pb-intro" style="margin-bottom: 1.25rem;">
+        Audit the historical registration events fetched directly from the participatory budgeting contract. This view query scans blockchain blocks in pagination batches to prevent RPC bottlenecks.
+      </div>
+      <ul id="onchain-events-list" style="list-style-type: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <!-- Dynamically populated -->
+      </ul>
+      <div style="display: flex; justify-content: center;">
+        <button id="btn-load-more-events" class="btn-vote" style="display: none; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3); font-size: 0.85rem; padding: 0.4rem 1.2rem;">🔄 Load More Events</button>
+      </div>
+    </section>
+
     <!-- 5. Portability Export Verifier Panel (Prototype) -->
     <section class="panel" data-provenance="synthetic-fixture">
       <div class="panel-title">

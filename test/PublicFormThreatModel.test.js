@@ -176,13 +176,23 @@ describe("Public Form & Cryptographic Threat Model", function () {
     // NOTE: This section performs threat-model checks simulating input validation rules.
     // These tests demonstrate conceptual input defenses and do not substitute for a production-level backend API audit.
     // Simulated client-side submission handler
-    function processFormSubmission(fields) {
-      // 1. Honeypot check
+    function processFormSubmission(fields, session = {}) {
+      // 1. CSRF validation
+      if (session.csrfToken && (!fields.csrfToken || fields.csrfToken !== session.csrfToken)) {
+        throw new Error("CSRF token verification failed.");
+      }
+
+      // 2. Honeypot check
       if (fields.fax_number && fields.fax_number.trim().length > 0) {
         throw new Error("Spam detected: Honeypot field filled.");
       }
 
-      // 2. Size limit checks
+      // 3. Prevent hidden administrative parameter injection
+      if (fields.isAdmin !== undefined || fields.userRole === "admin") {
+        throw new Error("Security violation: Attempt to inject administrative parameter.");
+      }
+
+      // 4. Size limit checks
       const MAX_LENGTH = 1024;
       for (const [key, value] of Object.entries(fields)) {
         if (typeof value === "string" && value.length > MAX_LENGTH) {
@@ -190,7 +200,7 @@ describe("Public Form & Cryptographic Threat Model", function () {
         }
       }
 
-      // 3. XSS sanitization check (reject if tags or script patterns present)
+      // 5. XSS sanitization check (reject if tags or script patterns present)
       const xssPattern = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>|javascript:|on\w+=/gi;
       for (const [key, value] of Object.entries(fields)) {
         if (typeof value === "string" && xssPattern.test(value)) {
@@ -236,6 +246,51 @@ describe("Public Form & Cryptographic Threat Model", function () {
       xssSubmissions.forEach(sub => {
         expect(() => processFormSubmission(sub)).to.throw(/Potential XSS payload/);
       });
+    });
+
+    it("rejects submissions with missing or mismatched CSRF tokens", function () {
+      const session = { csrfToken: "secure-token-123" };
+      const goodSubmission = {
+        name: "Co-op Pharmacy",
+        email: "contact@coop.org",
+        csrfToken: "secure-token-123"
+      };
+
+      const missingTokenSubmission = {
+        name: "Co-op Pharmacy",
+        email: "contact@coop.org"
+      };
+
+      const badTokenSubmission = {
+        name: "Co-op Pharmacy",
+        email: "contact@coop.org",
+        csrfToken: "attacker-token"
+      };
+
+      expect(processFormSubmission(goodSubmission, session).success).to.be.true;
+      expect(() => processFormSubmission(missingTokenSubmission, session)).to.throw("CSRF token verification failed.");
+      expect(() => processFormSubmission(badTokenSubmission, session)).to.throw("CSRF token verification failed.");
+    });
+
+    it("rejects submissions attempting to inject administrative roles or parameters", function () {
+      const session = { csrfToken: "secure-token-123" };
+      
+      const adminFieldSubmission = {
+        name: "Co-op Pharmacy",
+        email: "contact@coop.org",
+        csrfToken: "secure-token-123",
+        isAdmin: true
+      };
+
+      const adminRoleSubmission = {
+        name: "Co-op Pharmacy",
+        email: "contact@coop.org",
+        csrfToken: "secure-token-123",
+        userRole: "admin"
+      };
+
+      expect(() => processFormSubmission(adminFieldSubmission, session)).to.throw("Security violation: Attempt to inject administrative parameter.");
+      expect(() => processFormSubmission(adminRoleSubmission, session)).to.throw("Security violation: Attempt to inject administrative parameter.");
     });
   });
 });

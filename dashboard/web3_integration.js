@@ -93,6 +93,11 @@ document.addEventListener("DOMContentLoaded", () => {
     btnFinalize.addEventListener("click", finalizeCurrentRound);
   }
 
+  const btnLoadMore = document.getElementById("btn-load-more-events");
+  if (btnLoadMore) {
+    btnLoadMore.addEventListener("click", () => loadOnChainEvents(false));
+  }
+
   // Check if wallet is already connected
   checkWeb3Provider();
 });
@@ -179,6 +184,11 @@ async function setupWeb3Connection(account) {
 
   // Fetch live state from contracts
   await fetchLiveState();
+
+  // Show events panel and load events
+  const eventsPanel = document.getElementById("onchain-events-panel");
+  if (eventsPanel) eventsPanel.style.display = "block";
+  await loadOnChainEvents(true);
 }
 
 function showConnectionWarning(message) {
@@ -573,5 +583,126 @@ async function finalizeCurrentRound() {
   } catch (err) {
     console.error("Finalization failed:", err);
     alert("Finalization failed: " + (err.reason || err.message));
+  }
+}
+
+// Variables for paginated on-chain event history
+let currentEventBlock = 0n;
+const EVENT_CHUNK_SIZE = 10000n;
+const EVENTS_PAGE_SIZE = 5;
+
+async function loadOnChainEvents(reset = false) {
+  if (!pbContract) return;
+
+  const eventListEl = document.getElementById("onchain-events-list");
+  const loadMoreBtn = document.getElementById("btn-load-more-events");
+  const statusEl = document.getElementById("onchain-events-status");
+
+  if (!eventListEl || !loadMoreBtn || !statusEl) return;
+
+  if (reset) {
+    eventListEl.innerHTML = "";
+    currentEventBlock = BigInt(await provider.getBlockNumber());
+    loadMoreBtn.style.display = "none";
+  }
+
+  statusEl.innerText = "Querying events...";
+  loadMoreBtn.disabled = true;
+
+  try {
+    const filter = pbContract.filters.VoterRegistered();
+    const collectedEvents = [];
+    
+    // Scan block range backwards to find events
+    let toBlock = currentEventBlock;
+    let fromBlock = toBlock - EVENT_CHUNK_SIZE + 1n;
+    if (fromBlock < 0n) fromBlock = 0n;
+
+    while (toBlock >= 0n && collectedEvents.length < EVENTS_PAGE_SIZE) {
+      const batch = await pbContract.queryFilter(filter, fromBlock, toBlock);
+      
+      // Sort in reverse order (latest first)
+      batch.sort((a, b) => {
+        if (b.blockNumber !== a.blockNumber) {
+          return b.blockNumber - a.blockNumber;
+        }
+        return b.transactionIndex - a.transactionIndex;
+      });
+
+      collectedEvents.push(...batch);
+
+      if (fromBlock === 0n) {
+        currentEventBlock = -1n;
+        break;
+      }
+
+      toBlock = fromBlock - 1n;
+      fromBlock = toBlock - EVENT_CHUNK_SIZE + 1n;
+      if (fromBlock < 0n) fromBlock = 0n;
+    }
+
+    if (currentEventBlock !== -1n) {
+      currentEventBlock = toBlock;
+    }
+
+    // Render events page
+    const displayEvents = collectedEvents.slice(0, EVENTS_PAGE_SIZE);
+    
+    if (displayEvents.length === 0 && eventListEl.children.length === 0) {
+      const emptyLi = document.createElement("li");
+      emptyLi.className = "receipt-item";
+      const emptyMeta = document.createElement("span");
+      emptyMeta.className = "receipt-meta";
+      emptyMeta.textContent = "No recent on-chain registrations found.";
+      emptyLi.appendChild(emptyMeta);
+      eventListEl.appendChild(emptyLi);
+    } else {
+      for (const ev of displayEvents) {
+        const roundId = ev.args[0];
+        const voter = ev.args[1];
+        const isZK = ev.args[2];
+        const blockNum = ev.blockNumber;
+        
+        const li = document.createElement("li");
+        li.className = "receipt-item";
+
+        const leftDiv = document.createElement("div");
+        
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "receipt-name";
+        nameSpan.style.color = "var(--accent-cyan)";
+        nameSpan.textContent = "Voter Registered";
+        leftDiv.appendChild(nameSpan);
+
+        const metaSpan = document.createElement("span");
+        metaSpan.className = "receipt-meta";
+        metaSpan.textContent = ` • Round ${roundId} • ${isZK ? "ZK Mode" : "Sig Mode"}`;
+        leftDiv.appendChild(metaSpan);
+
+        li.appendChild(leftDiv);
+
+        const rightSpan = document.createElement("span");
+        rightSpan.className = "receipt-meta";
+        rightSpan.style.fontFamily = "monospace";
+        const voterStr = typeof voter === "string" ? voter : String(voter);
+        rightSpan.textContent = `Block #${blockNum} (${voterStr.slice(0, 6)}...${voterStr.slice(-4)})`;
+        li.appendChild(rightSpan);
+
+        eventListEl.appendChild(li);
+      }
+    }
+
+    if (currentEventBlock >= 0n) {
+      loadMoreBtn.style.display = "inline-block";
+      loadMoreBtn.disabled = false;
+      statusEl.innerText = `Idle (scanned down to block #${currentEventBlock})`;
+    } else {
+      loadMoreBtn.style.display = "none";
+      statusEl.innerText = "All historical events loaded.";
+    }
+  } catch (err) {
+    console.error("Failed to query on-chain events:", err);
+    statusEl.innerText = `Error: ${err.message}`;
+    loadMoreBtn.disabled = false;
   }
 }
