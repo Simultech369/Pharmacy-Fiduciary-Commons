@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 
 const hre = require("hardhat");
+const { assertDeploymentPreflight } = require("./deployment-policy");
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -34,27 +35,10 @@ async function main() {
   const [deployer] = await hre.ethers.getSigners();
   const timelockExecutors = resolveTimelockExecutors();
 
-  // Enforce deployment security validations for non-local networks
   const networkConfig = await hre.ethers.provider.getNetwork();
   const chainId = networkConfig.chainId;
   const isLocalNetwork = chainId === 31337n || chainId === 1337n;
   const minDelaySeconds = BigInt(process.env.TIMELOCK_MIN_DELAY_SECONDS ?? "172800"); // 2 days
-  if (!isLocalNetwork) {
-    const renounceSetupAdmin = process.env.RENOUNCE_TIMELOCK_ADMIN === "true";
-    if (!renounceSetupAdmin) {
-      throw new Error("Safety violation: RENOUNCE_TIMELOCK_ADMIN=true must be specified for non-local network deployments.");
-    }
-    if (minDelaySeconds < 86400n) {
-      throw new Error("Safety violation: TIMELOCK_MIN_DELAY_SECONDS must be at least 86400 for non-local deployments.");
-    }
-
-    const hasOpenExecutor = timelockExecutors.some(
-      executor => executor.toLowerCase() === hre.ethers.ZeroAddress.toLowerCase()
-    );
-    if (hasOpenExecutor && process.env.DEPLOYMENT_ENV !== "demo" && process.env.DEPLOYMENT_ENV !== "local") {
-      throw new Error("Safety violation: Open execution (ZeroAddress executor) is not allowed on non-local networks unless DEPLOYMENT_ENV=demo or DEPLOYMENT_ENV=local is set.");
-    }
-  }
 
   const token = requireEnv("TOKEN");
   const patientFund = requireEnv("PATIENT_FUND");
@@ -75,6 +59,21 @@ async function main() {
   const timelockProposers = parseAddressList(process.env.TIMELOCK_PROPOSERS ?? council);
   const timelockAdmin = requireEnv("TIMELOCK_ADMIN");
   const renounceSetupAdmin = process.env.RENOUNCE_TIMELOCK_ADMIN === "true";
+
+  assertDeploymentPreflight({
+    deployerAddress: deployer.address,
+    isLocalNetwork,
+    minDelaySeconds,
+    renounceSetupAdmin,
+    timelockAdmin,
+    timelockExecutors,
+    zeroAddress: hre.ethers.ZeroAddress,
+    initialDailyCap,
+    minimumEpochVolume,
+    council,
+    rootConfirmer,
+    guardian,
+  });
 
   console.log("Deployer:", deployer.address);
   console.log("Token:", token);
@@ -152,8 +151,7 @@ async function main() {
   if (!(await treasury.hasRole(EXECUTOR_ROLE, timelockAddress))) throw new Error("Sanity check failed: Timelock is not the EXECUTOR_ROLE");
   if (!(await treasury.hasRole(GUARDIAN_ROLE, guardian))) throw new Error("Sanity check failed: Guardian does not have GUARDIAN_ROLE");
 
-  if (council.toLowerCase() === rootConfirmer.toLowerCase()) throw new Error("Sanity check failed: Council cannot be confirmer");
-  if (council.toLowerCase() === guardian.toLowerCase()) throw new Error("Sanity check failed: Council cannot be guardian");
+
 
   const PROPOSER_ROLE = await timelock.PROPOSER_ROLE();
   const TIMELOCK_EXECUTOR_ROLE = await timelock.EXECUTOR_ROLE();
@@ -170,7 +168,7 @@ async function main() {
   }
 
   const hasOpenExecution = await timelock.hasRole(TIMELOCK_EXECUTOR_ROLE, hre.ethers.ZeroAddress);
-  if (hasOpenExecution && !isLocalNetwork && process.env.DEPLOYMENT_ENV !== "demo") {
+  if (hasOpenExecution && !isLocalNetwork) {
     throw new Error("Sanity check failed: Open executor (ZeroAddress) enabled on production network");
   }
 

@@ -130,6 +130,7 @@ Status: needs definition before public launch.
 - [ ] Keep preview deployments isolated from production data, webhooks, RPC keys, and admin/provider secrets.
 - [ ] Enforce HTTPS.
 - [ ] Set security headers: CSP, HSTS, X-Content-Type-Options, Referrer-Policy, and frame restrictions.
+- [x] Implement fail-before-write deployment policy preflights, rejecting open executors on non-local networks and enforcing role/time constraints before any deployment transactions.
 - [ ] Confirm deployed contract addresses and chain IDs are environment-specific.
 - [ ] Confirm cap and minimum-epoch values use the selected payout token's base units and decimals.
 - [ ] Document release and rollback steps.

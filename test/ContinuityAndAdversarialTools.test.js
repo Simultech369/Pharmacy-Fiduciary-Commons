@@ -21,8 +21,28 @@ describe("Continuity and adversarial draft tools", function () {
   }
 
   function voucherMac(voucher, secret) {
-    const message = `${voucher.roundId}:${voucher.nullifier.replace("0x", "")}`;
+    const sortedKeys = Object.keys(voucher).filter(key => key !== 'mac').sort();
+    const signedFields = {};
+    for (const key of sortedKeys) {
+      signedFields[key] = voucher[key] ?? null;
+    }
+    const message = JSON.stringify(signedFields);
     return `0x${crypto.createHmac("sha256", secret).update(message).digest("hex").slice(0, 16)}`;
+  }
+
+  function makeVoucher(overrides = {}) {
+    const voucher = {
+      roundId: 1,
+      preimage: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      nullifier: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      generatedAt: "2026-07-15T00:00:00.000Z",
+      status: "pending_sync",
+      proofFormat: "offline-voucher-v1-not-zk-proof",
+      warning: "preimage is bearer recovery material; it is not an on-chain mock ZK proof; voter identity is intentionally not stored",
+      ...overrides
+    };
+    voucher.mac = voucherMac(voucher, "test-secret-for-continuity");
+    return voucher;
   }
 
   function writeJson(filePath, value) {
@@ -50,6 +70,8 @@ describe("Continuity and adversarial draft tools", function () {
     });
     expect(verifyResult.status).to.equal(0);
     expect(verifyResult.stdout).to.include("Voter Address:      not stored");
+    expect(verifyResult.stdout).to.include("LOCAL INTEGRITY ONLY");
+    expect(verifyResult.stdout).to.include("NOT A ZK PROOF");
   });
 
   it("fails closed when offline voucher MAC verification fails", function () {
@@ -63,6 +85,10 @@ describe("Continuity and adversarial draft tools", function () {
           roundId: 1,
           preimage: "0x1111111111111111111111111111111111111111111111111111111111111111",
           nullifier: "0x2222222222222222222222222222222222222222222222222222222222222222",
+          generatedAt: "2026-07-15T00:00:00.000Z",
+          status: "pending_sync",
+          proofFormat: "offline-voucher-v1-not-zk-proof",
+          warning: "preimage is bearer recovery material; it is not an on-chain mock ZK proof; voter identity is intentionally not stored",
           mac: "0xdeadbeefdeadbeef"
         },
         null,
@@ -78,6 +104,37 @@ describe("Continuity and adversarial draft tools", function () {
     expect(result.stderr).to.include("OFFLINE VERIFICATION FAILED");
     expect(result.stdout).to.not.include("OFFLINE SCHEMA VERIFICATION RESULT: PASSED");
     expect(result.stdout).to.not.include("Verified Status:    TRUE");
+    expect(result.stdout).to.not.include("LOCAL INTEGRITY ONLY");
+  });
+
+  it("fails closed when offline voucher bearer fields are mutated after MAC generation", function () {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "continuity-mutation-"));
+    const secret = "test-secret-for-continuity";
+
+    const mutations = [
+      ["roundId", 9],
+      ["preimage", "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+      ["nullifier", "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"],
+      ["generatedAt", "2026-07-16T00:00:00.000Z"],
+      ["status", "approved_without_sync"],
+      ["proofFormat", "offline-voucher-v2-not-zk-proof"],
+      ["warning", "modified warning text"]
+    ];
+
+    for (const [field, value] of mutations) {
+      const voucher = makeVoucher();
+      voucher[field] = value;
+      const voucherPath = path.join(tempDir, `voucher-mutated-${field}.json`);
+      writeJson(voucherPath, voucher);
+
+      const result = nodeTool([continuityTool, "verify-offline", voucherPath], {
+        env: { LOCAL_MAC_SECRET: secret }
+      });
+
+      expect(result.status).to.equal(1);
+      expect(result.stderr).to.include("OFFLINE VERIFICATION FAILED");
+      expect(result.stdout).to.not.include("LOCAL INTEGRITY ONLY");
+    }
   });
 
   it("packages relay intake without exporting voucher preimages as mock ZK proofs", function () {
@@ -87,13 +144,7 @@ describe("Continuity and adversarial draft tools", function () {
     const secret = "test-secret-for-continuity";
     const preimage = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const voter = "0x0000000000000000000000000000000000000001";
-    const voucher = {
-      roundId: 1,
-      preimage,
-      nullifier: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      status: "pending_sync"
-    };
-    voucher.mac = voucherMac(voucher, secret);
+    const voucher = makeVoucher({ preimage });
 
     fs.writeFileSync(voucherPath, JSON.stringify(voucher, null, 2));
 
@@ -128,7 +179,10 @@ describe("Continuity and adversarial draft tools", function () {
         roundId: 1,
         preimage: `0x${filename.includes("first") ? "a" : "c"}`.padEnd(66, filename.includes("first") ? "a" : "c"),
         nullifier,
-        status: "pending_sync"
+        generatedAt: "2026-07-15T00:00:00.000Z",
+        status: "pending_sync",
+        proofFormat: "offline-voucher-v1-not-zk-proof",
+        warning: "preimage is bearer recovery material; it is not an on-chain mock ZK proof; voter identity is intentionally not stored"
       };
       voucher.mac = voucherMac(voucher, secret);
       fs.writeFileSync(path.join(tempDir, filename), JSON.stringify(voucher, null, 2));
@@ -155,8 +209,11 @@ describe("Continuity and adversarial draft tools", function () {
           roundId: 1,
           preimage: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           nullifier: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-          mac: "0x1234567890abcdef",
-          status: "pending_sync"
+          generatedAt: "2026-07-15T00:00:00.000Z",
+          status: "pending_sync",
+          proofFormat: "offline-voucher-v1-not-zk-proof",
+          warning: "preimage is bearer recovery material; it is not an on-chain mock ZK proof; voter identity is intentionally not stored",
+          mac: "0x1234567890abcdef"
         },
         null,
         2

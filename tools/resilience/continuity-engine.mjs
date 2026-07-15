@@ -21,6 +21,15 @@ import crypto from 'crypto';
 const command = process.argv[2];
 const LOCAL_MAC_SECRET = process.env.LOCAL_MAC_SECRET;
 const MIN_MAC_SECRET_LENGTH = 16;
+const REQUIRED_VOUCHER_FIELDS = [
+  'roundId',
+  'preimage',
+  'nullifier',
+  'generatedAt',
+  'status',
+  'proofFormat',
+  'warning'
+];
 
 function showHelp() {
   console.log(`
@@ -48,7 +57,12 @@ function requireLocalMacSecret() {
 }
 
 function voucherMacMessage(voucher) {
-  return `${voucher.roundId}:${String(voucher.nullifier).replace('0x', '')}`;
+  const sortedKeys = Object.keys(voucher).filter(key => key !== 'mac').sort();
+  const signedFields = {};
+  for (const key of sortedKeys) {
+    signedFields[key] = voucher[key] ?? null;
+  }
+  return JSON.stringify(signedFields);
 }
 
 function calculateVoucherMac(voucher) {
@@ -60,12 +74,53 @@ function calculateVoucherMac(voucher) {
 }
 
 function assertVoucherShape(voucher) {
-  const requiredFields = ['roundId', 'preimage', 'nullifier', 'mac'];
+  const requiredFields = [...REQUIRED_VOUCHER_FIELDS, 'mac'];
   for (const field of requiredFields) {
     if (!(field in voucher)) {
       console.error(`Schema validation failed: missing field '${field}'`);
       process.exit(1);
     }
+  }
+
+  if (typeof voucher.roundId !== 'number' || !Number.isInteger(voucher.roundId) || voucher.roundId <= 0) {
+    console.error(`Schema validation failed: 'roundId' must be a positive integer`);
+    process.exit(1);
+  }
+
+  const hex64Pattern = /^0x[0-9a-fA-F]{64}$/;
+  if (typeof voucher.preimage !== 'string' || !hex64Pattern.test(voucher.preimage)) {
+    console.error(`Schema validation failed: 'preimage' must be a 32-byte hex string starting with 0x`);
+    process.exit(1);
+  }
+
+  if (typeof voucher.nullifier !== 'string' || !hex64Pattern.test(voucher.nullifier)) {
+    console.error(`Schema validation failed: 'nullifier' must be a 32-byte hex string starting with 0x`);
+    process.exit(1);
+  }
+
+  if (typeof voucher.mac !== 'string' || !/^0x[0-9a-fA-F]{16}$/.test(voucher.mac)) {
+    console.error(`Schema validation failed: 'mac' must be a 16-character hex string starting with 0x`);
+    process.exit(1);
+  }
+
+  if (typeof voucher.status !== 'string' || voucher.status.trim() === '') {
+    console.error(`Schema validation failed: 'status' must be a non-empty string`);
+    process.exit(1);
+  }
+
+  if (typeof voucher.generatedAt !== 'string' || isNaN(Date.parse(voucher.generatedAt))) {
+    console.error(`Schema validation failed: 'generatedAt' must be a valid date string`);
+    process.exit(1);
+  }
+
+  if (typeof voucher.proofFormat !== 'string' || voucher.proofFormat.trim() === '') {
+    console.error(`Schema validation failed: 'proofFormat' must be a non-empty string`);
+    process.exit(1);
+  }
+
+  if (typeof voucher.warning !== 'string' || voucher.warning.trim() === '') {
+    console.error(`Schema validation failed: 'warning' must be a non-empty string`);
+    process.exit(1);
   }
 }
 
@@ -162,7 +217,7 @@ OFFLINE SCHEMA VERIFICATION RESULT: PASSED
 Voter Address:      not stored in voucher artifact
 Round ID:           ${voucher.roundId}
 Nullifier:          ${voucher.nullifier}
-Verified Status:    TRUE (Failsafe baseline satisfied)
+Verified Status:    LOCAL INTEGRITY ONLY (Failsafe baseline satisfied - NOT A ZK PROOF)
 ==================================================
 `);
     break;

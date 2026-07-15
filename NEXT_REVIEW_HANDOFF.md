@@ -1,4 +1,8 @@
-# Next Review Handoff
+# [SUPERSEDED] Next Review Handoff
+
+> [!WARNING]
+> **SUPERSEDED / HISTORICAL DOCUMENT**
+> This handoff document corresponds to a historical state (HEAD `ba57949` with 193 tests). It has been superseded by the 2026-07-15 review findings and subsequent implementation of the pre-deployment policy checks, bearer voucher integrity updates, and regression test suite.
 
 Prepared from `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal` after the pushed reconciliation commit:
 

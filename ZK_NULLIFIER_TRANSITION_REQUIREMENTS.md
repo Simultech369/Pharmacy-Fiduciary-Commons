@@ -178,17 +178,17 @@ After real ZK integration:
 
 ## 9. Recommended Next Step
 
-The verifier-mock milestone is now the active code checkpoint. The next step is to run the full suite, review the patched mock verifier/root/version semantics, and decide whether the current mock is sufficient as a pre-circuit interface harness.
+The verifier-mock milestone and static fixture gate are now code checkpoints. The next step is to review whether the current mock and fixture lint are sufficient as a pre-circuit interface harness, not to treat them as cryptographic domain-separation evidence.
 
 Before any real circuit work starts, run another no-edits reviewer loop in `REVIEW_ITERATION_PROCESS.md`. The review should attack remaining assumptions around wallet identity, issuer compromise, revocation freshness, support-flow leakage, degraded/offline operations, and whether each proposed milestone has a deterministic test or fixture gate.
 
 ## 10. Implemented ZK/Nullifier Design Fixture and Test Gate
 
-A static ZK/nullifier design fixture and test gate has been implemented to make pre-circuit constraints on future public payloads, domain separation, governance lifecycles, and metadata leakage rules executable. This test gate is defined in `test/ZKNullifierFixtureGate.test.js` and asserts that:
-- Any payload claiming the `unlinkable` privacy target must strictly omit all forbidden identifiers (wallet address, stable credential hash, NPI/NCPDP, credential secret, witness, and voter-nullifier co-exposure).
-- Unique, domain-separated nullifiers are used across all workflows (voting, claims, disputes, portability, migration, emergency burn/revocation).
-- Verifier and root lifecycle states (proposed, active, deprecated, emergency-paused, sunset) are defined with strict validation of quorum and upgrade pathways.
-- The metadata leakage budget restricts the exposure of exact timestamps, gas payers, and raw RPC/ticket identifiers in privacy-claimed payloads.
+A static ZK/nullifier design fixture and test gate has been implemented to make pre-circuit constraints on future public payload examples, domain labels, governance lifecycles, and metadata leakage rules executable. This test gate is defined in `test/ZKNullifierFixtureGate.test.js` and should be read as fixture lint, not as a ZK proof or nullifier-derivation test. It asserts that:
+- Fixture payloads claiming the `unlinkable` privacy target omit the currently enumerated forbidden identifiers (wallet address, stable credential hash, NPI/NCPDP, credential secret, witness, and voter-nullifier co-exposure).
+- Static fixture nullifier values are unique across the documented workflow domains (voting, claims, disputes, portability, migration, emergency burn/revocation).
+- Verifier and root lifecycle states (proposed, active, deprecated, emergency-paused, sunset) are represented with expected quorum and upgrade metadata.
+- The metadata leakage fixture table forbids exact timestamps, gas payers, and raw RPC/ticket identifiers in privacy-claimed payload examples.
 
 ### Remaining Open Design Decisions
 

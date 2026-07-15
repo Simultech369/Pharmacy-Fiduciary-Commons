@@ -1,48 +1,51 @@
 # Antigravity Current Handoff
 
-Prepared for Antigravity against live checkout `3b62ce9c55617600c895825787e8c4c2b033094d` on branch `main`.
+Prepared for Antigravity against live checkout `f1a8f00275b4d3fff1ee993091e02c692faa29cc` on branch `main`.
 
 ## 1. Current Repo State
 
 - Repo: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
 - Branch: `main`
-- Current HEAD: `3b62ce9c55617600c895825787e8c4c2b033094d`
+- Current HEAD: `f1a8f00275b4d3fff1ee993091e02c692faa29cc`
 - Recent relevant ancestor: `a8754e1c32e0fe2b19bbf9d8bb91b0aa3d36d9c9`, which implemented the first mock ZK/nullifier voter-registration milestone.
 - The older `ANTIGRAVITY_ZK_HANDOFF.md` is useful design context, but its snapshot gate is stale. It was anchored to `a8754e1c32e0fe2b19bbf9d8bb91b0aa3d36d9c9`, not the current checkout.
 
-Current dirty working tree expected for this handoff:
+Current dirty working tree expected for this handoff after Kimi/Hunyuan reconciliation and GPT-5.6 follow-up:
 
 - Modified tracked files:
-  - `MIESSLER_INTEGRATION_TRIAGE.md`
-  - `PRIVACY_CONTINUITY_INTERVENTION_HANDOFF.md`
-  - `README.md`
-  - `REVIEW_ITERATION_PROCESS.md`
-  - `contracts/CooperativeParticipatoryBudgeting.sol`
-  - `contracts/ReflexiveFiduciaryManifold.sol`
-  - `tools/resilience/continuity-engine.mjs`
-  - `tools/security/adversarial-guard.mjs`
-- Untracked files:
   - `ANTIGRAVITY_CURRENT_HANDOFF.md`
+  - `ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md`
+  - `contracts/PBMRebateTreasury.sol`
+  - `scripts/deploy-timelock-and-treasury.js`
   - `test/ContinuityAndAdversarialTools.test.js`
-  - `test/DraftGovernanceModules.test.js`
+  - `test/DeploymentGovernance.test.js`
+  - `test/PBMRebateTreasury.security.test.js`
+  - `tools/offline/continuity-kit.html`
+  - `tools/resilience/continuity-engine.mjs`
+- Untracked files:
+  - `ANTIGRAVITY_KIMI_REVIEW_HANDOFF.md`
+  - `CODEX_KIMI_RECONCILIATION_HANDOFF.md`
+  - `grok-review-prompt.txt`
+  - `kimi-long-context-review-prompt.txt`
+  - `review-context/`
+  - `scripts/deployment-policy.js`
+  - `zero-zk-review-prompt.txt`
 
-Focused verification already run for this handoff:
+Focused verification after GPT-5.6 follow-up:
 
 ```powershell
-npm.cmd test -- --grep "Continuity and adversarial draft tools|Draft governance modules"
+npx.cmd hardhat test test\DeploymentGovernance.test.js test\ContinuityAndAdversarialTools.test.js test\PBMRebateTreasury.security.test.js
 ```
 
-Result: 6 passing tests.
+Result: 57 passing tests.
 
-After Antigravity review reconciliation, the same focused command passed with 11 passing tests.
-
-Full suite verification after Antigravity review reconciliation:
+Full suite verification after GPT-5.6 follow-up:
 
 ```powershell
 npm.cmd test
 ```
 
-Result: 193 passing tests.
+Result: 220 passing tests.
 
 ## 2. Why This Handoff Exists
 
@@ -147,37 +150,42 @@ Review the current local repo as lead planner and no-edits reviewer. Do not modi
 Snapshot:
 - Repo: C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
 - Branch: main
-- Expected HEAD: 3b62ce9c55617600c895825787e8c4c2b033094d
+- Expected HEAD: f1a8f00275b4d3fff1ee993091e02c692faa29cc
 - Expected modified tracked files:
-  - MIESSLER_INTEGRATION_TRIAGE.md
-  - PRIVACY_CONTINUITY_INTERVENTION_HANDOFF.md
-  - README.md
-  - REVIEW_ITERATION_PROCESS.md
-  - contracts/CooperativeParticipatoryBudgeting.sol
-  - contracts/ReflexiveFiduciaryManifold.sol
-  - tools/resilience/continuity-engine.mjs
-  - tools/security/adversarial-guard.mjs
-- Expected untracked files:
   - ANTIGRAVITY_CURRENT_HANDOFF.md
+  - ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md
+  - contracts/PBMRebateTreasury.sol
+  - scripts/deploy-timelock-and-treasury.js
   - test/ContinuityAndAdversarialTools.test.js
-  - test/DraftGovernanceModules.test.js
+  - test/DeploymentGovernance.test.js
+  - test/PBMRebateTreasury.security.test.js
+  - tools/offline/continuity-kit.html
+  - tools/resilience/continuity-engine.mjs
+- Expected untracked files:
+  - ANTIGRAVITY_KIMI_REVIEW_HANDOFF.md
+  - CODEX_KIMI_RECONCILIATION_HANDOFF.md
+  - grok-review-prompt.txt
+  - kimi-long-context-review-prompt.txt
+  - review-context/
+  - scripts/deployment-policy.js
+  - zero-zk-review-prompt.txt
 
 First verify branch, HEAD, and git status. If the snapshot differs, report SNAPSHOT_MISMATCH and stop unless the only differences are explicitly listed above.
 
 Primary mission:
-Review the current post-reconciliation resilience/governance draft layer after the mock ZK/nullifier milestone. Verify whether the README and handoff-doc language, continuity tool behavior, adversarial guard checks, draft governance contract changes, and tests preserve honest privacy boundaries and avoid production overclaims.
+Review the current Kimi/Hunyuan reconciliation plus GPT-5.6 follow-up. Verify whether the deployment preflight now rejects open timelock executors before any non-local deployment transaction, whether continuity voucher MACs cover bearer artifact fields without implying ZK proof, whether `updateSanction` is pause-gated with regression coverage, and whether handoff/ZK docs avoid stale or production-privacy overclaims.
 
 Key changed files:
-- MIESSLER_INTEGRATION_TRIAGE.md
-- PRIVACY_CONTINUITY_INTERVENTION_HANDOFF.md
-- README.md
-- REVIEW_ITERATION_PROCESS.md
-- contracts/CooperativeParticipatoryBudgeting.sol
-- contracts/ReflexiveFiduciaryManifold.sol
+- ANTIGRAVITY_CURRENT_HANDOFF.md
+- ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md
+- contracts/PBMRebateTreasury.sol
+- scripts/deploy-timelock-and-treasury.js
+- scripts/deployment-policy.js
+- tools/offline/continuity-kit.html
 - tools/resilience/continuity-engine.mjs
-- tools/security/adversarial-guard.mjs
 - test/ContinuityAndAdversarialTools.test.js
-- test/DraftGovernanceModules.test.js
+- test/DeploymentGovernance.test.js
+- test/PBMRebateTreasury.security.test.js
 
 Roadmap/boundary files:
 - ANTIGRAVITY_ZK_HANDOFF.md

@@ -657,6 +657,21 @@ describe("PBMRebateTreasury security baseline", function () {
     await treasury.connect(depositor).depositRebate(toWei("1"), "post-unpause");
   });
 
+  it("blocks sanction list mutation while paused", async function () {
+    await treasury.connect(guardian).pause();
+
+    await expectRevert(
+      treasury.connect(council).updateSanction(attacker.address, true, "paused-sanction-check"),
+      "Pausable: paused"
+    );
+
+    expect(await treasury.sanctioned(attacker.address)).to.be.false;
+
+    await treasury.connect(council).unpause();
+    await treasury.connect(council).updateSanction(attacker.address, true, "post-unpause-sanction");
+    expect(await treasury.sanctioned(attacker.address)).to.be.true;
+  });
+
   it("blocks dispute resolution payouts while paused", async function () {
     await seedDeposit(toWei("1000"));
     const gross = toWei("100");

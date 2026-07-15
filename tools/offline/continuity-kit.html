@@ -165,14 +165,32 @@
     }
 
     function requireVoucherShape(voucher) {
-      for (const field of ["roundId", "nullifier", "mac"]) {
+      for (const field of ["roundId", "preimage", "nullifier", "generatedAt", "status", "proofFormat", "warning", "mac"]) {
         if (!(field in voucher)) throw new Error(`Missing voucher field: ${field}`);
       }
+      if (typeof voucher.roundId !== "number" || !Number.isInteger(voucher.roundId) || voucher.roundId <= 0) {
+        throw new Error("Invalid roundId format: must be a positive integer.");
+      }
+      if (!/^0x[0-9a-fA-F]{64}$/.test(String(voucher.preimage))) {
+        throw new Error("Invalid preimage format: must be a 32-byte hex string starting with 0x.");
+      }
       if (!/^0x[0-9a-fA-F]{64}$/.test(String(voucher.nullifier))) {
-        throw new Error("Invalid nullifier format.");
+        throw new Error("Invalid nullifier format: must be a 32-byte hex string starting with 0x.");
       }
       if (!/^0x[0-9a-fA-F]{16}$/.test(String(voucher.mac))) {
-        throw new Error("Invalid MAC format.");
+        throw new Error("Invalid MAC format: must be a 16-character hex string starting with 0x.");
+      }
+      if (typeof voucher.status !== "string" || voucher.status.trim() === "") {
+        throw new Error("Invalid status format: must be a non-empty string.");
+      }
+      if (typeof voucher.generatedAt !== "string" || isNaN(Date.parse(voucher.generatedAt))) {
+        throw new Error("Invalid generatedAt format: must be a valid date string.");
+      }
+      if (typeof voucher.proofFormat !== "string" || voucher.proofFormat.trim() === "") {
+        throw new Error("Invalid proofFormat format: must be a non-empty string.");
+      }
+      if (typeof voucher.warning !== "string" || voucher.warning.trim() === "") {
+        throw new Error("Invalid warning format: must be a non-empty string.");
       }
     }
 
@@ -184,7 +202,12 @@
         false,
         ["sign"]
       );
-      const message = `${voucher.roundId}:${String(voucher.nullifier).replace(/^0x/i, "")}`;
+      const sortedKeys = Object.keys(voucher).filter(key => key !== 'mac').sort();
+      const signedFields = {};
+      for (const key of sortedKeys) {
+        signedFields[key] = voucher[key] ?? null;
+      }
+      const message = JSON.stringify(signedFields);
       const signed = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
       return `0x${hex(signed).slice(0, 16)}`;
     }

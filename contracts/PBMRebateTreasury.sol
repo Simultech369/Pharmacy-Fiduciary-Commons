@@ -1356,6 +1356,7 @@ contract PBMRebateTreasury is
     function updateSanction(address account, bool status, string calldata reason)
         external
         onlyRole(COUNCIL_ROLE)
+        whenNotPaused
     {
         sanctioned[account] = status;
         emit SanctionUpdated(account, status, reason);
