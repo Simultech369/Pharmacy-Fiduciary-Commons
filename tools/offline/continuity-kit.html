@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Offline Verifier Prototype / Draft</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #101418;
+      --panel: #171d22;
+      --text: #f3f6f8;
+      --muted: #a9b4bd;
+      --border: #33404a;
+      --accent: #4db6ac;
+      --bad: #ef5350;
+      --good: #66bb6a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    main {
+      width: min(860px, 100%);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0 0 24px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    input,
+    textarea,
+    button {
+      width: 100%;
+      font: inherit;
+      border-radius: 6px;
+    }
+
+    input,
+    textarea {
+      border: 1px solid var(--border);
+      background: #0c1115;
+      color: var(--text);
+      padding: 10px 12px;
+    }
+
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    button {
+      border: 0;
+      background: var(--accent);
+      color: #06201d;
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      color: var(--muted);
+      min-height: 92px;
+    }
+
+    .ok {
+      color: var(--good);
+    }
+
+    .bad {
+      color: var(--bad);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Offline Verifier Prototype / Draft</h1>
+    <p class="subtitle">
+      Local voucher MAC check for degraded-mode review. This page does not submit, redeem, or authorize anything on-chain.
+    </p>
+
+    <section class="panel" aria-label="Offline voucher verifier">
+      <label>
+        Voucher JSON file
+        <input id="voucherFile" type="file" accept="application/json,.json">
+      </label>
+
+      <label>
+        Voucher JSON
+        <textarea id="voucherText" spellcheck="false" placeholder='{"roundId":1,"nullifier":"0x...","mac":"0x..."}'></textarea>
+      </label>
+
+      <label>
+        Local MAC secret
+        <input id="secret" type="password" autocomplete="off">
+      </label>
+
+      <button id="verifyButton" type="button">Verify MAC</button>
+      <pre id="result" aria-live="polite">Awaiting voucher.</pre>
+    </section>
+  </main>
+
+  <script>
+    const fileInput = document.getElementById("voucherFile");
+    const voucherText = document.getElementById("voucherText");
+    const secretInput = document.getElementById("secret");
+    const result = document.getElementById("result");
+    const verifyButton = document.getElementById("verifyButton");
+
+    function setResult(message, ok) {
+      result.textContent = message;
+      result.className = ok ? "ok" : "bad";
+    }
+
+    function hex(bytes) {
+      return Array.from(new Uint8Array(bytes))
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+    }
+
+    function requireVoucherShape(voucher) {
+      for (const field of ["roundId", "nullifier", "mac"]) {
+        if (!(field in voucher)) throw new Error(`Missing voucher field: ${field}`);
+      }
+      if (!/^0x[0-9a-fA-F]{64}$/.test(String(voucher.nullifier))) {
+        throw new Error("Invalid nullifier format.");
+      }
+      if (!/^0x[0-9a-fA-F]{16}$/.test(String(voucher.mac))) {
+        throw new Error("Invalid MAC format.");
+      }
+    }
+
+    async function voucherMac(voucher, secret) {
+      const key = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(secret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+      const message = `${voucher.roundId}:${String(voucher.nullifier).replace(/^0x/i, "")}`;
+      const signed = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
+      return `0x${hex(signed).slice(0, 16)}`;
+    }
+
+    fileInput.addEventListener("change", async () => {
+      const [file] = fileInput.files;
+      if (!file) return;
+      voucherText.value = await file.text();
+    });
+
+    verifyButton.addEventListener("click", async () => {
+      try {
+        const secret = secretInput.value;
+        if (secret.length < 16) throw new Error("Local MAC secret must be at least 16 characters.");
+        const voucher = JSON.parse(voucherText.value);
+        requireVoucherShape(voucher);
+        const mac = await voucherMac(voucher, secret);
+        if (mac !== voucher.mac) {
+          throw new Error("MAC mismatch. Treat this voucher as unverified.");
+        }
+        setResult(
+          [
+            "MAC verification passed.",
+            `Round ID: ${voucher.roundId}`,
+            `Nullifier: ${voucher.nullifier}`,
+            "Boundary: this is local integrity evidence only, not an on-chain proof."
+          ].join("\n"),
+          true
+        );
+      } catch (error) {
+        setResult(`Verification failed: ${error.message}`, false);
+      }
+    });
+  </script>
+</body>
+</html>

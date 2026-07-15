@@ -56,7 +56,7 @@ The current checkpoint is a prototype with tested treasury, voting, mutual-credi
 | Dashboard | Static prototype with local/test Web3 integration, synthetic-data labels, accessibility improvements, and offline verifier panel |
 | Merkle tooling | Allocation root/proof generator |
 | Portability export | Prototype JSON export plus offline self-consistency checks; RPC-backed verification is required for chain provenance |
-| Continuity artifacts | Draft Node.js tool for local paper-voucher and relay-intake artifacts; not a standalone air-gapped kit and not on-chain settlement authority |
+| Continuity artifacts | Draft Node.js and static-browser tools for local paper-voucher and relay-intake review; not a live relay or on-chain settlement authority |
 | Mainnet | Not deployed |
 | External audit | Pending |
 
@@ -99,7 +99,14 @@ npm.cmd run verify:export -- --file exports/<participant_address>.json
 
 Offline verification requires proof material when claims are present, but it only checks untrusted export self-consistency and Merkle math. Use `--allow-incomplete` only when intentionally inspecting an incomplete export; add `--rpc <url>` for chain-provenance verification.
 
-Draft continuity tooling is available at `tools/resilience/continuity-engine.mjs`. It requires Node.js and a local `LOCAL_MAC_SECRET`, fails closed on missing or invalid MACs, and produces review/intake artifacts only. It is not a standalone air-gapped kit, live proxy relay, live redemption path, or production ZK proof generator.
+Draft continuity tooling is available at `tools/resilience/continuity-engine.mjs`,
+`tools/offline/continuity-kit.html`, and `tools/resilience/proxy-validator.js`.
+The Node engine requires a local `LOCAL_MAC_SECRET`, fails closed on missing or
+invalid MACs, and produces review/intake artifacts only. The static browser kit
+uses Web Crypto for local voucher MAC checks. The proxy validator checks relay
+batch shape, duplicate nullifiers, and metadata leakage. None of these artifacts
+is a live proxy relay, redemption path, settlement authority, or production ZK
+proof generator.
 
 ---
 

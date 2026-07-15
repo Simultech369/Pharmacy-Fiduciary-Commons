@@ -8,6 +8,8 @@ const path = require("node:path");
 describe("Continuity and adversarial draft tools", function () {
   const repoRoot = path.resolve(__dirname, "..");
   const continuityTool = path.join(repoRoot, "tools", "resilience", "continuity-engine.mjs");
+  const offlineKit = path.join(repoRoot, "tools", "offline", "continuity-kit.html");
+  const proxyValidator = path.join(repoRoot, "tools", "resilience", "proxy-validator.js");
   const adversarialTool = path.join(repoRoot, "tools", "security", "adversarial-guard.mjs");
 
   function nodeTool(args, options = {}) {
@@ -21,6 +23,10 @@ describe("Continuity and adversarial draft tools", function () {
   function voucherMac(voucher, secret) {
     const message = `${voucher.roundId}:${voucher.nullifier.replace("0x", "")}`;
     return `0x${crypto.createHmac("sha256", secret).update(message).digest("hex").slice(0, 16)}`;
+  }
+
+  function writeJson(filePath, value) {
+    fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
   }
 
   it("generates offline vouchers without storing voter addresses", function () {
@@ -105,6 +111,10 @@ describe("Continuity and adversarial draft tools", function () {
     expect(JSON.stringify(batch)).to.not.include(preimage);
     expect(JSON.stringify(batch)).to.not.include(voter);
     expect(batch[0].proofRequired).to.include("verifier-signed mock ZK attestation");
+
+    const validation = nodeTool([proxyValidator, outputPath]);
+    expect(validation.status).to.equal(0);
+    expect(validation.stdout).to.include("PROXY INTAKE VALIDATION PASSED");
   });
 
   it("refuses to package duplicate relay nullifiers", function () {
@@ -160,6 +170,81 @@ describe("Continuity and adversarial draft tools", function () {
     expect(result.status).to.equal(1);
     expect(result.stderr).to.include("OFFLINE VERIFICATION FAILED");
     expect(fs.existsSync(outputPath)).to.equal(false);
+  });
+
+  it("ships a standalone browser continuity kit without remote resources or Node dependencies", function () {
+    const html = fs.readFileSync(offlineKit, "utf8");
+
+    expect(html).to.include("Offline Verifier Prototype / Draft");
+    expect(html).to.include("crypto.subtle");
+    expect(html).to.include("local integrity evidence only");
+    expect(html).to.not.match(/https?:\/\//i);
+    expect(html).to.not.match(/<script[^>]+src=/i);
+    expect(html).to.not.include("require(");
+    expect(html).to.not.include("node:");
+  });
+
+  it("validates proxy relay batches across files as review artifacts", function () {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "proxy-validator-ok-"));
+    writeJson(path.join(tempDir, "relay-a.json"), [
+      {
+        roundId: 1,
+        nullifier: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        proofRequired: "verifier-signed mock ZK attestation required before registerVoterWithMockZK"
+      }
+    ]);
+    writeJson(path.join(tempDir, "relay-b.json"), {
+      entries: [
+        {
+          roundId: 2,
+          nullifier: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          proofRequired: "verifier-signed mock ZK attestation required before registerVoterWithMockZK"
+        }
+      ]
+    });
+
+    const result = nodeTool([proxyValidator, tempDir]);
+
+    expect(result.status).to.equal(0);
+    expect(result.stdout).to.include("PROXY INTAKE VALIDATION PASSED");
+    expect(result.stdout).to.include("not on-chain submission authority");
+  });
+
+  it("rejects duplicate nullifiers across proxy relay batch files", function () {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "proxy-validator-duplicate-"));
+    const duplicate = "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
+    for (const file of ["relay-a.json", "relay-b.json"]) {
+      writeJson(path.join(tempDir, file), [
+        {
+          roundId: 1,
+          nullifier: duplicate,
+          proofRequired: "verifier-signed mock ZK attestation required before registerVoterWithMockZK"
+        }
+      ]);
+    }
+
+    const result = nodeTool([proxyValidator, tempDir]);
+
+    expect(result.status).to.equal(1);
+    expect(result.stderr).to.include("Duplicate nullifier detected");
+  });
+
+  it("rejects proxy relay batches that leak voucher preimages or wallet metadata", function () {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "proxy-validator-leak-"));
+    writeJson(path.join(tempDir, "relay-leaky.json"), [
+      {
+        roundId: 1,
+        nullifier: "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        proofRequired: "verifier-signed mock ZK attestation required before registerVoterWithMockZK",
+        preimage: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        voter: "0x0000000000000000000000000000000000000001"
+      }
+    ]);
+
+    const result = nodeTool([proxyValidator, tempDir]);
+
+    expect(result.status).to.equal(1);
+    expect(result.stderr).to.include("forbidden or unsupported field");
   });
 
   it("labels tempest-fuzz as simulation-only and does not claim live target defense", function () {

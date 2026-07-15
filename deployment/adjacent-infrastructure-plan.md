@@ -39,11 +39,11 @@ Next gates:
 
 ## 4. Offline Receipt Reconciliation
 
-Current evidence: `tools/resilience/continuity-engine.mjs` creates Node-based local voucher and relay-intake artifacts.
+Current evidence: `tools/resilience/continuity-engine.mjs` creates Node-based local voucher artifacts, `tools/offline/continuity-kit.html` provides a static local MAC-check prototype, and `tools/resilience/proxy-validator.js` validates relay-intake batches for duplicate nullifiers and metadata leakage.
 
 Next gates:
 
 - Run tabletop scenarios for duplicate receipt, forged receipt, delayed sync, lost connectivity, and trusted-proxy abuse.
 - Define who can enter offline claims, who reviews them, and how disputes are appealed.
-- Build a standalone air-gapped verifier only after evidence and authority boundaries are settled.
+- Keep the standalone verifier in draft/prototype status until evidence and authority boundaries are settled.
 - Do not let offline artifacts become settlement authority without a ratified workflow.
