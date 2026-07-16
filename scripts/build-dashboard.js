@@ -105,7 +105,12 @@ function main() {
     path.join(outputDir, "ethers.umd.min.js")
   );
 
-  writeManifest(["index.html", "dashboard-inline.min.js", "web3_integration.min.js", "ethers.umd.min.js"]);
+  fs.copyFileSync(
+    path.join(sourceDir, "supabase.js"),
+    path.join(outputDir, "supabase.js")
+  );
+
+  writeManifest(["index.html", "dashboard-inline.min.js", "web3_integration.min.js", "ethers.umd.min.js", "supabase.js"]);
 
   console.log(`Dashboard production assets written to ${path.relative(rootDir, outputDir)}`);
 }
