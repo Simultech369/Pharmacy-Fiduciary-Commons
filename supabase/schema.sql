@@ -28,19 +28,22 @@ CREATE TABLE IF NOT EXISTS public.proposals (
     CONSTRAINT chk_positive_amount CHECK (amount >= 0)
 );
 
--- C. Offline Vouchers Queue (Offline voucher registry collected during network outages)
+-- C. Offline Vouchers Queue (Vouchers collected offline during outages)
 CREATE TABLE IF NOT EXISTS public.offline_vouchers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    nonce NUMERIC(78, 0) NOT NULL,
-    amount NUMERIC(78, 0) NOT NULL,
-    recipient VARCHAR(42) NOT NULL,
-    hmac_signature VARCHAR(16) NOT NULL, -- Truncated 64-bit hex HMAC
-    status VARCHAR(50) DEFAULT 'queued'::character varying NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    CONSTRAINT chk_voucher_status CHECK (status IN ('queued', 'reconciled', 'duplicate_conflict', 'unresolved')),
-    CONSTRAINT chk_recipient_format CHECK (recipient ~* '^0x[a-f0-9]{40}$'),
-    CONSTRAINT chk_hmac_format CHECK (hmac_signature ~* '^[a-f0-9]{16}$')
+    round_id INTEGER NOT NULL,
+    preimage VARCHAR(66) NOT NULL, -- Bearer secret key (hex starting with 0x)
+    nullifier VARCHAR(66) NOT NULL, -- Public nullifier hash (hex starting with 0x)
+    generated_at VARCHAR(50) NOT NULL, -- JS ISO Date string
+    status VARCHAR(50) NOT NULL, -- Sync status, e.g. pending_sync
+    proof_format VARCHAR(100) NOT NULL, -- e.g. offline-voucher-v1-not-zk-proof
+    warning TEXT NOT NULL,
+    mac VARCHAR(18) NOT NULL, -- HMAC truncated to 16 hex chars starting with 0x
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT chk_preimage_format CHECK (preimage ~* '^0x[a-f0-9]{64}$'),
+    CONSTRAINT chk_nullifier_format CHECK (nullifier ~* '^0x[a-f0-9]{64}$'),
+    CONSTRAINT chk_mac_format CHECK (mac ~* '^0x[a-f0-9]{16}$')
 );
 
 -- D. Reconciliation Runs (Audit log of local-to-chain reconciliation jobs)
@@ -129,6 +132,7 @@ DECLARE
   v_secret text;
   v_computed_hmac text;
   v_raw_data text;
+  v_warning text;
 BEGIN
   -- Retrieve secret key from custom app setting or use the default system key
   v_secret := coalesce(
@@ -136,17 +140,28 @@ BEGIN
     'fiduciary-commons-secret-key-12345'
   );
 
-  -- Format matching offline schema: user_id-nonce-amount-recipient
-  v_raw_data := NEW.user_id::text || '-' || NEW.nonce::text || '-' || NEW.amount::text || '-' || NEW.recipient;
+  -- Escape backslashes and double quotes in warning to ensure exact JSON formatting if needed,
+  -- but since it is a hardcoded warning string in code, we can append it directly.
+  v_warning := NEW.warning;
 
-  -- Compute HMAC-SHA256 and truncate to 16 hex chars (64 bits)
-  v_computed_hmac := substring(
+  -- Construct the deterministic JSON payload matching alphabetical keys:
+  -- {"generatedAt":"...","nullifier":"...","preimage":"...","proofFormat":"...","roundId":...,"status":"...","warning":"..."}
+  v_raw_data := '{"generatedAt":"' || NEW.generated_at || '",'
+             || '"nullifier":"' || NEW.nullifier || '",'
+             || '"preimage":"' || NEW.preimage || '",'
+             || '"proofFormat":"' || NEW.proof_format || '",'
+             || '"roundId":' || NEW.round_id::text || ','
+             || '"status":"' || NEW.status || '",'
+             || '"warning":"' || v_warning || '"}';
+
+  -- Compute HMAC-SHA256 and truncate to 16 hex chars (64 bits) prefixed with 0x
+  v_computed_hmac := '0x' || substring(
     encode(hmac(v_raw_data::bytea, v_secret::bytea, 'sha256'), 'hex')
     from 1 for 16
   );
 
   -- Assert signature validity
-  IF NEW.hmac_signature <> v_computed_hmac THEN
+  IF NEW.mac <> v_computed_hmac THEN
     RAISE EXCEPTION 'Cryptographic verification failed: invalid offline voucher signature.';
   END IF;
 
