@@ -481,7 +481,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(await pb.recycledMatchingPool()).to.equal(0n);
     });
 
-    it("blocks recycled rounds until reclaimed liquidity is backed by real balance", async function () {
+    it("queues debt for recycled rounds when reclaimed liquidity is underbacked", async function () {
       await pb.connect(voters[0]).castVote(1n, 0n);
       await pb.connect(council).finalizeRound(1n);
       expect(await pb.roundProjectShares(1n, 0n)).to.equal(toWei("10000"));
@@ -495,18 +495,14 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await pb.connect(council).reclaimUnclaimedMatchShare(1n, 0n);
       expect(await pb.recycledMatchingPool()).to.equal(toWei("10000"));
       expect(await pb.roundProjectShares(1n, 0n)).to.equal(0n);
+      expect(await pb.totalDebt()).to.equal(toWei("10000"));
+      expect(await pb.roundDeficit(1n)).to.equal(toWei("10000"));
 
-      await expectRevert(
-        pb.connect(council).startRound(0n),
-        "InsufficientSolvencyBalance"
-      );
-
-      await token.mint(await pb.getAddress(), toWei("10000"));
       await pb.connect(council).startRound(0n);
       const nextRound = await pb.rounds(2n);
       expect(nextRound.matchingPool).to.equal(toWei("10000"));
       expect(await pb.recycledMatchingPool()).to.equal(0n);
-      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("10000"));
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(0n);
 
       await pb.connect(council).registerProject(2n, "Recycled Empty Pool", recipientA.address);
       await pb.connect(council).registerVotersBatch(2n, [voters[0].address]);
@@ -514,7 +510,16 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await pb.connect(council).finalizeRound(2n);
       expect(await pb.roundProjectShares(2n, 0n)).to.equal(toWei("10000"));
 
-      // Claiming Project share succeeds after top-up
+      await expectRevert(
+        pb.claimMatchShare(2n, 0n),
+        "InsufficientContractBalance"
+      );
+
+      await token.mint(await pb.getAddress(), toWei("10000"));
+      await pb.refreshSolvencyDebt();
+      expect(await pb.totalDebt()).to.equal(0n);
+
+      // Claiming Project share succeeds after top-up.
       await pb.claimMatchShare(2n, 0n);
       expect(await pb.roundProjectShares(2n, 0n)).to.equal(0n);
     });
@@ -1620,7 +1625,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(await pb.recycledMatchingPool()).to.equal(toWei("800"));
     });
 
-    it("blocks underfunded finalization before council refund", async function () {
+    it("queues debt for underfunded finalization before council refund", async function () {
       // Finalize Round 1 first to allow starting Round 2
       await pb.connect(council).finalizeRound(1n);
 
@@ -1641,15 +1646,17 @@ describe("PatientFundParticipatoryBudgeting", function () {
       const preview = await pb.previewFinalize(2n);
       expect(preview.isSufficient).to.be.false;
 
-      // Finalize Round 2 reverts because the contract does not satisfy the hard solvency invariant.
-      await expectRevert(
-        pb.connect(council).finalizeRound(2n),
-        "InsufficientSolvencyBalance"
-      );
-
-      // Verify that after topping up the contract with 900 tokens, finalization succeeds.
-      await token.mint(await pb.getAddress(), toWei("900"));
+      // Finalize Round 2 records the shortfall instead of freezing the round.
       await pb.connect(council).finalizeRound(2n);
+      expect((await pb.rounds(2n)).state).to.equal(2n);
+      expect(await pb.totalDebt()).to.equal(toWei("900"));
+      expect(await pb.roundDeficit(2n)).to.equal(toWei("900"));
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("100"));
+
+      // Verify that after topping up the contract with 900 tokens, debt refresh succeeds.
+      await token.mint(await pb.getAddress(), toWei("900"));
+      await pb.refreshSolvencyDebt();
+      expect(await pb.totalDebt()).to.equal(0n);
 
       // Contract balance after Round 2 finalization (reclaiming 1000 matching pool) is 1000.
       expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("1000"));
@@ -1658,18 +1665,18 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await pb.claimMatchShare(1n, 0n);
     });
 
-    it("blocks opening a new round while existing shares are underbacked", async function () {
+    it("opens a new round while existing shares are underbacked and records debt", async function () {
       await pb.connect(council).finalizeRound(1n);
       await token.burn(await pb.getAddress(), 1n);
 
-      await expectRevert(
-        pb.connect(council).startRound(toWei("1000")),
-        "InsufficientSolvencyBalance"
-      );
-
-      await token.mint(await pb.getAddress(), 1n);
       await pb.connect(council).startRound(toWei("1000"));
       expect(await pb.currentRound()).to.equal(2n);
+      expect(await pb.totalDebt()).to.equal(1n);
+      expect(await pb.roundDeficit(2n)).to.equal(1n);
+
+      await token.mint(await pb.getAddress(), 1n);
+      await pb.refreshSolvencyDebt();
+      expect(await pb.totalDebt()).to.equal(0n);
     });
 
     it("registers multiple projects and asserts gas consumption bounds to prevent sybil/DoS locks", async function () {

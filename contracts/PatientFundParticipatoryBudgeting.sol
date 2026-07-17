@@ -76,6 +76,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     address public mockZKVerifier;
     uint256 public recycledMatchingPool;
     uint256 public totalUnclaimedShares;
+    uint256 public totalDebt;
 
     // roundId -> Round details
     mapping(uint256 => Round) public rounds;
@@ -100,6 +101,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
 
     // roundId => projectId => matching share amount
     mapping(uint256 => mapping(uint256 => uint256)) public roundProjectShares;
+
+    // roundId => cumulative solvency shortfall first observed during round actions
+    mapping(uint256 => uint256) public roundDeficit;
 
     // issuerAddress => isTrusted
     mapping(address => bool) public trustedCredentialIssuers;
@@ -142,6 +146,8 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     event ProposalSupported(uint256 indexed roundId, uint256 indexed proposalId, address indexed supporter, uint256 currentSupport);
     event ProjectSupportThresholdUpdated(uint256 newThreshold);
     event LowBalanceDetected(uint256 requested, uint256 actual);
+    event DebtQueued(uint256 indexed roundId, uint256 amount);
+    event DebtSettled(uint256 indexed roundId, uint256 amount);
 
     // =========================================================
     // CUSTOM ERRORS
@@ -229,11 +235,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         uint256 roundId = currentRound + 1;
         uint256 requiredExisting = totalUnclaimedShares + recycled;
         uint256 actualBefore = token.balanceOf(address(this));
-        if (actualBefore < requiredExisting) {
-            revert InsufficientSolvencyBalance(requiredExisting, actualBefore);
-        }
+        _syncSolvencyDebt(roundId, requiredExisting, actualBefore);
 
-        uint256 externalSurplus = actualBefore - requiredExisting;
+        uint256 externalSurplus = actualBefore > requiredExisting ? actualBefore - requiredExisting : 0;
         if (externalSurplus > 0) {
             recycled += externalSurplus;
             emit ExternalPatientFundsApplied(roundId, externalSurplus);
@@ -575,7 +579,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         uint256 pool = r.matchingPool;
         uint256 required = totalUnclaimedShares + pool;
         uint256 actual = token.balanceOf(address(this));
-        if (actual < required) revert InsufficientSolvencyBalance(required, actual);
+        _syncSolvencyDebt(roundId, required, actual);
 
         uint256 count = r.projectCount;
         uint256 totalWeight = 0;
@@ -600,8 +604,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
                 recycledMatchingPool += recycled;
             }
             if (fresh > 0) {
-                token.safeTransfer(council, fresh);
+                _transferAvailable(council, fresh);
             }
+            _syncCurrentSolvencyDebt(roundId);
             emit RoundFinalized(roundId, 0);
             return;
         }
@@ -631,9 +636,11 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
                 recycledMatchingPool += recycledRefund;
             }
             if (councilRefund > 0) {
-                token.safeTransfer(council, councilRefund);
+                _transferAvailable(council, councilRefund);
             }
         }
+
+        _syncCurrentSolvencyDebt(roundId);
 
         emit RoundFinalized(roundId, totalWeight);
     }
@@ -662,6 +669,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         }
 
         token.safeTransfer(recipient, share);
+        _syncCurrentSolvencyDebt(roundId);
 
         emit MatchDistributed(roundId, projectId, recipient, share);
     }
@@ -700,6 +708,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
             // We do NOT revert on low balance because reclaims are purely accounting-based
             // and we want to allow recycling recorded commitments under depletion.
         }
+        _syncCurrentSolvencyDebt(roundId);
 
         emit MatchShareReclaimed(roundId, projectId, recipient, share);
     }
@@ -746,6 +755,26 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         return _previewFinalize(roundId);
     }
 
+    function requiredSolvencyBalance() public view returns (uint256) {
+        uint256 required = totalUnclaimedShares + recycledMatchingPool;
+        if (currentRound > 0 && rounds[currentRound].state == RoundState.Active) {
+            required += rounds[currentRound].matchingPool;
+        }
+        return required;
+    }
+
+    function currentSolvencyShortfall() public view returns (uint256) {
+        uint256 required = requiredSolvencyBalance();
+        uint256 actual = token.balanceOf(address(this));
+        return required > actual ? required - actual : 0;
+    }
+
+    function refreshSolvencyDebt() external whenNotPaused returns (uint256) {
+        uint256 roundId = currentRound;
+        if (roundId == 0) roundId = 1;
+        return _syncCurrentSolvencyDebt(roundId);
+    }
+
     function _previewFinalize(uint256 roundId)
         internal
         view
@@ -789,6 +818,37 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         actualBalance = token.balanceOf(address(this));
         totalRequiredAfterFinalize = totalUnclaimedShares + distributed;
         isSufficient = actualBalance >= totalUnclaimedShares + pool;
+    }
+
+    function _syncCurrentSolvencyDebt(uint256 roundId) internal returns (uint256) {
+        return _syncSolvencyDebt(roundId, requiredSolvencyBalance(), token.balanceOf(address(this)));
+    }
+
+    function _syncSolvencyDebt(uint256 roundId, uint256 required, uint256 actual) internal returns (uint256) {
+        uint256 outstanding = required > actual ? required - actual : 0;
+        if (outstanding > totalDebt) {
+            uint256 queued = outstanding - totalDebt;
+            totalDebt = outstanding;
+            roundDeficit[roundId] += queued;
+            emit DebtQueued(roundId, queued);
+        } else if (outstanding < totalDebt) {
+            uint256 settled = totalDebt - outstanding;
+            totalDebt = outstanding;
+            emit DebtSettled(roundId, settled);
+        }
+        return outstanding;
+    }
+
+    function _transferAvailable(address recipient, uint256 amount) internal returns (uint256) {
+        uint256 balance = token.balanceOf(address(this));
+        uint256 transferAmount = amount <= balance ? amount : balance;
+        if (transferAmount < amount) {
+            emit LowBalanceDetected(amount, balance);
+        }
+        if (transferAmount > 0) {
+            token.safeTransfer(recipient, transferAmount);
+        }
+        return transferAmount;
     }
 
     // =========================================================
