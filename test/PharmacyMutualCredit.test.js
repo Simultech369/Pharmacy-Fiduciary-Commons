@@ -312,7 +312,7 @@ describe("PharmacyMutualCredit", function () {
 
       await expectRevert(
         credit.connect(attacker).releaseExpiredVoucher(voucherId),
-        "VoucherExpired"
+        "VoucherAlreadyReleased"
       );
     });
 
@@ -333,7 +333,7 @@ describe("PharmacyMutualCredit", function () {
 
       await expectRevert(
         credit.connect(attacker).releaseExpiredVouchersBatch([voucherId1]),
-        "VoucherExpired"
+        "VoucherAlreadyReleased"
       );
     });
 

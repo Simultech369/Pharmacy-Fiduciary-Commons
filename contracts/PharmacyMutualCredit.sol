@@ -77,6 +77,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
     error BatchTooLarge();
     error VoucherExpiryTooLong();
     error GovernanceRoleSeparationViolation();
+    error VoucherAlreadyReleased();
 
     // =========================================================
     // CONSTRUCTOR
@@ -251,7 +252,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
         if (v.issuer == address(0)) revert VoucherDoesNotExist();
         if (v.redeemed) revert VoucherAlreadyRedeemed();
         if (block.timestamp <= v.expiry) revert VoucherNotExpired();
-        if (voucherReservationReleased[voucherId]) revert VoucherExpired();
+        if (voucherReservationReleased[voucherId]) revert VoucherAlreadyReleased();
 
         voucherReservationReleased[voucherId] = true;
         reservedVoucherCredit[v.issuer] -= v.amount;
@@ -272,7 +273,7 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
             if (v.issuer == address(0)) revert VoucherDoesNotExist();
             if (v.redeemed) revert VoucherAlreadyRedeemed();
             if (block.timestamp <= v.expiry) revert VoucherNotExpired();
-            if (voucherReservationReleased[voucherId]) revert VoucherExpired();
+            if (voucherReservationReleased[voucherId]) revert VoucherAlreadyReleased();
 
             voucherReservationReleased[voucherId] = true;
             reservedVoucherCredit[v.issuer] -= v.amount;

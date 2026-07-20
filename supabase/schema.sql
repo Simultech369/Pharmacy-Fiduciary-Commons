@@ -134,11 +134,11 @@ DECLARE
   v_raw_data text;
   v_warning text;
 BEGIN
-  -- Retrieve secret key from custom app setting or use the default system key
-  v_secret := coalesce(
-    current_setting('app.settings.voucher_secret', true),
-    'fiduciary-commons-secret-key-12345'
-  );
+  -- Retrieve secret key from database custom configuration parameter
+  v_secret := current_setting('app.settings.voucher_secret', true);
+  IF v_secret IS NULL OR v_secret = '' THEN
+    RAISE EXCEPTION 'Configuration security breach: app.settings.voucher_secret is not configured. Database transactions must fail-closed.';
+  END IF;
 
   -- Escape backslashes and double quotes in warning to ensure exact JSON formatting if needed,
   -- but since it is a hardcoded warning string in code, we can append it directly.
