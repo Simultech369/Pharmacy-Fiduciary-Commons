@@ -143,6 +143,14 @@
 
       <button id="verifyButton" type="button">Verify MAC</button>
       <pre id="result" aria-live="polite">Awaiting voucher.</pre>
+
+      <hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
+      
+      <h3 style="margin: 0; color: var(--accent); font-size: 1.1rem; display: flex; align-items: center; justify-content: space-between;">
+        <span>🛡️ Local Mock Mode Active</span>
+        <span id="sync-status" style="font-size: 0.8rem; color: var(--muted); font-weight: normal;">● Local Only</span>
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--muted); margin: 5px 0 0 0;">Direct browser-to-database connections are disabled for security containment. Database synchronization requires the server-side proxy.</p>
     </section>
   </main>
 
@@ -228,6 +236,7 @@
         if (mac !== voucher.mac) {
           throw new Error("MAC mismatch. Treat this voucher as unverified.");
         }
+
         setResult(
           [
             "MAC verification passed.",
@@ -241,6 +250,8 @@
         setResult(`Verification failed: ${error.message}`, false);
       }
     });
+
+    // Cloud Connection settings and upload handlers removed for security containment.
   </script>
 </body>
 </html>

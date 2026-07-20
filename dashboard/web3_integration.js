@@ -466,6 +466,8 @@ async function registerWithSignature() {
     // Refresh state
     const isReg = await pbContract.registeredVoters(activeRoundId, userAddress);
     updateVoterUI(isReg);
+
+
   } catch (e) {
     console.error("Self-registration transaction failed:", e);
     alert("Registration failed: " + (e.reason || e.message));

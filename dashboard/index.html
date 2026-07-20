@@ -723,6 +723,19 @@
 
   <main>
 
+    <!-- Cloud Connection Security Containment Notice -->
+    <section class="panel" style="border: 1px dashed rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.02); margin-bottom: 2rem;">
+      <div class="panel-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0px;">
+        <div>
+          🛡️ Local Mock Mode Active
+          <div class="panel-subtitle">Direct browser-to-database connections are disabled for security containment. Database synchronization requires the server-side proxy.</div>
+        </div>
+        <div id="db-status-badge" class="badge-unverified" style="background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); border: 1px solid rgba(245, 158, 11, 0.2); animation: none;">
+          ● LOCAL MOCK ENVIRONMENT
+        </div>
+      </div>
+    </section>
+
     <!-- 1. The Ledger of Omissions View -->
     <section class="panel" data-provenance="synthetic-fixture">
       <div class="panel-title">
@@ -1490,7 +1503,6 @@
     });
   </script>
   <script src="./ethers.umd.min.js"></script>
-  <script src="./supabase.js"></script>
   <script src="./web3_integration.js"></script>
 </body>
 </html>
