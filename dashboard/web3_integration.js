@@ -467,6 +467,57 @@ async function registerWithSignature() {
     const isReg = await pbContract.registeredVoters(activeRoundId, userAddress);
     updateVoterUI(isReg);
 
+    // Sync voter profile to the server database proxy
+    try {
+      console.log("Syncing voter profile to proxy database...");
+      
+      const nonce = (typeof crypto.randomUUID === "function") 
+        ? crypto.randomUUID() 
+        : Math.random().toString(36).substring(2, 15);
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+      const network = await provider.getNetwork();
+      const chainId = network.chainId.toString();
+
+      const canonicalString = [
+        `Pharmacy Fiduciary Commons Database Proxy`,
+        `Version: 1`,
+        `Action: register-voter`,
+        `Chain ID: ${chainId}`,
+        `Round ID: ${activeRoundId.toString()}`,
+        `Wallet: ${userAddress}`,
+        `Credential Hash: ${credentialHash}`,
+        `Policy Version: ${policyVersion}`,
+        `Nonce: ${nonce}`,
+        `Expires At: ${expiresAt}`
+      ].join("\n");
+
+      const signer = await provider.getSigner();
+      const clientSignature = await signer.signMessage(canonicalString);
+
+      const response = await fetch("http://localhost:3000/api/voters/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: userAddress,
+          chainId: Number(chainId),
+          roundId: activeRoundId.toString(),
+          credentialHash,
+          policyVersion,
+          nonce,
+          expiresAt,
+          signature: clientSignature
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "Proxy sync failed");
+      }
+      console.log("Voter profile successfully synced to database via proxy.");
+    } catch (dbErr) {
+      console.warn("Database sync warning (continuing local flow):", dbErr.message);
+    }
+
 
   } catch (e) {
     console.error("Self-registration transaction failed:", e);
