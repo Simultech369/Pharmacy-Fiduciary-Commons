@@ -1,5 +1,8 @@
 # Antigravity Current Handoff
 
+> [!CAUTION]
+> Historical handoff only. This file is anchored to an older checkpoint and is not the current patient-fund solvency entry point. For the current solvency handoff, start with `ANTIGRAVITY_HANDOFF_BUNDLE_MANIFEST.md` and verify checkpoint `266016c83d544f86dbb67a49240356852e0498b4`.
+
 Prepared for Antigravity against live checkout `f1a8f00275b4d3fff1ee993091e02c692faa29cc` on branch `main`.
 
 ## 1. Current Repo State

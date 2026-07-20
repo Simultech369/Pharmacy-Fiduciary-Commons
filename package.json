@@ -20,7 +20,8 @@
     "verify:export": "node scripts/verify-export.js",
     "check:readiness": "node scripts/check-readiness.js",
     "audit:deployment": "hardhat run scripts/audit-deployment.js",
-    "merkle:allocations": "node tools/merkle/allocations.js"
+    "merkle:allocations": "node tools/merkle/allocations.js",
+    "dev:server": "node server/server.js"
   },
   "keywords": [],
   "author": "",
