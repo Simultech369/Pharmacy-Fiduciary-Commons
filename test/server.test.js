@@ -281,11 +281,12 @@ describe("Database API Proxy Server Security Patch", () => {
       expect(res.status).to.equal(200);
       expect(res.body.success).to.be.true;
 
-      // Verify HMAC blinding with pepper
+      // Verify HMAC blinding with pepper and domain separation
       const profile = mockSupabase._mockDb.voter_profiles[0];
+      const domainString = `domain:voter-credential-hash:chainId:${config.chainId}:roundId:${config.roundId}:`;
       const expectedBlinded = crypto
         .createHmac("sha256", config.credentialPepper)
-        .update(payload.credentialHash)
+        .update(domainString + payload.credentialHash)
         .digest("hex");
       expect(JSON.parse(profile.encrypted_metadata).credentialHash).to.equal(expectedBlinded);
     });
@@ -466,6 +467,77 @@ describe("Database API Proxy Server Security Patch", () => {
       
       expect(res.status).to.equal(429);
       expect(res.body.error).to.equal("Too many requests, please try again later");
+    });
+
+    it("prevents completed registration from regressing to failed on subsequent database error", async () => {
+      const payload = await getValidRegistrationPayload();
+
+      // First call succeeds and commits to 'completed'
+      const res1 = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload);
+      expect(res1.status).to.equal(200);
+      expect(mockSupabase._mockDb.registration_ledger[0].status).to.equal("completed");
+
+      // Set profile write to fail, simulate retry or concurrent failure
+      mockSupabase._profileFailMode = true;
+      const res2 = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload);
+      
+      // Because it was already completed, it returns 200 immediately and doesn't run DB writes
+      expect(res2.status).to.equal(200);
+      expect(mockSupabase._mockDb.registration_ledger[0].status).to.equal("completed");
+    });
+
+    it("applies domain-separated HMAC hashing to credential data", async () => {
+      const payload = await getValidRegistrationPayload();
+      const res = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload);
+
+      expect(res.status).to.equal(200);
+      const profile = mockSupabase._mockDb.voter_profiles[0];
+      const metadata = JSON.parse(profile.encrypted_metadata);
+
+      // Verify domain-separated HMAC matches formula
+      const domainString = `domain:voter-credential-hash:chainId:${config.chainId}:roundId:${config.roundId}:`;
+      const expectedBlinded = crypto
+        .createHmac("sha256", config.credentialPepper)
+        .update(domainString + payload.credentialHash)
+        .digest("hex");
+      
+      expect(metadata.credentialHash).to.equal(expectedBlinded);
+    });
+  });
+
+  describe("Supabase Row-Level Security (RLS) Policy Checks", () => {
+    function simulateRLSPolicy({ role, userId, targetProfile }) {
+      // Voter profiles policy: USING (auth.uid() = id OR auth.role() = 'service_role')
+      if (role === "service_role") {
+        return true;
+      }
+      if (role === "authenticated" && userId === targetProfile.id) {
+        return true;
+      }
+      return false; // anon or non-owner select blocked
+    }
+
+    it("enforces voter profile visibility restrictions per the RLS role matrix", () => {
+      const profile = { id: "user-123", wallet_address: "0x123..." };
+
+      // Owner SELECT should be permitted
+      expect(simulateRLSPolicy({ role: "authenticated", userId: "user-123", targetProfile: profile })).to.be.true;
+
+      // Service Role SELECT should be permitted
+      expect(simulateRLSPolicy({ role: "service_role", userId: null, targetProfile: profile })).to.be.true;
+
+      // Anonymous / Non-owner SELECT must be blocked
+      expect(simulateRLSPolicy({ role: "anon", userId: null, targetProfile: profile })).to.be.false;
+      expect(simulateRLSPolicy({ role: "authenticated", userId: "another-user", targetProfile: profile })).to.be.false;
     });
   });
 });

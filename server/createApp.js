@@ -414,11 +414,14 @@ function createApp(supabaseClient, config = {}) {
         return res.status(429).json({ error: "Too many requests, please try again later" });
       }
 
-      // Salted HMAC Blinded Credential
-      // Privacy Note: The database operator can still correlate if the pepper is compromised.
+      // Salted HMAC Blinded Credential with deployment/use-case domain separation
+      // Privacy Note: Storing wallet address alongside blinded credential HMAC exposes the operator
+      // to correlation risk. An operator holding the credentialPepper secret can perform pre-image 
+      // correlation to map specific pharmacy wallets to their respective raw credentials.
+      const domainString = `domain:voter-credential-hash:chainId:${config.chainId}:roundId:${config.roundId}:`;
       const blindedCredential = crypto
         .createHmac("sha256", config.credentialPepper)
-        .update(credentialHash)
+        .update(domainString + credentialHash)
         .digest("hex");
 
       // Database Sync
