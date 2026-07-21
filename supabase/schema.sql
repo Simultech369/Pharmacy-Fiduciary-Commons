@@ -63,6 +63,17 @@ CREATE TABLE IF NOT EXISTS public.consumed_nonces (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- F. Registration Ledger (Idempotent request state machine)
+CREATE TABLE IF NOT EXISTS public.registration_ledger (
+    nonce_key VARCHAR(255) PRIMARY KEY,
+    request_hash VARCHAR(64) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending' NOT NULL,
+    user_id UUID,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT chk_ledger_status CHECK (status IN ('pending', 'completed', 'failed'))
+);
+
 -- Indices for performance and unique constraint enforcement
 CREATE INDEX IF NOT EXISTS idx_voter_profiles_wallet ON public.voter_profiles(wallet_address);
 CREATE INDEX IF NOT EXISTS idx_proposals_creator ON public.proposals(creator_id);
@@ -78,6 +89,7 @@ ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.offline_vouchers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reconciliation_runs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.consumed_nonces ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.registration_ledger ENABLE ROW LEVEL SECURITY;
 
 -- A. Voter Profiles Policies
 DROP POLICY IF EXISTS "Voter profiles are viewable by everyone" ON public.voter_profiles;
@@ -133,6 +145,10 @@ CREATE POLICY "Only admins and service roles can view or run reconciliation logs
 
 -- E. Consumed Nonces Policies
 CREATE POLICY "Only service roles can access consumed nonces" ON public.consumed_nonces
+    FOR ALL USING (auth.role() = 'service_role');
+
+-- F. Registration Ledger Policies
+CREATE POLICY "Only service roles can access registration_ledger" ON public.registration_ledger
     FOR ALL USING (auth.role() = 'service_role');
 
 

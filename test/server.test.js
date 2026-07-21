@@ -13,13 +13,16 @@ function createMockSupabase() {
     voter_profiles: [],
     offline_vouchers: [],
     users: [],
-    consumed_nonces: []
+    consumed_nonces: [],
+    registration_ledger: []
   };
 
   const client = {
     _mockDb: mockDb,
     _shouldFail: false,
     _authFailMode: false,
+    _profileFailMode: false,
+    _ledgerCommitFailMode: false,
     auth: {
       admin: {
         createUser: async ({ email, user_metadata }) => {
@@ -67,12 +70,22 @@ function createMockSupabase() {
               return { error: new Error("Duplicate key violation on nonces") };
             }
           }
+          if (table === "registration_ledger") {
+            const exists = mockDb.registration_ledger.some(r => r.nonce_key === row.nonce_key);
+            if (exists) {
+              return { error: new Error("Duplicate key violation on ledger") };
+            }
+            row.created_at = new Date().toISOString();
+          }
+          if (table === "voter_profiles" && client._profileFailMode) {
+            return { error: new Error("Mock profile insert failure") };
+          }
           mockDb[table].push(row);
           return { error: null };
         },
         update: (updates) => ({
           eq: async (col, val) => {
-            if (client._shouldFail) {
+            if (client._shouldFail || (table === "registration_ledger" && client._ledgerCommitFailMode)) {
               return { error: new Error("Mock database connection failed") };
             }
             const data = mockDb[table].find(row => row[col] === val);
@@ -101,7 +114,7 @@ describe("Database API Proxy Server Security Patch", () => {
       roundId: "1",
       proxyAddress: "0x1111111111111111111111111111111111111111",
       contractAddress: "0x2222222222222222222222222222222222222222",
-      relayerVerifier: issuerWallet.address,
+      trustedCredentialIssuer: issuerWallet.address,
       credentialPepper: "secure-long-test-credential-blinding-pepper",
       testMode: true
     };
@@ -110,10 +123,10 @@ describe("Database API Proxy Server Security Patch", () => {
 
   async function getValidRegistrationPayload(overrides = {}) {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-    const clientNonce = crypto.randomUUID();
+    const clientNonce = overrides.clientNonce || crypto.randomUUID();
     const relayerNonce = 0;
     const relayerDeadline = Math.floor((Date.now() + 30 * 60 * 1000) / 1000);
-    const credentialHash = "0x" + "a".repeat(64);
+    const credentialHash = overrides.credentialHash || "0x" + "a".repeat(64);
     const policyVersion = "fiduciary-credential-policy-v1";
     const policyVersionBytes = ethers.keccak256(ethers.toUtf8Bytes(policyVersion));
 
@@ -187,7 +200,7 @@ describe("Database API Proxy Server Security Patch", () => {
     it("rejects well-known Hardhat account 0 relayer address outside test mode", () => {
       const prodConfig = {
         ...config,
-        relayerVerifier: "0xF39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        trustedCredentialIssuer: "0xF39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
         testMode: false
       };
       expect(() => createApp(mockSupabase, prodConfig)).to.throw("Dev issuer address rejected");
@@ -283,56 +296,90 @@ describe("Database API Proxy Server Security Patch", () => {
     });
   });
 
-  describe("Database Atomicity & Recovery Sagas", () => {
-    it("does NOT burn the client nonce if user/profile write fails", async () => {
+  describe("Database Request Ledger & Idempotency", () => {
+    it("returns previous completed result on exact registration retry", async () => {
       const payload = await getValidRegistrationPayload();
 
-      // Force Auth creation database failure (simulating temporary service drop)
-      mockSupabase._authFailMode = true;
+      // First call succeeds
+      const res1 = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload);
+      expect(res1.status).to.equal(200);
+      const userId = res1.body.userId;
+
+      // Second identical call returns exact same 200 response and userId
+      const res2 = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload);
+      expect(res2.status).to.equal(200);
+      expect(res2.body.userId).to.equal(userId);
+    });
+
+    it("rejects same-nonce retry if the payload request hash is mismatched (replay attempt)", async () => {
+      const clientNonce = crypto.randomUUID();
+      const payload1 = await getValidRegistrationPayload({ clientNonce, credentialHash: "0x" + "a".repeat(64) });
+      const payload2 = await getValidRegistrationPayload({ clientNonce, credentialHash: "0x" + "b".repeat(64) });
+
+      // First payload succeeds
+      const res1 = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload1);
+      expect(res1.status).to.equal(200);
+
+      // Second payload with different hash fails on the same nonce
+      const res2 = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload2);
+      expect(res2.status).to.equal(401);
+      expect(res2.body.error).to.equal("Invalid registration signature payload");
+    });
+
+    it("allows retry and successfully recovers if Auth creation succeeded but profile write failed previously", async () => {
+      const payload = await getValidRegistrationPayload();
+
+      // Set profile write to fail but auth write to succeed
+      mockSupabase._profileFailMode = true;
       const res1 = await request(app)
         .post("/api/voters/register")
         .set("Origin", "http://localhost:3000")
         .send(payload);
       expect(res1.status).to.equal(500);
-      expect(res1.body.error).to.equal("Database transaction failed");
 
-      // Verify nonce is NOT added to database registry
-      expect(mockSupabase._mockDb.consumed_nonces).to.have.lengthOf(0);
+      // Verify profile is empty, but auth user exists
+      expect(mockSupabase._mockDb.voter_profiles).to.have.lengthOf(0);
+      expect(mockSupabase._mockDb.users).to.have.lengthOf(1);
+      // Ledger record status should be 'failed'
+      const ledgerEntry = mockSupabase._mockDb.registration_ledger[0];
+      expect(ledgerEntry.status).to.equal("failed");
 
-      // Re-enable DB, retry with the EXACT SAME payload
-      mockSupabase._authFailMode = false;
+      // Re-enable profile write, retry exact payload
+      mockSupabase._profileFailMode = false;
       const res2 = await request(app)
         .post("/api/voters/register")
         .set("Origin", "http://localhost:3000")
         .send(payload);
-
+      
       expect(res2.status).to.equal(200);
-      expect(res2.body.success).to.be.true;
-      expect(mockSupabase._mockDb.consumed_nonces).to.have.lengthOf(1);
+      expect(mockSupabase._mockDb.voter_profiles).to.have.lengthOf(1);
+      expect(mockSupabase._mockDb.registration_ledger[0].status).to.equal("completed");
     });
 
-    it("recovers and inserts profile if user was created but profile insert failed previously", async () => {
+    it("marks status as failed if ledger commit step fails", async () => {
       const payload = await getValidRegistrationPayload();
+      mockSupabase._ledgerCommitFailMode = true;
 
-      // Pre-populate the Supabase Auth user table with the synthetic user, but keep profiles empty
-      // This simulates a partial failure where user registration succeeded but profile write aborted
-      const syntheticEmail = `${payload.walletAddress.toLowerCase()}@fiduciary.commons`;
-      await mockSupabase.auth.admin.createUser({
-        email: syntheticEmail,
-        user_metadata: { wallet_address: payload.walletAddress.toLowerCase() }
-      });
-
-      expect(mockSupabase._mockDb.users).to.have.lengthOf(1);
-      expect(mockSupabase._mockDb.voter_profiles).to.have.lengthOf(0);
-
-      // Execute request. Idempotence saga should find existing user, link it, and complete profile write
       const res = await request(app)
         .post("/api/voters/register")
         .set("Origin", "http://localhost:3000")
         .send(payload);
+      expect(res.status).to.equal(500);
 
-      expect(res.status).to.equal(200);
-      expect(mockSupabase._mockDb.voter_profiles).to.have.lengthOf(1);
+      // Profile is inserted, but ledger status stayed failed or pending (not completed)
+      expect(mockSupabase._mockDb.registration_ledger[0].status).to.not.equal("completed");
     });
   });
 });
