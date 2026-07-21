@@ -80,6 +80,8 @@ ALTER TABLE public.reconciliation_runs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.consumed_nonces ENABLE ROW LEVEL SECURITY;
 
 -- A. Voter Profiles Policies
+DROP POLICY IF EXISTS "Voter profiles are viewable by everyone" ON public.voter_profiles;
+
 CREATE POLICY "Voter profiles are viewable only by the owner or service role" ON public.voter_profiles
     FOR SELECT USING (auth.uid() = id OR auth.role() = 'service_role');
 

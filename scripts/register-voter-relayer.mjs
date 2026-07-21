@@ -144,7 +144,8 @@ async function main() {
     credentialHash: result.credentialHash,
     policyVersion: result.policyVersion,
     deadline: result.deadline,
-    signature: result.signature
+    signature: result.signature,
+    nonce: Number(args.nonce)
   })}`);
 }
 

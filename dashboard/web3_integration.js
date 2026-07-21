@@ -446,7 +446,7 @@ async function registerWithSignature() {
 
   try {
     const authorization = JSON.parse(inputSig.value.trim());
-    const { credentialHash, policyVersion, deadline, signature } = authorization;
+    const { credentialHash, policyVersion, deadline, signature, nonce } = authorization;
     if (!credentialHash || !policyVersion || !deadline || !signature) {
       throw new Error("Authorization must include credentialHash, policyVersion, deadline, and signature.");
     }
@@ -471,28 +471,45 @@ async function registerWithSignature() {
     try {
       console.log("Syncing voter profile to proxy database...");
       
-      const nonce = (typeof crypto.randomUUID === "function") 
+      const clientNonce = (typeof crypto.randomUUID === "function") 
         ? crypto.randomUUID() 
         : Math.random().toString(36).substring(2, 15);
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
       const network = await provider.getNetwork();
       const chainId = network.chainId.toString();
 
+      // Retrieve proxy config dynamically to obtain the configured proxyAddress
+      let proxyAddress = "0x1111111111111111111111111111111111111111"; // Default dev address fallback
+      try {
+        const healthResponse = await fetch("http://localhost:3000/health");
+        if (healthResponse.ok) {
+          const healthData = await healthResponse.json();
+          if (healthData.proxyAddress) {
+            proxyAddress = healthData.proxyAddress;
+          }
+        }
+      } catch (err) {
+        console.warn("Could not query proxyAddress from health check, falling back:", err.message);
+      }
+
       const canonicalString = [
         `Pharmacy Fiduciary Commons Database Proxy`,
         `Version: 1`,
         `Action: register-voter`,
+        `Proxy Address: ${proxyAddress.toLowerCase()}`,
         `Chain ID: ${chainId}`,
         `Round ID: ${activeRoundId.toString()}`,
-        `Wallet: ${userAddress}`,
+        `Wallet: ${userAddress.toLowerCase()}`,
         `Credential Hash: ${credentialHash}`,
         `Policy Version: ${policyVersion}`,
-        `Nonce: ${nonce}`,
+        `Client Nonce: ${clientNonce}`,
         `Expires At: ${expiresAt}`
       ].join("\n");
 
       const signer = await provider.getSigner();
       const clientSignature = await signer.signMessage(canonicalString);
+
+      const relayerNonce = nonce !== undefined ? Number(nonce) : 0;
 
       const response = await fetch("http://localhost:3000/api/voters/register", {
         method: "POST",
@@ -503,9 +520,12 @@ async function registerWithSignature() {
           roundId: activeRoundId.toString(),
           credentialHash,
           policyVersion,
-          nonce,
+          clientNonce,
           expiresAt,
-          signature: clientSignature
+          signature: clientSignature,
+          issuerSignature: signature,
+          relayerNonce,
+          relayerDeadline: Number(deadline)
         })
       });
 

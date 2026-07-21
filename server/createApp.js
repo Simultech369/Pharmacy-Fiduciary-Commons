@@ -7,10 +7,7 @@ function sha256(data) {
   return crypto.createHash("sha256").update(data).digest("hex");
 }
 
-const allowedPolicyVersions = new Set(["1.0.0"]);
-
-// Hardcoded trusted credential issuer address for authority validation
-const TRUSTED_ISSUER_ADDRESS = "0xF39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+const allowedPolicyVersions = new Set(["fiduciary-credential-policy-v1"]);
 
 // Strict allowlist validation schema for relay intake body
 const allowedIntakeKeys = new Set(["roundId", "nullifier", "projectId", "proofRequired", "proof"]);
@@ -39,14 +36,13 @@ function validateRelayIntakeBody(body) {
   return true;
 }
 
-// EIP-191 Signature Verification
+// EIP-191 Voter Signature Verification (bounds chainId, roundId, proxyAddress)
 function verifyRegisterSignature({
-  chainId,
-  roundId,
+  config,
   walletAddress,
   credentialHash,
   policyVersion,
-  nonce,
+  clientNonce,
   expiresAt,
   signature
 }) {
@@ -54,44 +50,75 @@ function verifyRegisterSignature({
     `Pharmacy Fiduciary Commons Database Proxy`,
     `Version: 1`,
     `Action: register-voter`,
-    `Chain ID: ${chainId}`,
-    `Round ID: ${roundId}`,
-    `Wallet: ${walletAddress}`,
+    `Proxy Address: ${config.proxyAddress.toLowerCase()}`,
+    `Chain ID: ${config.chainId}`,
+    `Round ID: ${config.roundId.toString()}`,
+    `Wallet: ${walletAddress.toLowerCase()}`,
     `Credential Hash: ${credentialHash}`,
     `Policy Version: ${policyVersion}`,
-    `Nonce: ${nonce}`,
+    `Client Nonce: ${clientNonce}`,
     `Expires At: ${expiresAt}`
   ].join("\n");
 
   const recoveredAddress = ethers.verifyMessage(canonicalString, signature);
   if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-    throw new Error(`Signature recovery mismatch: expected ${walletAddress}, got ${recoveredAddress}`);
+    throw new Error("Invalid voter signature");
   }
-
-  return true;
 }
 
-// Verify that the credential is signed and approved by the trusted issuer
-function verifyIssuerSignature({
+// EIP-712 Relayer Signature Verification
+function verifyRelayerSignature({
+  config,
   walletAddress,
   credentialHash,
   policyVersion,
+  relayerNonce,
+  relayerDeadline,
   issuerSignature
 }) {
-  const canonicalString = [
-    `Pharmacy Fiduciary Commons Credential Authorization`,
-    `Wallet: ${walletAddress.toLowerCase()}`,
-    `Credential Hash: ${credentialHash}`,
-    `Policy Version: ${policyVersion}`
-  ].join("\n");
+  const policyVersionBytes = ethers.keccak256(ethers.toUtf8Bytes(policyVersion));
+  const acceptedPolicyVersionHash = ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v1"));
 
-  const recoveredIssuer = ethers.verifyMessage(canonicalString, issuerSignature);
-  return recoveredIssuer.toLowerCase() === TRUSTED_ISSUER_ADDRESS.toLowerCase();
+  if (policyVersionBytes !== acceptedPolicyVersionHash) {
+    throw new Error("Unsupported policy version");
+  }
+
+  const recoveredRelayer = ethers.verifyTypedData(
+    {
+      name: "Pharmacy Fiduciary Commons",
+      version: "1",
+      chainId: config.chainId,
+      verifyingContract: config.contractAddress
+    },
+    {
+      VoterRegistration: [
+        { name: "roundId", type: "uint256" },
+        { name: "voter", type: "address" },
+        { name: "nonce", type: "uint256" },
+        { name: "credentialHash", type: "bytes32" },
+        { name: "policyVersion", type: "bytes32" },
+        { name: "deadline", type: "uint256" }
+      ]
+    },
+    {
+      roundId: BigInt(config.roundId),
+      voter: walletAddress,
+      nonce: BigInt(relayerNonce),
+      credentialHash,
+      policyVersion: policyVersionBytes,
+      deadline: BigInt(relayerDeadline)
+    },
+    issuerSignature
+  );
+
+  if (recoveredRelayer.toLowerCase() !== config.relayerVerifier.toLowerCase()) {
+    throw new Error("Invalid issuer credential signature");
+  }
 }
 
+// EIP-191 Relay Request Verification
 function verifyRelaySignature({
-  chainId,
-  roundId,
+  config,
   walletAddress,
   payloadHash,
   nonce,
@@ -102,9 +129,10 @@ function verifyRelaySignature({
     `Pharmacy Fiduciary Commons Database Proxy`,
     `Version: 1`,
     `Action: relay-intake`,
-    `Chain ID: ${chainId}`,
-    `Round ID: ${roundId}`,
-    `Wallet: ${walletAddress}`,
+    `Proxy Address: ${config.proxyAddress.toLowerCase()}`,
+    `Chain ID: ${config.chainId}`,
+    `Round ID: ${config.roundId.toString()}`,
+    `Wallet: ${walletAddress.toLowerCase()}`,
     `Payload Hash: ${payloadHash}`,
     `Nonce: ${nonce}`,
     `Expires At: ${expiresAt}`
@@ -112,10 +140,8 @@ function verifyRelaySignature({
 
   const recoveredAddress = ethers.verifyMessage(canonicalString, signature);
   if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
-    throw new Error(`Signature recovery mismatch: expected ${walletAddress}, got ${recoveredAddress}`);
+    throw new Error("Invalid relay signature");
   }
-
-  return true;
 }
 
 // Bounded IP Rate Limiter to prevent memory exhaustion
@@ -197,14 +223,32 @@ function originCheck(req, res, next) {
   next();
 }
 
-function createApp(supabaseClient) {
+function createApp(supabaseClient, config = {}) {
+  // Validate config parameters exist (fail-closed check)
+  const requiredConfig = ["chainId", "roundId", "proxyAddress", "contractAddress", "relayerVerifier", "credentialPepper"];
+  for (const param of requiredConfig) {
+    if (config[param] === undefined || config[param] === null || config[param] === "") {
+      throw new Error(`Proxy configuration breach: missing required parameter ${param}`);
+    }
+  }
+
+  // Reject well-known Hardhat Account 0 as Relayer outside test mode
+  const devIssuer = "0xF39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+  if (!config.testMode && config.relayerVerifier.toLowerCase() === devIssuer.toLowerCase()) {
+    throw new Error("Proxy configuration breach: Dev issuer address rejected in production mode");
+  }
+
+  // Reject default development pepper outside test mode
+  const devPepper = "default-dev-pepper-do-not-use-in-prod";
+  if (!config.testMode && config.credentialPepper === devPepper) {
+    throw new Error("Proxy configuration breach: Dev credential pepper rejected in production mode");
+  }
+
   const app = express();
   
-  // Explicitly configure 'trust proxy' to false to prevent ip address spoofing
   app.set("trust proxy", false);
   app.disable("x-powered-by");
 
-  // Route-specific CORS allowlist instead of global wildcard
   const corsOptions = {
     origin: (origin, callback) => {
       if (!origin) {
@@ -222,7 +266,6 @@ function createApp(supabaseClient) {
   app.use(cors(corsOptions));
   app.use(express.json());
   
-  // Security and Cache-Control Headers Middleware
   app.use((req, res, next) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.setHeader("Pragma", "no-cache");
@@ -234,7 +277,7 @@ function createApp(supabaseClient) {
   });
 
   app.get("/health", (req, res) => {
-    res.status(200).json({ status: "healthy" });
+    res.status(200).json({ status: "healthy", proxyAddress: config.proxyAddress });
   });
 
   app.post("/api/voters/register", rateLimiter(100, 15 * 60 * 1000), originCheck, async (req, res) => {
@@ -245,10 +288,12 @@ function createApp(supabaseClient) {
         roundId,
         credentialHash,
         policyVersion,
-        nonce,
+        clientNonce,
         expiresAt,
         signature,
-        issuerSignature
+        issuerSignature,
+        relayerNonce,
+        relayerDeadline
       } = req.body;
 
       if (
@@ -257,88 +302,102 @@ function createApp(supabaseClient) {
         !roundId ||
         !credentialHash ||
         !policyVersion ||
-        !nonce ||
+        !clientNonce ||
         !expiresAt ||
         !signature ||
-        !issuerSignature
+        !issuerSignature ||
+        relayerNonce === undefined ||
+        relayerDeadline === undefined
       ) {
-        return res.status(400).json({ error: "Missing required signature registration fields" });
+        return res.status(400).json({ error: "Invalid registration signature payload" });
+      }
+
+      // Chain ID & Round ID Check (domain containment)
+      if (Number(chainId) !== Number(config.chainId) || roundId.toString() !== config.roundId.toString()) {
+        return res.status(400).json({ error: "Invalid registration signature payload" });
       }
 
       // Check credential hash format
       const hexRegex = /^(0x)?[0-9a-fA-F]{64}$/;
       if (!hexRegex.test(credentialHash)) {
-        return res.status(400).json({ error: "Invalid credential hash format" });
+        return res.status(400).json({ error: "Invalid registration signature payload" });
       }
 
-      // Validate policy version strictly
+      // Validate policy version string
       if (!allowedPolicyVersions.has(policyVersion)) {
-        return res.status(400).json({ error: "Unsupported policy version" });
+        return res.status(400).json({ error: "Invalid registration signature payload" });
       }
 
       // Expiry validation & maximum signature lifetime bounds
       const expiresTime = new Date(expiresAt).getTime();
       if (isNaN(expiresTime)) {
-        return res.status(400).json({ error: "Invalid expiration format" });
+        return res.status(400).json({ error: "Invalid registration signature payload" });
       }
 
       const now = Date.now();
-      const maxAllowedExpiry = now + 15 * 60 * 1000; // max 15 minutes in the future
-      if (expiresTime <= now) {
-        return res.status(401).json({ error: "Signature expiration has passed" });
-      }
-      if (expiresTime > maxAllowedExpiry) {
-        return res.status(400).json({ error: "Signature expiration exceeds maximum permitted lifetime" });
+      const maxAllowedExpiry = now + 15 * 60 * 1000;
+      if (expiresTime <= now || expiresTime > maxAllowedExpiry) {
+        return res.status(401).json({ error: "Invalid registration signature payload" });
       }
 
-      // EIP-191 Signature Verification (FIRST before database/nonce operations)
+      // Relayer signature deadline check
+      const deadlineMs = Number(relayerDeadline) * 1000;
+      if (deadlineMs <= now) {
+        return res.status(401).json({ error: "Invalid registration signature payload" });
+      }
+
+      // 1. Voter EIP-191 Signature Verification
       try {
         verifyRegisterSignature({
-          chainId,
-          roundId,
+          config,
           walletAddress,
           credentialHash,
           policyVersion,
-          nonce,
+          clientNonce,
           expiresAt,
           signature
         });
       } catch (err) {
-        return res.status(401).json({ error: err.message });
+        return res.status(401).json({ error: "Invalid registration signature payload" });
       }
 
-      // Verify that the credential is signed and approved by the trusted issuer
+      // 2. Relayer EIP-712 Signature Verification
       try {
-        const isApproved = verifyIssuerSignature({
+        verifyRelayerSignature({
+          config,
           walletAddress,
           credentialHash,
           policyVersion,
+          relayerNonce,
+          relayerDeadline,
           issuerSignature
         });
-        if (!isApproved) {
-          return res.status(401).json({ error: "Unauthorized: credential is not approved by a trusted issuer" });
-        }
       } catch (err) {
-        return res.status(401).json({ error: "Issuer signature verification failed: " + err.message });
+        return res.status(401).json({ error: "Invalid registration signature payload" });
       }
 
-      // Replay Protection: Durable, atomic unique-key check using DB insert
-      const nonceKey = `${walletAddress.toLowerCase()}:${nonce}`;
-      const { error: nonceErr } = await supabaseClient
+      // Check if nonce is ALREADY consumed BEFORE executing state updates (Fast Replay Protection)
+      const nonceKey = `${walletAddress.toLowerCase()}:${clientNonce}`;
+      const { data: existingNonce, error: nonceCheckErr } = await supabaseClient
         .from("consumed_nonces")
-        .insert({ nonce_key: nonceKey });
+        .select("nonce_key")
+        .eq("nonce_key", nonceKey)
+        .maybeSingle();
 
-      if (nonceErr) {
-        // Distinguish actual unique constraint replay conflict from other database failures
-        if (nonceErr.code === "23505" || nonceErr.message.includes("Duplicate key") || nonceErr.message.includes("unique")) {
-          return res.status(401).json({ error: "Replay attempt detected: nonce has already been used" });
-        }
-        console.error("Supabase nonce insert error:", nonceErr);
+      if (nonceCheckErr) {
+        console.error("Supabase nonce check error:", nonceCheckErr);
         return res.status(500).json({ error: "Database transaction failed" });
       }
 
-      // Blind the stable credential hash to prevent correlation leakage in the database
-      const blindedCredential = sha256(credentialHash);
+      if (existingNonce) {
+        return res.status(401).json({ error: "Invalid registration signature payload" });
+      }
+
+      // Salted HMAC Blinded Credential
+      const blindedCredential = crypto
+        .createHmac("sha256", config.credentialPepper)
+        .update(credentialHash)
+        .digest("hex");
 
       // Database Sync
       const { data: existingProfile, error: profileErr } = await supabaseClient
@@ -349,13 +408,13 @@ function createApp(supabaseClient) {
 
       if (profileErr) {
         console.error("Supabase profile check error:", profileErr);
-        return res.status(500).json({ error: "Database profile verification failed" });
+        return res.status(500).json({ error: "Database transaction failed" });
       }
 
       let userId;
 
       if (!existingProfile) {
-        // Create synthetic user account to satisfy DB constraints
+        // Idempotent synthetic user creation/lookup saga
         const syntheticEmail = `${walletAddress.toLowerCase()}@fiduciary.commons`;
         const { data: newUser, error: createErr } = await supabaseClient.auth.admin.createUser({
           email: syntheticEmail,
@@ -364,12 +423,27 @@ function createApp(supabaseClient) {
         });
 
         if (createErr) {
-          console.error("Supabase user create error:", createErr);
-          return res.status(500).json({ error: "Database user creation failed" });
+          // If user exists due to partial failure, resolve user ID via listUsers
+          if (createErr.message.includes("already exists") || createErr.status === 422) {
+            const { data: users, error: listErr } = await supabaseClient.auth.admin.listUsers();
+            if (listErr) {
+              console.error("List users error during recovery:", listErr);
+              return res.status(500).json({ error: "Database transaction failed" });
+            }
+            const existingUser = users.users.find(u => u.email === syntheticEmail);
+            if (!existingUser) {
+              return res.status(500).json({ error: "Database transaction failed" });
+            }
+            userId = existingUser.id;
+          } else {
+            console.error("Supabase user create error:", createErr);
+            return res.status(500).json({ error: "Database transaction failed" });
+          }
+        } else {
+          userId = newUser.user.id;
         }
-        userId = newUser.user.id;
 
-        // Create the voter profile with blinded metadata
+        // Insert profile
         const { error: insertErr } = await supabaseClient
           .from("voter_profiles")
           .insert({
@@ -380,12 +454,12 @@ function createApp(supabaseClient) {
 
         if (insertErr) {
           console.error("Supabase voter profile insert error:", insertErr);
-          return res.status(500).json({ error: "Database profile registration failed" });
+          return res.status(500).json({ error: "Database transaction failed" });
         }
       } else {
         userId = existingProfile.id;
 
-        // Update existing profile with blinded metadata
+        // Update existing profile
         const { error: updateErr } = await supabaseClient
           .from("voter_profiles")
           .update({
@@ -395,14 +469,24 @@ function createApp(supabaseClient) {
 
         if (updateErr) {
           console.error("Supabase voter profile update error:", updateErr);
-          return res.status(500).json({ error: "Database profile update failed" });
+          return res.status(500).json({ error: "Database transaction failed" });
         }
+      }
+
+      // Durable Nonce Consumption (COMMITTED AT THE VERY END OF STATE SYNC FLOW)
+      const { error: nonceErr } = await supabaseClient
+        .from("consumed_nonces")
+        .insert({ nonce_key: nonceKey });
+
+      if (nonceErr) {
+        console.error("Supabase nonce insert error at commit time:", nonceErr);
+        return res.status(500).json({ error: "Database transaction failed" });
       }
 
       res.status(200).json({ success: true, userId });
     } catch (err) {
       console.error("Register endpoint failure:", err);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Database transaction failed" });
     }
   });
 
@@ -427,37 +511,35 @@ function createApp(supabaseClient) {
         !signature ||
         !body
       ) {
-        return res.status(400).json({ error: "Missing required signature relay intake fields" });
+        return res.status(400).json({ error: "Invalid relay signature" });
       }
 
-      // Expiry validation & maximum signature lifetime bounds
+      // Domain check
+      if (Number(chainId) !== Number(config.chainId) || roundId.toString() !== config.roundId.toString()) {
+        return res.status(400).json({ error: "Invalid relay signature" });
+      }
+
       const expiresTime = new Date(expiresAt).getTime();
       if (isNaN(expiresTime)) {
-        return res.status(400).json({ error: "Invalid expiration format" });
+        return res.status(400).json({ error: "Invalid relay signature" });
       }
 
       const now = Date.now();
       const maxAllowedExpiry = now + 15 * 60 * 1000;
-      if (expiresTime <= now) {
-        return res.status(401).json({ error: "Signature expiration has passed" });
-      }
-      if (expiresTime > maxAllowedExpiry) {
-        return res.status(400).json({ error: "Signature expiration exceeds maximum permitted lifetime" });
+      if (expiresTime <= now || expiresTime > maxAllowedExpiry) {
+        return res.status(401).json({ error: "Invalid relay signature" });
       }
 
-      // Enforce strict recursive allowlist check (reject any forbidden or unknown files/fields)
       if (!validateRelayIntakeBody(body)) {
-        return res.status(400).json({ error: "Forbidden or malformed fields detected in relay intake" });
+        return res.status(400).json({ error: "Invalid relay signature" });
       }
 
-      // Verify EIP-191 signature over payload hash (FIRST before database/nonce operations)
       const payloadString = JSON.stringify(body);
       const payloadHash = "0x" + sha256(payloadString);
 
       try {
         verifyRelaySignature({
-          chainId,
-          roundId,
+          config,
           walletAddress,
           payloadHash,
           nonce,
@@ -465,31 +547,41 @@ function createApp(supabaseClient) {
           signature
         });
       } catch (err) {
-        return res.status(401).json({ error: err.message });
+        return res.status(401).json({ error: "Invalid relay signature" });
       }
 
-      // Replay Protection: Durable, atomic unique-key check using DB insert
+      // Check nonce state
       const nonceKey = `${walletAddress.toLowerCase()}:${nonce}`;
+      const { data: existingNonce, error: nonceCheckErr } = await supabaseClient
+        .from("consumed_nonces")
+        .select("nonce_key")
+        .eq("nonce_key", nonceKey)
+        .maybeSingle();
+
+      if (nonceCheckErr) {
+        return res.status(500).json({ error: "Database transaction failed" });
+      }
+
+      if (existingNonce) {
+        return res.status(401).json({ error: "Invalid relay signature" });
+      }
+
+      // Nonce commit at the end
       const { error: nonceErr } = await supabaseClient
         .from("consumed_nonces")
         .insert({ nonce_key: nonceKey });
 
       if (nonceErr) {
-        if (nonceErr.code === "23505" || nonceErr.message.includes("Duplicate key") || nonceErr.message.includes("unique")) {
-          return res.status(401).json({ error: "Replay attempt detected: nonce has already been used" });
-        }
-        console.error("Supabase nonce insert error:", nonceErr);
         return res.status(500).json({ error: "Database transaction failed" });
       }
 
-      res.status(200).json({ success: true, message: "Relay batch accepted for review, pending settlement verification." });
+      res.status(200).json({ success: true });
     } catch (err) {
       console.error("Relay intake endpoint failure:", err);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Database transaction failed" });
     }
   });
 
-  // Global Error Handler for CORS block to return 403 on Origin/CORS errors
   app.use((err, req, res, next) => {
     if (err && err.message === "Null Origin not permitted") {
       return res.status(403).json({ error: "CORS policy violation: null origin not permitted" });
