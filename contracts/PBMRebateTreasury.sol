@@ -1002,35 +1002,37 @@ contract PBMRebateTreasury is
         onlyRole(COUNCIL_ROLE)
         whenNotPaused
     {
+        // --- 1. CHECKS ---
         if (evidenceHash == bytes32(0)) revert ZeroEvidenceHash();
+        
         uint256 amount = flaggedAmount[epoch][pharmacy];
         if (amount == 0) revert NoFlaggedClaim();
 
         bool isExclusion = isExclusionDispute[epoch][pharmacy];
 
-        if (isExclusion && resolution != DisputeResolution.DISMISS) {
-            if (!exclusionApproved[epoch][pharmacy]) revert ExclusionApprovalRequired();
-            if (resolution == DisputeResolution.SEND_TO_PATIENT_FUND) revert InvalidExclusionResolution();
-
-            uint256 newEpochTotal = epochClaimedTotal[epoch] + amount;
-            if (newEpochTotal > dailyVolumeCap)        revert DailyCapExceeded();
-            if (newEpochTotal > hardAbsoluteVolumeCap) revert HardCapExceeded();
-            if (exclusionRemediationReserve < amount)  revert InsufficientExclusionReserve();
+        if (isExclusion) {
+            if (resolution == DisputeResolution.SEND_TO_PATIENT_FUND) {
+                revert InvalidExclusionResolution();
+            }
+            if (resolution == DisputeResolution.RELEASE_TO_PHARMACY) {
+                if (!exclusionApproved[epoch][pharmacy]) revert ExclusionApprovalRequired();
+                
+                uint256 newEpochTotal = epochClaimedTotal[epoch] + amount;
+                if (newEpochTotal > dailyVolumeCap)        revert DailyCapExceeded();
+                if (newEpochTotal > hardAbsoluteVolumeCap) revert HardCapExceeded();
+                if (exclusionRemediationReserve < amount)  revert InsufficientExclusionReserve();
+            }
         }
 
-        // Effects first
+        // --- 2. EFFECTS ---
         flaggedAmount[epoch][pharmacy] = 0;
         disputeFlaggedTimestamp[epoch][pharmacy] = 0;
+
         if (isExclusion) {
             isExclusionDispute[epoch][pharmacy] = false;
             exclusionApproved[epoch][pharmacy] = false;
-            totalFlaggedExclusion               -= amount;
-        } else {
-            totalFlaggedNormal                  -= amount;
-        }
+            totalFlaggedExclusion -= amount;
 
-        // Interactions after state is settled
-        if (isExclusion) {
             if (resolution == DisputeResolution.RELEASE_TO_PHARMACY) {
                 exclusionRemediationReserve -= amount;
                 epochClaimedTotal[epoch] += amount;
@@ -1039,30 +1041,14 @@ contract PBMRebateTreasury is
                 if (epoch == currentEpoch) {
                     epochVolume += amount;
                 }
-
-                uint256 patientShare  = (amount * patientClaimBP) / BP_DENOM;
-                uint256 netToPharmacy = amount - patientShare;
-
-                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
-                token.safeTransfer(patientFund, patientShare);
-                token.safeTransfer(pharmacy,    netToPharmacy);
             } else { // DISMISS
-                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
-                // No funds were locked, so no transfer occurs
+                // Reset hasClaimed to allow re-filing or normal claims in the future
+                hasClaimed[epoch][pharmacy] = false;
             }
-        } else { // Normal dispute
-            if (resolution == DisputeResolution.RELEASE_TO_PHARMACY) {
-                uint256 patientShare  = (amount * patientClaimBP) / BP_DENOM;
-                uint256 netToPharmacy = amount - patientShare;
+        } else { // Normal proof-backed dispute
+            totalFlaggedNormal -= amount;
 
-                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
-                token.safeTransfer(patientFund, patientShare);
-                token.safeTransfer(pharmacy,    netToPharmacy);
-            } else if (resolution == DisputeResolution.SEND_TO_PATIENT_FUND) {
-                emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
-                token.safeTransfer(patientFund, amount);
-            } else { // DISMISS
-                // Correct volume and claimed total metrics to free volume caps
+            if (resolution == DisputeResolution.DISMISS) {
                 epochClaimedTotal[epoch] -= amount;
                 epochRootClaimedTotal[epoch] -= amount;
                 pharmacyClaimedThisEpoch[epoch][pharmacy] -= amount;
@@ -1070,17 +1056,29 @@ contract PBMRebateTreasury is
                     epochVolume -= amount;
                 }
 
-                if (epochRecalled[epoch]) {
-                    // Unclaimed funds have already been recalled.
-                    // Directly send this dismissed amount to the patientFund to prevent permanent locking.
-                    emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
-                    token.safeTransfer(patientFund, amount);
-                } else {
-                    // Return funds back to epochEscrow
+                if (!epochRecalled[epoch]) {
                     epochEscrow[epoch] += amount;
                     totalEscrowed      += amount;
-                    emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
                 }
+            }
+        }
+
+        emit ClaimResolved(epoch, pharmacy, amount, resolution, isExclusion, evidenceHash);
+
+        // --- 3. INTERACTIONS ---
+        if (resolution == DisputeResolution.RELEASE_TO_PHARMACY) {
+            uint256 patientShare  = (amount * patientClaimBP) / BP_DENOM;
+            uint256 netToPharmacy = amount - patientShare;
+
+            token.safeTransfer(patientFund, patientShare);
+            token.safeTransfer(pharmacy,    netToPharmacy);
+        } else if (resolution == DisputeResolution.SEND_TO_PATIENT_FUND) {
+            // This path only executes for normal disputes (exclusion revert in CHECKS)
+            token.safeTransfer(patientFund, amount);
+        } else if (resolution == DisputeResolution.DISMISS) {
+            // If normal dispute was already recalled, transfer the dismissed amount to patientFund
+            if (!isExclusion && epochRecalled[epoch]) {
+                token.safeTransfer(patientFund, amount);
             }
         }
     }

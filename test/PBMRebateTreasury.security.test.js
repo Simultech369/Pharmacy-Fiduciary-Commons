@@ -851,6 +851,14 @@ describe("PBMRebateTreasury security baseline", function () {
     await treasury.connect(council).resolveClaim(0, attacker.address, 2, evidenceHash("dismiss-attacker")); // DISMISS is enum val 2
     expect(await treasury.flaggedAmount(0, attacker.address)).to.equal(0n);
     expect(await treasury.isExclusionDispute(0, attacker.address)).to.be.false;
+    expect(await treasury.hasClaimed(0, attacker.address)).to.be.false;
+
+    // Verify they can flag it again since hasClaimed was reset to false
+    await treasury.connect(attacker).flagExclusion(0, toWei("50"), evidenceHash("exclusion-attacker-retry"));
+    expect(await treasury.hasClaimed(0, attacker.address)).to.be.true;
+    // Dismiss again to clean up
+    await treasury.connect(council).resolveClaim(0, attacker.address, 2, evidenceHash("dismiss-attacker-retry"));
+    expect(await treasury.hasClaimed(0, attacker.address)).to.be.false;
 
     // 3. Flag exclusion again; council cannot pay it without independent approval.
     await treasury.connect(depositor).flagExclusion(0, toWei("50"), evidenceHash("exclusion-depositor"));
