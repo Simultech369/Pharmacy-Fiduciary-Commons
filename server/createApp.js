@@ -7,7 +7,10 @@ function sha256(data) {
   return crypto.createHash("sha256").update(data).digest("hex");
 }
 
-const allowedPolicyVersions = new Set(["fiduciary-credential-policy-v1"]);
+const allowedPolicyVersions = new Set([
+  "fiduciary-credential-policy-v1",
+  ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v1"))
+]);
 
 // Strict allowlist validation schema for relay intake body
 const allowedIntakeKeys = new Set(["roundId", "nullifier", "projectId", "proofRequired", "proof"]);
@@ -71,12 +74,11 @@ function verifyRelayerSignature({
   config,
   walletAddress,
   credentialHash,
-  policyVersion,
+  policyVersionBytes,
   relayerNonce,
   relayerDeadline,
   issuerSignature
 }) {
-  const policyVersionBytes = ethers.keccak256(ethers.toUtf8Bytes(policyVersion));
   const acceptedPolicyVersionHash = ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v1"));
 
   if (policyVersionBytes !== acceptedPolicyVersionHash) {
@@ -234,13 +236,13 @@ function createApp(supabaseClient, config = {}) {
 
   // Reject well-known Hardhat Account 0 as Relayer outside test mode
   const devIssuer = "0xF39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-  if (!config.testMode && config.trustedCredentialIssuer.toLowerCase() === devIssuer.toLowerCase()) {
+  if (config.testMode !== true && config.trustedCredentialIssuer.toLowerCase() === devIssuer.toLowerCase()) {
     throw new Error("Proxy configuration breach: Dev issuer address rejected in production mode");
   }
 
   // Reject default development pepper outside test mode
   const devPepper = "default-dev-pepper-do-not-use-in-prod";
-  if (!config.testMode && config.credentialPepper === devPepper) {
+  if (config.testMode !== true && config.credentialPepper === devPepper) {
     throw new Error("Proxy configuration breach: Dev credential pepper rejected in production mode");
   }
 
@@ -281,21 +283,23 @@ function createApp(supabaseClient, config = {}) {
   });
 
   app.post("/api/voters/register", rateLimiter(100, 15 * 60 * 1000), originCheck, async (req, res) => {
-    try {
-      const {
-        walletAddress,
-        chainId,
-        roundId,
-        credentialHash,
-        policyVersion,
-        clientNonce,
-        expiresAt,
-        signature,
-        issuerSignature,
-        relayerNonce,
-        relayerDeadline
-      } = req.body;
+    const {
+      walletAddress,
+      chainId,
+      roundId,
+      credentialHash,
+      policyVersion,
+      clientNonce,
+      expiresAt,
+      signature,
+      issuerSignature,
+      relayerNonce,
+      relayerDeadline
+    } = req.body;
 
+    const nonceKey = `${walletAddress ? walletAddress.toLowerCase() : ""}:${clientNonce}`;
+
+    try {
       if (
         !walletAddress ||
         !chainId ||
@@ -323,10 +327,15 @@ function createApp(supabaseClient, config = {}) {
         return res.status(400).json({ error: "Invalid registration signature payload" });
       }
 
-      // Validate policy version string
+      // Validate policy version string or bytes32 hash
       if (!allowedPolicyVersions.has(policyVersion)) {
         return res.status(400).json({ error: "Invalid registration signature payload" });
       }
+
+      // Convert policy version to bytes32 format for standard EIP-712 verification
+      const policyVersionBytes = policyVersion.startsWith("0x")
+        ? policyVersion
+        : ethers.keccak256(ethers.toUtf8Bytes(policyVersion));
 
       // Expiry validation & maximum signature lifetime bounds
       const expiresTime = new Date(expiresAt).getTime();
@@ -367,7 +376,7 @@ function createApp(supabaseClient, config = {}) {
           config,
           walletAddress,
           credentialHash,
-          policyVersion,
+          policyVersionBytes,
           relayerNonce,
           relayerDeadline,
           issuerSignature
@@ -376,56 +385,37 @@ function createApp(supabaseClient, config = {}) {
         return res.status(401).json({ error: "Invalid registration signature payload" });
       }
 
-      // --- IDEMPOTENT REQUEST LEDGER RESERVATION ---
-      const nonceKey = `${walletAddress.toLowerCase()}:${clientNonce}`;
+      // --- ATOMIC DATABASE LEDGER TRANSACTION CLAIM ---
       const requestHash = sha256(JSON.stringify(req.body));
+      const { data: ledgerRes, error: rpcErr } = await supabaseClient.rpc("register_voter_ledger_start", {
+        p_nonce_key: nonceKey,
+        p_request_hash: requestHash
+      });
 
-      const { data: ledgerRecord, error: ledgerGetErr } = await supabaseClient
-        .from("registration_ledger")
-        .select("*")
-        .eq("nonce_key", nonceKey)
-        .maybeSingle();
-
-      if (ledgerGetErr) {
-        console.error("Ledger lookup failure:", ledgerGetErr);
+      if (rpcErr) {
+        console.error("Ledger start RPC failure:", rpcErr);
         return res.status(500).json({ error: "Database transaction failed" });
       }
 
-      if (ledgerRecord) {
-        // Mismatched retry check: same nonce with different payload is rejected as replay/tamper
-        if (ledgerRecord.request_hash !== requestHash) {
-          return res.status(401).json({ error: "Invalid registration signature payload" });
-        }
-        
-        // Exact retry check of already completed registration: return success instantly
-        if (ledgerRecord.status === "completed") {
-          return res.status(200).json({ success: true, userId: ledgerRecord.user_id });
-        }
+      const ledger = ledgerRes && ledgerRes[0];
+      if (!ledger) {
+        return res.status(500).json({ error: "Database transaction failed" });
+      }
 
-        // Concurrent same-nonce submission check
-        if (ledgerRecord.status === "pending") {
-          const elapsed = Date.now() - new Date(ledgerRecord.created_at).getTime();
-          if (elapsed < 10000) {
-            return res.status(429).json({ error: "Too many requests, please try again later" });
-          }
-        }
-      } else {
-        // Reserve the operation atomically in the ledger
-        const { error: ledgerInsertErr } = await supabaseClient
-          .from("registration_ledger")
-          .insert({
-            nonce_key: nonceKey,
-            request_hash: requestHash,
-            status: "pending"
-          });
+      if (ledger.status === "mismatch") {
+        return res.status(401).json({ error: "Invalid registration signature payload" });
+      }
 
-        if (ledgerInsertErr) {
-          // Race condition check: another concurrent request inserted first
-          return res.status(401).json({ error: "Invalid registration signature payload" });
-        }
+      if (ledger.status === "completed") {
+        return res.status(200).json({ success: true, userId: ledger.user_id });
+      }
+
+      if (ledger.status === "pending") {
+        return res.status(429).json({ error: "Too many requests, please try again later" });
       }
 
       // Salted HMAC Blinded Credential
+      // Privacy Note: The database operator can still correlate if the pepper is compromised.
       const blindedCredential = crypto
         .createHmac("sha256", config.credentialPepper)
         .update(credentialHash)
@@ -440,7 +430,7 @@ function createApp(supabaseClient, config = {}) {
 
       if (profileErr) {
         console.error("Supabase profile check error:", profileErr);
-        await supabaseClient.from("registration_ledger").update({ status: "failed" }).eq("nonce_key", nonceKey);
+        await supabaseClient.rpc("register_voter_ledger_fail", { p_nonce_key: nonceKey });
         return res.status(500).json({ error: "Database transaction failed" });
       }
 
@@ -461,18 +451,18 @@ function createApp(supabaseClient, config = {}) {
             const { data: users, error: listErr } = await supabaseClient.auth.admin.listUsers();
             if (listErr) {
               console.error("List users error during recovery:", listErr);
-              await supabaseClient.from("registration_ledger").update({ status: "failed" }).eq("nonce_key", nonceKey);
+              await supabaseClient.rpc("register_voter_ledger_fail", { p_nonce_key: nonceKey });
               return res.status(500).json({ error: "Database transaction failed" });
             }
             const existingUser = users.users.find(u => u.email === syntheticEmail);
             if (!existingUser) {
-              await supabaseClient.from("registration_ledger").update({ status: "failed" }).eq("nonce_key", nonceKey);
+              await supabaseClient.rpc("register_voter_ledger_fail", { p_nonce_key: nonceKey });
               return res.status(500).json({ error: "Database transaction failed" });
             }
             userId = existingUser.id;
           } else {
             console.error("Supabase user create error:", createErr);
-            await supabaseClient.from("registration_ledger").update({ status: "failed" }).eq("nonce_key", nonceKey);
+            await supabaseClient.rpc("register_voter_ledger_fail", { p_nonce_key: nonceKey });
             return res.status(500).json({ error: "Database transaction failed" });
           }
         } else {
@@ -490,7 +480,7 @@ function createApp(supabaseClient, config = {}) {
 
         if (insertErr) {
           console.error("Supabase voter profile insert error:", insertErr);
-          await supabaseClient.from("registration_ledger").update({ status: "failed" }).eq("nonce_key", nonceKey);
+          await supabaseClient.rpc("register_voter_ledger_fail", { p_nonce_key: nonceKey });
           return res.status(500).json({ error: "Database transaction failed" });
         }
       } else {
@@ -506,16 +496,16 @@ function createApp(supabaseClient, config = {}) {
 
         if (updateErr) {
           console.error("Supabase voter profile update error:", updateErr);
-          await supabaseClient.from("registration_ledger").update({ status: "failed" }).eq("nonce_key", nonceKey);
+          await supabaseClient.rpc("register_voter_ledger_fail", { p_nonce_key: nonceKey });
           return res.status(500).json({ error: "Database transaction failed" });
         }
       }
 
       // --- FINALISE REQUEST LEDGER STATUS (COMMIT) ---
-      const { error: finalErr } = await supabaseClient
-        .from("registration_ledger")
-        .update({ status: "completed", user_id: userId })
-        .eq("nonce_key", nonceKey);
+      const { error: finalErr } = await supabaseClient.rpc("register_voter_ledger_complete", {
+        p_nonce_key: nonceKey,
+        p_user_id: userId
+      });
 
       if (finalErr) {
         console.error("Supabase ledger commit error:", finalErr);
@@ -525,6 +515,9 @@ function createApp(supabaseClient, config = {}) {
       res.status(200).json({ success: true, userId });
     } catch (err) {
       console.error("Register endpoint failure:", err);
+      if (nonceKey) {
+        await supabaseClient.rpc("register_voter_ledger_fail", { p_nonce_key: nonceKey }).catch(() => {});
+      }
       res.status(500).json({ error: "Database transaction failed" });
     }
   });

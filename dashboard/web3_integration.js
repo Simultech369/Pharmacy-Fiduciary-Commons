@@ -468,80 +468,110 @@ async function registerWithSignature() {
     updateVoterUI(isReg);
 
     // Sync voter profile to the server database proxy
-    try {
-      console.log("Syncing voter profile to proxy database...");
-      
-      const clientNonce = (typeof crypto.randomUUID === "function") 
-        ? crypto.randomUUID() 
-        : Math.random().toString(36).substring(2, 15);
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-      const network = await provider.getNetwork();
-      const chainId = network.chainId.toString();
+    window.savedRegistrationParams = {
+      credentialHash,
+      policyVersion,
+      deadline,
+      signature,
+      nonce
+    };
 
-      // Retrieve proxy config dynamically to obtain the configured proxyAddress
-      let proxyAddress = "0x1111111111111111111111111111111111111111"; // Default dev address fallback
-      try {
-        const healthResponse = await fetch("http://localhost:3000/health");
-        if (healthResponse.ok) {
-          const healthData = await healthResponse.json();
-          if (healthData.proxyAddress) {
-            proxyAddress = healthData.proxyAddress;
-          }
-        }
-      } catch (err) {
-        console.warn("Could not query proxyAddress from health check, falling back:", err.message);
-      }
-
-      const canonicalString = [
-        `Pharmacy Fiduciary Commons Database Proxy`,
-        `Version: 1`,
-        `Action: register-voter`,
-        `Proxy Address: ${proxyAddress.toLowerCase()}`,
-        `Chain ID: ${chainId}`,
-        `Round ID: ${activeRoundId.toString()}`,
-        `Wallet: ${userAddress.toLowerCase()}`,
-        `Credential Hash: ${credentialHash}`,
-        `Policy Version: ${policyVersion}`,
-        `Client Nonce: ${clientNonce}`,
-        `Expires At: ${expiresAt}`
-      ].join("\n");
-
-      const signer = await provider.getSigner();
-      const clientSignature = await signer.signMessage(canonicalString);
-
-      const relayerNonce = nonce !== undefined ? Number(nonce) : 0;
-
-      const response = await fetch("http://localhost:3000/api/voters/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress: userAddress,
-          chainId: Number(chainId),
-          roundId: activeRoundId.toString(),
-          credentialHash,
-          policyVersion,
-          clientNonce,
-          expiresAt,
-          signature: clientSignature,
-          issuerSignature: signature,
-          relayerNonce,
-          relayerDeadline: Number(deadline)
-        })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || "Proxy sync failed");
-      }
-      console.log("Voter profile successfully synced to database via proxy.");
-    } catch (dbErr) {
-      console.warn("Database sync warning (continuing local flow):", dbErr.message);
-    }
-
-
+    await window.syncProxyProfile();
   } catch (e) {
     console.error("Self-registration transaction failed:", e);
     alert("Registration failed: " + (e.reason || e.message));
+  }
+}
+
+window.syncProxyProfile = async function() {
+  const statusEl = document.getElementById("db-sync-status");
+  if (!statusEl) return;
+
+  statusEl.style.display = "block";
+  statusEl.style.color = "var(--text-muted)";
+  statusEl.innerHTML = "Syncing voter profile to proxy database...";
+
+  try {
+    const { credentialHash, policyVersion, deadline, signature, nonce } = window.savedRegistrationParams;
+    const clientNonce = (typeof crypto.randomUUID === "function") 
+      ? crypto.randomUUID() 
+      : Math.random().toString(36).substring(2, 15);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    const network = await provider.getNetwork();
+    const chainId = network.chainId.toString();
+
+    // Retrieve proxy config dynamically to obtain the configured proxyAddress
+    let proxyAddress = "0x1111111111111111111111111111111111111111"; // Default dev address fallback
+    try {
+      const healthResponse = await fetch("http://localhost:3000/health");
+      if (healthResponse.ok) {
+        const healthData = await healthResponse.json();
+        if (healthData.proxyAddress) {
+          proxyAddress = healthData.proxyAddress;
+        }
+      }
+    } catch (err) {
+      console.warn("Could not query proxyAddress from health check, falling back:", err.message);
+    }
+
+    // Ensure policyVersion is passed as literal policy string or bytes32 representation
+    // If the relayer output includes policyVersion as bytes32, we pass it directly.
+    // If it's the raw string "fiduciary-credential-policy-v1", we can also pass it.
+    // The contract expects bytes32. The relayer script output is already a bytes32 hex string.
+    const policyVersionStr = "fiduciary-credential-policy-v1";
+
+    const canonicalString = [
+      `Pharmacy Fiduciary Commons Database Proxy`,
+      `Version: 1`,
+      `Action: register-voter`,
+      `Proxy Address: ${proxyAddress.toLowerCase()}`,
+      `Chain ID: ${chainId}`,
+      `Round ID: ${activeRoundId.toString()}`,
+      `Wallet: ${userAddress.toLowerCase()}`,
+      `Credential Hash: ${credentialHash}`,
+      `Policy Version: ${policyVersionStr}`,
+      `Client Nonce: ${clientNonce}`,
+      `Expires At: ${expiresAt}`
+    ].join("\n");
+
+    const signer = await provider.getSigner();
+    const clientSignature = await signer.signMessage(canonicalString);
+
+    const relayerNonce = nonce !== undefined ? Number(nonce) : 0;
+
+    const response = await fetch("http://localhost:3000/api/voters/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        walletAddress: userAddress,
+        chainId: Number(chainId),
+        roundId: activeRoundId.toString(),
+        credentialHash,
+        policyVersion: policyVersionStr,
+        clientNonce,
+        expiresAt,
+        signature: clientSignature,
+        issuerSignature: signature,
+        relayerNonce,
+        relayerDeadline: Number(deadline)
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Proxy sync failed");
+    }
+
+    statusEl.style.color = "#4ade80"; // Light green
+    statusEl.innerHTML = "✅ Database profile successfully synced.";
+    setTimeout(() => {
+      statusEl.style.display = "none";
+    }, 5000);
+    console.log("Voter profile successfully synced to database via proxy.");
+  } catch (dbErr) {
+    console.error("Database sync failure:", dbErr.message);
+    statusEl.style.color = "#f87171"; // Light red
+    statusEl.innerHTML = `⚠️ Profile sync failed: ${dbErr.message}. <button class="btn-vote" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; background: var(--accent-purple);" onclick="window.syncProxyProfile()">Retry Sync</button>`;
   }
 }
 

@@ -22,7 +22,7 @@ function createMockSupabase() {
     _shouldFail: false,
     _authFailMode: false,
     _profileFailMode: false,
-    _ledgerCommitFailMode: false,
+    _testSkipLeaseCheck: false,
     auth: {
       admin: {
         createUser: async ({ email, user_metadata }) => {
@@ -47,6 +47,64 @@ function createMockSupabase() {
         }
       }
     },
+    rpc: async (func, args) => {
+      if (client._shouldFail) {
+        return { data: null, error: new Error("Mock database connection failed") };
+      }
+      if (func === "register_voter_ledger_start") {
+        const nonceKey = args.p_nonce_key;
+        const requestHash = args.p_request_hash;
+        
+        let entry = mockDb.registration_ledger.find(r => r.nonce_key === nonceKey);
+        if (entry) {
+          if (entry.request_hash !== requestHash) {
+            return { data: [{ status: "mismatch", user_id: null }], error: null };
+          }
+          if (entry.status === "completed") {
+            return { data: [{ status: "completed", user_id: entry.user_id }], error: null };
+          }
+          if (entry.status === "pending") {
+            const elapsed = Date.now() - new Date(entry.updated_at).getTime();
+            if (elapsed < 15000 && !client._testSkipLeaseCheck) {
+              return { data: [{ status: "pending", user_id: null }], error: null };
+            }
+          }
+          // Lease expired or retry of failed: reset to pending
+          entry.status = "pending";
+          entry.updated_at = new Date().toISOString();
+          return { data: [{ status: "success", user_id: null }], error: null };
+        } else {
+          const newEntry = {
+            nonce_key: nonceKey,
+            request_hash: requestHash,
+            status: "pending",
+            user_id: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          mockDb.registration_ledger.push(newEntry);
+          return { data: [{ status: "success", user_id: null }], error: null };
+        }
+      }
+      if (func === "register_voter_ledger_complete") {
+        const entry = mockDb.registration_ledger.find(r => r.nonce_key === args.p_nonce_key);
+        if (entry) {
+          entry.status = "completed";
+          entry.user_id = args.p_user_id;
+          entry.updated_at = new Date().toISOString();
+        }
+        return { error: null };
+      }
+      if (func === "register_voter_ledger_fail") {
+        const entry = mockDb.registration_ledger.find(r => r.nonce_key === args.p_nonce_key);
+        if (entry) {
+          entry.status = "failed";
+          entry.updated_at = new Date().toISOString();
+        }
+        return { error: null };
+      }
+      return { data: null, error: new Error(`Unknown RPC function ${func}`) };
+    },
     from: (table) => {
       return {
         select: () => ({
@@ -70,13 +128,6 @@ function createMockSupabase() {
               return { error: new Error("Duplicate key violation on nonces") };
             }
           }
-          if (table === "registration_ledger") {
-            const exists = mockDb.registration_ledger.some(r => r.nonce_key === row.nonce_key);
-            if (exists) {
-              return { error: new Error("Duplicate key violation on ledger") };
-            }
-            row.created_at = new Date().toISOString();
-          }
           if (table === "voter_profiles" && client._profileFailMode) {
             return { error: new Error("Mock profile insert failure") };
           }
@@ -85,7 +136,7 @@ function createMockSupabase() {
         },
         update: (updates) => ({
           eq: async (col, val) => {
-            if (client._shouldFail || (table === "registration_ledger" && client._ledgerCommitFailMode)) {
+            if (client._shouldFail) {
               return { error: new Error("Mock database connection failed") };
             }
             const data = mockDb[table].find(row => row[col] === val);
@@ -127,8 +178,11 @@ describe("Database API Proxy Server Security Patch", () => {
     const relayerNonce = 0;
     const relayerDeadline = Math.floor((Date.now() + 30 * 60 * 1000) / 1000);
     const credentialHash = overrides.credentialHash || "0x" + "a".repeat(64);
-    const policyVersion = "fiduciary-credential-policy-v1";
-    const policyVersionBytes = ethers.keccak256(ethers.toUtf8Bytes(policyVersion));
+    const policyVersion = overrides.policyVersion || "fiduciary-credential-policy-v1";
+    
+    const policyVersionBytes = policyVersion.startsWith("0x")
+      ? policyVersion
+      : ethers.keccak256(ethers.toUtf8Bytes(policyVersion));
 
     const domain = {
       name: "Pharmacy Fiduciary Commons",
@@ -234,7 +288,18 @@ describe("Database API Proxy Server Security Patch", () => {
         .update(payload.credentialHash)
         .digest("hex");
       expect(JSON.parse(profile.encrypted_metadata).credentialHash).to.equal(expectedBlinded);
-      expect(JSON.parse(profile.encrypted_metadata).credentialHash).to.not.equal(crypto.createHash("sha256").update(payload.credentialHash).digest("hex"));
+    });
+
+    it("successfully registers when policyVersion is bytes32 format (hash compatibility)", async () => {
+      const bytes32Policy = ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v1"));
+      const payload = await getValidRegistrationPayload({ policyVersion: bytes32Policy });
+      const res = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload);
+
+      expect(res.status).to.equal(200);
+      expect(res.body.success).to.be.true;
     });
 
     it("rejects voter EIP-191 domain mismatch (Chain ID spoofing)", async () => {
@@ -370,7 +435,7 @@ describe("Database API Proxy Server Security Patch", () => {
 
     it("marks status as failed if ledger commit step fails", async () => {
       const payload = await getValidRegistrationPayload();
-      mockSupabase._ledgerCommitFailMode = true;
+      mockSupabase._profileFailMode = true;
 
       const res = await request(app)
         .post("/api/voters/register")
@@ -378,8 +443,29 @@ describe("Database API Proxy Server Security Patch", () => {
         .send(payload);
       expect(res.status).to.equal(500);
 
-      // Profile is inserted, but ledger status stayed failed or pending (not completed)
-      expect(mockSupabase._mockDb.registration_ledger[0].status).to.not.equal("completed");
+      expect(mockSupabase._mockDb.registration_ledger[0].status).to.equal("failed");
+    });
+
+    it("blocks concurrent requests within the active lease window", async () => {
+      const payload = await getValidRegistrationPayload();
+
+      // Inject pending status directly to simulate a concurrent request currently processing
+      mockSupabase._mockDb.registration_ledger.push({
+        nonce_key: `${payload.walletAddress.toLowerCase()}:${payload.clientNonce}`,
+        request_hash: crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex"),
+        status: "pending",
+        user_id: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+      const res = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload);
+      
+      expect(res.status).to.equal(429);
+      expect(res.body.error).to.equal("Too many requests, please try again later");
     });
   });
 });

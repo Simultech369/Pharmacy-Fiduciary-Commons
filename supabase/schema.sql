@@ -203,3 +203,81 @@ CREATE OR REPLACE TRIGGER trg_verify_voucher_hmac
     BEFORE INSERT ON public.offline_vouchers
     FOR EACH ROW
     EXECUTE FUNCTION public.verify_voucher_hmac();
+
+
+-- 4. REGISTRATION LEDGER STATE MACHINE (PostgreSQL Locked Transaction Sagas)
+
+-- Atomically reserve or retrieve the state of a voter registration request
+CREATE OR REPLACE FUNCTION public.register_voter_ledger_start(
+    p_nonce_key VARCHAR(255),
+    p_request_hash VARCHAR(64)
+) RETURNS TABLE (
+    status VARCHAR(20),
+    user_id UUID
+) AS $$
+DECLARE
+    v_status VARCHAR(20);
+    v_user_id UUID;
+    v_hash VARCHAR(64);
+    v_created TIMESTAMP WITH TIME ZONE;
+    v_updated TIMESTAMP WITH TIME ZONE;
+BEGIN
+    -- Perform an atomic row-level lock on the specific nonce key
+    SELECT r.status, r.user_id, r.request_hash, r.created_at, r.updated_at
+    INTO v_status, v_user_id, v_hash, v_created, v_updated
+    FROM public.registration_ledger r
+    WHERE r.nonce_key = p_nonce_key
+    FOR UPDATE;
+
+    IF FOUND THEN
+        IF v_hash <> p_request_hash THEN
+            RETURN QUERY SELECT 'mismatch'::varchar, NULL::uuid;
+        ELSIF v_status = 'completed' THEN
+            RETURN QUERY SELECT 'completed'::varchar, v_user_id;
+        ELSIF v_status = 'pending' AND v_updated > timezone('utc'::text, now()) - INTERVAL '15 seconds' THEN
+            RETURN QUERY SELECT 'pending'::varchar, NULL::uuid;
+        ELSE
+            -- Lease expired or retry of failed attempt: set back to pending, refresh timestamp
+            UPDATE public.registration_ledger
+            SET status = 'pending',
+                updated_at = timezone('utc'::text, now())
+            WHERE nonce_key = p_nonce_key;
+            RETURN QUERY SELECT 'success'::varchar, NULL::uuid;
+        END IF;
+    ELSE
+        -- Insert initial ledger record
+        INSERT INTO public.registration_ledger (nonce_key, request_hash, status)
+        VALUES (p_nonce_key, p_request_hash, 'pending');
+        RETURN QUERY SELECT 'success'::varchar, NULL::uuid;
+    END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- Mark the ledger record as completed with the associated user ID
+CREATE OR REPLACE FUNCTION public.register_voter_ledger_complete(
+    p_nonce_key VARCHAR(255),
+    p_user_id UUID
+) RETURNS VOID AS $$
+BEGIN
+    UPDATE public.registration_ledger
+    SET status = 'completed',
+        user_id = p_user_id,
+        updated_at = timezone('utc'::text, now())
+    WHERE nonce_key = p_nonce_key;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- Mark the ledger record as failed
+CREATE OR REPLACE FUNCTION public.register_voter_ledger_fail(
+    p_nonce_key VARCHAR(255)
+) RETURNS VOID AS $$
+BEGIN
+    UPDATE public.registration_ledger
+    SET status = 'failed',
+        updated_at = timezone('utc'::text, now())
+    WHERE nonce_key = p_nonce_key;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
