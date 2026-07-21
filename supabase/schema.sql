@@ -57,6 +57,12 @@ CREATE TABLE IF NOT EXISTS public.reconciliation_runs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- E. Consumed Nonces (Durable atomic replay protection)
+CREATE TABLE IF NOT EXISTS public.consumed_nonces (
+    nonce_key VARCHAR(255) PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- Indices for performance and unique constraint enforcement
 CREATE INDEX IF NOT EXISTS idx_voter_profiles_wallet ON public.voter_profiles(wallet_address);
 CREATE INDEX IF NOT EXISTS idx_proposals_creator ON public.proposals(creator_id);
@@ -71,10 +77,11 @@ ALTER TABLE public.voter_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.offline_vouchers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reconciliation_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.consumed_nonces ENABLE ROW LEVEL SECURITY;
 
 -- A. Voter Profiles Policies
-CREATE POLICY "Voter profiles are viewable by everyone" ON public.voter_profiles
-    FOR SELECT USING (true);
+CREATE POLICY "Voter profiles are viewable only by the owner or service role" ON public.voter_profiles
+    FOR SELECT USING (auth.uid() = id OR auth.role() = 'service_role');
 
 CREATE POLICY "Users can insert their own profile" ON public.voter_profiles
     FOR INSERT WITH CHECK (auth.uid() = id);
@@ -121,6 +128,10 @@ CREATE POLICY "Only admins and service roles can view or run reconciliation logs
         (auth.jwt() -> 'app_metadata'::text ->> 'role') = 'admin' OR 
         auth.role() = 'service_role'
     );
+
+-- E. Consumed Nonces Policies
+CREATE POLICY "Only service roles can access consumed nonces" ON public.consumed_nonces
+    FOR ALL USING (auth.role() = 'service_role');
 
 
 -- 3. CRYPTOGRAPHIC VERIFICATION (PL/pgSQL Trigger)
