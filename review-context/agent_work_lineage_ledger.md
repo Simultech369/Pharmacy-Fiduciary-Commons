@@ -321,3 +321,30 @@ verification_lineage:
     - "contracts/PatientFundParticipatoryBudgeting.sol"
   invalidation_criteria: "If public signal order changes or host adapter verifyVoteProof signature alters without updating fixture gate."
 ```
+
+### Entry 007: Phase 1 Project-Scoped VoteNullifier Circuit Implementation
+```yaml
+entry_id: claim-phase1-vote-nullifier-circom-implementation
+source_model: Antigravity implementation plan / Codex
+source_claim: "Implement the project-scoped VoteNullifier Circom circuit with private credential/Merkle witness, public five-signal facade, Poseidon leaf/nullifier constraints, and test evidence."
+resolved_endpoint: "circuits/vote_nullifier.circom"
+endpoint_classification: static_schema
+credential_used: false
+provider_attempted: hardhat_static_and_constraint_model_test
+provider_succeeded: true
+receipt_persisted: false
+derived_from: actual_dispatch_attempt
+
+verification_lineage:
+  source_opinion: "Spec Gate A can advance from fixture-only to a concrete Phase 1 Circom circuit without exposing credentialSecret or Merkle path material as public signals."
+  verified_against_live_code: true
+  evidence: "HEAD before edits a7dea0cab5b5153ad15bf811568f12e6c9719fe0; npx hardhat test test/ZKNullifierCircuit.test.js passes 9/9; npx hardhat test test/ZKNullifierFixtureGate.test.js passes 22/22."
+  status: VERIFIED_AND_CLOSED
+  blocks_commit: false
+  dependent_artifacts:
+    - "circuits/vote_nullifier.circom"
+    - "test/ZKNullifierCircuit.test.js"
+    - "test/fixtures/projectScopedZKCircuitInterface.json"
+    - "review-context/project_scoped_zk_circuit_verifier_interface_spec.md"
+  invalidation_criteria: "If the circuit main public order differs from [roundId, projectId, domainSeparator, membershipRoot, nullifier], if credentialSecret or Merkle path material becomes public, if the nullifier Poseidon(4) or Merkle root equality constraint is removed, or if the verification tests fail."
+```
