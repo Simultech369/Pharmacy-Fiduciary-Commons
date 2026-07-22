@@ -712,10 +712,15 @@
     <div class="header-container">
       <div class="logo-section">
         <div class="logo-icon">F</div>
-        <div class="logo-text">Fiduciary Rebate Commons</div>
+        <div>
+          <div class="logo-text">Pharmacy Fiduciary Commons</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem;">Rebate Transparency & Participatory Budgeting Protocol</div>
+        </div>
       </div>
       <div style="display: flex; gap: 1rem; align-items: center;">
-        <span id="mock-badge" class="badge-unverified">⚠️ NOT AUDITED — MOCK ENVIRONMENT</span>
+        <span id="provenance-badge" class="badge-unverified" style="background: rgba(6, 182, 212, 0.1); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.2);">
+          PROVENANCE: LOCAL MOCK / SYNTHETIC
+        </span>
         <button id="btn-connect" class="btn-vote" style="background: linear-gradient(135deg, var(--accent-blue), #1d4ed8); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); font-size: 0.85rem; padding: 0.4rem 1rem;">🔌 Connect Wallet</button>
       </div>
     </div>
@@ -724,14 +729,14 @@
   <main>
 
     <!-- Cloud Connection Security Containment Notice -->
-    <section class="panel" style="border: 1px dashed rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.02); margin-bottom: 2rem;">
+    <section class="panel" style="border: 1px solid rgba(6, 182, 212, 0.2); background: rgba(6, 182, 212, 0.03); margin-bottom: 2rem;">
       <div class="panel-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0px;">
         <div>
-          🛡️ Local Mock Mode Active
-          <div class="panel-subtitle">Direct browser-to-database connections are disabled for security containment. Database synchronization requires the server-side proxy.</div>
+          🛡️ Protocol Status & Governance Safeguards
+          <div class="panel-subtitle">Direct client-to-database connections fail closed. Authenticated voter profiles synchronize via the encrypted server proxy.</div>
         </div>
-        <div id="db-status-badge" class="badge-unverified" style="background: rgba(245, 158, 11, 0.1); color: var(--accent-orange); border: 1px solid rgba(245, 158, 11, 0.2); animation: none;">
-          ● LOCAL MOCK ENVIRONMENT
+        <div id="db-status-badge" class="badge-unverified" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green-text); border: 1px solid rgba(16, 185, 129, 0.2); animation: none;">
+          ● LOCAL SERVER PROXY CONNECTED
         </div>
       </div>
     </section>
