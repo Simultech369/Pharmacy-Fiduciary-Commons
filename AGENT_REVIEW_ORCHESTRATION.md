@@ -12,7 +12,7 @@ In this repository, consensus is defined strictly as **operator-visible claims t
 - *Green tests are NOT consensus.*
 - *Agent confidence is NOT consensus.*
 
-True protocol consensus is reached exclusively through the **4-Tier Agent Architecture**:
+True protocol consensus is reached exclusively through a bounded four-role architecture:
 
 ```
 [ 1. Implementer Agent ]
@@ -30,6 +30,24 @@ True protocol consensus is reached exclusively through the **4-Tier Agent Archit
 [ 4. Human Operator ]
    └── Accepts, rejects, narrows, or parks the claim
 ```
+
+The architecture is not "more agents talk more." Shared files, passed tests, and
+agent agreement are inputs to review, not consensus. A claim reaches consensus
+only when the operator can see:
+
+- where the claim came from;
+- how to state the claim in plain human language;
+- what the claim implies to a newcomer or operator;
+- what the evidence actually proves, narrowly;
+- what live-code or command evidence checked it;
+- what transformed it from opinion into accepted fact;
+- which artifact now depends on it;
+- what would invalidate it.
+
+The required consensus output is a recorded claim disposition in the lineage
+ledger or a directly linked handoff packet. If the operator has not accepted,
+rejected, narrowed, or parked the claim, the claim remains unpromoted no matter
+how many agents repeated it.
 
 ## Non-Negotiable Boundary
 

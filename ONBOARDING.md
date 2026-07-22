@@ -6,6 +6,13 @@ It is not audited, not deployed to mainnet, and not ready for real funds.
 
 ## The 10-Minute Path
 
+One clean loop matters more than reading the whole repo first:
+
+1. Run the demo command.
+2. Open the dashboard it builds.
+3. Look for the "First Run Receipt Flow" panel.
+4. Use that panel to separate synthetic fixtures from contract-backed checks.
+
 Prerequisites: Node.js 20 LTS or 22 LTS and npm.
 
 On Windows PowerShell, prefer `npm.cmd` when script execution policy blocks `npm`.
@@ -30,7 +37,7 @@ This command compiles the contracts, creates a synthetic pharmacy allocation fil
 dist/dashboard/index.html
 ```
 
-The dashboard is a static prototype. Values marked as synthetic fixtures are not live PBM claims, real patient records, or mainnet contract state.
+Start with the "First Run Receipt Flow" near the top of the page. It shows the shortest story: synthetic allocations become Merkle proof material, focused contract tests exercise claim/export and patient-fund matching paths, and the dashboard bundle records the public prototype receipt. Values marked as synthetic fixtures are not live PBM claims, real patient records, or mainnet contract state.
 
 ## What You Should See
 
@@ -39,6 +46,8 @@ The demo writes these local artifacts:
 - `cache/local-demo/allocations.json`: synthetic pharmacy allocations.
 - `cache/local-demo/merkle.json`: generated root and per-pharmacy proofs.
 - `dist/dashboard/index.html`: static dashboard build.
+
+The command also prints the dashboard path at the end so a newcomer does not have to infer where the visual receipt lives.
 
 The focused tests exercise two concrete flows:
 
@@ -111,7 +120,7 @@ Use the deeper review and threat-model documents after the first demo path is wo
 
 These are good short GIF or screen-recording targets:
 
-- Run `npm.cmd run demo:local` and open the generated Merkle output.
-- Open `dist/dashboard/index.html` and point out the synthetic provenance labels.
+- Run `npm.cmd run demo:local`, then open `dist/dashboard/index.html`.
+- Start at the "First Run Receipt Flow" panel and point out which rows are synthetic fixtures versus contract-backed checks.
 - Show the portability verifier warning that offline mode checks self-consistency only.
 - Trace one patient-fund matching calculation from test setup to expected payout.
