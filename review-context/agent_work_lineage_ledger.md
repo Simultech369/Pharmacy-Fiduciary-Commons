@@ -32,7 +32,19 @@ verification_lineage:
 
 ---
 
-## 2. Active Ledger Entries
+## 2. Implied Claim vs. Actual Proof Audit Protocol
+
+Failures are frequently not bugs in coding, but a fundamental mismatch between what an informal statement implies and what the empirical test actually proves:
+
+| Implied Claim (What People Assume) | Actual Proof (What the Code/Test Proves) | Prevention / Hardening Constraint |
+| :--- | :--- | :--- |
+| *"Local model execution means strictly on the local machine."* | *Execution inherits `OPENAI_COMPAT_BASE_URL` if set in the environment, routing requests to a cloud provider.* | Explicit loopback check (`http://127.0.0.1` or `localhost`) required in local proxy routing. |
+| *"The staged slice is 100% green."* | *Tests passed because of untracked or unstaged files sitting in the local working tree.* | Run test suite against clean git index or explicit file list (`git diff --exit-code`). |
+| *"Dashboard smoke test recovered."* | *The HTML loaded, but dynamic JS contract bindings (DOM IDs) are missing or broken.* | Run `check-frontend-build.js` and `DashboardCredibility.test.js` asserting exact DOM ID existence. |
+| *"Database registration is atomic."* | *Supabase Auth user creation succeeds, but subsequent profile insert fails, leaving partial state.* | 15-second PostgreSQL `FOR UPDATE` locked state machine (`pending` $\rightarrow$ `completed`/`failed`). |
+| *"ZK Nullifier is 100% private."* | *Poseidon field element is unlinkable, but relayer gas-payer history links votes on-chain.* | Explicit Non-Claims documenting relayer timing and gas-payer correlation vectors. |
+
+---
 
 ### Entry 001: Supabase SECURITY DEFINER RPC Lockdown
 ```yaml
