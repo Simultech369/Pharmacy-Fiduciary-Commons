@@ -2,8 +2,8 @@
 
 Status: draft operating protocol. This file is for Codex-led planning/review cycles. It does not authorize external disclosure, repository mutation, cleanup, commits, pushes, deployments, credentials use, or live-chain actions.
 
-Current PBM checkpoint for solvency & ZK spec planning: `3fae26dd08b8428bc668238ff699b2762dcaca05` (HEAD `3fae26d`, feature/db-proxy)
-Verified Lineage Entries: Entry 001 (RPC Lockdown), Entry 002 (Domain HMAC), Entry 003 (ZK Bounds), Entry 004 (XSS Sanitization), Entry 005 (Router Harness), Entry 006 (Spec Gate A).
+Current PBM checkpoint for solvency & ZK spec planning: `cabee15a0dc6e877fc927bbb0b9d86b6336a95c7` (HEAD `cabee15`, feature/db-proxy)
+Verified Lineage Entries: Entry 001 (RPC Lockdown), Entry 002 (Domain HMAC), Entry 003 (ZK Bounds), Entry 004 (XSS Sanitization), Entry 005 (Router Harness), Entry 006 (Spec Gate A), Entry 007 (VoteNullifier.circom Phase 1 Gate).
 
 ## Protocol Consensus Definition
 
