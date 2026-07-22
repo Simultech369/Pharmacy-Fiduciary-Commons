@@ -1,0 +1,173 @@
+{
+  "status": "spec-only",
+  "privacyTarget": "unlinkable",
+  "circuitId": "round-voting-project-scoped-circuit",
+  "verifierVersion": "fiduciary-zk-verifier-v1",
+  "proofSystem": "backend-undecided",
+  "proofEncoding": "opaque-bytes-calldata",
+  "domain": "round_voting",
+  "scopeKind": "project-scoped-round-vote",
+  "publicSignalOrder": [
+    "domainSeparator",
+    "chainId",
+    "verifyingContract",
+    "roundId",
+    "projectId",
+    "projectRegistryRoot",
+    "membershipRoot",
+    "nullifier",
+    "policyVersion",
+    "relayerPolicyHash",
+    "timestampBucket"
+  ],
+  "minimalCircomInterface": {
+    "language": "Circom 2.1.0 spec packet",
+    "template": "ProjectScopedVoteNullifier",
+    "treeDepthParameter": "MEMBERSHIP_TREE_DEPTH",
+    "publicSignalOrder": [
+      "roundId",
+      "projectId",
+      "domainSeparator",
+      "membershipRoot",
+      "nullifier"
+    ],
+    "privateInputs": [
+      "credentialSecret",
+      "membershipPathElements",
+      "membershipPathIndices"
+    ],
+    "publicInputs": [
+      "roundId",
+      "projectId",
+      "domainSeparator",
+      "membershipRoot",
+      "nullifier"
+    ],
+    "publicOutputs": [],
+    "constraints": [
+      "nullifier === Poseidon(credentialSecret, roundId, projectId, domainSeparator)",
+      "membershipRoot === recomputeRoot(Poseidon(credentialSecret), membershipPathElements, membershipPathIndices)"
+    ],
+    "leafCommitment": "Poseidon(credentialSecret) until issuer-bound opening formula is frozen"
+  },
+  "publicInputs": {
+    "domainSeparator": {
+      "type": "bytes32",
+      "visibility": "public",
+      "purpose": "deployment and workflow domain separation"
+    },
+    "chainId": {
+      "type": "uint256",
+      "visibility": "public",
+      "purpose": "cross-chain replay prevention"
+    },
+    "verifyingContract": {
+      "type": "address-as-field",
+      "visibility": "public",
+      "purpose": "cross-contract replay prevention"
+    },
+    "roundId": {
+      "type": "uint256",
+      "visibility": "public",
+      "purpose": "round scope"
+    },
+    "projectId": {
+      "type": "uint256",
+      "visibility": "public",
+      "purpose": "project-level nullifier scope"
+    },
+    "projectRegistryRoot": {
+      "type": "bytes32",
+      "visibility": "public",
+      "purpose": "frozen project set commitment"
+    },
+    "membershipRoot": {
+      "type": "bytes32",
+      "visibility": "public",
+      "purpose": "eligible participant set commitment"
+    },
+    "nullifier": {
+      "type": "bytes32",
+      "visibility": "public",
+      "purpose": "double-vote prevention without identity disclosure"
+    },
+    "policyVersion": {
+      "type": "bytes32",
+      "visibility": "public",
+      "purpose": "governance-selected eligibility and privacy policy"
+    },
+    "relayerPolicyHash": {
+      "type": "bytes32",
+      "visibility": "public",
+      "purpose": "commitment to gas and batching metadata controls"
+    },
+    "timestampBucket": {
+      "type": "uint256",
+      "visibility": "public",
+      "purpose": "coarse timing only"
+    }
+  },
+  "privateWitness": [
+    "credentialSecret",
+    "issuerCredentialOpening",
+    "membershipMerklePath",
+    "membershipMerkleIndexBits",
+    "projectRegistryMerklePath",
+    "projectRegistryMerkleIndexBits",
+    "credentialBlinding"
+  ],
+  "nullifierDerivation": {
+    "hash": "Poseidon",
+    "inputs": [
+      "credentialSecret",
+      "roundId",
+      "projectId",
+      "domainSeparator"
+    ],
+    "output": "nullifier"
+  },
+  "verifierInterface": {
+    "name": "IProjectScopedZKVerifier",
+    "solidity": "function verifyProof(bytes calldata proof, uint256[11] calldata publicSignals) external view returns (bool)",
+    "statefulness": "stateless",
+    "returnValue": "proof-validity-only"
+  },
+  "hostVerifierFacade": {
+    "name": "verifyVoteProof",
+    "solidity": "function verifyVoteProof(bytes calldata proof, uint256 root, uint256 nullifier, uint256 roundId, uint256 projectId) external view returns (bool)",
+    "parameterMapping": {
+      "proof": "opaque proof bytes",
+      "root": "membershipRoot",
+      "nullifier": "nullifier",
+      "roundId": "roundId",
+      "projectId": "projectId"
+    },
+    "domainSeparatorSource": "governance-selected contract state or immutable deployment metadata",
+    "callerMaySupplyDomainSeparator": false
+  },
+  "hostContractGuard": {
+    "replayMapping": "used[roundId][projectId][nullifier]",
+    "nullifierZeroRejected": true,
+    "projectRegistryFrozenBeforeActivation": true,
+    "verifierMayMutateState": false,
+    "eventOmitsSender": true
+  },
+  "forbiddenPublicInputs": [
+    "walletAddress",
+    "gasPayer",
+    "gasPayerAddress",
+    "rawRpcIdentifier",
+    "rawRpcIpAddress",
+    "rawRpcApiKey",
+    "supportTicketId",
+    "npi",
+    "ncpdp",
+    "stableCredentialHash",
+    "rawCredential",
+    "credentialSecret",
+    "witnessMaterial",
+    "issuerSideRealWorldIdentifier",
+    "voterNullifierCoExposure",
+    "exactTimestamp"
+  ]
+}

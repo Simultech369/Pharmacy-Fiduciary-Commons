@@ -294,3 +294,30 @@ verification_lineage:
     - "review-context/agent_work_lineage_ledger.md"
   invalidation_criteria: "If router_harness.py permits non-loopback endpoints when DIZZY_CHAT_BACKEND=local is configured."
 ```
+
+### Entry 006: Spec Gate A — Project-Scoped ZK Nullifier Circuit Signal Boundary
+```yaml
+entry_id: claim-spec-gate-a-zk-nullifier-circuit-signals
+source_model: Codex 5.6 & Antigravity
+source_claim: "Project-scoped ZK nullifier circuit must pin exact Circom private/public signal boundaries, Poseidon hash constraint, and host adapter ABI verifyVoteProof."
+resolved_endpoint: "review-context/project_scoped_zk_circuit_verifier_interface_spec.md"
+endpoint_classification: static_schema
+credential_used: false
+provider_attempted: hardhat_test_zk_fixture_gate
+provider_succeeded: true
+receipt_persisted: true
+derived_from: actual_dispatch_attempt
+
+verification_lineage:
+  source_opinion: "Without a machine-checkable fixture and ABI boundary test, Circom implementation can drift in public signal order or expose forbidden identity fields."
+  verified_against_live_code: true
+  evidence: "npx hardhat test test/ZKNullifierFixtureGate.test.js passes 22/22, validating signal order, Poseidon constraint, and host adapter verifyVoteProof signature."
+  status: VERIFIED_AND_CLOSED
+  blocks_commit: false
+  dependent_artifacts:
+    - "review-context/project_scoped_zk_circuit_verifier_interface_spec.md"
+    - "test/fixtures/projectScopedZKCircuitInterface.json"
+    - "test/ZKNullifierFixtureGate.test.js"
+    - "contracts/PatientFundParticipatoryBudgeting.sol"
+  invalidation_criteria: "If public signal order changes or host adapter verifyVoteProof signature alters without updating fixture gate."
+```

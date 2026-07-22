@@ -24,6 +24,7 @@ describe("ZK/Nullifier Design Fixture and Test Gate", function () {
   let unlinkablePayload;
   let governanceFixture;
   let leakageTable;
+  let projectScopedCircuit;
 
   before(function () {
     futureSchema = JSON.parse(
@@ -40,6 +41,9 @@ describe("ZK/Nullifier Design Fixture and Test Gate", function () {
     );
     leakageTable = JSON.parse(
       fs.readFileSync(path.join(__dirname, "fixtures", "metadataLeakageTable.json"), "utf8")
+    );
+    projectScopedCircuit = JSON.parse(
+      fs.readFileSync(path.join(__dirname, "fixtures", "projectScopedZKCircuitInterface.json"), "utf8")
     );
   });
 
@@ -190,6 +194,130 @@ describe("ZK/Nullifier Design Fixture and Test Gate", function () {
     it("asserts exact timestamps, gas payer identity, raw RPC identifiers, and wallet addresses are not in unlinkable payload", function () {
       FORBIDDEN_UNLINKABLE_FIELDS.forEach((field) => {
         expect(unlinkablePayload, `Unlinkable payload must not contain metadata/forbidden field: ${field}`).to.not.have.property(field);
+      });
+    });
+  });
+
+  describe("6. Project-Scoped Circuit and Verifier Interface Gate", function () {
+    it("labels the project-scoped circuit as unlinkable spec-only work", function () {
+      expect(projectScopedCircuit.status).to.equal("spec-only");
+      expect(projectScopedCircuit.privacyTarget).to.equal("unlinkable");
+      expect(projectScopedCircuit.scopeKind).to.equal("project-scoped-round-vote");
+      expect(projectScopedCircuit.proofSystem).to.equal("backend-undecided");
+    });
+
+    it("pins canonical public signal order for verifier version v1", function () {
+      expect(projectScopedCircuit.publicSignalOrder).to.deep.equal([
+        "domainSeparator",
+        "chainId",
+        "verifyingContract",
+        "roundId",
+        "projectId",
+        "projectRegistryRoot",
+        "membershipRoot",
+        "nullifier",
+        "policyVersion",
+        "relayerPolicyHash",
+        "timestampBucket"
+      ]);
+
+      projectScopedCircuit.publicSignalOrder.forEach((field) => {
+        expect(projectScopedCircuit.publicInputs, `public input metadata missing: ${field}`).to.have.property(field);
+        expect(projectScopedCircuit.publicInputs[field].visibility).to.equal("public");
+      });
+    });
+
+    it("keeps forbidden identity, support, RPC, and witness fields out of public signals", function () {
+      const publicSignals = new Set(projectScopedCircuit.publicSignalOrder);
+
+      projectScopedCircuit.forbiddenPublicInputs.forEach((field) => {
+        expect(publicSignals, `forbidden public input present: ${field}`).to.not.include(field);
+      });
+
+      projectScopedCircuit.privateWitness.forEach((field) => {
+        expect(publicSignals, `private witness leaked as public input: ${field}`).to.not.include(field);
+      });
+    });
+
+    it("derives nullifiers from round and project scope plus policy domain", function () {
+      expect(projectScopedCircuit.nullifierDerivation).to.deep.equal({
+        hash: "Poseidon",
+        inputs: [
+          "credentialSecret",
+          "roundId",
+          "projectId",
+          "domainSeparator"
+        ],
+        output: "nullifier"
+      });
+    });
+
+    it("pins the exact Circom public/private signal boundary", function () {
+      expect(projectScopedCircuit.minimalCircomInterface).to.include({
+        language: "Circom 2.1.0 spec packet",
+        template: "ProjectScopedVoteNullifier",
+        treeDepthParameter: "MEMBERSHIP_TREE_DEPTH"
+      });
+      expect(projectScopedCircuit.minimalCircomInterface.publicSignalOrder).to.deep.equal([
+        "roundId",
+        "projectId",
+        "domainSeparator",
+        "membershipRoot",
+        "nullifier"
+      ]);
+      expect(projectScopedCircuit.minimalCircomInterface.privateInputs).to.deep.equal([
+        "credentialSecret",
+        "membershipPathElements",
+        "membershipPathIndices"
+      ]);
+      expect(projectScopedCircuit.minimalCircomInterface.publicInputs).to.deep.equal([
+        "roundId",
+        "projectId",
+        "domainSeparator",
+        "membershipRoot",
+        "nullifier"
+      ]);
+      expect(projectScopedCircuit.minimalCircomInterface.publicOutputs).to.deep.equal([]);
+      expect(projectScopedCircuit.minimalCircomInterface.constraints).to.include(
+        "nullifier === Poseidon(credentialSecret, roundId, projectId, domainSeparator)"
+      );
+    });
+
+    it("requires a stateless verifier ABI with fixed-width public signals", function () {
+      expect(projectScopedCircuit.verifierInterface).to.include({
+        name: "IProjectScopedZKVerifier",
+        statefulness: "stateless",
+        returnValue: "proof-validity-only"
+      });
+      expect(projectScopedCircuit.verifierInterface.solidity).to.equal(
+        "function verifyProof(bytes calldata proof, uint256[11] calldata publicSignals) external view returns (bool)"
+      );
+    });
+
+    it("pins the host-facing verifyVoteProof adapter parameters", function () {
+      expect(projectScopedCircuit.hostVerifierFacade).to.include({
+        name: "verifyVoteProof",
+        callerMaySupplyDomainSeparator: false
+      });
+      expect(projectScopedCircuit.hostVerifierFacade.solidity).to.equal(
+        "function verifyVoteProof(bytes calldata proof, uint256 root, uint256 nullifier, uint256 roundId, uint256 projectId) external view returns (bool)"
+      );
+      expect(projectScopedCircuit.hostVerifierFacade.parameterMapping).to.deep.equal({
+        proof: "opaque proof bytes",
+        root: "membershipRoot",
+        nullifier: "nullifier",
+        roundId: "roundId",
+        projectId: "projectId"
+      });
+    });
+
+    it("requires project-scoped host replay guards and frozen project registries", function () {
+      expect(projectScopedCircuit.hostContractGuard).to.include({
+        replayMapping: "used[roundId][projectId][nullifier]",
+        nullifierZeroRejected: true,
+        projectRegistryFrozenBeforeActivation: true,
+        verifierMayMutateState: false,
+        eventOmitsSender: true
       });
     });
   });
