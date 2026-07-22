@@ -29,4 +29,13 @@ describe("Dashboard credibility guardrails", function () {
     expect(dashboard).to.include("desc.textContent = item.desc");
     expect(dashboard).not.to.match(/card\.innerHTML\s*=/);
   });
+
+  it("keeps the newcomer demo receipt flow visible and labeled", function () {
+    expect(dashboard).to.include("First Run Receipt Flow");
+    expect(dashboard).to.include("npm.cmd run demo:local");
+    expect(dashboard).to.include("cache/local-demo/allocations.json");
+    expect(dashboard).to.include("cache/local-demo/merkle.json");
+    expect(dashboard).to.include("Contract-backed check");
+    expect(dashboard).to.include('data-provenance="guided-local-demo"');
+  });
 });

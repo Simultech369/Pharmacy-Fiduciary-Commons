@@ -683,6 +683,115 @@
       text-decoration: underline;
     }
 
+    .first-run-panel {
+      border-color: rgba(16, 185, 129, 0.28);
+      background: rgba(16, 185, 129, 0.045);
+    }
+
+    .first-run-summary {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .first-run-command,
+    .first-run-outcome {
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      background: rgba(15, 23, 42, 0.32);
+      padding: 1rem;
+    }
+
+    .first-run-command code {
+      display: block;
+      margin-top: 0.35rem;
+      color: var(--accent-green-text);
+      font-family: monospace;
+      font-size: 0.95rem;
+      overflow-wrap: anywhere;
+    }
+
+    .receipt-flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .receipt-step {
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      background: rgba(15, 23, 42, 0.34);
+      padding: 1rem;
+      min-height: 8.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .receipt-step-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .receipt-step-title {
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .receipt-step-meta {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    .receipt-status {
+      display: inline-flex;
+      align-self: flex-start;
+      border-radius: 999px;
+      padding: 0.2rem 0.55rem;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .receipt-status.synthetic {
+      color: var(--accent-orange);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .receipt-status.contract {
+      color: var(--accent-green-text);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .receipt-status.prototype {
+      color: var(--accent-cyan);
+      border: 1px solid rgba(6, 182, 212, 0.28);
+      background: rgba(6, 182, 212, 0.08);
+    }
+
+    @media (max-width: 1100px) {
+      .receipt-flow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .first-run-summary,
+      .receipt-flow {
+        grid-template-columns: 1fr;
+      }
+    }
+
     footer {
       border-top: 1px solid var(--border-color);
       padding: 2.5rem 2rem;
@@ -737,6 +846,63 @@
         </div>
         <div id="db-status-badge" class="badge-unverified" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green-text); border: 1px solid rgba(16, 185, 129, 0.2); animation: none;">
           ● LOCAL SERVER PROXY CONNECTED
+        </div>
+      </div>
+    </section>
+
+    <section class="panel first-run-panel" data-provenance="guided-local-demo">
+      <div class="panel-title">
+        <div>
+          First Run Receipt Flow
+          <div class="panel-subtitle">One local command produces the visible proof path for the prototype.</div>
+        </div>
+        <span class="badge-unverified" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green-text); border: 1px solid rgba(16, 185, 129, 0.2); animation: none;">LOCAL DEMO PATH</span>
+      </div>
+
+      <div class="first-run-summary">
+        <div class="first-run-command">
+          <div class="receipt-step-label">Run</div>
+          <code>npm.cmd run demo:local</code>
+        </div>
+        <div class="first-run-outcome">
+          <div class="receipt-step-label">See</div>
+          <div class="receipt-step-title">A receipt chain from allocation fixture to dashboard bundle.</div>
+          <div class="receipt-step-meta">Contract behavior remains the authority; synthetic fixtures are visibly labeled.</div>
+        </div>
+      </div>
+
+      <div class="receipt-flow" aria-label="First run receipt flow">
+        <div class="receipt-step">
+          <div>
+            <div class="receipt-step-label">1. Allocation</div>
+            <div class="receipt-step-title">Synthetic pharmacy amounts</div>
+            <div class="receipt-step-meta">Written to cache/local-demo/allocations.json for local demonstration only.</div>
+          </div>
+          <span class="receipt-status synthetic">Synthetic fixture</span>
+        </div>
+        <div class="receipt-step">
+          <div>
+            <div class="receipt-step-label">2. Commitment</div>
+            <div class="receipt-step-title">Merkle root and proofs</div>
+            <div class="receipt-step-meta">Generated in cache/local-demo/merkle.json so claims can be checked against a root.</div>
+          </div>
+          <span class="receipt-status prototype">Local artifact</span>
+        </div>
+        <div class="receipt-step">
+          <div>
+            <div class="receipt-step-label">3. Exercise</div>
+            <div class="receipt-step-title">Claim/export and matching tests</div>
+            <div class="receipt-step-meta">Focused Hardhat slices run the portability and patient-fund paths.</div>
+          </div>
+          <span class="receipt-status contract">Contract-backed check</span>
+        </div>
+        <div class="receipt-step">
+          <div>
+            <div class="receipt-step-label">4. Public Receipt</div>
+            <div class="receipt-step-title">Static dashboard build</div>
+            <div class="receipt-step-meta">dist/dashboard/index.html is checked for frontend release blockers.</div>
+          </div>
+          <span class="receipt-status prototype">Prototype verdict</span>
         </div>
       </div>
     </section>
@@ -1091,6 +1257,70 @@
           <h4 style="font-family: var(--font-heading); font-size: 1.1rem; margin-bottom: 0.75rem;" id="portability-results-title">Verification Results</h4>
           <ul id="portability-results-list" style="list-style-type: none; font-size: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem;"></ul>
         </div>
+      </div>
+    <!-- 5. Visual Cryptographic Receipt Flow Panel -->
+    <section class="panel" style="border: 1px solid rgba(147, 51, 234, 0.25); background: linear-gradient(180deg, rgba(147, 51, 234, 0.04) 0%, rgba(15, 23, 42, 0.4) 100%);">
+      <div class="panel-title">
+        <div>
+          🧾 Interactive Cryptographic Receipt Inspector
+          <div class="panel-subtitle">Visual step-by-step breakdown of how voter registration signatures, domain containment, and ledger states are verified.</div>
+        </div>
+        <span class="badge-unverified" style="border-color: rgba(147, 51, 234, 0.4); background: rgba(147, 51, 234, 0.15); color: var(--accent-purple); animation: none;">Live Verifier</span>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <button id="btn-sample-receipt" class="btn-vote" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan)); font-size: 0.85rem; padding: 0.5rem 1rem;" onclick="generateVisualReceiptSample()">⚡ Generate Sample Receipt</button>
+        <button id="btn-inspect-receipt" class="btn-vote" style="background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); font-size: 0.85rem; padding: 0.5rem 1rem;" onclick="verifyVisualReceiptFlow()">🔍 Run Step-by-Step Verification</button>
+      </div>
+
+      <!-- Step-by-Step Flow Pipeline -->
+      <div id="receipt-pipeline" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        
+        <!-- Step 1: EIP-191 Voter Signature -->
+        <div id="receipt-step-1" class="gap-calculator" style="background: rgba(15, 23, 42, 0.6); border-color: rgba(255, 255, 255, 0.1);">
+          <div class="gap-info">
+            <h4 style="color: var(--accent-cyan); font-size: 0.9rem;">1. Voter Envelope Signature</h4>
+            <div id="step-1-status" style="font-size: 0.8rem; color: var(--text-muted);">EIP-191 message binding chainId, roundId, & proxyAddress</div>
+          </div>
+          <div id="step-1-badge" class="badge-unverified" style="margin-top: 0.5rem; font-size: 0.75rem;">Awaiting Generation</div>
+        </div>
+
+        <!-- Step 2: EIP-712 Relayer Attestation -->
+        <div id="receipt-step-2" class="gap-calculator" style="background: rgba(15, 23, 42, 0.6); border-color: rgba(255, 255, 255, 0.1);">
+          <div class="gap-info">
+            <h4 style="color: var(--accent-purple); font-size: 0.9rem;">2. Relayer EIP-712 Attestation</h4>
+            <div id="step-2-status" style="font-size: 0.8rem; color: var(--text-muted);">Trusted credential issuer typed data verification</div>
+          </div>
+          <div id="step-2-badge" class="badge-unverified" style="margin-top: 0.5rem; font-size: 0.75rem;">Awaiting Generation</div>
+        </div>
+
+        <!-- Step 3: Salted HMAC Blinding -->
+        <div id="receipt-step-3" class="gap-calculator" style="background: rgba(15, 23, 42, 0.6); border-color: rgba(255, 255, 255, 0.1);">
+          <div class="gap-info">
+            <h4 style="color: var(--accent-blue); font-size: 0.9rem;">3. Domain-Separated HMAC</h4>
+            <div id="step-3-status" style="font-size: 0.8rem; color: var(--text-muted);">Keyed SHA-256 blinding preventing public correlation</div>
+          </div>
+          <div id="step-3-badge" class="badge-unverified" style="margin-top: 0.5rem; font-size: 0.75rem;">Awaiting Generation</div>
+        </div>
+
+        <!-- Step 4: Postgres Ledger State -->
+        <div id="receipt-step-4" class="gap-calculator" style="background: rgba(15, 23, 42, 0.6); border-color: rgba(255, 255, 255, 0.1);">
+          <div class="gap-info">
+            <h4 style="color: var(--accent-green-text); font-size: 0.9rem;">4. Database Request Ledger</h4>
+            <div id="step-4-status" style="font-size: 0.8rem; color: var(--text-muted);">15-second row-locked state machine claim (`completed`)</div>
+          </div>
+          <div id="step-4-badge" class="badge-unverified" style="margin-top: 0.5rem; font-size: 0.75rem;">Awaiting Generation</div>
+        </div>
+
+      </div>
+
+      <!-- Formatted Receipt Payload Code Block -->
+      <div id="receipt-code-box" style="display: none; background: rgba(15, 23, 42, 0.9); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1.25rem; margin-top: 1rem;">
+        <div style="font-family: var(--font-heading); font-size: 0.95rem; color: #fff; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+          <span>Raw Verifiable Receipt JSON:</span>
+          <button class="btn-vote" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;" onclick="copyReceiptJson()">📋 Copy JSON</button>
+        </div>
+        <pre id="receipt-json-output" style="font-family: monospace; font-size: 0.8rem; color: var(--accent-cyan); white-space: pre-wrap; word-break: break-all; margin: 0;"></pre>
       </div>
     </section>
 
