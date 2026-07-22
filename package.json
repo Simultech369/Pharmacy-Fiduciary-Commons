@@ -18,6 +18,7 @@
     "deploy:timelock": "hardhat run scripts/deploy-timelock-and-treasury.js",
     "verify:contracts": "hardhat run scripts/verify-contracts.js",
     "verify:export": "node scripts/verify-export.js",
+    "demo:local": "node scripts/local-demo.js",
     "check:readiness": "node scripts/check-readiness.js",
     "audit:deployment": "hardhat run scripts/audit-deployment.js",
     "merkle:allocations": "node tools/merkle/allocations.js",

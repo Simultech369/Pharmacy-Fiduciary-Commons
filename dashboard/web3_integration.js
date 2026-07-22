@@ -571,7 +571,13 @@ window.syncProxyProfile = async function() {
   } catch (dbErr) {
     console.error("Database sync failure:", dbErr.message);
     statusEl.style.color = "#f87171"; // Light red
-    statusEl.innerHTML = `⚠️ Profile sync failed: ${dbErr.message}. <button class="btn-vote" style="padding: 0.2rem 0.5rem; font-size: 0.75rem; background: var(--accent-purple);" onclick="window.syncProxyProfile()">Retry Sync</button>`;
+    statusEl.textContent = `⚠️ Profile sync failed: ${dbErr.message}. `;
+    const retryBtn = document.createElement("button");
+    retryBtn.className = "btn-vote";
+    retryBtn.style.cssText = "padding: 0.2rem 0.5rem; font-size: 0.75rem; background: var(--accent-purple); margin-left: 0.5rem;";
+    retryBtn.textContent = "Retry Sync";
+    retryBtn.onclick = () => window.syncProxyProfile();
+    statusEl.appendChild(retryBtn);
   }
 }
 

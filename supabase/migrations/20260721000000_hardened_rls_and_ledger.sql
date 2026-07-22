@@ -43,7 +43,7 @@ CREATE OR REPLACE FUNCTION public.register_voter_ledger_start(
 ) RETURNS TABLE (
     status VARCHAR(20),
     user_id UUID
-) AS $$
+) SET search_path = public AS $$
 DECLARE
     v_status VARCHAR(20);
     v_user_id UUID;
@@ -51,6 +51,11 @@ DECLARE
     v_created TIMESTAMP WITH TIME ZONE;
     v_updated TIMESTAMP WITH TIME ZONE;
 BEGIN
+    -- Strict Service Role Guard
+    IF auth.role() <> 'service_role' THEN
+        RAISE EXCEPTION 'Access denied: register_voter_ledger_start can only be executed by the database proxy service role.';
+    END IF;
+
     -- Perform an atomic row-level lock on the specific nonce key
     SELECT r.status, r.user_id, r.request_hash, r.created_at, r.updated_at
     INTO v_status, v_user_id, v_hash, v_created, v_updated
@@ -87,8 +92,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION public.register_voter_ledger_complete(
     p_nonce_key VARCHAR(255),
     p_user_id UUID
-) RETURNS VOID AS $$
+) RETURNS VOID SET search_path = public AS $$
 BEGIN
+    IF auth.role() <> 'service_role' THEN
+        RAISE EXCEPTION 'Access denied: register_voter_ledger_complete can only be executed by the database proxy service role.';
+    END IF;
+
     UPDATE public.registration_ledger
     SET status = 'completed',
         user_id = p_user_id,
@@ -101,14 +110,27 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Mark the ledger record as failed
 CREATE OR REPLACE FUNCTION public.register_voter_ledger_fail(
     p_nonce_key VARCHAR(255)
-) RETURNS VOID AS $$
+) RETURNS VOID SET search_path = public AS $$
 BEGIN
+    IF auth.role() <> 'service_role' THEN
+        RAISE EXCEPTION 'Access denied: register_voter_ledger_fail can only be executed by the database proxy service role.';
+    END IF;
+
     UPDATE public.registration_ledger
     SET status = 'failed',
         updated_at = timezone('utc'::text, now())
     WHERE nonce_key = p_nonce_key;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 5. REVOKE PUBLIC EXECUTE PRIVILEGES & GRANT ONLY TO SERVICE ROLE
+REVOKE EXECUTE ON FUNCTION public.register_voter_ledger_start(VARCHAR, VARCHAR) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.register_voter_ledger_complete(VARCHAR, UUID) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.register_voter_ledger_fail(VARCHAR) FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.register_voter_ledger_start(VARCHAR, VARCHAR) TO service_role;
+GRANT EXECUTE ON FUNCTION public.register_voter_ledger_complete(VARCHAR, UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.register_voter_ledger_fail(VARCHAR) TO service_role;
 
 -- Privacy Warning Documentation:
 -- Storing wallet address alongside blinded credential HMAC exposes the proxy operator to correlation risk.

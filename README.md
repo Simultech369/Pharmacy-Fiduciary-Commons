@@ -68,6 +68,8 @@ Prereqs: Node.js 20 LTS or 22 LTS + npm.
 
 Windows PowerShell note: if `npm` is blocked by script execution policy, use `npm.cmd` instead.
 
+For a guided first run, start with [ONBOARDING.md](ONBOARDING.md). It keeps the demo path short and labels which outputs are synthetic fixtures versus contract-backed checks.
+
 ```bash
 npm.cmd ci
 npm.cmd run compile
