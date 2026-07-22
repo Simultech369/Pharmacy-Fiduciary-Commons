@@ -4,20 +4,32 @@ Status: draft operating protocol. This file is for Codex-led planning/review cyc
 
 Current PBM checkpoint for solvency planning: `266016c83d544f86dbb67a49240356852e0498b4`
 
-## Purpose
+## Protocol Consensus Definition
 
-Use multiple reviewer agents as capability-specific critics, not as implementers or authorities.
+In this repository, consensus is defined strictly as **operator-visible claims that have survived protocol checks**:
 
-The intended Codex role is review-cycle conductor:
+- *Shared files are NOT consensus.*
+- *Green tests are NOT consensus.*
+- *Agent confidence is NOT consensus.*
 
-1. choose the reviewer lane;
-2. assemble the smallest disclosure packet;
-3. send a capability-specific prompt;
-4. debug provider/model failures without mutating global environment state;
-5. save raw output and model/provider metadata;
-6. reconcile findings against the live repo;
-7. update the planning handoff;
-8. decide the next reviewer or stop condition.
+True protocol consensus is reached exclusively through the **4-Tier Agent Architecture**:
+
+```
+[ 1. Implementer Agent ]
+   └── Produces bounded patch + claim list
+          │
+          ▼
+[ 2. Reviewer Agent ]
+   └── Attacks claim list from clean/staged state (Read-Only)
+          │
+          ▼
+[ 3. Lineage Verifier ]
+   └── Maps claims to empirical evidence in review-context/agent_work_lineage_ledger.md
+          │
+          ▼
+[ 4. Human Operator ]
+   └── Accepts, rejects, narrows, or parks the claim
+```
 
 ## Non-Negotiable Boundary
 
