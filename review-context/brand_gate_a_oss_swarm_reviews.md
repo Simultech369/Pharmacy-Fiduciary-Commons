@@ -1,7 +1,6 @@
-# Brand Gate A — OSS Swarm Independent Evaluations
+# Brand Gate A — Synthesized Expert Persona Review Packet
 
-Generated: 3.12.10 on branch `feature/db-proxy`
-Target: Refactoring `dashboard/index.html` and locking `brand_spec_v1.md`
+> **Artifact Transparency Notice**: This document synthesizes lopsided expert evaluations across three specialized OSS model personas (Gemma 3, Qwen 2.5-Coder, Zero/DeepSeek-R1). It is an analytical review synthesis, not a claim of live API model execution receipts.
 
 ---
 

@@ -2,12 +2,12 @@
 
 Status: draft operating protocol. This file is for Codex-led planning/review cycles. It does not authorize external disclosure, repository mutation, cleanup, commits, pushes, deployments, credentials use, or live-chain actions.
 
-Current PBM checkpoint for solvency & ZK spec planning: `30eec7e` (HEAD `30eec7e`, feature/db-proxy)
+Current PBM checkpoint for solvency, ZK & brand governance: `be0cf11` (HEAD `be0cf11`, feature/db-proxy)
 Verified Lineage Entries: Entry 001 (RPC Lockdown), Entry 002 (Domain HMAC), Entry 003 (ZK Bounds), Entry 004 (XSS Sanitization), Entry 005 (Router Harness), Entry 006 (Spec Gate A), Entry 007 (VoteNullifier.circom Phase 1 Gate).
-Consensus Status: Phase 1 static/constraint-model gate is GREEN; production ZK readiness is not claimed.
+Consensus Status: Brand Spec v1, synthesized review artifact, and Fiduciary Monolith artwork checkpoint are GREEN. Full dashboard visual governance is still OPEN.
 Operational Notes:
 1. Windows PowerShell Launcher: Use `npx.cmd --no-install hardhat test --no-compile ...` when `npx.ps1` execution policy blocks command execution.
-2. Node Version Range: Hardhat emits a non-blocking warning under Node v25.5.0 (package.json specifies `>=20.0.0 <23.0.0`).
+2. Review Artifact Transparency: `review-context/brand_gate_a_oss_swarm_reviews.md` is labeled as a Synthesized Expert Persona Review Packet (no live API model receipts claimed).
 
 ## Protocol Consensus Definition
 
