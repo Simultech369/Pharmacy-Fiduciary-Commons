@@ -39,6 +39,27 @@ def run_compliance_checks():
     dist_css = os.path.join(ROOT_DIR, "dist/dashboard/design-system.css")
     if not os.path.exists(dist_css):
         errors.append("Build Output Check: dist/dashboard/design-system.css does not exist. Run npm.cmd run build:dashboard.")
+    else:
+        with open(dist_css, "r", encoding="utf-8") as f_css:
+            dist_css_content = f_css.read()
+            if ".badge-unverified-slate" not in dist_css_content:
+                errors.append("CSS Activation Check: dist/dashboard/design-system.css is missing '.badge-unverified-slate' class definition.")
+
+    dist_index = os.path.join(ROOT_DIR, "dist/dashboard/index.html")
+    if not os.path.exists(dist_index):
+        errors.append("Build Output Check: dist/dashboard/index.html does not exist. Run npm.cmd run build:dashboard.")
+    else:
+        with open(dist_index, "r", encoding="utf-8") as f_dist:
+            dist_content = f_dist.read()
+            if '<link rel="stylesheet" href="./design-system.css">' not in dist_content:
+                errors.append("Dist Rendered Check: dist/dashboard/index.html is missing <link rel=\"stylesheet\" href=\"./design-system.css\">.")
+            prov_dist_match = re.search(r'<span id="provenance-badge"[^>]*class="([^"]*)"', dist_content)
+            if prov_dist_match:
+                dist_badge_class = prov_dist_match.group(1)
+                if "badge-unverified-slate" not in dist_badge_class:
+                    errors.append(f"Dist Rendered Check: dist/dashboard/index.html #provenance-badge must use 'badge-unverified-slate', found '{dist_badge_class}'")
+            else:
+                errors.append("Dist Rendered Check: Could not locate #provenance-badge in dist/dashboard/index.html.")
 
     # 1. Total inline styles audit
     style_matches = re.findall(r'style="[^"]*"', content)
@@ -74,10 +95,11 @@ def run_compliance_checks():
 
     # Output Results
     print("==================================================")
-    print("BRAND GATE B STAGED COMPLIANCE LINTER (Slice B1 + B4)")
+    print("BRAND GATE B1.1 STAGED COMPLIANCE LINTER")
     print("==================================================")
     print(f"• B1 Scope Inline Styles: 0 (PASSED)")
-    print(f"• Stateful Cyan Containment: PASSED (#provenance-badge is slate)")
+    print(f"• Stateful Cyan Containment: PASSED (Source & Dist #provenance-badge is slate)")
+    print(f"• Rendered Build Integration: PASSED (design-system.css bundled in dist)")
     print(f"• Primary Control Emoji Hygiene: PASSED (#btn-connect is text-only)")
     print(f"• Open Brand Gate B Debt: {total_inline_styles} remaining inline styles in lower sections")
     print("==================================================")
@@ -88,7 +110,7 @@ def run_compliance_checks():
             print(f"  - {err}")
         sys.exit(1)
     else:
-        print("✅ Brand Gate B Slice B1 + B4 Linter Skeleton Passed.")
+        print("✅ Brand Gate B1.1 Rendered Build Integration Passed.")
         sys.exit(0)
 
 if __name__ == "__main__":

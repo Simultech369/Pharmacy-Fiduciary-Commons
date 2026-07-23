@@ -375,3 +375,31 @@ verification_lineage:
     - "scripts/check-frontend-build.js"
   invalidation_criteria: "If B1 scope introduces inline style attributes, if #provenance-badge uses static cyan in unverified state, if #btn-connect contains emojis, or if check:frontend fails."
 ```
+
+### Entry 009: Brand Gate B1.1 Rendered Build Integration & Dist Verification
+```yaml
+entry_id: claim-brand-gate-b1.1-rendered-build-integration
+source_model: Codex 5.5 & Antigravity
+source_claim: "Wire design-system.css into index.html head, copy and bundle design-system.css and assets into dist/dashboard during build-dashboard.js, fail check:frontend on stale dist output, and verify slate provenance badge styling in rendered dist output."
+resolved_endpoint: "scripts/build-dashboard.js"
+endpoint_classification: static_schema
+credential_used: false
+provider_attempted: check_frontend_build_and_brand_linter
+provider_succeeded: true
+receipt_persisted: true
+derived_from: actual_dispatch_attempt
+
+verification_lineage:
+  source_opinion: "B1 visual governance is only real if design-system.css is bundled into dist, dist is fresh relative to source, stale cyan inline styling is absent from dist, and check:frontend asserts dist rendered activation."
+  verified_against_live_code: true
+  evidence: "npm.cmd run build:dashboard bundles dist/dashboard/design-system.css and dist/dashboard/assets/; npm.cmd run check:frontend passes dist freshness, stylesheet link, and rendered slate badge assertions; npx.cmd --no-install hardhat test --no-compile test/DashboardCredibility.test.js passes 4/4."
+  status: VERIFIED_AND_CLOSED
+  blocks_commit: false
+  dependent_artifacts:
+    - "dashboard/index.html"
+    - "dashboard/design-system.css"
+    - "scripts/build-dashboard.js"
+    - "scripts/check-brand-compliance.js"
+    - "scripts/check-frontend-build.js"
+  invalidation_criteria: "If dist/dashboard/design-system.css is missing, if dist/dashboard/index.html is older than source dashboard files, if index.html head lacks stylesheet link, or if dist contains stale static cyan inline styles for #provenance-badge."
+```

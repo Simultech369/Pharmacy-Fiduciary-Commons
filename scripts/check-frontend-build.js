@@ -84,11 +84,38 @@ function checkHeadersConfig() {
   }
 }
 
+function checkDistFreshness() {
+  const distIndex = path.join(buildDir, "index.html");
+  if (!fs.existsSync(distIndex)) {
+    fail("Missing dist/dashboard/index.html. Run npm.cmd run build:dashboard first.");
+    return;
+  }
+
+  const distMtime = fs.statSync(distIndex).mtimeMs;
+  const sourceFiles = [
+    path.join(rootDir, "dashboard", "index.html"),
+    path.join(rootDir, "dashboard", "design-system.css"),
+    path.join(rootDir, "scripts", "build-dashboard.js")
+  ];
+
+  for (const srcFile of sourceFiles) {
+    if (fs.existsSync(srcFile)) {
+      const srcMtime = fs.statSync(srcFile).mtimeMs;
+      if (srcMtime > distMtime + 1000) {
+        fail(`Stale build detected: ${path.relative(rootDir, distIndex)} is older than ${path.relative(rootDir, srcFile)}. Run npm.cmd run build:dashboard.`);
+        return;
+      }
+    }
+  }
+}
+
 function main() {
   if (!fs.existsSync(buildDir)) {
     fail("Missing dist/dashboard. Run npm.cmd run build:dashboard first.");
     return;
   }
+
+  checkDistFreshness();
 
   const files = walk(buildDir);
   if (files.length === 0) {

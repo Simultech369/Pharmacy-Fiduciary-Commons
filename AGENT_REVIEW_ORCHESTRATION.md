@@ -2,12 +2,12 @@
 
 Status: draft operating protocol. This file is for Codex-led planning/review cycles. It does not authorize external disclosure, repository mutation, cleanup, commits, pushes, deployments, credentials use, or live-chain actions.
 
-Current PBM checkpoint for solvency, ZK & brand governance: `404a3ad` (HEAD `404a3ad`, feature/db-proxy)
-Verified Lineage Entries: Entry 001 (RPC Lockdown), Entry 002 (Domain HMAC), Entry 003 (ZK Bounds), Entry 004 (XSS Sanitization), Entry 005 (Router Harness), Entry 006 (Spec Gate A), Entry 007 (VoteNullifier.circom Phase 1 Gate), Entry 008 (Brand Gate B Slice B1 + B4 Linter Skeleton & Build Wiring).
-Consensus Status: Brand Gate B Slice B1 + B4 Linter Skeleton & Production Build Wiring are GREEN. Full dashboard visual governance remains OPEN until remaining lower section inline styles are removed.
+Current PBM checkpoint for solvency, ZK & brand governance: `c2cecc7` (HEAD `c2cecc7`, feature/db-proxy)
+Verified Lineage Entries: Entry 001 (RPC Lockdown), Entry 002 (Domain HMAC), Entry 003 (ZK Bounds), Entry 004 (XSS Sanitization), Entry 005 (Router Harness), Entry 006 (Spec Gate A), Entry 007 (VoteNullifier.circom Phase 1 Gate), Entry 008 (Brand Gate B Slice B1 + B4 Linter Skeleton), Entry 009 (Brand Gate B1.1 Rendered Build Integration).
+Consensus Status: Brand Gate B1.1 Rendered Build Integration is GREEN. Full dashboard visual governance remains OPEN until remaining lower section inline styles are removed.
 Operational Notes:
 1. Windows PowerShell Launcher: Use `npx.cmd --no-install hardhat test --no-compile ...` when `npx.ps1` execution policy blocks command execution.
-2. Build Wiring & Asset Bundling: `scripts/build-dashboard.js` bundles `design-system.css` and `dashboard/assets/` into `dist/dashboard/` and asserts `<link rel="stylesheet" href="./design-system.css">` in `dashboard/index.html`.
+2. Rendered Build Integration: `scripts/build-dashboard.js` bundles `design-system.css` into `dist/dashboard/`, and `scripts/check-frontend-build.js` / `check-brand-compliance.js` fail if `dist` is stale or if `dist/dashboard/index.html` lacks B1 stylesheet activation.
 
 ## Protocol Consensus Definition
 
