@@ -247,6 +247,107 @@
     container-name: panel-container;
   }
 
+  /* B1 Scope: Header, Banners, Monolith Mark & Provenance Badges */
+  .banner-top-warning {
+    background: linear-gradient(to right, #d97706, #dc2626);
+    color: #ffffff;
+    text-align: center;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: var(--font-heading);
+    width: 100%;
+  }
+
+  .logo-section-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .header-logo-img {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.6rem;
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.15), 0 0 0 1px rgba(217, 119, 6, 0.25);
+    object-fit: cover;
+  }
+
+  .logo-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.1rem;
+  }
+
+  .header-controls-group {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  /* Provenance Badges (Strict Stateful Color Containment) */
+  .badge-unverified-slate {
+    background: rgba(148, 163, 184, 0.1);
+    color: var(--text-muted);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    font-family: var(--font-mono);
+  }
+
+  .badge-status-emerald {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent-green-text);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    animation: none;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    font-family: var(--font-mono);
+  }
+
+  .btn-connect-wallet {
+    background: linear-gradient(135deg, #059669, #0284C7);
+    color: #ffffff;
+    font-size: 0.85rem;
+    padding: 0.4rem 1rem;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.4rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-connect-wallet:hover {
+    box-shadow: 0 6px 16px rgba(0, 229, 255, 0.3);
+    border-color: var(--accent-cyan);
+  }
+
+  .panel-containment-safeguards {
+    border: 1px solid rgba(16, 185, 129, 0.2) !important;
+    background: rgba(16, 185, 129, 0.03) !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .panel-title-split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0px;
+  }
+
   /* Card Lift Effects based on theme */
   .panel:hover {
     box-shadow: var(--shadow-hover) !important;

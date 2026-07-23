@@ -817,24 +817,24 @@
 </head>
 <body>
 
-  <div style="background: linear-gradient(to right, #f59e0b, #ef4444); color: #fff; text-align: center; padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); font-family: var(--font-heading); width: 100%;">
-    <span>⚠️ DEMO & SYNTHETIC DATA ONLY — NOT CONNECTED TO A LIVE PRODUCTION MAINNET</span>
+  <div class="banner-top-warning">
+    <span>DEMO & SYNTHETIC DATA ONLY — NOT CONNECTED TO A LIVE PRODUCTION MAINNET</span>
   </div>
 
   <header>
     <div class="header-container">
-      <div class="logo-section" style="display: flex; align-items: center; gap: 0.85rem;">
-        <img src="assets/logo.png" alt="Pharmacy Fiduciary Commons Emblem" style="width: 2.75rem; height: 2.75rem; border-radius: 0.6rem; box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 0 1px rgba(6, 182, 212, 0.2); object-fit: cover;">
+      <div class="logo-section logo-section-wrapper">
+        <img src="assets/logo.png" alt="Pharmacy Fiduciary Commons Emblem" class="header-logo-img">
         <div>
           <div class="logo-text">Pharmacy Fiduciary Commons</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem;">Rebate Transparency & Participatory Budgeting Protocol</div>
+          <div class="logo-subtitle">Rebate Transparency & Participatory Budgeting Protocol</div>
         </div>
       </div>
-      <div style="display: flex; gap: 1rem; align-items: center;">
-        <span id="provenance-badge" class="badge-unverified" style="background: rgba(6, 182, 212, 0.1); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.2);">
+      <div class="header-controls-group">
+        <span id="provenance-badge" class="badge-unverified-slate">
           PROVENANCE: LOCAL MOCK / SYNTHETIC
         </span>
-        <button id="btn-connect" class="btn-vote" style="background: linear-gradient(135deg, var(--accent-blue), #1d4ed8); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); font-size: 0.85rem; padding: 0.4rem 1rem;">🔌 Connect Wallet</button>
+        <button id="btn-connect" class="btn-vote btn-connect-wallet">Connect Wallet</button>
       </div>
     </div>
   </header>
@@ -842,25 +842,25 @@
   <main>
 
     <!-- Cloud Connection Security Containment Notice -->
-    <section class="panel" style="border: 1px solid rgba(6, 182, 212, 0.2); background: rgba(6, 182, 212, 0.03); margin-bottom: 2rem;">
-      <div class="panel-title" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0px;">
+    <section class="panel panel-containment-safeguards">
+      <div class="panel-title panel-title-split">
         <div>
-          🛡️ Protocol Status & Governance Safeguards
+          Protocol Status & Governance Safeguards
           <div class="panel-subtitle">Direct client-to-database connections fail closed. Authenticated voter profiles synchronize via the encrypted server proxy.</div>
         </div>
-        <div id="db-status-badge" class="badge-unverified" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green-text); border: 1px solid rgba(16, 185, 129, 0.2); animation: none;">
+        <div id="db-status-badge" class="badge-status-emerald">
           ● LOCAL SERVER PROXY CONNECTED
         </div>
       </div>
     </section>
 
-    <section class="panel first-run-panel" data-provenance="guided-local-demo">
-      <div class="panel-title">
+    <section id="first-run-receipt-panel" class="panel first-run-panel" data-provenance="guided-local-demo">
+      <div class="panel-title panel-title-split">
         <div>
           First Run Receipt Flow
           <div class="panel-subtitle">One local command produces the visible proof path for the prototype.</div>
         </div>
-        <span class="badge-unverified" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green-text); border: 1px solid rgba(16, 185, 129, 0.2); animation: none;">LOCAL DEMO PATH</span>
+        <span class="badge-status-emerald">LOCAL DEMO PATH</span>
       </div>
 
       <div class="first-run-summary">

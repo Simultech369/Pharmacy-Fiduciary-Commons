@@ -126,6 +126,15 @@ function main() {
 
   checkHeadersConfig();
 
+  // Run Brand Compliance Linter (Slice B1 + B4 Staged Guardrail)
+  try {
+    const { execSync } = require("node:child_process");
+    const linterOutput = execSync("python scripts/check-brand-compliance.js", { cwd: rootDir, encoding: "utf8" });
+    console.log(linterOutput.trim());
+  } catch (err) {
+    fail(`Brand compliance linter failed: ${err.stdout || err.message}`);
+  }
+
   if (!process.exitCode) {
     console.log("Frontend production build checks passed.");
   }

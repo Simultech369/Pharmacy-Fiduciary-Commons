@@ -2,12 +2,12 @@
 
 Status: draft operating protocol. This file is for Codex-led planning/review cycles. It does not authorize external disclosure, repository mutation, cleanup, commits, pushes, deployments, credentials use, or live-chain actions.
 
-Current PBM checkpoint for solvency, ZK & brand governance: `be0cf11` (HEAD `be0cf11`, feature/db-proxy)
-Verified Lineage Entries: Entry 001 (RPC Lockdown), Entry 002 (Domain HMAC), Entry 003 (ZK Bounds), Entry 004 (XSS Sanitization), Entry 005 (Router Harness), Entry 006 (Spec Gate A), Entry 007 (VoteNullifier.circom Phase 1 Gate).
-Consensus Status: Brand Spec v1, synthesized review artifact, and Fiduciary Monolith artwork checkpoint are GREEN. Full dashboard visual governance is still OPEN.
+Current PBM checkpoint for solvency, ZK & brand governance: `8fddee0` (HEAD `8fddee0`, feature/db-proxy)
+Verified Lineage Entries: Entry 001 (RPC Lockdown), Entry 002 (Domain HMAC), Entry 003 (ZK Bounds), Entry 004 (XSS Sanitization), Entry 005 (Router Harness), Entry 006 (Spec Gate A), Entry 007 (VoteNullifier.circom Phase 1 Gate), Entry 008 (Brand Gate B Slice B1 + B4 Linter Skeleton).
+Consensus Status: Brand Gate B Slice B1 + B4 Linter Skeleton is GREEN. Full dashboard visual governance remains OPEN until remaining lower section inline styles are removed.
 Operational Notes:
 1. Windows PowerShell Launcher: Use `npx.cmd --no-install hardhat test --no-compile ...` when `npx.ps1` execution policy blocks command execution.
-2. Review Artifact Transparency: `review-context/brand_gate_a_oss_swarm_reviews.md` is labeled as a Synthesized Expert Persona Review Packet (no live API model receipts claimed).
+2. Staged Brand Guardrail: `scripts/check-brand-compliance.js` hard-fails on B1-scope inline styles, unverified cyan badges, and control emojis, while reporting 94 remaining lower section inline styles as open debt.
 
 ## Protocol Consensus Definition
 

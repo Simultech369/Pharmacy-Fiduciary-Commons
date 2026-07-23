@@ -348,3 +348,30 @@ verification_lineage:
     - "review-context/project_scoped_zk_circuit_verifier_interface_spec.md"
   invalidation_criteria: "If the circuit main public order differs from [roundId, projectId, domainSeparator, membershipRoot, nullifier], if credentialSecret or Merkle path material becomes public, if the nullifier Poseidon(4) or Merkle root equality constraint is removed, or if the verification tests fail."
 ```
+
+### Entry 008: Brand Gate B Slice B1 + B4 Linter Skeleton Implementation
+```yaml
+entry_id: claim-brand-gate-b-slice-b1-and-b4-linter-skeleton
+source_model: Codex 5.5 & Antigravity
+source_claim: "Header, badges, and first-run panel are refactored into CSS classes without inline styles, provenance badge is slate in unverified state, button emojis are stripped, and check-brand-compliance linter verifies B1 scope while reporting lower section inline-style debt."
+resolved_endpoint: "dashboard/index.html"
+endpoint_classification: static_schema
+credential_used: false
+provider_attempted: check_frontend_build_and_brand_linter
+provider_succeeded: true
+receipt_persisted: true
+derived_from: actual_dispatch_attempt
+
+verification_lineage:
+  source_opinion: "Full Brand Gate B visual governance cannot be claimed until all inline styles are extracted, but Slice B1 + B4 linter skeleton establishes testable guardrails for the header and first-run panel without breaking DOM query contracts."
+  verified_against_live_code: true
+  evidence: "npm.cmd run check:frontend passes (0 B1-scope inline styles, slate provenance badge verified, 94 remaining inline styles reported as open debt); npx.cmd --no-install hardhat test --no-compile test/DashboardCredibility.test.js passes 4/4."
+  status: VERIFIED_AND_CLOSED
+  blocks_commit: false
+  dependent_artifacts:
+    - "dashboard/index.html"
+    - "dashboard/design-system.css"
+    - "scripts/check-brand-compliance.js"
+    - "scripts/check-frontend-build.js"
+  invalidation_criteria: "If B1 scope introduces inline style attributes, if #provenance-badge uses static cyan in unverified state, if #btn-connect contains emojis, or if check:frontend fails."
+```
