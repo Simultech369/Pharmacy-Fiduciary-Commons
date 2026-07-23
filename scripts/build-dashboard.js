@@ -100,6 +100,9 @@ function main() {
   const web3Source = fs.readFileSync(path.join(sourceDir, "web3_integration.js"), "utf8");
   fs.writeFileSync(path.join(outputDir, "web3_integration.min.js"), minifyJsConservatively(web3Source));
 
+  const cssSource = fs.readFileSync(path.join(sourceDir, "design-system.css"), "utf8");
+  fs.writeFileSync(path.join(outputDir, "design-system.css"), minifyCss(cssSource));
+
   fs.copyFileSync(
     path.join(sourceDir, "ethers.umd.min.js"),
     path.join(outputDir, "ethers.umd.min.js")
@@ -110,7 +113,16 @@ function main() {
     path.join(outputDir, "supabase.js")
   );
 
-  writeManifest(["index.html", "dashboard-inline.min.js", "web3_integration.min.js", "ethers.umd.min.js", "supabase.js"]);
+  const assetsSourceDir = path.join(sourceDir, "assets");
+  const assetsOutputDir = path.join(outputDir, "assets");
+  if (fs.existsSync(assetsSourceDir)) {
+    fs.mkdirSync(assetsOutputDir, { recursive: true });
+    for (const file of fs.readdirSync(assetsSourceDir)) {
+      fs.copyFileSync(path.join(assetsSourceDir, file), path.join(assetsOutputDir, file));
+    }
+  }
+
+  writeManifest(["index.html", "dashboard-inline.min.js", "design-system.css", "web3_integration.min.js", "ethers.umd.min.js", "supabase.js"]);
 
   console.log(`Dashboard production assets written to ${path.relative(rootDir, outputDir)}`);
 }

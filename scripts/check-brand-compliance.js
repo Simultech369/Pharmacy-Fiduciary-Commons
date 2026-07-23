@@ -32,6 +32,14 @@ def run_compliance_checks():
 
     errors = []
 
+    # 0. Check design-system.css link tag in source HTML
+    if '<link rel="stylesheet" href="./design-system.css">' not in content:
+        errors.append("Stylesheets Link Check: index.html is missing <link rel=\"stylesheet\" href=\"./design-system.css\"> in <head>.")
+
+    dist_css = os.path.join(ROOT_DIR, "dist/dashboard/design-system.css")
+    if not os.path.exists(dist_css):
+        errors.append("Build Output Check: dist/dashboard/design-system.css does not exist. Run npm.cmd run build:dashboard.")
+
     # 1. Total inline styles audit
     style_matches = re.findall(r'style="[^"]*"', content)
     total_inline_styles = len(style_matches)
