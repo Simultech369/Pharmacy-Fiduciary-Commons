@@ -1,6 +1,6 @@
 # Start Here: Pharmacy Fiduciary Commons
 
-Pharmacy Fiduciary Commons is a local/testnet prototype for showing how rebate deposits, Merkle pharmacy claims, patient-fund matching, and portability exports can be checked without asking a PBM or dashboard operator to be trusted by default.
+Pharmacy Fiduciary Commons is a local prototype to test one idea: independent pharmacies should be able to verify their rebate claims using math, rather than taking a PBM's word for it.
 
 It is not audited, not deployed to mainnet, and not ready for real funds.
 
@@ -29,7 +29,7 @@ npm.cmd ci
 npm.cmd run demo:local
 ```
 
-This command compiles the contracts, creates a synthetic pharmacy allocation file, generates a Merkle root and proofs, runs focused claim/export and patient-fund matching tests, builds the static dashboard, and checks the dashboard bundle for release-blocking frontend issues.
+This command compiles our smart contracts, builds dummy claim proofs, runs the test suite, and outputs the dashboard page at `dist/dashboard/index.html`.
 
 3. Open the dashboard prototype:
 
