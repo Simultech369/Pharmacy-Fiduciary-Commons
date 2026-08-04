@@ -116,7 +116,30 @@ CREATE POLICY "Creators can update their own draft proposals" ON public.proposal
 CREATE POLICY "Creators can delete their own draft proposals" ON public.proposals
     FOR DELETE USING (auth.uid() = creator_id AND status = 'draft');
 
--- C. Offline Vouchers Policies
+-- C. Tenant Claims Policies
+CREATE TABLE IF NOT EXISTS public.tenant_claims (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id VARCHAR(64) NOT NULL,
+    claim_hash VARCHAR(64) NOT NULL,
+    amount NUMERIC(18,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.tenant_claims ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Tenant claims viewable by tenant members or service role" ON public.tenant_claims
+    FOR SELECT USING (
+        (auth.jwt() -> 'app_metadata'::text ->> 'tenant_id') = tenant_id OR
+        auth.role() = 'service_role'
+    );
+
+CREATE POLICY "Tenant claims insertable by tenant members or service role" ON public.tenant_claims
+    FOR INSERT WITH CHECK (
+        (auth.jwt() -> 'app_metadata'::text ->> 'tenant_id') = tenant_id OR
+        auth.role() = 'service_role'
+    );
+
+-- D. Offline Vouchers Policies
 CREATE POLICY "Users can view their own vouchers" ON public.offline_vouchers
     FOR SELECT USING (auth.uid() = user_id);
 

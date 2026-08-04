@@ -19,6 +19,30 @@ CREATE TABLE IF NOT EXISTS public.registration_ledger (
 ALTER TABLE public.voter_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.registration_ledger ENABLE ROW LEVEL SECURITY;
 
+-- Create tenant_claims table for multi-tenant isolation
+CREATE TABLE IF NOT EXISTS public.tenant_claims (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id VARCHAR(64) NOT NULL,
+    claim_hash VARCHAR(64) NOT NULL,
+    amount NUMERIC(18,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.tenant_claims ENABLE ROW LEVEL SECURITY;
+
+-- Tenant claims RLS policy: users can view claims matching their JWT tenant claim or service_role
+CREATE POLICY "Tenant claims viewable by tenant members or service role" ON public.tenant_claims
+    FOR SELECT USING (
+        (auth.jwt() -> 'app_metadata'::text ->> 'tenant_id') = tenant_id OR
+        auth.role() = 'service_role'
+    );
+
+CREATE POLICY "Tenant claims insertable by tenant members or service role" ON public.tenant_claims
+    FOR INSERT WITH CHECK (
+        (auth.jwt() -> 'app_metadata'::text ->> 'tenant_id') = tenant_id OR
+        auth.role() = 'service_role'
+    );
+
 -- Voter profiles: visible only by the owner or database service roles
 CREATE POLICY "Voter profiles are viewable only by the owner or service role" ON public.voter_profiles
     FOR SELECT USING (auth.uid() = id OR auth.role() = 'service_role');

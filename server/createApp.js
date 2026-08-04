@@ -7,6 +7,18 @@ function sha256(data) {
   return crypto.createHash("sha256").update(data).digest("hex");
 }
 
+function stableStringify(value) {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
+}
+
 const allowedPolicyVersions = new Set([
   "fiduciary-credential-policy-v1",
   ethers.keccak256(ethers.toUtf8Bytes("fiduciary-credential-policy-v1"))
@@ -386,7 +398,7 @@ function createApp(supabaseClient, config = {}) {
       }
 
       // --- ATOMIC DATABASE LEDGER TRANSACTION CLAIM ---
-      const requestHash = sha256(JSON.stringify(req.body));
+      const requestHash = sha256(stableStringify(req.body));
       const { data: ledgerRes, error: rpcErr } = await supabaseClient.rpc("register_voter_ledger_start", {
         p_nonce_key: nonceKey,
         p_request_hash: requestHash
@@ -512,6 +524,7 @@ function createApp(supabaseClient, config = {}) {
 
       if (finalErr) {
         console.error("Supabase ledger commit error:", finalErr);
+        await supabaseClient.rpc("register_voter_ledger_fail", { p_nonce_key: nonceKey });
         return res.status(500).json({ error: "Database transaction failed" });
       }
 

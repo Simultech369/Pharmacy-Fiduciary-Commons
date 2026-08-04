@@ -4,6 +4,18 @@ const ethers = require("ethers");
 const crypto = require("crypto");
 const { createApp } = require("../server/createApp");
 
+function stableStringify(value) {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
+}
+
 // Generate dynamic random wallets for voter and trusted issuer relayer
 const testWallet = ethers.Wallet.createRandom();
 const issuerWallet = ethers.Wallet.createRandom();
@@ -87,6 +99,9 @@ function createMockSupabase() {
         }
       }
       if (func === "register_voter_ledger_complete") {
+        if (client._ledgerCompleteFailMode) {
+          return { error: new Error("Mock ledger complete RPC failure") };
+        }
         const entry = mockDb.registration_ledger.find(r => r.nonce_key === args.p_nonce_key);
         if (entry) {
           entry.status = "completed";
@@ -383,6 +398,37 @@ describe("Database API Proxy Server Security Patch", () => {
       expect(res2.body.userId).to.equal(userId);
     });
 
+    it("returns previous completed result when retry JSON keys arrive in a different order", async () => {
+      const payload = await getValidRegistrationPayload();
+      const reorderedPayload = {
+        relayerDeadline: payload.relayerDeadline,
+        relayerNonce: payload.relayerNonce,
+        issuerSignature: payload.issuerSignature,
+        signature: payload.signature,
+        expiresAt: payload.expiresAt,
+        clientNonce: payload.clientNonce,
+        policyVersion: payload.policyVersion,
+        credentialHash: payload.credentialHash,
+        roundId: payload.roundId,
+        chainId: payload.chainId,
+        walletAddress: payload.walletAddress
+      };
+
+      const res1 = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload);
+      expect(res1.status).to.equal(200);
+      const userId = res1.body.userId;
+
+      const res2 = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(reorderedPayload);
+      expect(res2.status).to.equal(200);
+      expect(res2.body.userId).to.equal(userId);
+    });
+
     it("rejects same-nonce retry if the payload request hash is mismatched (replay attempt)", async () => {
       const clientNonce = crypto.randomUUID();
       const payload1 = await getValidRegistrationPayload({ clientNonce, credentialHash: "0x" + "a".repeat(64) });
@@ -436,7 +482,7 @@ describe("Database API Proxy Server Security Patch", () => {
 
     it("marks status as failed if ledger commit step fails", async () => {
       const payload = await getValidRegistrationPayload();
-      mockSupabase._profileFailMode = true;
+      mockSupabase._ledgerCompleteFailMode = true;
 
       const res = await request(app)
         .post("/api/voters/register")
@@ -453,7 +499,7 @@ describe("Database API Proxy Server Security Patch", () => {
       // Inject pending status directly to simulate a concurrent request currently processing
       mockSupabase._mockDb.registration_ledger.push({
         nonce_key: `${payload.walletAddress.toLowerCase()}:${payload.clientNonce}`,
-        request_hash: crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex"),
+        request_hash: crypto.createHash("sha256").update(stableStringify(payload)).digest("hex"),
         status: "pending",
         user_id: null,
         created_at: new Date().toISOString(),
@@ -526,6 +572,17 @@ describe("Database API Proxy Server Security Patch", () => {
       return false; // anon or non-owner select blocked
     }
 
+    function simulateClaimsRLSPolicy({ role, tenantId, targetClaim }) {
+      // Multi-tenant claims policy: USING (auth.role() = 'service_role' OR (auth.role() = 'authenticated' AND tenant_id = current_tenant()))
+      if (role === "service_role") {
+        return true;
+      }
+      if (role === "authenticated" && tenantId && tenantId === targetClaim.tenant_id) {
+        return true;
+      }
+      return false; // Cross-tenant access blocked
+    }
+
     it("enforces voter profile visibility restrictions per the RLS role matrix", () => {
       const profile = { id: "user-123", wallet_address: "0x123..." };
 
@@ -538,6 +595,19 @@ describe("Database API Proxy Server Security Patch", () => {
       // Anonymous / Non-owner SELECT must be blocked
       expect(simulateRLSPolicy({ role: "anon", userId: null, targetProfile: profile })).to.be.false;
       expect(simulateRLSPolicy({ role: "authenticated", userId: "another-user", targetProfile: profile })).to.be.false;
+    });
+
+    it("enforces multi-tenant claim isolation preventing cross-tenant context contamination", () => {
+      const claimTenantA = { id: "claim-101", tenant_id: "tenant-pharmacy-a", amount: "$12,450" };
+
+      // Tenant A accessing Tenant A claim should be permitted
+      expect(simulateClaimsRLSPolicy({ role: "authenticated", tenantId: "tenant-pharmacy-a", targetClaim: claimTenantA })).to.be.true;
+
+      // Tenant B attempting to access Tenant A claim MUST be blocked
+      expect(simulateClaimsRLSPolicy({ role: "authenticated", tenantId: "tenant-pharmacy-b", targetClaim: claimTenantA })).to.be.false;
+
+      // Service role access for audit consolidation permitted
+      expect(simulateClaimsRLSPolicy({ role: "service_role", tenantId: null, targetClaim: claimTenantA })).to.be.true;
     });
   });
 });
