@@ -56,6 +56,19 @@ function checkRemoteLinkTags(html) {
   }
 }
 
+function checkRemoteCssImports(css, relativePath) {
+  const importRegex = /@import\s+(?:url\(\s*)?["']?(https?:\/\/[^"')\s;]+)/gi;
+  let match;
+  while ((match = importRegex.exec(css)) !== null) {
+    fail(`Frontend build uses remote CSS import in ${relativePath}: ${match[1]}`);
+  }
+
+  const urlRegex = /url\(\s*["']?(https?:\/\/[^"')\s]+)/gi;
+  while ((match = urlRegex.exec(css)) !== null) {
+    fail(`Frontend build uses remote CSS URL in ${relativePath}: ${match[1]}`);
+  }
+}
+
 function checkHeadersConfig() {
   if (!fs.existsSync(headersPath)) {
     fail("Missing deployment/hosting.headers.example.json.");
@@ -140,9 +153,31 @@ function main() {
       }
     }
 
+function checkLocalDocLinks(html) {
+  const hrefs = Array.from(html.matchAll(/href=["']([^"']+\.md)["']/gi)).map(m => m[1]);
+  for (const href of hrefs) {
+    const targetPath = path.resolve(buildDir, href);
+    if (!fs.existsSync(targetPath)) {
+      fail(`Broken local documentation link in built HTML: ${href} (target not found at ${targetPath})`);
+    }
+  }
+}
+
+function checkAriaAttributes(html) {
+  if (!/id="btn-toggle-tour"[^>]*aria-controls=/i.test(html) || !/id="btn-toggle-tour"[^>]*aria-expanded=/i.test(html)) {
+    fail("Tour toggle button (#btn-toggle-tour) missing required aria-controls or aria-expanded accessibility attributes.");
+  }
+}
+
     if (path.basename(file) === "index.html") {
       checkScriptTags(content);
       checkRemoteLinkTags(content);
+      checkLocalDocLinks(content);
+      checkAriaAttributes(content);
+    }
+
+    if (path.extname(file).toLowerCase() === ".css") {
+      checkRemoteCssImports(content, relative);
     }
   }
 
@@ -156,7 +191,8 @@ function main() {
   // Run Brand Compliance Linter (Slice B1 + B4 Staged Guardrail)
   try {
     const { execSync } = require("node:child_process");
-    const linterOutput = execSync("python scripts/check-brand-compliance.js", { cwd: rootDir, encoding: "utf8" });
+    const pythonCommand = process.env.PYTHON || (process.platform === "win32" ? "python" : "python3");
+    const linterOutput = execSync(`${pythonCommand} scripts/check-brand-compliance.js`, { cwd: rootDir, encoding: "utf8" });
     console.log(linterOutput.trim());
   } catch (err) {
     fail(`Brand compliance linter failed: ${err.stdout || err.message}`);

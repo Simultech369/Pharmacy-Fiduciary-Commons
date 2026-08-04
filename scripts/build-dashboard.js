@@ -122,7 +122,25 @@ function main() {
     }
   }
 
-  writeManifest(["index.html", "dashboard-inline.min.js", "design-system.css", "web3_integration.min.js", "ethers.umd.min.js", "supabase.js"]);
+  const docsToCopy = [
+    "ONBOARDING.md",
+    "README.md",
+    "MECHANISM_COVERAGE.md",
+    "PORTABILITY.md",
+    "OPEN_DESIGN_DECISIONS.md",
+    "SCARCITY_GOVERNANCE.md",
+    "CARE_CONTINUITY.md",
+    "GOVERNANCE.md",
+    "PRODUCTION_READINESS_CHECKLIST.md"
+  ];
+  for (const docFile of docsToCopy) {
+    const srcDoc = path.join(rootDir, docFile);
+    if (fs.existsSync(srcDoc)) {
+      fs.copyFileSync(srcDoc, path.join(outputDir, docFile));
+    }
+  }
+
+  writeManifest(["index.html", "dashboard-inline.min.js", "design-system.css", "web3_integration.min.js", "ethers.umd.min.js", "supabase.js", ...docsToCopy.filter(f => fs.existsSync(path.join(rootDir, f)))]);
 
   console.log(`Dashboard production assets written to ${path.relative(rootDir, outputDir)}`);
 }

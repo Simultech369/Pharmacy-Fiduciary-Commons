@@ -339,9 +339,9 @@ async function fetchLiveState() {
           warningBanner.style.color = "var(--accent-red-text)";
           let msg = `\u26A0\uFE0F LIQUIDITY DEFICIT: The actual contract balance (${actualBalance.toFixed(2)}) is lower than the required accounting balance (${requiredBalance.toFixed(2)}).`;
           if (roundState === 1) {
-            msg += ` Finalizing the active round will execute a council refund of up to ${matchingPool.toFixed(2)} tokens, which will leave the contract insolvent and lock out previous claimants! Please deposit at least ${(requiredBalance - actualBalance).toFixed(2)} tokens immediately.`;
+            msg += ` Finalization may continue in characterized paths while recording underbacking; project claims still require real token liquidity. Top up at least ${(requiredBalance - actualBalance).toFixed(2)} tokens to fully back recorded obligations.`;
           } else {
-            msg += ` Claims/finalization will fail due to depletion. Please top up the contract with ${tokenAddress}.`;
+            msg += ` Claims may fail without available liquidity. Please top up the contract with ${tokenAddress}.`;
           }
           warningBanner.innerText = msg;
         } else if (roundState === 1 && actualBalance < (totalUnclaimed + matchingPool)) {
@@ -350,7 +350,7 @@ async function fetchLiveState() {
           warningBanner.style.borderColor = "var(--accent-red)";
           warningBanner.style.color = "var(--accent-red-text)";
           const deficit = (totalUnclaimed + matchingPool) - actualBalance;
-          warningBanner.innerText = `\u26A0\uFE0F SOLVENCY LOCK DETECTED: The contract balance (${actualBalance.toFixed(2)}) is less than totalUnclaimed + matchingPool (${(totalUnclaimed + matchingPool).toFixed(2)}). Finalizing this round will revert on-chain due to the solvency invariant check! Please top up the contract by depositing at least ${deficit.toFixed(2)} tokens to allow finalization.`;
+          warningBanner.innerText = `\u26A0\uFE0F UNDERBACKING WARNING: The contract balance (${actualBalance.toFixed(2)}) is less than totalUnclaimed + matchingPool (${(totalUnclaimed + matchingPool).toFixed(2)}). previewFinalize().isSufficient would be false, but that is not a universal can-finalize flag; characterized paths may finalize while recording shortfall. Top up at least ${deficit.toFixed(2)} tokens to fully back prior shares and the active pool.`;
         } else if (roundState === 1 && matchingPool === 0) {
           warningBanner.style.display = "block";
           warningBanner.style.background = "rgba(245, 158, 11, 0.1)";
@@ -661,7 +661,7 @@ async function previewFinalization() {
 
       previewWarning.className = "alert-panel-red";
       previewWarning.style.display = "block";
-      previewWarning.innerText = `\u26A0\uFE0F SOLVENCY TRAP DETECTED! Although current recorded shares fit the balance, finalizing this round will trigger a council refund of ${refundFormatted} tokens. This refund will drain the contract balance to ${remainingFormatted} tokens, which is less than the outstanding unclaimed shares of ${unclaimedFormatted} tokens from prior rounds. This will leave the contract insolvent and lock out previous claimants! Please deposit at least ${deficitFormatted} tokens before finalization.`;
+      previewWarning.innerText = `\u26A0\uFE0F UNDERBACKING AFTER REFUND WARNING: Although current recorded shares fit the balance, finalizing this round can trigger a council refund of ${refundFormatted} tokens. After that transfer, the contract balance would be ${remainingFormatted} tokens, below outstanding unclaimed shares of ${unclaimedFormatted} tokens from prior rounds. Characterized paths may finalize while recording shortfall; project claims still require real token liquidity. Top up at least ${deficitFormatted} tokens to keep shares fully backed.`;
     } else if (isSufficient) {
       previewWarning.className = "alert-panel-green";
       previewWarning.style.display = "block";
@@ -669,7 +669,7 @@ async function previewFinalization() {
     } else {
       previewWarning.className = "alert-panel-red";
       previewWarning.style.display = "block";
-      previewWarning.innerText = `\u274C INSUFFICIENT LIQUIDITY: Finalization will cause a deficit! Please top up the contract.`;
+      previewWarning.innerText = `\u26A0\uFE0F INSUFFICIENT LIQUIDITY: Finalization may record or expose underbacking. Please top up the contract to keep claims fully liquid.`;
     }
   } catch (err) {
     console.error("Preview finalization failed:", err);
