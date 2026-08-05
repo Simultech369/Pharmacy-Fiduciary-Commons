@@ -112,6 +112,13 @@ proof generator.
 
 ---
 
+## Fiduciary Dashboard Interface
+
+![Pharmacy Fiduciary Commons Dashboard Interface](dashboard/assets/onboarding_mockup.png)
+*Figure 1: The Ledger of Omissions & Fiduciary Dashboard displaying synthetic PBM pass-through gap accounting, deposit status provenance (`PROVENANCE: LOCAL MOCK / SYNTHETIC`), and Web3 wallet integration.*
+
+---
+
 ## Architecture
 
 ```mermaid
@@ -334,7 +341,7 @@ are intentionally enabled, set `COUNCIL_SAFE_MODULES` and matching
 | External audit | Pending |
 | Mainnet deployment | Not deployed |
 | Production frontend build | Build/check scripts present; public deployment still pending |
-| Database/API/RLS surface | Not present yet |
+| Database/API/RLS surface | Gate DB1 Verified in current working tree (server/createApp.js & test/server.test.js passing 19/19) |
 | Rate limiting, caching, scaling, observability | Design gate only; not implemented yet |
 | ADA/WCAG production audit | Pending |
 | Production readiness checklist | See `PRODUCTION_READINESS_CHECKLIST.md` |

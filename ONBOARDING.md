@@ -37,7 +37,36 @@ This command compiles our smart contracts, builds dummy claim proofs, runs the t
 dist/dashboard/index.html
 ```
 
+![Pharmacy Fiduciary Commons Dashboard Interface](dashboard/assets/onboarding_mockup.png)
+*Figure 1: The Ledger of Omissions dashboard displaying pass-through gap accounting, deposit provenance badges, and patient fund controls.*
+
 Start with the "First Run Receipt Flow" near the top of the page. It shows the shortest story: synthetic allocations become Merkle proof material, focused contract tests exercise claim/export and patient-fund matching paths, and the dashboard bundle records the public prototype receipt. Values marked as synthetic fixtures are not live PBM claims, real patient records, or mainnet contract state.
+
+## Five-Minute Guided Tour
+
+Use this path when someone is seeing the repo for the first time. Stop after the
+receipt flow; do not send them into the full dossier stack until this loop makes
+sense.
+
+1. Run `npm.cmd run demo:local`.
+2. Open `dist/dashboard/index.html`.
+3. Read the top provenance badge first: it should say local mock or synthetic.
+4. Move to "First Run Receipt Flow".
+5. Point at the four receipt steps in order: allocation, commitment, tested
+   rules, public receipt.
+6. Say what each step proves and what it does not prove.
+
+The short explanation:
+
+- Allocation: proves the demo can create a local synthetic allocation file.
+- Commitment: proves the demo can generate Merkle proof material from that file.
+- Tested rules: proves the contract test suite checked the relevant local flows.
+- Public receipt: proves the built dashboard can show the result without
+  pretending the fixture is real-world PBM data.
+
+The visual tone should stay operational: obsidian dark base, jazz cyan only for
+active or verified states, and warm amber for caution, scarcity, or unresolved
+policy. If a color does not carry meaning, remove it.
 
 ## What You Should See
 
@@ -60,7 +89,9 @@ The focused tests exercise two concrete flows:
 
 The prototype shows a rebate distribution pool where pharmacy claims are committed through a Merkle root. A pharmacy can prove it belongs in an allocation set without the dashboard inventing numbers after the fact.
 
-What it does today: local contract tests cover deposits, claims, caps, disputes, recall timing, and accounting boundaries.
+What it does today:
+- Local contract tests cover deposits, claims, daily caps, dispute flagging, recall timing, and accounting boundaries.
+- **Dispute Tolling & Retraction Safeguard**: Flagged claims (`flagClaim()` / `flagExclusionDispute()`) lock disputed funds in reserve during an active resolution window. If the council does not resolve the dispute within `DISPUTE_TIMEOUT` (30 days), the pharmacy can invoke `retractDispute()` to safely reclaim its posture, preventing hostile PBMs or councils from silently burying claims.
 
 What it does not do: guarantee drug supply, physical inventory, reimbursement law compliance, or production custody safety.
 
@@ -124,3 +155,12 @@ These are good short GIF or screen-recording targets:
 - Start at the "First Run Receipt Flow" panel and point out which rows are synthetic fixtures versus contract-backed checks.
 - Show the portability verifier warning that offline mode checks self-consistency only.
 - Trace one patient-fund matching calculation from test setup to expected payout.
+
+Suggested 30-second recording order:
+
+1. Terminal command finishes and prints the dashboard path.
+2. Dashboard opens on the provenance badge and first-run receipt panel.
+3. Cursor pauses on each receipt step label.
+4. Cursor lands on a synthetic badge, then on a contract-backed check badge.
+5. End on the sentence: local prototype, synthetic fixtures, contract-backed
+   checks.
