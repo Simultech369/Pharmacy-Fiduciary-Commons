@@ -1,0 +1,109 @@
+# Pharmacy Fiduciary Commons: Governance Framework
+
+This document defines the rules, roles, and accountability mechanisms governing the Pharmacy Fiduciary Commons. The system is designed under Ostrom-commons principles to manage shared resources without extractive capture.
+
+For the high-level governance philosophy and epistemic guidelines, refer to the [Draft Constitution v0.1 (Non-Ratified)](COMMONS_CONSTITUTION.md) and the proposed [Ratification Procedure](RATIFICATION_PROCEDURE.md).
+
+---
+
+## 1. Mission
+
+The mission of the Pharmacy Fiduciary Commons is to establish a transparent, on-chain rebate pass-through infrastructure that redirects captured pharmaceutical surplus directly back to independent local pharmacies and the patients they serve. This is preventative health infrastructure designed to keep critical health access floors viable, prevent pharmacy deserts, and eliminate opaque middleman extraction.
+
+---
+
+## 2. Eligible Beneficiaries
+
+1. **Independent Pharmacies**: Privately owned, community-focused pharmacies that dispense prescriptions on thin margins and lack the legal leverage of large corporate chains.
+2. **Patients**: Individuals residing in designated healthcare-desert regions or facing precarity in accessing medically necessary prescription drugs.
+
+---
+
+## 3. Council Duties
+
+The Council is a 3/5 multisig address (e.g., Gnosis Safe) representing the trust root of the treasury. The Council is explicitly restricted to:
+* **Epoch Management**: Starting and finalizing epochs (`finalizeEpoch`).
+* **Root Management**: The council proposes Merkle roots for epoch allocations using `proposeRoot`. A separately configured root-confirmer Safe or governance address must approve the proposal using `confirmRoot`.
+* **Recall Operations**: Returning unclaimed epoch funds to the Patient Fund after the 30-day recall delay.
+* **Sanction Administration**: Placing or lifting sanctions on claimant addresses with reason codes.
+* **Dispute Resolution**: Reviewing and resolving flagged claims (`resolveClaim`). Exclusion payouts require prior approval from the separately governed root confirmer and remain subject to treasury caps.
+* **Emergency Action**: Unpausing the system (only the Guardian can pause, only the Council can unpause).
+
+---
+
+## 4. Council Selection, Removal & Patient Voice
+
+* **Annual Nominations**: Signers are elected from community health organizers, independent pharmacy cooperative representatives, and patient advocacy groups. Nominations are held annually.
+* **Patient Voice & Nominations**: Any verified participant pharmacy or patient advocate group can nominate a candidate.
+* **Removal Petition Threshold**: If a Council member is suspected of negligence, conflict of interest, or capture, a public petition signed by **at least 10% of active participant pharmacies and patients** (based on unique claimant addresses over the last 4 epochs) forces a documented signer-replacement process through the Council Safe, proposed ratification pathway, or another explicitly approved governance procedure. This petition pathway is not currently enforced by contract.
+* **Signer Rotation**: Council membership uses `DEFAULT_ADMIN_ROLE`. Root-confirmer rotation is executed through the timelock, and the contract rejects any address that would simultaneously hold council and root-confirmation authority. For the planned eligibility and admission controls, see [RATIFICATION_PROCEDURE.md](RATIFICATION_PROCEDURE.md).
+
+---
+
+## 5. Conflict of Interest (COI) Policy
+
+* No Council member may hold a financial interest, executive role, or consulting agreement with any Pharmacy Benefit Manager (PBM) or major commercial pharmacy chain.
+* Any transaction or Merkle root proposal allocating funds to a pharmacy affiliated with a Council member must be declared, and that member must recuse themselves from root generation and voting.
+
+---
+
+## 6. How Evidence is Reviewed
+
+* **Root Generation**: Off-chain Merkle tree generators use validated dispensing reports (NCPDP standards) to calculate allocations.
+* **Exclusion Auditing**: When an exclusion dispute is flagged (`flagExclusion`), the pharmacy must submit verifiable dispensing data to the Council audit board and bind that evidence to the on-chain flag with a non-zero evidence hash. The Council checks this evidence against the epoch's deposited rebate files, the root confirmer independently approves any proposed payout, and the Council then executes or dismisses the resolution with a non-zero resolution evidence hash. Approved payouts draw only from the explicitly funded exclusion-remediation reserve, never from root escrow or future distribution liquidity.
+* **Audit Transparency**: All audited dispensing data summaries and matching rebate deposits are published under structural transparency guidelines on the public dashboard. Committing evidence to the chain requires adhering to the [Evidence Metadata Schema](EVIDENCE_METADATA.md).
+
+---
+
+## 7. Membership & Participation
+
+* **Who counts as a Member**: Any independent pharmacy or patient advocate holding an eligible, active, unexpired, non-revoked credential bound to the registering wallet. The current registry and issuer pin are prototype trust roots, not a production identity authority.
+* **Pharmacy Participation**: Pharmacies verify credentials, query the ledger of omissions, claim epoch rebates, and flag disputes.
+* **Patient Participation**: Patients participate in allocating Patient Fund resources via local Participatory Budgeting rounds.
+
+---
+
+## 8. Sanctions, Appeals Timeline & Evidence Window
+
+* **Sanctions**: Applied only for verified double-claiming, fake dispensing records, or Sybil behavior. All sanctions are reason-coded and logged publicly on-chain via the `SanctionUpdated` event.
+* **Appeals Timeline**:
+  - Any sanctioned pharmacy may register an appeal directly on-chain using the `appealSanction(string reason, bytes32 evidenceHash)` function.
+  - The Council has a **strict 14-day window** from the `SanctionAppealed` block timestamp to review the submitted evidence.
+  - The Council must issue a public summary of findings and either sustain or lift the sanction (`updateSanction(account, false, "Appeal approved")`) before the 14 days expire.
+* **Public Evidence Window**: The appeal case, relevant dispensing records, and the Council's final justification summary must be published to the public dashboard within 7 days of resolution, keeping all enforcement actions fully legible and contestable.
+
+---
+
+## 9. Nested Enterprises (Dizzy as Judgment Layer)
+
+Following Ostrom's Principle of Nested Enterprises, the Pharmacy Fiduciary Commons is a bounded treasury layer, but it does not attempt to solve all cognitive or ideological disputes within its own smart contract code.
+- **Arbitration Layer**: *Dizzy the Polymath* functions as the off-chain judgment and arbitration layer.
+- **Escalation Path**: If a dispute between the Council and a participant pharmacy remains unresolved after the 14-day window, or if a conflict of interest claim is made against the Council, the parties may escalate the case to the Dizzy agent framework.
+- **Judgment Outputs**: Dizzy evaluates the claim against the `LEGAL-GUARDRAILS` and the `MECHANISM_SIEVE` to output a structured recommendation. Because Dizzy is an advisory, off-chain agent framework, its judgments are non-binding recommendations. The Council retains final on-chain execution authority but is expected to align its actions with Dizzy's findings to preserve community trust and public credibility.
+
+---
+
+## 10. Credential Issuer Key Rotation & Revocation
+
+The current credential issuer and registry are prototype trust roots. Before public governance use, the Council must operate issuer keys under a documented lifecycle:
+
+* **Issuer Pinning**: Accepted issuer fingerprints must be versioned by environment. Local/test issuer keys must not be reused for production voting.
+* **Rotation**: Issuer-key rotation requires a public notice, updated verifier configuration, regenerated examples, and a test proving old signatures fail when the issuer is removed.
+* **Revocation**: Revoked credential IDs remain in the revocation registry across key rotations. Removing an issuer key does not erase prior revocation history.
+* **Freshness**: Direct issuer-signed voter registration must include the current registration nonce and an expiration deadline. Council registration or revocation advances the nonce and invalidates outstanding signatures.
+* **Production Gate**: No credentialed public vote should be represented as production-ready until issuer custody, backup, rotation, revocation publication, and emergency replacement procedures are documented and rehearsed. Future credential designs will integrate the [Identity Nullifier Design](IDENTITY_NULLIFIER_DESIGN.md) to protect participant privacy.
+
+---
+
+## 11. Governance Hardening & Decentralization Roadmap
+
+To prevent centralized capture and mitigate administrative abuse, the Commons is committed to the following governance roadmap before public launch:
+
+### Council Power Mitigation
+* **Multi-Sig to Timelocked Governance**: Transition the `COUNCIL_ROLE` from a static multisig to a timelocked, identity-gated, or cooperative-based governance model. This enforces a mandatory delay (e.g. 7 days) on all administrative actions, giving the community time to veto malicious proposals.
+* **Annual Council Seat Rotations**: Mandate that Council signer seats are rotated among verified independent pharmacies and patient advocacy groups every 12 months. No individual or entity may hold a Council seat for more than two consecutive terms.
+* **Automated Refund Guard**: Implement smart-contract constraints on round finalizations to prevent underfunded balance depletion, ensuring the council's refund cannot be executed if it violates the treasury's outstanding solvency obligations.
+
+### Local Subsidiarity & Local Autonomy
+* **Federated Ledger Subsidiarity**: Transition `PharmacyMutualCredit` configurations (credit limits, participant registration, voucher issuer status) from global Council control to local federation multisigs. Under this model, local pharmacy cooperatives govern their own credit lines, defaults, and voucher limits, isolating local failures from the wider network.
+* **Autonomous Dispute Resolution**: Establish decentralized, randomly selected community juries to resolve local pharmacy disputes and sanction appeals, rather than relying on a centralized Council audit board.

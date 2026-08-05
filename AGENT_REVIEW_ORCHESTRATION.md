@@ -2,12 +2,12 @@
 
 Status: draft operating protocol. This file is for Codex-led planning/review cycles. It does not authorize external disclosure, repository mutation, cleanup, commits, pushes, deployments, credentials use, or live-chain actions.
 
-Current PBM checkpoint for solvency, ZK & brand governance: `c2cecc7` (HEAD `c2cecc7`, feature/db-proxy)
-Verified Lineage Entries: Entry 001 (RPC Lockdown), Entry 002 (Domain HMAC), Entry 003 (ZK Bounds), Entry 004 (XSS Sanitization), Entry 005 (Router Harness), Entry 006 (Spec Gate A), Entry 007 (VoteNullifier.circom Phase 1 Gate), Entry 008 (Brand Gate B Slice B1 + B4 Linter Skeleton), Entry 009 (Brand Gate B1.1 Rendered Build Integration).
-Consensus Status: Brand Gate B1.1 Rendered Build Integration is GREEN. Full dashboard visual governance remains OPEN until remaining lower section inline styles are removed.
+Current PBM checkpoint for solvency, ZK & brand governance: baseline `04e0e61` (HEAD `04e0e61`, feature/db-proxy) with PageIndex Dossier Tree Indexer GREEN in the current working tree.
+Verified Lineage Entries: Entry 001 (RPC Lockdown), Entry 002 (Domain HMAC), Entry 003 (ZK Bounds), Entry 004 (XSS Sanitization), Entry 005 (Router Harness), Entry 006 (Spec Gate A), Entry 007 (VoteNullifier.circom Phase 1 Gate), Entry 008 (Brand Gate B Slice B1 + B4 Linter Skeleton), Entry 009 (Brand Gate B1.1 Rendered Build Integration), Entry 010 (Brand Gate B2.1 Patient Fund Inline Style Extraction), Entry 011 (Brand Gate B2.2 Portability & Activity Log Inline Style Extraction), Entry 012 (Brand Gate B 100% Visual Governance Completion), Entry 013 (Full-Repo OSS Swarm Review & 8-Lens Multi-Model Audit), Entry 014 (UI Slice B3 Guided Tour Banner & Onboarding Polish), Entry 015 (Gate DB1 Database Proxy Security & Multi-Tenant RLS Hardening), Entry 016 (PageIndex Dossier Tree Indexer & Document Status Reconciliation), Entry 017 (Codex 5.6 Review Reconciliation — SQL RLS Schema, Final Commit Fail-Safe & Strict ZK Leakage Gates), Entry 018 (OSS Council Pass 2 — Skeptic & Advocate Consensus & Dry-Run Cache Validation), Entry 019 (Slither Static Analysis & Solhint Audit Gate), Entry 020 (Codex 5.6 Reconciliation — Diff Hygiene, CLI Global Cache Wiring & Strict ZK Schema Validator).
+Consensus Status: PageIndex Dossier Tree Indexer (`scripts/index_dossier_tree.py`) is FULLY GREEN in the current working tree over baseline `04e0e61`. Scanned 15 bounded PageIndex target documentation files, built `cache/dossier_tree_index.json`, and reconciled stale claims with Entry 015 Gate DB1 proof. This confirms the scanned target set is free of active status contradictions; it is not a full-repository contradiction proof.
 Operational Notes:
 1. Windows PowerShell Launcher: Use `npx.cmd --no-install hardhat test --no-compile ...` when `npx.ps1` execution policy blocks command execution.
-2. Rendered Build Integration: `scripts/build-dashboard.js` bundles `design-system.css` into `dist/dashboard/`, and `scripts/check-frontend-build.js` / `check-brand-compliance.js` fail if `dist` is stale or if `dist/dashboard/index.html` lacks B1 stylesheet activation.
+2. Rendered Build Integration: `scripts/build-dashboard.js` bundles `design-system.css` into `dist/dashboard/`, and `scripts/check-frontend-build.js` / `check-brand-compliance.js` fail if `dist` is stale, if `dist/dashboard/index.html` lacks B1 stylesheet activation, if remote CSS imports are reintroduced, or if B2.1 scope reintroduces inline styles.
 
 ## Protocol Consensus Definition
 
@@ -117,8 +117,46 @@ Recommended output location:
 | Gemma via OpenRouter | same as above, but external and context/provider dependent | external disclosure | approved filtered packet |
 | Seed-style agentic reviewer | "what will break when implemented" and implementation-plan stress tests | external/proprietary unless verified local; may push toward coding | policy docs plus tests, no dirty full repo |
 | Muse-style UX/strategy reviewer | UX, product language, participant trust, multimodal critique if route exists | external/proprietary; not evidenced locally for PBM runs | public docs/screenshots only with approval |
+| Laguna XS 2.1 (`dealignai/Laguna-XS-2.1-CRACK-GGUF`) | un-steered adversarial code critique, agentic multi-step edge-case analysis, long-context un-aligned reasoning | local GGUF requires Ollama loopback; must remain read-only | local excerpts, uncommitted diffs, or planning docs via loopback (`127.0.0.1:11434`) |
 
 Do not substitute one lane for another without recording why.
+
+## Tooling & Pattern Architecture Policy
+
+### PageIndex Pattern (Claim Traceability)
+
+PageIndex-style document verification is adopted as a lightweight design
+pattern, not as a repository dependency. The intended use is a deterministic
+tree index over `ONBOARDING.md`, `AGENT_REVIEW_ORCHESTRATION.md`,
+`PBM_HUMAN_LANGUAGE_AND_DESIGN_NOTES.md`, `review-context/*`, and lineage
+ledger entries.
+
+Purpose:
+
+- identify where a claim is stated;
+- map the claim to the exact proof command, test, script, or diff surface;
+- compare baseline `HEAD` claims against dirty working-tree status;
+- flag stale line numbers, debt counts, file paths, or proof wording before
+  promotion.
+
+The governing rule remains: files are claims; the repo diff, linter, build, and
+tests are the proof surface.
+
+### VVAH Security Scanner (Fenced Execution)
+
+VVAH-style vulnerability harnessing is deferred to a fenced read-only security
+lane. If used later, it must run detection-only with remediation disabled
+(`--stop-after s9` or the current equivalent), inside a disposable git worktree.
+
+Non-negotiable constraints:
+
+- no S10/S11 auto-remediation or source patching in the main worktree;
+- no production secrets, privileged RPC endpoints, database service keys, live
+  credentials, or real patient/pharmacy data in scanner environments;
+- scanner output is a finding packet only, such as SARIF or a reconciliation
+  note, and must be reviewed against live files and tests before promotion;
+- any tool behavior or flags must be re-verified from the installed version
+  before execution.
 
 ## Debug Rules
 
@@ -448,6 +486,55 @@ Return:
 - one thing not to polish until policy is decided.
 ```
 
+### Qwen 2.5 Coder Structural & Schema Auditor (`qwen2.5-coder:32b` / `72b`)
+
+```text
+You are Qwen 2.5 Coder operating as a read-only Structural Code, API Contract & Schema Auditor.
+
+Repository: <LOCAL_REPO_ROOT>
+Expected Baseline HEAD: <HEAD>
+
+Boundary:
+- Review and structural analysis only via local Ollama loopback (http://127.0.0.1:11434).
+- Do not edit source files, patch code, commit, push, or execute modifying scripts.
+- Treat all schema and interface claims as unverified until checked against live contracts and test scripts.
+
+Task:
+Audit the provided code changes for API contract breaks, missing TypeScript/Solidity schema validations, state machine edge cases, or broken method signatures across callers.
+
+Return:
+1. Structural / Contract Disconnects: Mismatches between frontend calls and contract/linter expectations.
+2. Type & Validation Gaps: Inputs lacking schema checks or proper error handling.
+3. Code Quality & Modularity: Opportunities for cleaner encapsulation without altering contracts.
+4. Local Verification Command: Smallest command (`npm.cmd test`, `check:frontend`, Hardhat) to verify findings.
+```
+
+### Laguna XS 2.1 Un-aligned Adversarial Critic (`dealignai/Laguna-XS-2.1-CRACK-GGUF`)
+
+```text
+You are Laguna XS 2.1 operating as a read-only ADVERSARIAL RED-TEAM INSPECTOR for a Pharmacy Fiduciary Treasury.
+
+Repository: <LOCAL_REPO_ROOT>
+Expected Baseline HEAD: <HEAD>
+
+Boundary:
+- Review and adversarial analysis only via local Ollama loopback (http://127.0.0.1:11434).
+- Do not edit source files, patch code, commit, push, or execute modifying scripts.
+- Do not trust raw LLM output for final Solidity correctness; pair all hypotheses with Hardhat test verification.
+
+Target Focus:
+1. Hostile Payer Exploits: How could a hostile PBM or insurer exploit claim export windows, dispute timers, or escrow locks?
+2. Governance Capture Paths: How could a cartel of voters or a captured council drain the Patient Fund matching pool or manipulate quadratic weights?
+3. Economic Abuse & Fee Extraction: Where do contract math or accounting boundaries permit hidden fee skimming or un-collateralized liability shifts?
+4. False-Security Claims: Where does the UI, documentation, or code comment claim cryptographic proof or chain-provenance when it is actually an unverified synthetic fallback?
+
+Return:
+1. Hostile / Capture Attack Vectors: Concrete exploitation paths for adversarial actors.
+2. Invariant & Accounting Risks: Assumptions lacking empirical test proof.
+3. Anti-Theater Violations: Claims in UI/docs that over-state current proof strength.
+4. Minimal Hardhat Verification Command: Smallest test command to prove or disprove findings.
+```
+
 ## Current Solvency Review Queue
 
 For `266016c83d544f86dbb67a49240356852e0498b4`, current local review status is:
@@ -468,6 +555,22 @@ Next useful reviewer options:
 Do not run another broad external bundle until the exact packet is selected and approved.
 
 Archive this orchestration packet once owner/governance decisions and the next authorized implementation slice are recorded. Do not keep adding reviewer cycles unless they answer a newly identified blocker.
+
+## Parked Review Items for Future Codex Review Pass
+
+The following policy and UX items are explicitly parked/shelved for a dedicated Codex review pass in a few days:
+
+1. **Dispute Tolling & Retraction Policy Framing**:
+   - *Context*: `PBMRebateTreasury.sol` enforces `DISPUTE_TIMEOUT = 30 days` for claimant retraction, while the synthetic UI scenario table displays an active 11-day council resolution countdown.
+   - *Parked Task for Codex*: Review whether the 11-day UI countdown should map directly to an on-chain `appealWindow` state or remain an informal council SLA indicator before the 30-day retraction timeout triggers.
+
+2. **Remote RPC Verification Gate**:
+   - *Context*: `export-portability.js` permits offline self-consistency checks, but RPC-backed chain-provenance verification requires explicit endpoint flags.
+   - *Parked Task for Codex*: Review whether the verifier UI should hard-block partial export claims without an active RPC connection in staging environments.
+
+3. **Patient Fund Quadratic Matching Cap Policy**:
+   - *Context*: `PatientFundParticipatoryBudgeting.sol` calculates squared vote weights with matching pool recycling.
+   - *Parked Task for Codex*: Review maximum match per project ratio limits for multi-round governance.
 
 ## Stop Conditions
 

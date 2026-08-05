@@ -1,0 +1,45 @@
+Review the current repository (Pharmacy Fiduciary Commons) as a Senior Smart Contract Auditor and Web3 Privacy Systems Engineer.
+
+Mission:
+Audit the current implementation checkpoint after a major security and privacy hardening patch addressing prior Codex 5.6 findings. Analyze the codebase for logical flaws, integration gaps, security edge cases, or false-confidence pathways.
+
+Focus on these specific areas of the patch:
+
+1. Pause Boundary Verification:
+   - File: contracts/PBMRebateTreasury.sol
+   - Change: resolveClaim() now has whenNotPaused.
+   - Audit target: Verify if the pause boundary is safely defined. Confirm that recovery/cleanup operations (recall, stale recovery, reserve withdrawals, and sweeps) remaining unpaused matches operational runbook expectations without creating capital loss risks during a pause event.
+
+2. Governance Enumerable Roles & Safe Audit:
+   - Files: contracts/PBMRebateTreasury.sol, scripts/audit-deployment.js, scripts/deploy-timelock-and-treasury.js
+   - Change: Constructor and grantRole block guardian/confirmer overlap. audit-deployment.js queries Safe getOwners()/getThreshold() and checks exact enumerable role memberships (getRoleMember).
+   - Audit target: Verify if these checks fully prevent governance-capture or EOA-bypass risks on production networks. Are there any edge cases where role-enumerable audits can report false success?
+
+3. Production Release Gate:
+   - Files: scripts/check-production-release.js, RELEASE_CHECKLIST.md, package.json
+   - Change: New check-production-release.js script that forces --env production, rejects parameters template/placeholders, and requires audit/scanner files to cite the current HEAD commit hash.
+   - Audit target: Review whether the production release checks can be bypassed, or if any false-confidence configuration pathways remain.
+
+4. Portability Verifier Data Binding:
+   - File: scripts/verify-export.js
+   - Change: verifyPayload matches claims to receipts, asserts exactly one Merkle proof matching block and address, and verifies gross/net/patient amounts on-chain.
+   - Audit target: Assess if a participant can still fabricate or tamper with claims, proofs, or votes (e.g. cross-round replays, mismatched metadata) and pass this verifier.
+
+5. Frontend Web3 Privacy & Metadata:
+   - Files: dashboard/index.html, dashboard/web3_integration.js, scripts/check-frontend-build.js
+   - Change: Stripped Google Fonts CDN, CSP restricted font-src to 'self', deferred wallet account requests until connection click, redacted full address logging.
+   - Audit target: Verify if any metadata leakage vectors (IP, browser headers, transaction timing) or unsolicited wallet exposures remain.
+
+6. Document and NatSpec Qualifiers:
+   - Files: README.md, OMISSION_LEDGER.md, contracts/PBMRebateTreasury.sol
+   - Change: Omissions clarified as "ledger absences" requiring external expected-deposit records.
+   - Audit target: Confirm that all documentation claims align precisely with contract and script capabilities.
+
+Output Format:
+Please return:
+1. Top 5 logical questions or edge cases that could derail this phase of the roadmap.
+2. Exactly 5 concrete findings, each including:
+   - file/line reference;
+   - verified defect or architectural risk;
+   - reproduction or validation rationale;
+   - smallest recommended correction.

@@ -1,0 +1,53 @@
+Review the current repository state as an independent, no-edits lead reviewer.
+
+Repository Snapshot & Data Lineage:
+- Name: Pharmacy Fiduciary Commons / PBMRebateTreasuryFinal
+- Local Path: C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
+- Current Branch: feature/db-proxy [live verification just run]
+- Current HEAD: 04e0e619aeb1a885cadfb703fa113e6ac363b522 [committed HEAD]
+- Baseline Status: 266 passing unit/integration/circuit tests [live verification just run]
+- Working Tree: Dirty with database proxy security tests, ZK nullifier fixture gates, and solvency planning packets [dirty working tree]
+
+Primary Review Context & Files:
+1. Database Proxy Server & RLS Boundary:
+   - `server/createApp.js` & `server/server.js`
+   - `test/server.test.js`
+   - `supabase/migrations/20260721000000_hardened_rls_and_ledger.sql`
+2. ZK Nullifier Circuit & Fixture Gate:
+   - `circuits/vote_nullifier.circom`
+   - `test/ZKNullifierCircuit.test.js`
+   - `test/ZKNullifierFixtureGate.test.js`
+3. Solvency & Handoff Policy Gate:
+   - `SOLVENCY_OWNER_DECISION_WORKSHEET.md`
+   - `ANTIGRAVITY_HANDOFF_BUNDLE_MANIFEST.md`
+   - `ANTIGRAVITY_SOLVENCY_IMPLEMENTATION_PACKET.md`
+   - `SOLVENCY_DEBT_SEMANTICS.md`
+4. Operational Governance & Lineage:
+   - `.agents/AGENTS.md`
+   - `review-context/agent_work_lineage_ledger.md`
+   - `README.md`
+
+No-Edits Protocol & Boundaries:
+- Do NOT modify files, execute on-chain transactions, commit, push, open PRs, or execute unauthorized code.
+- Treat all unratified owner decision items (SD-01 through SD-06) as `DEFER / DO NOT IMPLEMENT YET`.
+- Treat mock ZK registrations as semantic interfaces only (wallet-linkable) until Circom circuits and proof verifiers are formally audited.
+- Treat database proxy API keys and service roles as strictly separated tenant boundaries.
+
+Review Mission & Output Requirements:
+Provide a structured review following the Triplicate Handoff Schema:
+
+1. VERIFIED FINDINGS (Tag each with exact file/line reference and evidence source):
+   - Review database proxy request ledger idempotency, EIP-191 voter domain verification, and EIP-712 relayer checks.
+   - Review Circom signal ordering, Poseidon nullifier derivation, and Merkle root verification in `vote_nullifier.circom`.
+   - Verify whether mock-path vs. unlinkable-path ZK fixture gates strictly enforce metadata leakage bounds.
+
+2. UNRESOLVED RISKS & BOUNDARY WARNINGS:
+   - Identify any remaining correlation vectors (e.g. RPC IP address, timestamps, gas payer, or stable credential hashes).
+   - Identify any potential RLS policy bypasses or multi-tenant context contamination risks in Supabase schemas.
+   - Highlight any documentation or code overclaims regarding production privacy or settlement authority.
+
+3. SCOPE OF NEXT AUTHORIZED MILESTONE:
+   - Confirm whether the repository is ready for Phase 0 completion or if a specific security/fixture blocker remains.
+   - Rank the next 3 smallest, non-breaking verification or testing slices.
+
+Format your output concisely with clear Markdown headings and exact line citations.

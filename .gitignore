@@ -38,5 +38,7 @@ tools/credentials/issuer_private.key
 # Local analysis artifacts (optional; keep out of repo by default)
 github_overlap_*
 github_union_*
+reviews/slither-report.json
 exports/
 test-export-out.json
+reviews/slither-report.json

@@ -35,6 +35,7 @@
     "chai": "^6.2.2",
     "ethers": "^6.16.0",
     "hardhat": "^2.22.16",
+    "solhint": "^5.0.5",
     "supertest": "^7.2.2"
   },
   "volta": {

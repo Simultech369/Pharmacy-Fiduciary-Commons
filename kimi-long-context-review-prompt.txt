@@ -1,0 +1,95 @@
+Review this repository as a long-context independent no-edits reviewer using the uploaded source bundle and explicit context documents.
+
+Repository:
+- Name: Pharmacy Fiduciary Commons / PBMRebateTreasuryFinal
+- Local path: C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
+- Current local HEAD for this prompt: f1a8f00275b4d3fff1ee993091e02c692faa29cc
+- Current local status before this prompt was written: existing untracked review prompts `grok-review-prompt.txt` and `zero-zk-review-prompt.txt`; this prompt and any review-context artifacts may also be untracked.
+
+Required uploaded context:
+- Upload the full source/context bundle prepared from the local directory, excluding `.git`, `node_modules`, `artifacts`, `cache`, `dist`, and other generated dependency/build outputs.
+- Explicitly include `ANTIGRAVITY_CURRENT_HANDOFF.md` and `README.md` alongside the source files.
+- Treat `grok-review-prompt.txt` and `zero-zk-review-prompt.txt` as prior reviewer framing, not as authoritative evidence.
+- Treat line references in the uploaded source as the source of truth.
+
+Snapshot handling:
+- First compare the current source against any commit hashes or status claims embedded in `ANTIGRAVITY_CURRENT_HANDOFF.md`, `grok-review-prompt.txt`, and `zero-zk-review-prompt.txt`.
+- Do not stop just because those documents mention older commits. Instead, identify stale snapshot claims as possible documentation risks if they could mislead a reviewer, deployer, or maintainer.
+- Do not implement, edit files, commit, push, open issues, or create PRs.
+
+Primary mission:
+Stress-test whether the repository and handoff/design documents honestly describe the implementation boundaries after the mock ZK/nullifier and resilience/governance work. Look especially for places where code, tests, scripts, dashboards, NatSpec, README language, or handoff text accidentally overclaim security, privacy, production readiness, unlinkability, or settlement authority.
+
+Overclaim verification targets:
+- Verify whether the claim "mock ZK/nullifier registration remains semantic only and does not provide production unlinkability" is accurately represented in `README.md`, `ANTIGRAVITY_CURRENT_HANDOFF.md`, `contracts/PatientFundParticipatoryBudgeting.sol`, relevant fixtures, and tests.
+- Verify whether any source, script, dashboard, test name, fixture, or document implies production unlinkability when the implementation remains linkable through `msg.sender`, public events, gas source, timing, RPC metadata, wallet/account flows, stable hashes, support/helpdesk records, or voucher artifacts.
+- Verify whether continuity artifacts, local MAC checks, proxy relay batches, offline vouchers, or review packets are ever described or shaped like settlement authority, proof material, custody material, or production ZK proofs.
+- Verify whether pause boundaries are coherent: `resolveClaim()` is paused, while recall, stale recovery, reserve withdrawals, and sweeps may remain available according to the operational runbook. Check whether that split creates capital loss, griefing, dispute, or false-confidence risks.
+- Verify whether deployment/audit/release scripts can report false success through stale commit citations, placeholder configs, role-enumeration assumptions, Safe/module assumptions, environment mismatch, or local-only checks.
+
+Focus areas:
+1. Metadata leakage and wallet linkage:
+   - `dashboard/index.html`
+   - `dashboard/web3_integration.js`
+   - `scripts/register-voter-relayer.mjs`
+   - `scripts/export-portability.js`
+   - `scripts/verify-export.js`
+   - `tools/credentials/credential-policy.mjs`
+   - `tools/resilience/continuity-engine.mjs`
+   - `tools/resilience/proxy-validator.js`
+   - `tools/offline/continuity-kit.html`
+2. ZK/nullifier honesty boundary:
+   - `contracts/PatientFundParticipatoryBudgeting.sol`
+   - `test/PatientFundParticipatoryBudgeting.test.js`
+   - `test/ZKNullifierFixtureGate.test.js`
+   - `test/fixtures/*.json`
+   - `IDENTITY_NULLIFIER_DESIGN.md`
+   - `ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md`
+   - `README.md`
+3. Pause, recovery, and capital safety:
+   - `contracts/PBMRebateTreasury.sol`
+   - `test/PBMRebateTreasury.security.test.js`
+   - `test/PBMRebateTreasuryStaleRecovery.test.js`
+   - `OPERATIONAL_RUNBOOK.md`
+   - `PRODUCTION_READINESS_CHECKLIST.md`
+4. Governance and production-release false confidence:
+   - `scripts/audit-deployment.js`
+   - `scripts/check-production-release.js`
+   - `scripts/deploy-timelock-and-treasury.js`
+   - `deployment/*.json`
+   - `RELEASE_CHECKLIST.md`
+   - `README.md`
+5. Draft-governance and resilience overclaims:
+   - `contracts/CooperativeParticipatoryBudgeting.sol`
+   - `contracts/ReflexiveFiduciaryManifold.sol`
+   - `test/DraftGovernanceModules.test.js`
+   - `test/ContinuityAndAdversarialTools.test.js`
+   - `PRIVACY_CONTINUITY_INTERVENTION_HANDOFF.md`
+   - `REVIEW_ITERATION_PROCESS.md`
+   - `MIESSLER_INTEGRATION_TRIAGE.md`
+
+Output constraints:
+- Return exactly 5 findings. No more, no fewer.
+- Findings must focus on metadata leakage, pause boundaries, ZK/nullifier overclaims, stale handoff/design claims, or production-readiness false confidence.
+- Each finding must include:
+  - Title
+  - Severity: Critical, High, Medium, Low, or Informational
+  - Classification: verified defect, architectural risk, stale claim, missing test, or overclaim risk
+  - Exact file/line reference(s)
+  - Evidence from the uploaded repo
+  - Reproduction or validation steps a local maintainer can run
+  - Smallest recommended correction
+  - Whether this blocks the next ZK/nullifier milestone
+- Keep each finding under 170 words.
+- If there are fewer than 5 verified defects, fill the remaining slots with the highest-quality architectural risks or overclaim risks, but label them honestly.
+- Do not invent line numbers. If a line number cannot be verified from the uploaded context, say `line unknown in uploaded bundle` and explain why.
+
+Before the findings, include exactly this compact header:
+
+SNAPSHOT_CHECK:
+- reviewed_head: <hash or unknown>
+- stale_embedded_snapshot_claims: <yes/no, one sentence>
+- context_files_seen: <yes/no, mention README and ANTIGRAVITY_CURRENT_HANDOFF>
+- strongest_overclaim_pressure: <one sentence>
+
+Then return only the 5 findings. Do not include a broad summary, praise, implementation plan, or extra appendix.

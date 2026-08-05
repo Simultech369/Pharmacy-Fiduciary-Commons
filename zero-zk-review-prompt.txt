@@ -1,0 +1,28 @@
+﻿Review the current repo at commit 7be006c as an independent no-edits reviewer.
+
+Primary file:
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\NEXT_REVIEW_HANDOFF.md
+
+Mission:
+Stress-test whether the recommended next milestone, the ZK/nullifier design fixture and test gate, is actually the right next slice.
+
+Do not implement, edit files, commit, push, open issues, or create PRs.
+
+Return:
+1. Whether the next milestone should be ZK/nullifier fixtures, or whether another blocker must come first.
+2. The top 5 design decisions that must be settled before any real circuit work.
+3. The smallest useful test/fixture slice to implement next.
+4. Any privacy or governance assumption that would harm independent pharmacies if wrong.
+5. Clear classification for each issue: blocker, roadmap, or philosophical/product-direction.
+
+Focus especially on:
+- participant identity unit
+- NPI/NCPDP profiling risk
+- wallet unlinkability
+- nullifier domains
+- secret custody
+- verifier/root governance
+- mock ZK limitations
+- metadata leakage
+- public payload shape
+- what must be tested before Circom/snarkjs/verifier work

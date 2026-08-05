@@ -37,3 +37,12 @@ jobs:
 
       - name: Validate deployment templates
         run: npm run check:deployment-template
+
+      - name: Run Solhint linter
+        run: npx --no-install solhint "contracts/**/*.sol"
+
+      - name: Build frontend dashboard
+        run: npm run build:dashboard
+
+      - name: Run frontend & brand compliance linter
+        run: node scripts/check-frontend-build.js
