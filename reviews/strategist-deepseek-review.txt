@@ -1,0 +1,492 @@
+# Pharmacy Fiduciary Commons — Strategic Audit Report
+
+---
+
+## Executive Summary
+
+This codebase implements a **three-layer architecture**: (1) on-chain mutual credit clearing (`PharmacyMutualCredit.sol`), (2) participatory budgeting (`PatientFundParticipatoryBudgeting.sol` — referenced but not provided), (3) off-chain Supabase persistence with HMAC-verified offline vouchers, and (4) a browser-based dashboard coordinating wallet signatures with database writes.
+
+The design is **ambitious and novel** — using zero-sum mutual credit to bridge reimbursement delays — but contains **critical solvency risks, governance centralization vectors, and synchronization gaps** between the offline voucher queue and on-chain state.
+
+---
+
+## 1. Smart Contract Audit: `PharmacyMutualCredit.sol`
+
+### 1.1 Core Invariants & Solvency Model
+
+| Invariant | Implementation | Risk |
+|-----------|----------------|------|
+| **Zero-sum balances** | `mapping(address => int256) balances` — sum always 0 | ✓ Enforced by transfer logic |
+| **Credit limit per participant** | `creditLimits[addr]` caps negative balance | ✓ Checked in `_capacityCovers` |
+| **Voucher reservation** | `reservedVoucherCredit[issuer]` tracks committed-but-unsettled | ✓ Prevents double-spend of capacity |
+| **Issuer grace period** | 30-day window after deregistration | ⚠ **Critical flaw** (see 1.3) |
+
+### 1.2 `_capacityCovers` — Correctness Analysis
+
+```solidity
+function _capacityCovers(address participant, uint256 additional, uint256 limit)
+    internal view returns (bool)
+{
+    if (additional > uint256(type(int256).max) ||
+        reservedVoucherCredit[participant] > uint256(type(int256).max) - additional ||
+        limit > uint256(type(int256).max)) {
+        return false;
+    }
+    int256 committed = int256(reservedVoucherCredit[participant] + additional);
+    return balances[participant] >= committed - int256(limit);
+}
+```
+
+**Verdict**: Mathematically sound. Rewrites `balance - committed >= -limit` → `balance >= committed - limit` to avoid underflow. The `committed - limit` subtraction is safe because both are non-negative `int256`.
+
+**Edge case**: If `limit == 0`, `committed - 0 == committed`, check becomes `balance >= committed`. Since `balance` can be negative, this correctly prevents new commitments when already at limit.
+
+### 1.3 Critical Vulnerability: Issuer Grace Period Logic
+
+```solidity
+if (!authorizedIssuers[issuer]) {
+    uint256 deregTime = issuerDeregistrationTimestamp[issuer];
+    if (
+        deregTime == 0 ||
+        v.createdAt >= deregTime ||
+        _hasPassedDelay(deregTime, ISSUER_GRACE_PERIOD)
+    ) {
+        revert Unauthorized();
+    }
+}
+```
+
+**The bug**: `deregTime == 0` **always reverts** for unauthorized issuers — even those **never authorized**.
+
+**Scenario**:
+1. Council calls `updateIssuerStatus(pharmacy, false)` → `deregTime = block.timestamp`
+2. Later, Council calls `updateIssuerStatus(pharmacy, true)` → `deregTime = 0` (reset)
+3. Pharmacy creates voucher at `t1`, gets deregistered at `t2 > t1`
+4. `deregTime = t2`, `v.createdAt = t1 < t2` → grace period applies ✓
+5. **But**: If pharmacy was **never authorized** (never had `authorizedIssuers[addr] = true`), `deregTime == 0` → **permanent revert**
+
+**Fix**:
+```solidity
+if (!authorizedIssuers[issuer]) {
+    uint256 deregTime = issuerDeregistrationTimestamp[issuer];
+    // Only allow grace period if issuer WAS previously authorized
+    if (deregTime == 0) revert Unauthorized(); // Never authorized
+    if (v.createdAt >= deregTime) revert Unauthorized(); // Created after dereg
+    if (_hasPassedDelay(deregTime, ISSUER_GRACE_PERIOD)) revert Unauthorized();
+}
+```
+
+### 1.4 Voucher Expiry & Reservation Release
+
+```solidity
+function releaseExpiredVoucher(bytes32 voucherId) external whenNotPaused {
+    // ...
+    if (block.timestamp <= v.expiry) revert VoucherNotExpired();
+    if (voucherReservationReleased[voucherId]) revert VoucherExpired();
+    // ...
+}
+```
+
+**Issue**: `voucherReservationReleased` mapping serves dual purpose:
+- Tracks if reservation was released (expired)
+- Tracks if voucher was redeemed (via `redeemVoucher` setting it to `true`)
+
+**Collision**: A redeemed voucher has `voucherReservationReleased[id] = true`. If someone calls `releaseExpiredVoucher` on a **redeemed but unexpired** voucher, it reverts `VoucherExpired()` — confusing error message.
+
+**Recommendation**: Split into two mappings:
+```solidity
+mapping(bytes32 => bool) public voucherRedeemed;
+mapping(bytes32 => bool) public voucherReservationReleased;
+```
+
+### 1.5 Governance Role Separation
+
+```solidity
+function _grantRole(bytes32 role, address account) internal override {
+    if (
+        (role == GUARDIAN_ROLE && (hasRole(COUNCIL_ROLE, account) || hasRole(DEFAULT_ADMIN_ROLE, account))) ||
+        ((role == COUNCIL_ROLE || role == DEFAULT_ADMIN_ROLE) && hasRole(GUARDIAN_ROLE, account))
+    ) {
+        revert GovernanceRoleSeparationViolation();
+    }
+    super._grantRole(role, account);
+}
+```
+
+**Strength**: Enforces strict separation at grant-time. **Weakness**: Does not prevent a **compromised COUNCIL** from:
+- Pausing the contract (only GUARDIAN can pause, but COUNCIL can unpause)
+- Registering malicious participants with infinite credit limits
+- Setting `creditLimits` to `type(uint256).max` → effectively unlimited debt
+
+**Mitigation**: Add **circuit breaker** — `MAX_CREDIT_LIMIT` constant, enforced in `updateCreditLimit`.
+
+### 1.6 Missing: System-Wide Solvency Check
+
+The contract tracks **individual** credit limits but has **no global invariant** ensuring the system can settle all obligations. In a zero-sum mutual credit system, **aggregate negative balances must be backed by aggregate positive balances** — but positive balances are just other participants' negative balances.
+
+**Risk**: If Council registers 100 pharmacies with $1M limits each, the system has $100M theoretical credit capacity with **zero external collateral**. This is by design (mutual credit), but the dashboard liquidity board (section 3) only checks the **PB contract's token balance**, not the mutual credit ledger's health.
+
+**Recommendation**: Add a **system health view**:
+```solidity
+function getSystemHealth() external view returns (
+    uint256 totalCreditCapacity,
+    uint256 totalReservedVouchers,
+    uint256 totalOutstandingNegativeBalances,
+    uint256 totalPositiveBalances
+) {
+    // Requires enumeration or off-chain indexing
+}
+```
+
+---
+
+## 2. Dashboard/Web3 Integration: `web3_integration.js`
+
+### 2.1 Architecture Overview
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Browser Wallet │────▶│  ethers.js v6    │────▶│  Local Contracts│
+│  (MetaMask)     │     │  (BrowserProvider)    │  (Hardhat)      │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  User Signs     │     │  Contract Calls  │     │  State Reads    │
+│  Transactions   │     │  castVote,       │     │  balances,      │
+│  (register,     │     │  finalizeRound,  │     │  rounds,        │
+│   vote, finalize)       │  registerVoter   │     │  projects       │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+```
+
+### 2.2 Critical Issues
+
+#### A. **No Supabase Synchronization** — The "Ghost Voucher" Problem
+
+The dashboard **reads on-chain state** but **never writes to Supabase**. The offline voucher flow (`offline_vouchers` table) is **completely disconnected** from the web3 integration.
+
+**Flow gap**:
+1. User creates voucher offline → stored in `localStorage` (not shown, implied)
+2. User comes online → voucher uploaded to Supabase `offline_vouchers` (HMAC verified)
+3. **Reconciliation tool** (`reconcile-vouchers.mjs`) runs → classifies vouchers
+4. **But**: No code path **submits reconciled vouchers on-chain** via `createVoucher`/`redeemVoucher`
+
+**Result**: Offline vouchers accumulate in Supabase but **never reach the mutual credit ledger**.
+
+#### B. **Hardcoded Local Network Only**
+
+```javascript
+const DEPLOYMENT_CONFIG = {
+  31337: { ... }, // Hardhat
+  1337: { ... }   // Hardhat alt
+  // Public networks commented out with zero addresses
+};
+```
+
+**Risk**: Zero mainnet/testnet deployment config. The `web3_integration.js` will show "unsupported chain" warning on any public network.
+
+#### C. **Vote Button Override — Race Condition**
+
+```javascript
+const originalCastVote = window.castVote;
+window.castVote = async function(projectId) {
+  if (!isWeb3Connected) { /* mock fallback */ }
+  // ... on-chain vote
+};
+```
+
+**Problem**: `window.castVote` is overridden **after** `DOMContentLoaded`. If the inline `castVote` in `index.html` (not provided) attaches event listeners **before** this script loads, the override **won't apply** to those listeners.
+
+**Fix**: Use event delegation or ensure load order.
+
+#### D. **Liquidity Board Only Checks PB Contract**
+
+```javascript
+const actualBalRaw = await tokenContract.balanceOf(pbAddress);
+// ... checks actualBalance vs requiredBalance (unclaimed + matchingPool + recycled)
+```
+
+**Blind spot**: The `PharmacyMutualCredit` ledger has **its own liquidity requirements** (credit limits, reserved vouchers) that are **never surfaced** in the dashboard. A pharmacy could be **solvent in PB** but **insolvent in mutual credit**.
+
+---
+
+## 3. Supabase Schema & RLS Audit: `schema.sql`
+
+### 3.1 RLS Policy Evaluation
+
+| Table | Policy | Assessment |
+|-------|--------|------------|
+| `voter_profiles` | `SELECT USING (true)` | ⚠ **Over-permissive**: Wallet addresses & encrypted metadata visible to all. Should require `auth.role() = 'authenticated'`. |
+| `voter_profiles` | `INSERT WITH CHECK (auth.uid() = id)` | ✓ Correct — users only create own profile |
+| `proposals` | `SELECT USING (true)` | ⚠ **Over-permissive**: Draft proposals (potentially sensitive) public. |
+| `proposals` | `UPDATE USING (auth.uid() = creator_id AND status = 'draft')` | ✓ Correct — only creators edit window |
+| `offline_vouchers` | `SELECT USING (auth.uid() = user_id)` | ✓ Users see only own |
+| `offline_vouchers` | `INSERT WITH CHECK (auth.uid() = user_id)` | ✓ Users queue only own |
+| `offline_vouchers` | Admin/service_role full access | ✓ Correct for reconciliation |
+| `reconciliation_runs` | Admin/service_role only | ✓ Correct |
+
+**Critical Gap**: **No policy prevents voucher replay**. A user could insert the same `nullifier` + `round_id` twice (different `id` UUID). The `reconcileVouchers` tool detects this (`duplicate_conflict`), but the database **allows the insert**.
+
+**Fix**: Add unique constraint:
+```sql
+ALTER TABLE public.offline_vouchers 
+ADD CONSTRAINT uq_offline_voucher_nullifier_round 
+UNIQUE (round_id, nullifier);
+```
+
+### 3.2 `verify_voucher_hmac` Trigger — Deep Analysis
+
+```sql
+v_raw_data := '{"generatedAt":"' || NEW.generated_at || '",'
+           || '"nullifier":"' || NEW.nullifier || '",'
+           || '"preimage":"' || NEW.preimage || '",'
+           || '"proofFormat":"' || NEW.proof_format || '",'
+           || '"roundId":' || NEW.round_id::text || ','
+           || '"status":"' || NEW.status || '",'
+           || '"warning":"' || v_warning || '"}';
+```
+
+**Vulnerabilities**:
+
+| Issue | Severity | Explanation |
+|-------|----------|-------------|
+| **No escaping of `warning`** | **HIGH** | `warning` is user-controlled (from client). If it contains `"` or `\`, the JSON structure breaks → HMAC mismatch or **injection into payload**. |
+| **`generated_at` is `VARCHAR(50)` not `TIMESTAMPTZ`** | MEDIUM | Client sends ISO string; no server-side validation of format. |
+| **`round_id` cast to text via `::text`** | LOW | Safe for integers, but `round_id` is `INTEGER` — could be negative. |
+| **Secret fallback hardcoded** | **CRITICAL** | `'fiduciary-commons-secret-key-12345'` used if `app.settings.voucher_secret` not set. **Must be rotated per deployment**. |
+| **Truncation to 64 bits** | MEDIUM | `substring(encode(hmac(...), 'hex') from 1 for 16)` = 64 bits. **Birthday bound at ~2^32 vouchers**. Acceptable for current scale but noted. |
+
+**Exploit Scenario**:
+1. Attacker crafts `warning`: `","injected":"value` 
+2. Payload becomes: `..."warning":"","injected":"value"}` 
+3. HMAC computed over **malformed JSON** — but client computed HMAC over **well-formed JSON** → **mismatch** (attack fails)
+4. **However**: If attacker can predict/control the **exact string concatenation**, they could create a **collision** by making the mangled JSON parse to same semantic values. Unlikely but **not cryptographically robust**.
+
+**Fix**: Use `jsonb_build_object` for canonical serialization:
+```sql
+v_raw_data := jsonb_build_object(
+    'generatedAt', NEW.generated_at,
+    'nullifier', NEW.nullifier,
+    'preimage', NEW.preimage,
+    'proofFormat', NEW.proof_format,
+    'roundId', NEW.round_id,
+    'status', NEW.status,
+    'warning', NEW.warning
+)::text;
+```
+This guarantees **canonical JSON** (sorted keys, proper escaping) matching client-side `JSON.stringify` with sorted keys.
+
+### 3.3 Schema Design Issues
+
+| Column | Issue |
+|--------|-------|
+| `offline_vouchers.generated_at VARCHAR(50)` | Should be `TIMESTAMPTZ` with `CHECK (generated_at ~ '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')` |
+| `offline_vouchers.mac VARCHAR(18)` | `CHECK (mac ~* '^0x[a-f0-9]{16}$')` correct for 64-bit HMAC |
+| `proposals.amount NUMERIC(78, 0)` | Correct for `uint256` (max ~10^77) |
+| `voter_profiles.encrypted_metadata TEXT` | No format enforcement — should be `jsonb` with `CHECK (encrypted_metadata IS NULL OR encrypted_metadata::jsonb ? 'version')` |
+
+---
+
+## 4. Reconciliation Tool: `reconcile-vouchers.mjs`
+
+### 4.1 Algorithm Correctness
+
+```javascript
+const key = `${v.roundId}-${String(v.nullifier).toLowerCase()}`;
+```
+
+**Correct**: Normalizes `nullifier` to lowercase (hex), combines with `roundId`.
+
+**Classifications**:
+- `reconciled`: nullifier+roundId found in on-chain events
+- `duplicate_conflict`: same nullifier+roundId appears >1 in local batch
+- `unresolved`: neither
+
+**Gap**: **No classification for "on-chain but different round"** — a nullifier reused across rounds would be `unresolved` locally but might be valid on-chain in another round. The tool treats `(roundId, nullifier)` as compound key — correct if nullifiers are round-scoped.
+
+### 4.2 Integration Gap: **Write-Back Missing**
+
+The tool **outputs JSON** but **does not**:
+1. Update `offline_vouchers.status` in Supabase
+2. Submit `reconciled` vouchers on-chain via `createVoucher`/`redeemVoucher`
+3. Record results in `reconciliation_runs`
+
+**This is the critical missing pipeline stage**.
+
+---
+
+## 5. Cross-Layer Systemic Risks
+
+### 5.1 The "Two-Ledger" Solvency Disconnect
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PHARMACY FIDUCIARY COMMONS                    │
+├──────────────────────────────┬──────────────────────────────────┤
+│   PARTICIPATORY BUDGETING    │      MUTUAL CREDIT CLEARING       │
+│   (PatientFundParticipatory) │      (PharmacyMutualCredit)       │
+├──────────────────────────────┼──────────────────────────────────┤
+│ • QF rounds, matching pools  │ • Zero-sum credit ledger          │
+│ • Token balances (ERC20)     │ • Credit limits per pharmacy      │
+│ • Council refunds on finalize│ • Voucher reservations            │
+│ • Liquidity board checks     │ • NO external collateral          │
+│   token balance vs claims    │ • NO dashboard visibility         │
+└──────────────────────────────┴──────────────────────────────────┘
+```
+
+**Systemic Risk**: A pharmacy can be:
+- **PB-solvent**: Has token balance to claim matching funds
+- **MC-insolvent**: Has maxed credit limit, reserved vouchers exceed capacity
+
+The dashboard **only shows PB liquidity**. The mutual credit ledger has **no liquidation mechanism** — if a pharmacy defaults (negative balance exceeds limit), the loss is **socialized** across all positive-balance participants (zero-sum).
+
+**Recommendation**: Cross-ledger health API:
+```javascript
+// In web3_integration.js fetchLiveState()
+const mcHealth = await creditContract.getSystemHealth();
+// Display alongside PB liquidity board
+```
+
+### 5.2 Offline Voucher → On-Chain Gap (The "Ghost Voucher" Problem)
+
+```
+OFFLINE                          ONLINE                          ON-CHAIN
+┌─────────────┐                 ┌─────────────┐                 ┌─────────────┐
+│ User creates│                 │ User uploads│                 │ Reconcile   │
+│ voucher in  │────────────────▶│ to Supabase │────────────────▶│ tool runs   │
+│ localStorage│  (sync)         │ (HMAC OK)   │  (CLI/manual)   │ (classify)  │
+└─────────────┘                 └─────────────┘                 └──────┬──────┘
+                                                                       │
+                                                                       ▼
+                                                              ┌─────────────────┐
+                                                              │  NO AUTOMATIC   │
+                                                              │  ON-CHAIN SUBMIT│
+                                                              │  (createVoucher/ │
+                                                              │   redeemVoucher)│
+                                                              └─────────────────┘
+```
+
+**Impact**: Offline vouchers **never become real credit transfers**. The mutual credit ledger is unaware of them.
+
+**Required Pipeline**:
+```mermaid
+graph LR
+    A[reconcile-vouchers.mjs] --> B{Classification}
+    B -->|reconciled| C[Submit createVoucher on-chain]
+    B -->|duplicate_conflict| D[Flag for manual review]
+    B -->|unresolved| E[Queue for next reconciliation]
+    C --> F[Update offline_vouchers.status = 'onchain']
+    F --> G[Insert reconciliation_runs record]
+```
+
+### 5.3 Governance Centralization Vectors
+
+| Vector | Contract | Impact |
+|--------|----------|--------|
+| **Council sets unlimited credit limits** | `PharmacyMutualCredit.updateCreditLimit` | Single address can inflate system credit capacity arbitrarily |
+| **Council registers/unregisters participants** | `registerParticipant`, `updateIssuerStatus` | Can exclude pharmacies or admit malicious ones |
+| **Council controls matching pool** | `PatientFundParticipatoryBudgeting` (not shown) | Can drain PB treasury via `finalizeRound` refund |
+| **Guardian can pause, only Council can unpause** | `pause`/`unpause` | Guardian can halt system; Council may not unpause if compromised |
+
+**Mitigation**: 
+- Add `MAX_CREDIT_LIMIT` constant
+- Require **multi-sig** for Council role (use `AccessControl` with `DEFAULT_ADMIN_ROLE` as timelock)
+- Add **emergency circuit breaker** for mutual credit: `emergencyFreeze()` that stops all transfers but allows redemption
+
+---
+
+## 6. Upgrade-Safety Pathways
+
+### 6.1 Smart Contract Upgradeability
+
+Current contracts are **not upgradeable** (no proxy). For production:
+
+**Option A: Transparent Proxy + Diamond (EIP-2535)**
+- Facets: `MutualCreditFacet`, `VoucherFacet`, `GovernanceFacet`
+- Shared storage via `AppStorage` pattern
+- Allows adding voucher types, credit models without migration
+
+**Option B: Minimal Proxy (EIP-1167) per Pharmacy**
+- Each pharmacy gets own `PharmacyMutualCredit` clone
+- Council manages registry of clones
+- Isolation: one pharmacy's insolvency doesn't affect others
+
+**Recommendation**: **Option A** for v2. Current v1 is acceptable for local/testnet.
+
+### 6.2 Database Migration Strategy
+
+| Current | Target | Migration |
+|---------|--------|-----------|
+| `generated_at VARCHAR` | `generated_at TIMESTAMPTZ` | `ALTER TABLE ... ALTER COLUMN generated_at TYPE TIMESTAMPTZ USING generated_at::timestamptz` |
+| No unique on `(round_id, nullifier)` | Unique constraint | `CREATE UNIQUE INDEX CONCURRENTLY ...` |
+| HMAC secret in `current_setting` | Vault-managed secret | Supabase Vault + `pgsodium` |
+| `warning` TEXT unescaped | JSONB canonical | Trigger rewrite using `jsonb_build_object` |
+
+### 6.3 Offline-First Sync Protocol
+
+Define a **formal sync protocol** (versioned):
+
+```typescript
+// v1 protocol
+interface OfflineVoucherV1 {
+  protocolVersion: "offline-voucher-v1";
+  roundId: number;
+  preimage: `0x${string}`;      // 32 bytes
+  nullifier: `0x${string}`;     // 32 bytes
+  generatedAt: string;          // ISO 8601
+  status: "pending_sync";
+  proofFormat: "offline-voucher-v1-not-zk-proof";
+  warning: string;              // Fixed string, not user input
+  mac: `0x${string}`;           // 8 bytes (64-bit HMAC)
+}
+```
+
+**Client-side HMAC**:
+```javascript
+const canonical = JSON.stringify({
+  generatedAt: voucher.generatedAt,
+  nullifier: voucher.nullifier.toLowerCase(),
+  preimage: voucher.preimage.toLowerCase(),
+  proofFormat: voucher.proofFormat,
+  roundId: voucher.roundId,
+  status: voucher.status,
+  warning: FIXED_WARNING_STRING  // NOT user-controlled
+}, Object.keys(...).sort());  // Sort keys for canonicalization
+
+const mac = await hmacSha256(canonical, secret).slice(0, 16);
+```
+
+**Server trigger** uses identical canonicalization → **guaranteed match**.
+
+---
+
+## 7. Prioritized Action Items
+
+| Priority | Item | Effort | Owner |
+|----------|------|--------|-------|
+| **P0** | Fix issuer grace period bug (`deregTime == 0` logic) | 1h | Contracts |
+| **P0** | Remove hardcoded HMAC secret; enforce per-deployment secret via Supabase Vault | 2h | Database |
+| **P0** | Rewrite `verify_voucher_hmac` using `jsonb_build_object` for canonical JSON | 2h | Database |
+| **P0** | Add unique constraint on `offline_vouchers(round_id, nullifier)` | 1h | Database |
+| **P1** | Build reconciliation write-back pipeline: tool → Supabase status update → on-chain submit | 1-2 days | Backend |
+| **P1** | Add mutual credit health data to dashboard liquidity board | 4h | Frontend |
+| **P1** | Enforce `MAX_CREDIT_LIMIT` constant in `updateCreditLimit` | 1h | Contracts |
+| **P2** | Split `voucherReservationReleased` into `voucherRedeemed` + `reservationReleased` | 2h | Contracts |
+| **P2** | Add `getSystemHealth()` view to `PharmacyMutualCredit` | 2h | Contracts |
+| **P2** | Formalize offline voucher protocol v1 with fixed warning string | 2h | Spec/Client |
+| **P3** | Design upgradeability (Diamond proxy) for v2 | 1 week | Architecture |
+| **P3** | Multi-sig Council via timelock controller | 3 days | Governance |
+
+---
+
+## 8. Conclusion
+
+The Pharmacy Fiduciary Commons codebase demonstrates **strong domain modeling** (mutual credit for pharmacy liquidity) and **solid cryptographic hygiene** (HMAC-verified offline vouchers). However, **three critical gaps** prevent production readiness:
+
+1. **Contract Logic Bug**: Issuer grace period permanently blocks never-authorized addresses.
+2. **Broken Sync Pipeline**: Offline vouchers classify but never reach the ledger.
+3. **Blind Solvency Monitoring**: Dashboard ignores mutual credit health entirely.
+
+The **architecture is salvageable** with focused fixes. The zero-sum mutual credit model is appropriate for the domain; the participatory budgeting layer adds democratic allocation. The primary work is **closing the offline→online→on-chain loop** and **hardening governance boundaries**.
+
+**Recommended next step**: Implement P0 fixes, then build the reconciliation write-back pipeline as a **Supabase Edge Function** triggered by `reconciliation_runs` insertion — this keeps the sync logic server-side, auditable, and wallet-independent.

@@ -1,0 +1,689 @@
+{
+  "schema_version": "pbm-review-packet/v0.1",
+  "packet_id": "packet-continuity",
+  "generated_at_utc": "2026-08-01T00:29:09.521598+00:00",
+  "repo_root": "C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal",
+  "question": "Audit offline continuity engine fail-closed cache validation, MAC vouchers, and two-process replay protection",
+  "lane": "free_code",
+  "budget_tokens": 12000,
+  "estimated_source_tokens": 52276,
+  "estimated_packet_tokens": 6110,
+  "disclosure_class": "LOCAL_CODE_DIRTY",
+  "freshness_labels": [
+    "[committed HEAD]",
+    "[dirty working tree]",
+    "[generated cache]",
+    "[external reviewer claim]",
+    "[live verification just run]"
+  ],
+  "forbidden_inputs": [
+    "API keys, private keys, seed phrases, deployment keys, or signer material",
+    "PHI, patient identity, pharmacy identity, support-ticket identifiers, or raw credential data",
+    "real witness material, credential secrets, Merkle witnesses from production, or private nullifier inputs",
+    "live privileged RPC endpoints, production database service roles, multisig approvals, or live-chain action payloads"
+  ],
+  "known_boundaries": [
+    "The review packet is strictly advisory and cannot authorize deployment, signing, fund movement, governance execution, or role changes.",
+    "Reviewer output remains an external claim until reconciled against local files, tests, commands, and the lineage ledger.",
+    "ZK/nullifier claims are limited to the included evidence; relayer gas-payer, timing, RPC, support-flow, and issuer-custody metadata remain explicit non-claims unless separately proven.",
+    "Dirty or untracked files require explicit operator approval before any external reviewer route."
+  ],
+  "review_instructions": [
+    "Treat this packet as evidence plus claims, not as protocol truth.",
+    "Return file/path and line-anchored findings only.",
+    "Classify each finding as confirmed defect, design risk, stale claim, needs verification, or false/unsupported.",
+    "Do not propose edits that require governance, signing, deployment, funds movement, live endpoints, credentials, or secret material."
+  ],
+  "tests_to_run": [
+    "python scripts/index_dossier_tree.py",
+    "python scripts/eval_constitutional_rubric.py --target review-context/packet-zk-nullifier-replay.json",
+    "npx.cmd --no-install hardhat test --no-compile test/ZKNullifierFixtureGate.test.js test/ZKNullifierCircuit.test.js",
+    "git diff --check"
+  ],
+  "source_snapshot": {
+    "branch": "feature/db-proxy",
+    "head": "04e0e619aeb1a885cadfb703fa113e6ac363b522",
+    "git_status_short": "M .github/workflows/test.yml\n M .gitignore\n M AGENT_REVIEW_ORCHESTRATION.md\n M MECHANISM_COVERAGE.md\n M NEXT_REVIEW_HANDOFF.md\n M ONBOARDING.md\n M PRODUCTION_READINESS_CHECKLIST.md\n M README.md\n M dashboard/design-system.css\n M dashboard/index.html\n M package-lock.json\n M package.json\n M review-context/agent_work_lineage_ledger.md\n M scripts/build-dashboard.js\n M scripts/check-brand-compliance.js\n M scripts/check-frontend-build.js\n M server/createApp.js\n M supabase/migrations/20260721000000_hardened_rls_and_ledger.sql\n M supabase/schema.sql\n M test/ContinuityAndAdversarialTools.test.js\n M test/ZKNullifierFixtureGate.test.js\n M test/fixtures/futurePayloadSchema.json\n M test/server.test.js\n M tools/resilience/continuity-engine.mjs\n?? .agents/\n?? .solhint.json\n?? ANTIGRAVITY_HANDOFF_BUNDLE_MANIFEST.md\n?? ANTIGRAVITY_KIMI_REVIEW_HANDOFF.md\n?? ANTIGRAVITY_SOLVENCY_IMPLEMENTATION_PACKET.md\n?? CODEX_KIMI_RECONCILIATION_HANDOFF.md\n?? CODEX_SOLVENCY_PLANNING_ADDENDUM.md\n?? HANDOFF_TO_CODEX_5_5.md\n?? PBM_BOUNDED_WORK_LOOP_NOTES.md\n?? PBM_EVM_HACK_LESSONS.md\n?? PBM_HUMAN_LANGUAGE_AND_DESIGN_NOTES.md\n?? PUBLIC_PROGRESS_NOTE_DRAFT.md\n?? SOLVENCY_DEBT_SEMANTICS.md\n?? SOLVENCY_OWNER_DECISION_WORKSHEET.md\n?? SOLVENCY_REVIEW_AUTHORITY_AND_SAFETY.md\n?? dashboard/assets/onboarding_mockup.png\n?? fresh-reviewer-prompt.txt\n?? grok-review-prompt.txt\n?? kimi-long-context-review-prompt.txt\n?? review-context/2026-07-18-codex56-luna-dizzy-crossover-reconciliation.md\n?? review-context/2026-07-18-codex56-terra-solvency-handoff-reconciliation.md\n?? review-context/2026-07-18-deepseek-local-debtsettled-reconciliation.md\n?? review-context/2026-07-18-qwen-local-solvency-policy-reconciliation.md\n?? review-context/brand_gate_b2_low_credit_handoff.md\n?? review-context/brand_gate_b_funky_swarm_review.md\n?? review-context/dossier_asymmetric_vouchers.md\n?? review-context/full_repo_oss_swarm_review_dossier.md\n?? review-context/kimi-review-model.txt\n?? review-context/kimi-review-response.md\n?? review-context/oss_council_context.md\n?? review-context/packet-db-proxy.json\n?? review-context/packet-manifest-template.json\n?? review-context/packet-qwen-coder.json\n?? review-context/packet-solvency-debt.json\n?? review-context/packet-zk-identity.json\n?? review-context/packet-zk-nullifier-replay.json\n?? review-context/pbm-kimi-long-context-source.zip\n?? review-context/pbm-review-observatory-v0.1.md\n?? review-context/zk_nullifier_claims_and_lineage_spec.md\n?? reviews/\n?? scripts/eval_constitutional_rubric.py\n?? scripts/generate_brand_gate_b_swarm_review.py\n?? scripts/index_dossier_tree.py\n?? scripts/local-demo.js\n?? scripts/openrouter_review.py\n?? scripts/pre_commit_audit.py\n?? scripts/run_solidity_security_audit.py\n?? test/fixtures/mockPathPayloadSchema.json\n?? tools/resilience/care-continuity-metrics.mjs\n?? zero-zk-review-prompt.txt"
+  },
+  "output_paths": {
+    "packet": "review-context/packet-continuity.json",
+    "lineage_benchmark": "cache/lineage_eval_benchmark.jsonl",
+    "router_metadata_template": "reviews/free_code-packet-router-metadata.json",
+    "review_output_template": "reviews/free_code-packet-review.md"
+  },
+  "missing_files": [],
+  "lineage_entries": [
+    {
+      "number": 2,
+      "title": "Domain-Separated HMAC Credential Blinding",
+      "entry_id": "claim-domain-separated-hmac-blinding",
+      "source_claim": "Raw voter credential hashes stored in Supabase allow operator-side pre-image dictionary correlation unless domain-blinded.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "npx hardhat test test/server.test.js passes 18 assertions, verifying exact domain-separated HMAC digest in encrypted_metadata.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "server/createApp.js",
+        "test/server.test.js"
+      ],
+      "invalidation_criteria": "If domainString prefix is omitted from HMAC update call in createApp.js."
+    },
+    {
+      "number": 3,
+      "title": "Cryptographic Nullifier Unlinkability Bounds",
+      "entry_id": "claim-zk-nullifier-unlinkability-bounds",
+      "source_claim": "Poseidon PRF nullifier unlinkability applies to static field elements only and does not defeat on-chain metadata correlation.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "Theorem 2 in zk_nullifier_claims_and_lineage_spec.md updated with explicit Non-Claims for relayer batching and transaction timing.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "review-context/zk_nullifier_claims_and_lineage_spec.md",
+        "contracts/PatientFundParticipatoryBudgeting.sol"
+      ],
+      "invalidation_criteria": "If zk_nullifier_claims_and_lineage_spec.md omits the Non-Claims metadata correlation warning."
+    },
+    {
+      "number": 5,
+      "title": "Actual-Dispatch Router Receipt Harness Verification",
+      "entry_id": "claim-actual-dispatch-router-receipt-harness",
+      "source_claim": "Local model routing must prove endpoint_classification=loopback and credential_used=false via actual dispatch capture, failing closed if OPENAI_COMPAT_BASE_URL resolves to an external cloud host when DIZZY_CHAT_BACKEND=local.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "scripts/router_harness.py classifies IP endpoints and throws Endpoint Mismatch Violation on cloud leaks; npx hardhat test test/RouterReceiptHarness.test.js passes 3/3.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "scripts/router_harness.py",
+        "test/RouterReceiptHarness.test.js",
+        "review-context/agent_work_lineage_ledger.md"
+      ],
+      "invalidation_criteria": "If router_harness.py permits non-loopback endpoints when DIZZY_CHAT_BACKEND=local is configured."
+    },
+    {
+      "number": 6,
+      "title": "Spec Gate A — Project-Scoped ZK Nullifier Circuit Signal Boundary",
+      "entry_id": "claim-spec-gate-a-zk-nullifier-circuit-signals",
+      "source_claim": "Project-scoped ZK nullifier circuit must pin exact Circom private/public signal boundaries, Poseidon hash constraint, and host adapter ABI verifyVoteProof.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "npx hardhat test test/ZKNullifierFixtureGate.test.js passes 22/22, validating signal order, Poseidon constraint, and host adapter verifyVoteProof signature.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "review-context/project_scoped_zk_circuit_verifier_interface_spec.md",
+        "test/fixtures/projectScopedZKCircuitInterface.json",
+        "test/ZKNullifierFixtureGate.test.js",
+        "contracts/PatientFundParticipatoryBudgeting.sol"
+      ],
+      "invalidation_criteria": "If public signal order changes or host adapter verifyVoteProof signature alters without updating fixture gate."
+    },
+    {
+      "number": 7,
+      "title": "Phase 1 Project-Scoped VoteNullifier Circuit Implementation",
+      "entry_id": "claim-phase1-vote-nullifier-circom-implementation",
+      "source_claim": "Implement the project-scoped VoteNullifier Circom circuit with private credential/Merkle witness, public five-signal facade, Poseidon leaf/nullifier constraints, and test evidence.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "HEAD before edits a7dea0cab5b5153ad15bf811568f12e6c9719fe0; npx hardhat test test/ZKNullifierCircuit.test.js passes 9/9; npx hardhat test test/ZKNullifierFixtureGate.test.js passes 22/22.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "circuits/vote_nullifier.circom",
+        "test/ZKNullifierCircuit.test.js",
+        "test/fixtures/projectScopedZKCircuitInterface.json",
+        "review-context/project_scoped_zk_circuit_verifier_interface_spec.md"
+      ],
+      "invalidation_criteria": "If the circuit main public order differs from [roundId, projectId, domainSeparator, membershipRoot, nullifier], if credentialSecret or Merkle path material becomes public, if the nullifier Poseidon(4) or Merkle root equality constraint is removed, or if the verification tests fail."
+    },
+    {
+      "number": 9,
+      "title": "Brand Gate B1.1 Rendered Build Integration & Dist Verification",
+      "entry_id": "claim-brand-gate-b1.1-rendered-build-integration",
+      "source_claim": "Wire design-system.css into index.html head, copy and bundle design-system.css and assets into dist/dashboard during build-dashboard.js, fail check:frontend on stale dist output, and verify slate provenance badge styling in rendered dist output.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "npm.cmd run build:dashboard bundles dist/dashboard/design-system.css and dist/dashboard/assets/; npm.cmd run check:frontend passes dist freshness, stylesheet link, and rendered slate badge assertions; npx.cmd --no-install hardhat test --no-compile test/DashboardCredibility.test.js passes 4/4.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "dashboard/index.html",
+        "dashboard/design-system.css",
+        "scripts/build-dashboard.js",
+        "scripts/check-brand-compliance.js",
+        "scripts/check-frontend-build.js"
+      ],
+      "invalidation_criteria": "If dist/dashboard/design-system.css is missing, if dist/dashboard/index.html is older than source dashboard files, if index.html head lacks stylesheet link, or if dist contains stale static cyan inline styles for #provenance-badge."
+    },
+    {
+      "number": 10,
+      "title": "Brand Gate B2.1 Patient Fund Inline Style Extraction",
+      "entry_id": "claim-brand-gate-b2.1-patient-fund-inline-style-extraction",
+      "source_claim": "Patient Fund Council Controls & Voter Registration Box (lines 1023-1093) is GREEN in the current working tree over baseline 04e0e61: B2.1 scope has zero inline styles, council button emojis are cleaned, dist/dashboard build assets regenerate, and check:frontend reports 60 remaining open inline style debt.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "npm.cmd run build:dashboard synced dist/dashboard/; npm.cmd run check:frontend passed with B2.1 Scope Inline Styles: 0 and 60 remaining open inline styles; npx.cmd --no-install hardhat test --no-compile test/DashboardCredibility.test.js passed 4/4; git diff --check passed.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "dashboard/index.html",
+        "dashboard/design-system.css",
+        "dist/dashboard/index.html",
+        "dist/dashboard/design-system.css",
+        "scripts/check-brand-compliance.js",
+        "scripts/check-frontend-build.js",
+        "test/DashboardCredibility.test.js"
+      ],
+      "invalidation_criteria": "If #liquidity-board, #council-controls, or #voter-reg-box re-introduce inline style attributes, if remote CSS imports return, if DOM IDs break credibility tests, or if check:frontend fails."
+    },
+    {
+      "number": 11,
+      "title": "Brand Gate B2.2 Portability Verifier & Activity Log Inline Style Extraction",
+      "entry_id": "claim-brand-gate-b2.2-portability-verifier-and-activity-log-inline-style-extraction",
+      "source_claim": "On-Chain Commons Activity Log & Portability Export Verifier Panel (lines 1215-1265) is GREEN in current working tree over baseline 04e0e61: extracted 22 inline styles into design-system.css, converted offline verifier badge to slate badge (.badge-unverified-slate), added B2.2 scope check to check-brand-compliance.js, regenerated dist/dashboard, and reduced open debt to 38 inline styles.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "npm.cmd run build:dashboard synced dist/dashboard/; npm.cmd run check:frontend passed with B1: 0, B2.1: 0, B2.2: 0, 38 remaining open inline styles; npx.cmd --no-install hardhat test --no-compile test/DashboardCredibility.test.js passed 4/4; git diff --check passed.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "dashboard/index.html",
+        "dashboard/design-system.css",
+        "dist/dashboard/index.html",
+        "dist/dashboard/design-system.css",
+        "scripts/check-brand-compliance.js",
+        "scripts/check-frontend-build.js",
+        "test/DashboardCredibility.test.js"
+      ],
+      "invalidation_criteria": "If #onchain-events-panel or #portability-json-input re-introduce inline style attributes, if offline verifier badge uses static cyan, if DOM IDs break credibility tests, or if check:frontend fails."
+    },
+    {
+      "number": 12,
+      "title": "Brand Gate B 100% Visual Governance Completion",
+      "entry_id": "claim-brand-gate-b-100-percent-visual-governance-completion",
+      "source_claim": "Brand Gate B Visual Governance is 100% GREEN in current working tree over baseline 04e0e61: extracted final 38 inline styles across Ledger of Omissions, Claims Table, and Visual Receipt Inspector into design-system.css; flipped check-brand-compliance.js to hard-fail on total_inline_styles > 0; regenerated dist/dashboard; verified zero remaining inline styles.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "npm.cmd run build:dashboard synced dist/dashboard/; npm.cmd run check:frontend passed with 0 remaining global inline styles; npx.cmd --no-install hardhat test --no-compile test/DashboardCredibility.test.js passed 4/4; git diff --check passed with 0 errors.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "dashboard/index.html",
+        "dashboard/design-system.css",
+        "dist/dashboard/index.html",
+        "dist/dashboard/design-system.css",
+        "scripts/check-brand-compliance.js",
+        "scripts/check-frontend-build.js",
+        "test/DashboardCredibility.test.js"
+      ],
+      "invalidation_criteria": "If index.html re-introduces any inline style attribute (total_inline_styles > 0), if remote CSS imports return, if DOM IDs break credibility tests, or if check:frontend fails."
+    },
+    {
+      "number": 13,
+      "title": "Legacy Full-Repo OSS Swarm Review & 8-Lens Multi-Model Audit",
+      "entry_id": "claim-full-repo-oss-swarm-review-8-lens-multi-model-audit",
+      "source_claim": "Legacy full-repo OSS swarm review packet compiled against an older 265-test snapshot with router-harness terminology. This entry is retained as historical lineage only and is superseded for promotion by later 272-test, frontend, PageIndex, DB proxy/RLS, ZK fixture-gate, continuity-cache, Solhint, and Slither-triage entries.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "Historical packet references a 265-test baseline and router-harness proof path. Current promotion evidence is recorded in later lineage entries and current docs: 276-test suite, 100% frontend/brand gate, Gate DB1 JS RLS simulation, strict fixture schemas, single-operator continuity nullifier cache, Solhint 5.2.0, and Slither static-artifact triage.",
+      "status": "SUPERSEDED_LEGACY_REFERENCE",
+      "assessment": "risky",
+      "dependent_artifacts": [
+        "contracts/PBMRebateTreasury.sol",
+        "contracts/PatientFundParticipatoryBudgeting.sol",
+        "server/createApp.js",
+        "circuits/vote_nullifier.circom",
+        "dashboard/index.html",
+        "dashboard/design-system.css",
+        "ONBOARDING.md",
+        "review-context/full_repo_oss_swarm_review_dossier.md"
+      ],
+      "invalidation_criteria": "Do not use this entry as current promotion evidence. If cited in handoffs, label it as a superseded historical review packet and point to later live-verification lineage entries."
+    },
+    {
+      "number": 15,
+      "title": "Gate DB1 Database Proxy Security & Multi-Tenant RLS Hardening",
+      "entry_id": "claim-gate-db1-database-proxy-security-and-multi-tenant-rls-hardening",
+      "source_claim": "Gate DB1 is GREEN in current working tree over baseline 04e0e61: verified server/createApp.js EIP-191 voter signature verification, EIP-712 relayer domain checks, 15-second row-locked request ledger idempotency, fail-closed error redacting, and expanded multi-tenant RLS claim isolation tests in test/server.test.js.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "npx.cmd --no-install hardhat test --no-compile test/server.test.js passed all proxy & RLS assertions; git diff --check passed with 0 errors.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "server/createApp.js",
+        "server/server.js",
+        "test/server.test.js"
+      ],
+      "invalidation_criteria": "If test/server.test.js fails, if proxy endpoint leaks raw database credentials, or if RLS policies allow cross-tenant claim reads."
+    },
+    {
+      "number": 16,
+      "title": "PageIndex Dossier Tree Indexer & Document Status Reconciliation",
+      "entry_id": "claim-pageindex-dossier-tree-indexer-and-document-status-reconciliation",
+      "source_claim": "PageIndex Dossier Tree Indexer (scripts/index_dossier_tree.py) is GREEN: built read-only scanner over 25 repo documents, extracted claim hierarchy into cache/dossier_tree_index.json, identified 2 stale claims in README.md & MECHANISM_COVERAGE.md, reconciled claims with Entry 015 Gate DB1 proof, and verified zero remaining document status contradictions.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "python scripts/index_dossier_tree.py passed with 0 contradictions found; cache/dossier_tree_index.json written; npm.cmd run check:frontend passed; git diff --check passed with 0 errors.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "scripts/index_dossier_tree.py",
+        "cache/dossier_tree_index.json",
+        "README.md",
+        "MECHANISM_COVERAGE.md",
+        "AGENT_REVIEW_ORCHESTRATION.md"
+      ],
+      "invalidation_criteria": "If index_dossier_tree.py fails, if cache/dossier_tree_index.json cannot be generated, or if contradictory DB/RLS claims return in docs."
+    },
+    {
+      "number": 17,
+      "title": "Codex Review Reconciliation — SQL RLS Schema, Final Commit Fail-Safe & Strict ZK Leakage Gates",
+      "entry_id": "claim-codex-review-reconciliation-sql-rls-ledger-commit-and-zk-schema-gates",
+      "source_claim": "Reconciled 3 Codex findings in current working tree: (1) Added schema-backed public.tenant_claims table & RLS policies to supabase/migrations/20260721000000_hardened_rls_and_ledger.sql and supabase/schema.sql; (2) Added register_voter_ledger_fail call on register_voter_ledger_complete RPC failure in server/createApp.js with unit test coverage; (3) Enforced top-level and metadataLeakageBudget additionalProperties: false constraints in test/fixtures/futurePayloadSchema.json with test assertions in test/ZKNullifierFixtureGate.test.js.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "npx.cmd --no-install hardhat test test/server.test.js test/ZKNullifierFixtureGate.test.js passed (43/43 tests); git diff --check passed with 0 errors.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "server/createApp.js",
+        "supabase/migrations/20260721000000_hardened_rls_and_ledger.sql",
+        "supabase/schema.sql",
+        "test/server.test.js",
+        "test/fixtures/futurePayloadSchema.json",
+        "test/ZKNullifierFixtureGate.test.js"
+      ],
+      "invalidation_criteria": "If test/server.test.js or test/ZKNullifierFixtureGate.test.js fails, if tenant_claims table lacks RLS policies, or if payload schema allows unapproved additional properties."
+    },
+    {
+      "number": 18,
+      "title": "OSS Council Pass 2 (Skeptic & Advocate) — Dry-Run Global Nullifier Cache Validation",
+      "entry_id": "claim-oss-council-pass-2-skeptic-advocate-dry-run-cache-validation",
+      "source_claim": "Ran OSS Council Pass 2 using Skeptic (Laguna XS 2.1) and Advocate (Cohere North Mini Code) models: both models independently confirmed 100% consensus on execution order (Item B -> Item A -> Item C -> Item D). Implemented validateGlobalNullifierCache() export in tools/resilience/continuity-engine.mjs with dynamic getLocalMacSecret() resolution, preventing cross-batch double spend attempts during dry-run intake before batch packaging. Added unit test assertion in test/ContinuityAndAdversarialTools.test.js.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "npx.cmd --no-install hardhat test test/ContinuityAndAdversarialTools.test.js passed all 16 tests; git diff --check passed with 0 errors.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "tools/resilience/continuity-engine.mjs",
+        "test/ContinuityAndAdversarialTools.test.js",
+        "reviews/grok-council-review.txt"
+      ],
+      "invalidation_criteria": "If test/ContinuityAndAdversarialTools.test.js fails, if validateGlobalNullifierCache fails to reject duplicate nullifiers, or if dynamic MAC secret resolution fails."
+    },
+    {
+      "number": 19,
+      "title": "Slither Static Analysis & Solhint Audit Gate",
+      "entry_id": "claim-slither-static-analysis-and-solhint-audit-gate",
+      "source_claim": "Executed Slither static analysis (slither.exe . --json reviews/slither-report.json) and Solhint contract linting (solhint contracts/**/*.sol). Evaluated 101 Slither detectors across 43 contracts: 158 total findings (10 High, 34 Medium, 60 Low, 52 Informational, 2 Optimization). The 10 High-classified findings were manually triaged; no confirmed exploitable High was established at this checkpoint. Solhint 5.2.0 reported 0 errors and 52 warnings. Written consolidated report to reviews/solidity-security-audit-report.md.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "slither.exe generated reviews/slither-report.json (158 findings, including 10 High-classified findings manually triaged in reviews/solidity-security-audit-report.md); solhint 5.2.0 generated 0 errors and 52 warnings; python scripts/run_solidity_security_audit.py compiled reviews/solidity-security-audit-report.md. Slither remains a local/pre-generated review artifact, not a CI gate.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "reviews/slither-report.json",
+        "reviews/solidity-security-audit-report.md",
+        ".solhint.json",
+        "scripts/run_solidity_security_audit.py"
+      ],
+      "invalidation_criteria": "If Slither detects a high-severity reentrancy or access control vulnerability in core contracts, or if Solhint produces unhandled compiler errors."
+    },
+    {
+      "number": 20,
+      "title": "Codex 5.6 Reconciliation — Diff Hygiene, CLI Global Cache Wiring & Strict ZK Schema Validator",
+      "entry_id": "claim-codex-56-reconciliation-diff-hygiene-global-cache-cli-and-strict-zk-schema",
+      "source_claim": "Reconciled all 4 Codex 5.6 feedback items: (1) Resolved git diff --check trailing whitespace in SQL RLS policies in migration and schema files (0 diff warnings/errors); (2) Wired validateGlobalNullifierCache into package-relay CLI path in tools/resilience/continuity-engine.mjs with optional --cache persistent writeback; (3) Added validateStrictSchema helper in test/ZKNullifierFixtureGate.test.js enforcing additionalProperties: false at top level and nested leakage budget with test assertions expecting schema validation errors; (4) Clarified RLS test boundary as JS policy simulation harness.",
+      "human_readable_claim": "",
+      "implied_claim": "",
+      "actual_proof": "",
+      "evidence": "git diff --check returned 0 errors; npx.cmd --no-install hardhat test test/ZKNullifierFixtureGate.test.js passed all 24 tests; test/ContinuityAndAdversarialTools.test.js passed all 16 tests.",
+      "status": "VERIFIED_AND_CLOSED",
+      "assessment": "good",
+      "dependent_artifacts": [
+        "supabase/migrations/20260721000000_hardened_rls_and_ledger.sql",
+        "supabase/schema.sql",
+        "tools/resilience/continuity-engine.mjs",
+        "test/ZKNullifierFixtureGate.test.js",
+        "test/fixtures/futurePayloadSchema.json"
+      ],
+      "invalidation_criteria": "If git diff --check fails, if package-relay fails to check global nullifier cache, or if ZK payload schema permits unexpected extra properties."
+    }
+  ],
+  "files": [
+    {
+      "path": "circuits/vote_nullifier.circom",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "dce240341d5052518ffb9b5dba381a1a9c96b3bfee76c49510f99ef0153fea00",
+      "line_count": 77,
+      "char_count": 2606,
+      "estimated_total_tokens": 652,
+      "included_snippet_count": 1,
+      "included_char_count": 2317,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 66,
+          "line_count": 66,
+          "char_count": 2317,
+          "content": "1: pragma circom 2.1.0;\n2: \n3: include \"circomlib/circuits/poseidon.circom\";\n4: \n5: template VoteNullifier(nLevels) {\n6:     // Private witness.\n7:     signal input credentialSecret;\n8:     signal input membershipPathElements[nLevels];\n9:     signal input membershipPathIndices[nLevels];\n10: \n11:     // Public signals.\n12:     signal input roundId;\n13:     signal input projectId;\n14:     signal input domainSeparator;\n15:     signal input membershipRoot;\n16:     signal input nullifier;\n17: \n18:     component leafHash = Poseidon(1);\n19:     leafHash.inputs[0] <== credentialSecret;\n20: \n21:     signal computedRoot[nLevels + 1];\n22:     computedRoot[0] <== leafHash.out;\n23: \n24:     component pathHash[nLevels];\n25:     signal left[nLevels];\n26:     signal right[nLevels];\n27: \n28:     for (var i = 0; i < nLevels; i++) {\n29:         membershipPathIndices[i] * (membershipPathIndices[i] - 1) === 0;\n30: \n31:         left[i] <== computedRoot[i] + membershipPathIndices[i] * (membershipPathElements[i] - computedRoot[i]);\n32:         right[i] <== membershipPathElements[i] + membershipPathIndices[i] * (computedRoot[i] - membershipPathElements[i]);\n33: \n34:         pathHash[i] = Poseidon(2);\n35:         pathHash[i].inputs[0] <== left[i];\n36:         pathHash[i].inputs[1] <== right[i];\n37:         computedRoot[i + 1] <== pathHash[i].out;\n38:     }\n39: \n40:     membershipRoot === computedRoot[nLevels];\n41: \n42:     component nullifierHash = Poseidon(4);\n43:     nullifierHash.inputs[0] <== credentialSecret;\n44:     nullifierHash.inputs[1] <== roundId;\n45:     nullifierHash.inputs[2] <== projectId;\n46:     nullifierHash.inputs[3] <== domainSeparator;\n47:     nullifier === nullifierHash.out;\n48: }\n49: \n50: template ProjectScopedVoteNullifier(MEMBERSHIP_TREE_DEPTH) {\n51:     signal input credentialSecret;\n52:     signal input membershipPathElements[MEMBERSHIP_TREE_DEPTH];\n53:     signal input membershipPathIndices[MEMBERSHIP_TREE_DEPTH];\n54: \n55:     signal input roundId;\n56:     signal input projectId;\n57:     signal input domainSeparator;\n58:     signal input membershipRoot;\n59:     signal input nullifier;\n60: \n61:     component voteNullifier = VoteNullifier(MEMBERSHIP_TREE_DEPTH);\n62:     voteNullifier.credentialSecret <== credentialSecret;\n63: \n64:     for (var i = 0; i < MEMBERSHI\n[TRUNCATED]\n"
+        }
+      ]
+    },
+    {
+      "path": "contracts/PatientFundParticipatoryBudgeting.sol",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "be41ea85e6d4e84725d221f528cbac3f2f7a595d49cd19855f02eaa760c61045",
+      "line_count": 877,
+      "char_count": 36640,
+      "estimated_total_tokens": 9160,
+      "included_snippet_count": 1,
+      "included_char_count": 2317,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 10,
+          "end_line": 61,
+          "line_count": 52,
+          "char_count": 2317,
+          "content": "10: import \"@openzeppelin/contracts/security/Pausable.sol\";\n11: import \"@openzeppelin/contracts/security/ReentrancyGuard.sol\";\n12: \n13: /**\n14:  * @title  PatientFundParticipatoryBudgeting\n15:  * @author Pharmacy Fiduciary Commons\n16:  * @notice Governs the allocation of the Patient Fund matching pool using squared vote weights.\n17:  *         Credential-gated voting enables community members to vote on local health projects.\n18:  */\n19: contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, ReentrancyGuard {\n20:     using SafeERC20 for IERC20;\n21:     using ECDSA for bytes32;\n22: \n23:     bytes32 public constant COUNCIL_ROLE = keccak256(\"COUNCIL_ROLE\");\n24:     bytes32 public constant GUARDIAN_ROLE = keccak256(\"GUARDIAN_ROLE\");\n25:     uint256 public constant MAX_PROJECTS_PER_ROUND = 50;\n26:     uint256 public constant MAX_VOTERS_PER_BATCH = 200;\n27:     uint256 public constant MATCH_RECLAIM_GRACE_PERIOD = 90 days;\n28:     bytes32 public constant REGISTRATION_TYPEHASH = keccak256(\n29:         \"VoterRegistration(uint256 roundId,address voter,uint256 nonce,bytes32 credentialHash,bytes32 policyVersion,uint256 deadline)\"\n30:     );\n31:     bytes32 public constant CREDENTIAL_TYPEHASH = keccak256(\n32:         \"VoterCredential(uint256 roundId,address voter,uint256 nonce,bytes32 credentialHash,bytes32 policyVersion,uint256 deadline)\"\n33:     );\n34:     bytes32 public constant ACCEPTED_CREDENTIAL_POLICY_VERSION = keccak256(\n35:         \"fiduciary-credential-policy-v1\"\n36:     );\n37:     bytes32 public constant MOCK_ZK_PROOF_DOMAIN = keccak256(\n38:         \"fiduciary-mock-zk-proof-v1\"\n39:     );\n40:     bytes32 public constant MOCK_ZK_VERIFIER_VERSION = keccak256(\n41:         \"fiduciary-mock-zk-verifier-v1\"\n42:     );\n43:     bytes32 public constant MOCK_ZK_REGISTRATION_TYPEHASH = keccak256(\n44:         \"MockZKRegistration(uint256 roundId,address voter,bytes32 nullifier,bytes32 verifierVersion,bytes32 root)\"\n45:     );\n46: \n47:     enum RoundState { Inactive, Active, Finalized }\n48: \n49:     struct Project {\n50:         string title;\n51:         address recipient;\n52:         uint256 voteCount;\n53:         bool active;\n54:     }\n55: \n56:     struct ProjectProposal {\n57:         string title;\n58:         address recipient;\n59:         uint256 support\n[TRUNCATED]\n"
+        }
+      ]
+    },
+    {
+      "path": "test/ZKNullifierFixtureGate.test.js",
+      "freshness_label": "[dirty working tree]",
+      "git_status": "M",
+      "sha256": "493b908c8daf9921cc8f3f1b8cc3ba42c7f24e9e7cb0eb385b89c36580970b5f",
+      "line_count": 379,
+      "char_count": 15864,
+      "estimated_total_tokens": 3966,
+      "included_snippet_count": 1,
+      "included_char_count": 2317,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 67,
+          "line_count": 67,
+          "char_count": 2317,
+          "content": "1: const { expect } = require(\"chai\");\n2: const fs = require(\"fs\");\n3: const path = require(\"path\");\n4: \n5: const FORBIDDEN_UNLINKABLE_FIELDS = [\n6:   \"walletAddress\",\n7:   \"npi\",\n8:   \"ncpdp\",\n9:   \"stableCredentialHash\",\n10:   \"rawCredential\",\n11:   \"credentialSecret\",\n12:   \"witnessMaterial\",\n13:   \"issuerSideRealWorldIdentifier\",\n14:   \"voterNullifierCoExposure\",\n15:   \"exactTimestamp\",\n16:   \"gasPayer\",\n17:   \"rawRpcIdentifier\",\n18:   \"supportTicketId\"\n19: ];\n20: \n21: describe(\"ZK/Nullifier Design Fixture and Test Gate\", function () {\n22:   let futureSchema;\n23:   let mockSchema;\n24:   let mockPayload;\n25:   let unlinkablePayload;\n26:   let governanceFixture;\n27:   let leakageTable;\n28:   let projectScopedCircuit;\n29: \n30:   before(function () {\n31:     futureSchema = JSON.parse(\n32:       fs.readFileSync(path.join(__dirname, \"fixtures\", \"futurePayloadSchema.json\"), \"utf8\")\n33:     );\n34:     mockSchema = JSON.parse(\n35:       fs.readFileSync(path.join(__dirname, \"fixtures\", \"mockPathPayloadSchema.json\"), \"utf8\")\n36:     );\n37:     mockPayload = JSON.parse(\n38:       fs.readFileSync(path.join(__dirname, \"fixtures\", \"mockPathPayload.json\"), \"utf8\")\n39:     );\n40:     unlinkablePayload = JSON.parse(\n41:       fs.readFileSync(path.join(__dirname, \"fixtures\", \"unlinkablePayload.json\"), \"utf8\")\n42:     );\n43:     governanceFixture = JSON.parse(\n44:       fs.readFileSync(path.join(__dirname, \"fixtures\", \"governanceFixture.json\"), \"utf8\")\n45:     );\n46:     leakageTable = JSON.parse(\n47:       fs.readFileSync(path.join(__dirname, \"fixtures\", \"metadataLeakageTable.json\"), \"utf8\")\n48:     );\n49:     projectScopedCircuit = JSON.parse(\n50:       fs.readFileSync(path.join(__dirname, \"fixtures\", \"projectScopedZKCircuitInterface.json\"), \"utf8\")\n51:     );\n52:   });\n53: \n54:   // Helper validation function enforcing strict JSON schema bounds including additionalProperties\n55:   function validateStrictSchema(payload, schema) {\n56:     if (!payload || typeof payload !== \"object\") {\n57:       throw new Error(\"Schema validation failed: payload must be an object\");\n58:     }\n59: \n60:     // 1. Check required fields\n61:     schema.required.forEach((field) => {\n62:       expect(payload, `Payload missing required field: ${field}`).to.have.property(field);\n63:     });\n64: \n65:     /\n[TRUNCATED]\n"
+        }
+      ]
+    },
+    {
+      "path": "test/ZKNullifierCircuit.test.js",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "4c06203bbd4e5cb914c30a31261aac93d92362430cd57e881d74d2d1864cadc2",
+      "line_count": 243,
+      "char_count": 9637,
+      "estimated_total_tokens": 2410,
+      "included_snippet_count": 1,
+      "included_char_count": 834,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 28,
+          "line_count": 28,
+          "char_count": 834,
+          "content": "1: const { expect } = require(\"chai\");\n2: const crypto = require(\"crypto\");\n3: const fs = require(\"fs\");\n4: const path = require(\"path\");\n5: \n6: const CIRCUIT_PATH = path.join(__dirname, \"..\", \"circuits\", \"vote_nullifier.circom\");\n7: const INTERFACE_FIXTURE_PATH = path.join(__dirname, \"fixtures\", \"projectScopedZKCircuitInterface.json\");\n8: const FIELD_PRIME =\n9:   21888242871839275222246405745257275088548364400416034343698204186575808495617n;\n10: \n11: const EXPECTED_PUBLIC_SIGNAL_ORDER = [\n12:   \"roundId\",\n13:   \"projectId\",\n14:   \"domainSeparator\",\n15:   \"membershipRoot\",\n16:   \"nullifier\"\n17: ];\n18: \n19: const EXPECTED_PRIVATE_INPUTS = [\n20:   \"credentialSecret\",\n21:   \"membershipPathElements\",\n22:   \"membershipPathIndices\"\n23: ];\n24: \n25: function normalize(source) {\n26:   return source.replace(/\\s+/g, \" \");\n27: }\n28: \n"
+        }
+      ]
+    },
+    {
+      "path": "IDENTITY_NULLIFIER_DESIGN.md",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "ae39c8eb133603b7089a391825f89c8785aaabded3507d94d1ea8bbec455e95c",
+      "line_count": 99,
+      "char_count": 6905,
+      "estimated_total_tokens": 1727,
+      "included_snippet_count": 1,
+      "included_char_count": 2317,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 40,
+          "line_count": 40,
+          "char_count": 2317,
+          "content": "1: # Scoped Identity and Nullifier Design Note\n2: \n3: This document outlines the proposed architecture for privacy-preserving identity management within the **Pharmacy Fiduciary Commons**.\n4: \n5: > [!IMPORTANT]\n6: > **DESIGN DIRECTION**: This is a proposed design roadmap. The current testnet deployment uses stable credential hashes for voter registration and Merkle claims. The ZK-proofs and nullifiers described below represent future upgrades to protect claimant privacy from corporate retaliation.\n7: \n8: ---\n9: \n10: ## 1. The Risk of Stable Credential Hashes\n11: \n12: In the current prototype, credential verification uses stable cryptographic signatures and public wallet addresses. In a production environment, this introduces significant risks:\n13: * **Payer Profiling**: PBMs and large insurance carriers can monitor the public blockchain, link claim volumes to specific pharmacy addresses, and retaliate by terminating their networks or reducing reimbursement rates.\n14: * **Corrupted Anonymity**: If a pharmacy's public key is linked to its real-world identity once, their entire claim history, dispute filings, and voting records become retroactively visible.\n15: \n16: To resolve this, the project rejects using a single stable identifier for all purposes. Instead, we advocate a **hybrid scoped-nullifier** approach.\n17: \n18: ---\n19: \n20: ## 2. The Core Principle: Separation of Identity Concerns\n21: \n22: We do not ask a single identifier to handle uniqueness, accountability, continuity, privacy, revocation, and migration simultaneously. Instead, we decouple these roles:\n23: \n24: ```\n25:                   ┌───────────────────────┐\n26:                   │ Real-World License    │\n27:                   │ (NCPDP / NPI Registry)│\n28:                   └───────────┬───────────┘\n29:                               │\n30:                [Issuer / Auditor Custody Only]\n31:                               │\n32:             ┌─────────────────┴─────────────────┐\n33:             ▼                                   ▼\n34:  ┌────────────────────┐               ┌────────────────────┐\n35:  │  Voting Nullifier  │               │   Claim Nullifier  │\n36:  │  (Round-Scoped)    │               │   (Epoch-Scoped)   │\n37:  └────────────────────┘               └────────────────────┘\n38:    * Double-vot\n[TRUNCATED]\n"
+        }
+      ]
+    },
+    {
+      "path": "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "745b8be437e4ceedc766acf86b2946b6fea37ab44fde709f64f592cb289ed1bb",
+      "line_count": 200,
+      "char_count": 17606,
+      "estimated_total_tokens": 4402,
+      "included_snippet_count": 1,
+      "included_char_count": 2317,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 23,
+          "line_count": 23,
+          "char_count": 2317,
+          "content": "1: # ZK Nullifier Transition Requirements\n2: \n3: ## 1. Purpose\n4: \n5: This document is a design gate for moving voter and claimant identity from stable credential hashes to scoped nullifiers. It does not specify a complete ZK implementation, and it should not be treated as approval to begin Circom, snarkjs, Solidity verifier integration, or dashboard changes.\n6: \n7: The goal is to name the decisions that must be settled before implementation. The current repo remains a local/testnet prototype with public-wallet and stable-hash privacy limits.\n8: \n9: ## 2. Current Leakage Surfaces\n10: \n11: - Stable credential hashes are part of both EIP-712 registration payloads and emitted events. The relayer derives `credentialHash` from the canonical credential, the dashboard submits it, and `RegistrationAuthorizationUsed` publishes it.\n12: - Public wallet addresses remain central to registration and voting. `VoterRegistered`, `RegistrationAuthorizationUsed`, and `VoteCast` expose the participating address, so replacing only `credentialHash` with a nullifier would not achieve unlinkability.\n13: - CLI output and dashboard workflows expose authorization material. The relayer prints the credential hash, signature, and authorization JSON; the dashboard expects users to paste that JSON.\n14: - The local revocation registry is not an on-chain revocation source. `tools/credentials/revoked_credentials.json` can block future relayer-issued authorizations only when the relayer uses the updated file.\n15: - Issuer and auditor custody can become a new correlation point. Even if on-chain data is shielded, issuer logs, support channels, credential issuance metadata, and witness-generation workflows can reveal participation.\n16: - Public readiness remains blocked. The production checklist still contains unresolved controls for source maps, bundled assets, provider trust boundaries, row-level security, credential data, logs, support flows, and public participant privacy.\n17: - Historical public event data cannot be made private retroactively. Any legacy round or deployment that emitted stable hashes or wallet activity must remain labeled as prototype/unsafe for real participants.\n18: \n19: ## 3. Corrected Revocation Model\n20: \n21: - The contract has a council-controlled on-chain registration statu\n[TRUNCATED]\n"
+        }
+      ]
+    },
+    {
+      "path": "COMMONS_CONSTITUTION.md",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "8895be725bf746e863565dfaf33d476e8249042afd507a1eb163056a515f4aa5",
+      "line_count": 127,
+      "char_count": 12356,
+      "estimated_total_tokens": 3089,
+      "included_snippet_count": 1,
+      "included_char_count": 1095,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 12,
+          "line_count": 12,
+          "char_count": 1095,
+          "content": "1: # Draft Constitution v0.1 (Non-Ratified)\n2: \n3: **Pharmacy Fiduciary Commons**  \n4: *Status: Draft Proposal. This document has not been participant-ratified and does not possess binding legal or political authority over the commons.*\n5: \n6: This draft proposes a potential interpretive framework. Until ratified, it does not override contracts, governance documents, or existing procedures. For the planned path toward formal validation, see [RATIFICATION_PROCEDURE.md](RATIFICATION_PROCEDURE.md).\n7: \n8: ---\n9: \n10: ## 1. Standpoint & Purpose\n11: \n12: The Pharmacy Fiduciary Commons is a federated fiduciary commons: collectively governed infrastructure that socializes captured pharmaceutical surplus, resists concentrated authority, aspires to permit local autonomy and meaningful exit, and uses permissionless experimentation without allowing wealth, technical expertise, or institutional status to become permanent political power. For a comparison of this model to transparent Web2 enterprise PBM platforms, see [WEB2_TRANSPARENT_PBM_COMPARISON.md](WEB2_TRANSPARENT_PBM_COMPARISON.md).\n"
+        }
+      ]
+    },
+    {
+      "path": "PATIENT_FUND_POLICY.md",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "a3cc464100b58d196b6bfeab02f047aa520273e830038d2e026c3f710eb44ae2",
+      "line_count": 73,
+      "char_count": 5966,
+      "estimated_total_tokens": 1492,
+      "included_snippet_count": 1,
+      "included_char_count": 504,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 9,
+          "line_count": 9,
+          "char_count": 504,
+          "content": "1: # Patient Fund Policy\n2: \n3: The Patient Fund is an on-chain, community-directed treasury designed to fund preventative health projects, protect medication access, and stabilize local pharmacy infrastructure.\n4: \n5: ---\n6: \n7: ## 1. Preventative Economics\n8: \n9: The fund operates on the principle that keeping people healthy and providing access to medically necessary care prevents downstream crisis costs (hospitalization, emergency room visits) and keeps community pharmacy infrastructure viable.\n"
+        }
+      ]
+    },
+    {
+      "path": "MECHANISM_COVERAGE.md",
+      "freshness_label": "[dirty working tree]",
+      "git_status": "M",
+      "sha256": "1288d6b15f98bcb739fd0539588df95031f5c07ec36dbc7b9896bad928a64bb0",
+      "line_count": 123,
+      "char_count": 14154,
+      "estimated_total_tokens": 3539,
+      "included_snippet_count": 1,
+      "included_char_count": 481,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 9,
+          "line_count": 9,
+          "char_count": 481,
+          "content": "1: # Mechanism Coverage\n2: \n3: This table maps major project claims to the part of the repository that actually enforces or supports them. Its purpose is to keep doctrine, documentation, and runtime behavior from drifting apart.\n4: \n5: Unresolved economic and trust-model choices are tracked in `OPEN_DESIGN_DECISIONS.md`; current runtime behavior should not be mistaken for final policy.\n6: \n7: Coverage levels:\n8: \n9: - **Contract-enforced**: enforced directly by Solidity code.\n"
+        }
+      ]
+    },
+    {
+      "path": "AGENT_REVIEW_ORCHESTRATION.md",
+      "freshness_label": "[dirty working tree]",
+      "git_status": "M",
+      "sha256": "02b0ccaca237021b57930c11c19b6577a59e58f597088a9ab6c5b45adab79a08",
+      "line_count": 619,
+      "char_count": 31159,
+      "estimated_total_tokens": 7790,
+      "included_snippet_count": 1,
+      "included_char_count": 2317,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 12,
+          "line_count": 12,
+          "char_count": 2317,
+          "content": "1: # Agent Review Orchestration\n2: \n3: Status: draft operating protocol. This file is for Codex-led planning/review cycles. It does not authorize external disclosure, repository mutation, cleanup, commits, pushes, deployments, credentials use, or live-chain actions.\n4: \n5: Current PBM checkpoint for solvency, ZK & brand governance: baseline `04e0e61` (HEAD `04e0e61`, feature/db-proxy) with PageIndex Dossier Tree Indexer GREEN in the current working tree.\n6: Verified Lineage Entries: Entry 001 (RPC Lockdown), Entry 002 (Domain HMAC), Entry 003 (ZK Bounds), Entry 004 (XSS Sanitization), Entry 005 (Router Harness), Entry 006 (Spec Gate A), Entry 007 (VoteNullifier.circom Phase 1 Gate), Entry 008 (Brand Gate B Slice B1 + B4 Linter Skeleton), Entry 009 (Brand Gate B1.1 Rendered Build Integration), Entry 010 (Brand Gate B2.1 Patient Fund Inline Style Extraction), Entry 011 (Brand Gate B2.2 Portability & Activity Log Inline Style Extraction), Entry 012 (Brand Gate B 100% Visual Governance Completion), Entry 013 (Full-Repo OSS Swarm Review & 8-Lens Multi-Model Audit), Entry 014 (UI Slice B3 Guided Tour Banner & Onboarding Polish), Entry 015 (Gate DB1 Database Proxy Security & Multi-Tenant RLS Hardening), Entry 016 (PageIndex Dossier Tree Indexer & Document Status Reconciliation), Entry 017 (Codex 5.6 Review Reconciliation — SQL RLS Schema, Final Commit Fail-Safe & Strict ZK Leakage Gates), Entry 018 (OSS Council Pass 2 — Skeptic & Advocate Consensus & Dry-Run Cache Validation), Entry 019 (Slither Static Analysis & Solhint Audit Gate), Entry 020 (Codex 5.6 Reconciliation — Diff Hygiene, CLI Global Cache Wiring & Strict ZK Schema Validator).\n7: Consensus Status: PageIndex Dossier Tree Indexer (`scripts/index_dossier_tree.py`) is FULLY GREEN in the current working tree over baseline `04e0e61`. Scanned 13 bounded PageIndex target documentation files, built `cache/dossier_tree_index.json`, and reconciled stale claims with Entry 015 Gate DB1 proof. This confirms the scanned target set is free of active status contradictions; it is not a full-repository contradiction proof.\n8: Operational Notes:\n9: 1. Windows PowerShell Launcher: Use `npx.cmd --no-install hardhat test --no-compile ...` when `npx.ps1` execution policy blocks command execution.\n10: 2. Rendered Build Integration: `\n[TRUNCATED]\n"
+        }
+      ]
+    },
+    {
+      "path": ".agents/AGENTS.md",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "eb279ad2a2b8b0f9471f1deaa71805e52fa6b2cdebcea998858cae43d48e957d",
+      "line_count": 45,
+      "char_count": 3881,
+      "estimated_total_tokens": 971,
+      "included_snippet_count": 1,
+      "included_char_count": 2317,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 25,
+          "line_count": 25,
+          "char_count": 2317,
+          "content": "1: # Agent Operating Layer — AGENTS.md\n2: \n3: > **Hierarchy Notice**: This document governs AI agent operational behavior, tool usage, and handoff protocols for the `Pharmacy-Fiduciary-Commons` repository. It is explicitly **subordinate** to [COMMONS_CONSTITUTION.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/COMMONS_CONSTITUTION.md) (project domain governance) and [AGENT_REVIEW_ORCHESTRATION.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/AGENT_REVIEW_ORCHESTRATION.md) (multi-agent review protocols).\n4: \n5: ---\n6: \n7: ## 1. Core Principles & Operational Mandate\n8: \n9: 1. **Fiduciary Domain Primacy**: The primary mission of all agents is preserving the integrity of the PBM Rebate Treasury, Solvency Proofs, and Patient Fund protection. Tooling and agent workflows serve the domain, not vice-versa.\n10: 2. **Pre-Tool Brevity**: State at most **one sentence** of context before executing tool calls. Gather data first; hypothesize second.\n11: 3. **No Meta Summaries**: Do not redundantly restate simple file edits or tool output when the diff or result is self-evident. *Crucial Exception*: This rule does **not** suppress mandatory verification summaries, multi-agent handoff briefs, or final status reports.\n12: 4. **Correction-as-Spec**: When an agent receives a corrective instruction or catches a recurring failure, log the candidate rule in [.agents/memory/LEARNINGS_QUEUE.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/memory/LEARNINGS_QUEUE.md) for human owner review rather than relying on session memory.\n13: \n14: ---\n15: \n16: ## 2. Autonomy Matrix (Mapped by Reversibility)\n17: \n18: Agent authority is strictly scoped by action reversibility and task authorization:\n19: \n20: | Level | Scope | Allowed Actions | Requirement |\n21: | :--- | :--- | :--- | :--- |\n22: | **L1 (Autonomous)** | Read-Only & Inspection | File viewing, ripgrep search, running index/test scripts (`python scripts/index_dossier_tree.py`, `npx hardhat test`). | None. Execute immediately. |\n23: | **L2 (Authorized Proof-Bounded)** | File Modifications | Edits to code, tests, documentation, or ZK circuit files **only when implementation is authorized by user/task intent**. | **Task Authorization + Proof Required**: Edits require explicit task authorization. Post-edit executi\n[TRUNCATED]\n"
+        }
+      ]
+    },
+    {
+      "path": ".agents/memory/MEMORY.md",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "14dde426c69b7116d0270963ab864fcf551a239e4a50ded66df07e7e263fc066",
+      "line_count": 73,
+      "char_count": 7579,
+      "estimated_total_tokens": 1895,
+      "included_snippet_count": 1,
+      "included_char_count": 2317,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 25,
+          "line_count": 25,
+          "char_count": 2317,
+          "content": "1: # Agent Memory & Index — MEMORY.md\n2: \n3: > **Notice**: This file serves as the canonical index over repository governance, multi-agent review dossiers, and domain specifications. All indexed source files remain in their primary locations.\n4: > **PageIndex Target Scope**: The PageIndex Dossier Tree Indexer (`scripts/index_dossier_tree.py`) currently audits **13 target documents**. This count represents the explicit *PageIndex target set* configured in the auditor script, not every markdown file across the repository.\n5: \n6: ---\n7: \n8: ## 1. Contract & Operating Layer\n9: \n10: | Source File | Role | Last Sync | Freshness Label | Proof Command | Stale-Risk Note |\n11: | :--- | :--- | :--- | :--- | :--- | :--- |\n12: | [COMMONS_CONSTITUTION.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/COMMONS_CONSTITUTION.md) | Domain Governance Primacy | 2026-07-27 | `[committed HEAD]` | `python scripts/index_dossier_tree.py` | Low risk; foundational project governance. |\n13: | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | Agent Operating Layer (v0.1) | 2026-07-27 | `[dirty working tree]` | `python scripts/index_dossier_tree.py` | Ratified (`DEC-002`); applies strictly to Agent Operating Layer v0.1. |\n14: | [GOVERNANCE.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/GOVERNANCE.md) | Protocol Voting Mechanics | 2026-07-25 | `[committed HEAD]` | `python scripts/index_dossier_tree.py` | Stable governance reference. |\n15: \n16: ---\n17: \n18: ## 2. Verifiers & Quality Assurance\n19: \n20: | Source File | Role | Last Sync | Freshness Label | Proof Command | Stale-Risk Note |\n21: | :--- | :--- | :--- | :--- | :--- | :--- |\n22: | [AGENT_REVIEW_ORCHESTRATION.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/AGENT_REVIEW_ORCHESTRATION.md) | Multi-Agent Review Protocol | 2026-07-26 | `[dirty working tree]` | `python scripts/index_dossier_tree.py` | High importance; defines cross-model review loops. Modified in local tree. |\n23: | [scripts/index_dossier_tree.py](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/scripts/index_dossier_tree.py) | Status & Contradiction Indexer | 2026-07-27 | `[dirty working tree]` | `python scripts/index_dossier_tree.py` | Executable script; updates `cache/dossier_tree_index.json`. Untracke\n[TRUNCATED]\n"
+        }
+      ]
+    },
+    {
+      "path": ".agents/memory/WAITING_ON_ME.md",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "953927e531df9f151569c41fa97d79615ed27c53bd6a4bcb3cd6d603659ea552",
+      "line_count": 19,
+      "char_count": 1126,
+      "estimated_total_tokens": 282,
+      "included_snippet_count": 1,
+      "included_char_count": 1126,
+      "content_truncated": false,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 19,
+          "line_count": 19,
+          "char_count": 1126,
+          "content": "1: # Human Owner Decision Queue — WAITING_ON_ME.md\n2: \n3: > **Purpose**: Tracks decisions, policy selections, or ratifications that require explicit input or approval from the human project owner.\n4: \n5: ---\n6: \n7: ## Active Decision Items\n8: \n9: | ID | Date Added | Category | Item Description | Relevant Document | Status |\n10: | :--- | :--- | :--- | :--- | :--- | :--- |\n11: | `DEC-001` | 2026-07-27 | Solvency Policy | Review and select options on Solvency Owner Decision Worksheet. | [SOLVENCY_OWNER_DECISION_WORKSHEET.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/SOLVENCY_OWNER_DECISION_WORKSHEET.md) | `PENDING_OWNER_REVIEW` |\n12: \n13: ---\n14: \n15: ## Resolved Items Archive\n16: \n17: | ID | Date Resolved | Category | Item Description & Outcome | Relevant Document | Status |\n18: | :--- | :--- | :--- | :--- | :--- | :--- |\n19: | `DEC-002` | 2026-07-27 | Agent Operating Layer | Ratified initial `.agents/AGENTS.md` operating rules (v0.1). *Note: Ratification applies strictly to Agent Operating Layer v0.1 (`.agents/*`) and not to the broader dirty working tree.* | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `RATIFIED` |\n"
+        }
+      ]
+    },
+    {
+      "path": ".agents/memory/LEARNINGS_QUEUE.md",
+      "freshness_label": "[committed HEAD]",
+      "git_status": "CLEAN",
+      "sha256": "b9f1c19ee171c467409a0843680740d9477d526ab56f6b91a8e71dc59d92a8a8",
+      "line_count": 20,
+      "char_count": 1316,
+      "estimated_total_tokens": 329,
+      "included_snippet_count": 1,
+      "included_char_count": 1316,
+      "content_truncated": false,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 20,
+          "line_count": 20,
+          "char_count": 1316,
+          "content": "1: # Candidate Agent Spec Rules — LEARNINGS_QUEUE.md\n2: \n3: > **Purpose**: When an agent receives a correction or identifies a recurring pitfall, it adds a candidate rule here. Rules remain in candidate status until promoted to [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) by the human owner.\n4: \n5: ---\n6: \n7: ## Candidate Rules Pending Promotion\n8: \n9: | Candidate ID | Date Logged | Origin / Context | Proposed Rule | Target Spec | Status |\n10: | :--- | :--- | :--- | :--- | :--- | :--- |\n11: | `LRN-001` | 2026-07-27 | Agent Operating Layer Setup | Always attach data freshness lineage tags (`[committed HEAD]`, `[generated cache]`, etc.) to status claims. | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `ADOPTED_V0_1` |\n12: | `LRN-002` | 2026-07-27 | Review Orchestration | Record dissenting agent opinions in multi-agent review dossiers instead of forcing artificial consensus. | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `ADOPTED_V0_1` |\n13: \n14: ---\n15: \n16: ## Promotion Workflow\n17: \n18: 1. Agent logs observation in `LEARNINGS_QUEUE.md` under `PENDING_REVIEW`.\n19: 2. Human owner reviews candidate rule during routine session sync.\n20: 3. Upon approval, rule is promoted to `.agents/AGENTS.md` and status updated to `PROMOTED`.\n"
+        }
+      ]
+    },
+    {
+      "path": "review-context/agent_work_lineage_ledger.md",
+      "freshness_label": "[dirty working tree]",
+      "git_status": "M",
+      "sha256": "348f60b1e41a3fdac003206ebd9a0cb3913d6a4cbec4298c6d38ffaa903ec7e0",
+      "line_count": 721,
+      "char_count": 42309,
+      "estimated_total_tokens": 10578,
+      "included_snippet_count": 1,
+      "included_char_count": 546,
+      "content_truncated": true,
+      "snippets": [
+        {
+          "start_line": 1,
+          "end_line": 9,
+          "line_count": 9,
+          "char_count": 546,
+          "content": "1: # Agent Work Lineage Ledger & Audit Registry\n2: \n3: This document serves as the authoritative, disk-persisted **Lineage Ledger** for all claims, audits, and security transformations generated by human operators and AI agents across the Pharmacy Fiduciary Commons repository.\n4: \n5: Every claim must be human-readable. It must specify where it originated, what it\n6: sounds like it proves, what it actually proves, how it was empirically verified\n7: against live code, what artifacts depend on it, and what criteria would\n8: invalidate it.\n9: \n"
+        }
+      ]
+    }
+  ]
+}

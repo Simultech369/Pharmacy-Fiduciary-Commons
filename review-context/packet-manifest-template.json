@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pbm-review-packet-manifest-template-v0.1",
+  "title": "PBM Review Observatory Packet Manifest v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "packet_id",
+    "generated_at_utc",
+    "repo_root",
+    "question",
+    "lane",
+    "budget_tokens",
+    "estimated_source_tokens",
+    "estimated_packet_tokens",
+    "disclosure_class",
+    "freshness_labels",
+    "forbidden_inputs",
+    "known_boundaries",
+    "review_instructions",
+    "tests_to_run",
+    "source_snapshot",
+    "output_paths",
+    "lineage_entries",
+    "files"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "pbm-review-packet/v0.1"
+    },
+    "packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "repo_root": {
+      "type": "string"
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "minLength": 1
+    },
+    "budget_tokens": {
+      "type": "integer",
+      "minimum": 2000
+    },
+    "estimated_source_tokens": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "estimated_packet_tokens": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "disclosure_class": {
+      "enum": [
+        "PUBLIC_COMMITTED",
+        "LOCAL_PLANNING",
+        "LOCAL_CODE_DIRTY",
+        "SECRET_OR_SENSITIVE",
+        "LIVE_PRIVILEGED"
+      ]
+    },
+    "freshness_labels": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "[committed HEAD]",
+          "[dirty working tree]",
+          "[generated cache]",
+          "[external reviewer claim]",
+          "[live verification just run]"
+        ]
+      },
+      "minItems": 5
+    },
+    "forbidden_inputs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "known_boundaries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "review_instructions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "tests_to_run": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "source_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "branch",
+        "head",
+        "git_status_short"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "head": {
+          "type": "string"
+        },
+        "git_status_short": {
+          "type": "string"
+        }
+      }
+    },
+    "output_paths": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "missing_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "lineage_entries": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "freshness_label",
+          "git_status",
+          "sha256",
+          "line_count",
+          "char_count",
+          "estimated_total_tokens",
+          "included_snippet_count",
+          "included_char_count",
+          "content_truncated",
+          "snippets"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "freshness_label": {
+            "enum": [
+              "[committed HEAD]",
+              "[dirty working tree]",
+              "[generated cache]",
+              "[external reviewer claim]",
+              "[live verification just run]"
+            ]
+          },
+          "git_status": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "line_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "char_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimated_total_tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "included_snippet_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "included_char_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "content_truncated": {
+            "type": "boolean"
+          },
+          "snippets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "start_line",
+                "end_line",
+                "line_count",
+                "char_count",
+                "content"
+              ],
+              "properties": {
+                "start_line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "end_line": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "line_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "char_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "content": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

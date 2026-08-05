@@ -1,0 +1,2 @@
+PASS  
+No security credentials, private keys, or secrets are introduced. The change adds only a new error enum value and updates revert statements – no new dependencies, no debug code, and no accessibility concerns in the Solidity contract. All checks are satisfied.

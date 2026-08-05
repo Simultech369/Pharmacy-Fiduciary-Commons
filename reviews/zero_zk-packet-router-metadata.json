@@ -1,0 +1,16 @@
+{
+  "recorded_at_utc": "2026-08-04T22:02:55.885256+00:00",
+  "role": "zero_zk",
+  "description": "Zero Proof-vs-Theater Reviewer Lane",
+  "model": "openrouter/free",
+  "provider": "openrouter",
+  "launcher": "scripts/openrouter_review.py",
+  "packet_path": "C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\review-context\\packet-zk-identity.json",
+  "context_path": null,
+  "output_path": "C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\reviews/zero_zk-packet-review.md",
+  "disclosure_class": "LOCAL_CODE_DIRTY",
+  "approved_disclosure_class": "LOCAL_CODE_DIRTY",
+  "error_status": null,
+  "truncation_status": "not_reported",
+  "reconciliation_status": "reconciled_in_rotational_swarm_review_dossier"
+}

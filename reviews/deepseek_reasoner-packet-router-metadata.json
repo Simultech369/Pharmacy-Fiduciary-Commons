@@ -1,0 +1,16 @@
+{
+  "recorded_at_utc": "2026-08-04T22:10:02.440513+00:00",
+  "role": "free_code",
+  "description": "FreeCode Multi-Model Coding Auditor Lane",
+  "model": "openrouter/free",
+  "provider": "openrouter",
+  "launcher": "scripts/openrouter_review.py",
+  "packet_path": "C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\review-context\\packet-db-proxy.json",
+  "context_path": null,
+  "output_path": "C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\reviews/deepseek_reasoner-packet-review.md",
+  "disclosure_class": "LOCAL_CODE_DIRTY",
+  "approved_disclosure_class": "LOCAL_CODE_DIRTY",
+  "error_status": null,
+  "truncation_status": "not_reported",
+  "reconciliation_status": "reconciled_in_rotational_swarm_review_dossier"
+}

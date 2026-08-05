@@ -1,0 +1,266 @@
+# 🔐 Security Audit Report: Pharmacy Fiduciary Commons `.next` Roadmap
+
+This is a **comprehensive adversarial security audit** of the Pharmacy Fiduciary Commons repository, focusing on four proposed roadmap items (A–D). The goal is to assess threats, trust boundaries, input sanitization practices, cryptographic soundness, dependency hygiene, and resilience against abuse vectors such as XSS, SQL injection, replay attacks, DoS, and unauthorized data leakage.
+
+---
+
+## 🧠 Executive Summary
+
+| Item | Risk Level | Key Concerns |
+|------|------------|--------------|
+| A    | ⚠️ High    | Cryptographic leakage via metadata exposure; potential misuse of nullifiers if improperly scoped. |
+| B    | ⚠️ Medium-High | Replay attack surface due to caching mechanism; MAC validation logic may be bypassed under adversarial conditions. |
+| C    | ⚠️ Medium  | Budget cap enforcement relies on off-chain assumptions; solvency guarantees must not leak into smart contract logic. |
+| D    | 🟡 Low     | Styling inconsistencies pose minimal risk but could expose user behavior patterns or accessibility gaps. |
+
+---
+
+## 🔍 Detailed Analysis by Roadmap Item
+
+---
+
+### ✅ Item A: ZK Nullifier Witness Generator & Proof Verification Adapter
+
+#### 📌 Objective:
+Build client-side witness preparation scripts and stateless verifier adapter interfaces without introducing live third-party RPC dependencies.
+
+#### 🔐 Threat Model Focus:
+- Public signal ordering integrity
+- Forbidden metadata exclusion from proofs
+- Nullifier scope isolation (project/round scoped)
+
+#### 💥 Identified Risks:
+
+##### 1. **Metadata Leakage Through Improper Signal Ordering**
+If the public inputs to the `vote_nullifier.circom` circuit are not rigorously ordered or validated at runtime, an attacker could manipulate which fields appear in the final proof — potentially embedding timestamps, wallet addresses, or other identifying information into what should be ephemeral commitments.
+
+> **Example Attack Vector**: An attacker crafts a malformed witness where one of the public signals contains raw transaction metadata instead of its nullified hash. If unchecked during verification, this leaks PII.
+
+##### 2. **Nullifier Reuse Across Projects/Rounds**
+Although the circuit enforces project/round scoping, there’s no explicit client-side guard ensuring that nullifiers generated in one round cannot accidentally get reused in another.
+
+> **Edge Case**: Two rounds share similar parameters; a bug causes duplicate nullifiers to be accepted across both, enabling double-spending.
+
+##### 3. **Client-Side Script Injection Vulnerability**
+Any script generating witnesses must avoid dynamic evaluation or string concatenation that can lead to JavaScript injection.
+
+> **Example**: If `scripts/generateWitness.js` uses `eval()` or similar constructs to parse configuration objects, attackers can inject malicious code.
+
+#### 🛡️ Recommendations:
+- Enforce strict schema validation for public signals before feeding them into the Circom circuit.
+- Add deterministic serialization format (e.g., canonical JSON encoding) for all witness components.
+- Implement deterministic nullifier derivation functions with built-in collision detection.
+- Use sandboxed environments (like WebAssembly) to isolate witness generation processes.
+
+---
+
+### ✅ Item B: Offline Continuity Double-Spend Guard & Global Nullifier Cache Validator
+
+#### 📌 Objective:
+Implement dry-run intake validation for offline continuity relay packets to prevent cross-batch replay attacks before batch submission.
+
+#### 🔐 Threat Model Focus:
+- Cross-batch replay attack prevention
+- Dry-run MAC mismatch handling
+- Wallet-to-pharmacy mapping omission
+
+#### 💥 Identified Risks:
+
+##### 1. **Replay Attack Surface Due to Caching Mechanism**
+The global nullifier cache validator assumes perfect synchronization between local and remote caches. However, if an adversary gains control over even a partial view of the cache, they can simulate valid-looking packets that pass initial checks but fail later upon reconciliation.
+
+> **Attack Scenario**: Adversary intercepts a packet, replays it after modifying only non-critical fields (like nonce), and exploits timing windows in cache updates.
+
+##### 2. **MAC Validation Bypass Under Timing Attacks**
+If the MAC comparison function isn't constant-time, it opens up timing-based side-channel attacks.
+
+> **Exploit Example**: Measuring response times when comparing partial MACs allows attackers to reconstruct key material bit-by-bit.
+
+##### 3. **Race Conditions in Cache Updates**
+Dry-run validation implies two-phase commit semantics. But without atomic operations or proper locking mechanisms, race conditions can allow inconsistent states where invalid packets slip through.
+
+#### 🛡️ Recommendations:
+- Ensure all MAC comparisons use constant-time algorithms (e.g., `crypto.timingSafeEqual()` in Node.js).
+- Introduce version-stamped cache entries to detect stale reads/writes.
+- Employ optimistic concurrency controls with rollback support in case of conflicts.
+- Log failed dry-run attempts with entropy-preserving identifiers (to aid forensic analysis without leaking identity).
+
+---
+
+### ✅ Item C: Participatory Budgeting Solvency Safeguards & Match Cap Policy
+
+#### 📌 Objective:
+Enforce quadratic matching pool caps per project and clarify shortfall-aware round lifecycle notices in UI and contracts.
+
+#### 🔐 Threat Model Focus:
+- Liquidity illusion mitigation
+- Governance-bound constraint adherence
+
+#### 💥 Identified Risks:
+
+##### 1. **Shortfall Misinterpretation as Guaranteed Repayment**
+There is inherent danger in presenting observed reductions in deficit as “guaranteed” liquidity outcomes. This creates moral hazard among contributors or voters who might act based on perceived stability rather than actual reserves.
+
+> **Misuse Pathway**: Voters contribute expecting full reimbursement, only to find out post-round that funds fell short. This erodes trust and opens room for reputational damage or legal disputes.
+
+##### 2. **UI Contract Mismatch**
+Frontend displays must align tightly with backend contract logic. Any divergence (e.g., showing higher matched amounts than what’s enforceable on-chain) introduces confusion or manipulation opportunities.
+
+#### 🛡️ Recommendations:
+- Never render projected values as committed ones. Label projections clearly with uncertainty ranges.
+- Hard-code solvency warnings directly in Solidity logic (e.g., revert if balance drops below threshold).
+- Provide real-time visual indicators tied to live chain state (via subgraph/indexer).
+- Conduct formal verification of budget cap calculations using tools like Certora or Slither.
+
+---
+
+### ✅ Item D: Cybernetic Jazz Diorama Design System Refinement & Accessibility Hardening
+
+#### 📌 Objective:
+Refine frontend UI styling (obsidian dark, jazz cyan signals, warm amber warnings), eliminate inline style leaks, and verify keyboard/screen-reader accessibility compliance.
+
+#### 🔐 Threat Model Focus:
+- Inline CSS injection risks
+- Accessibility-induced behavioral tracking
+- Brand consistency enforcement
+
+#### 💥 Identified Risks:
+
+##### 1. **Inline Style Injection**
+Use of inline styles increases XSS surface area, especially if user-generated content flows into DOM elements.
+
+> **Example**: A pharmacy name rendered inside `<div style="{{userInput}}">` can execute arbitrary CSS-based attacks.
+
+##### 2. **Accessibility Features as Behavioral Tracking Vectors**
+Keyboard navigation logs or screen reader interactions can reveal usage patterns that adversaries might exploit.
+
+> **Privacy Leak**: Overuse of ARIA attributes or event listeners tied to focus changes could expose user intent or session duration.
+
+##### 3. **Design System Drift**
+Without tight linting rules, visual drift can occur, diluting brand integrity and potentially masking phishing attempts.
+
+#### 🛡️ Recommendations:
+- Replace all inline styles with class references.
+- Sanitize any dynamic styling inputs using CSP-compliant methods.
+- Apply automated accessibility scanners (axe-core, Lighthouse) in CI pipelines.
+- Enforce strict brand compliance via headless component wrappers and design tokens.
+
+---
+
+## 🔗 Cross-Cutting Observations
+
+### 🔒 Input Sanitization Practices
+
+- **Database Triggers**: No evidence of direct SQL execution found in reviewed files. However, RLS policies in `createApp.js` suggest some level of parameterized query usage.
+- **Client Files (`dashboard/*.html`, `.css`)**: Lack of output encoding in templates may expose XSS vectors unless mitigated by frameworks like React or Svelte.
+
+> ⚠️ Recommendation: Audit all template rendering paths for unsafe HTML insertion. Consider adopting Content Security Policy headers globally.
+
+---
+
+### 🔐 Cryptographic Integrity Review
+
+| Component              | Status     | Notes |
+|-----------------------|------------|-------|
+| Poseidon Hash         | ✅ Secure   | Well-established zk-friendly hash function |
+| HMAC Credential Hashing | ✅ Secure   | Domain separation applied appropriately |
+| Nullifier Derivation  | ⚠️ Needs Clarification | Ensure deterministic derivation avoids collisions |
+| Replay Protection     | ⚠️ Partial  | Dependent on correct cache update logic |
+
+> ⚠️ Recommendation: Formalize nullifier derivation algorithm with unit tests covering edge-case scenarios (shared secrets, reused salts).
+
+---
+
+### 🧱 Trust Zones
+
+| Zone                     | Verification Level | Notes |
+|--------------------------|--------------------|-------|
+| Local First (Browser)    | ✅ Strong           | Witnesses generated locally |
+| Cloud-Level DB Insertion | ⚠️ Moderate         | Requires integrity checks pre-insert |
+| Off-chain Relay Packets  | ⚠️ Weak             | Relies heavily on MAC correctness |
+
+> ⚠️ Recommendation: Introduce incremental signing of relays with ephemeral keys per batch to reduce trust in central authority.
+
+---
+
+### 📦 Zero-Dependency Boundary Compliance
+
+All dependencies listed are either internal modules or standard library imports. No remote CDNs or external scripts detected.
+
+> ✅ Confirmed: Repository maintains its zero-dependency boundary effectively.
+
+---
+
+## 🏁 Council Sorting Recommendation
+
+Ranking the upcoming roadmap items based on **security impact**, **attack surface**, and **implementation urgency**:
+
+### 🔢 Execution Order (Recommended):
+
+1. **Item B**: Offline Continuity Double-Spend Guard  
+   > Highest risk of replay/cross-batch manipulation. Must be hardened first.
+
+2. **Item A**: ZK Nullifier Witness Generator  
+   > Core cryptographic foundation. Any flaws here compromise entire system validity.
+
+3. **Item C**: Participatory Budgeting Solvency Safeguards  
+   > Important governance layer, lower immediate exploitability.
+
+4. **Item D**: Cybernetic Jazz Diorama Design System  
+   > Visual polish with low security implications but important for long-term usability.
+
+---
+
+## 🔍 Single Biggest Security/Privacy Risk
+
+### Item A – **Cryptographic Metadata Exposure**
+The most critical flaw lies in the potential for **forbidden metadata (timestamps, IPs, raw credentials)** to leak into public signals of the nullifier proof. Without rigorous serialization and validation steps, subtle bugs can expose sensitive data.
+
+### Item B – **Cache Race Condition Enabling Replay Attacks**
+Failure to properly synchronize dry-run results with global nullifier cache opens a window for **cross-batch replays**, undermining the core anti-double-spend guarantee.
+
+---
+
+## 🧪 Smallest Proof-Bounded Test Slice to Start `.next`
+
+Start with implementing and testing the **dry-run MAC verification logic** for continuity packets:
+
+### 🧩 Minimal Viable Test Case:
+
+```javascript
+describe("ContinuityPacketDryRun", () => {
+  it("should reject packet with mismatched MAC", async () => {
+    const packet = createMockPacket(); // Includes valid structure + invalid MAC
+    const result = await validateDryRun(packet);
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain("MAC_MISMATCH");
+  });
+});
+```
+
+This test ensures:
+- MAC correctness is enforced pre-submission
+- Failure modes are explicit
+- No silent fallbacks exist
+
+Once this passes consistently, expand to include:
+- Cache hit/miss scenarios
+- Concurrent packet processing
+- Timestamp drift tolerance
+
+---
+
+## 🧭 Final Verdict
+
+✅ The codebase demonstrates strong architectural foresight and secure-by-design principles.
+
+⚠️ Critical areas requiring attention before proceeding:
+- Strengthen nullifier derivation logic
+- Harden dry-run MAC verification
+- Prevent accidental metadata inclusion in proofs
+
+🟢 Proceed with caution and prioritize Items B → A → C → D.
+
+--- 
+
+Let me know if you'd like a formal vulnerability disclosure draft or automated scan reports.

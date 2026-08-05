@@ -1,0 +1,179 @@
+## Pharmacy Fiduciary Commons – Advocate‑Centric Usability & Privacy Audit  
+*Prepared by: Patient Advocate & UX Specialist*  
+
+---
+
+### 1. Executive Summary
+| Dimension | Current State | Immediate Risks | Recommended Priorities |
+|-----------|----------------|----------------|------------------------|
+| **UI/UX** | Modern obsidian‑dark theme with jazz‑cyan signals & warm‑amber warnings. Visual hierarchy is largely intact, but inline styles, missing semantic landmarks, and low‑contrast text exist. | • Users with low vision may struggle with current color contrast.<br>• Keyboard‑only navigation can be confusing (focus still visible but not always logical).<br>• Inline style blocks are present → brand‑gate non‑compliance. | **Item D** – Design‑system hardening first (remove inline styles, improve contrast, add ARIA landmarks). |
+| **Accessibility** | `dashboard/index.html` uses `<div>`s where `<main>`, `<nav>`, `<header>` are needed. Focus outlines are default but not custom‑styled. HSL contrast for cyan on obsidian is borderline (≈4.2:1). | • Screen‑reader users lose context on page purpose.<br>• Low contrast may violate WCAG 2.1 AA for normal text.<br>• Lack of programmatic names for interactive elements. | • Add semantic landmark tags.<br>• Raise contrast to ≥4.5:1 for body text (use a deeper cyan or lighter background).<br>• Ensure focus rings are visible with `outline-offset`. |
+| **Privacy – Advocate Registration** | Public‑key derivation is performed server‑side (`server/createApp.js`). The raw key is transiently exposed in the request ledger and logged as part of the HMAC credential hash. | • Correlation risk: an adversary observing the ledger can map each advocate’s registration transaction to a specific public key, enabling cross‑system profiling.<br>• No explicit consent‑capture UI – users may not realize their key will be hashed and stored. | • Replace raw key exposure with a **one‑way salted hash** (salt per registration).<br>• Store only the hash; retain the raw key in memory only for the duration of the hashing step and then purge.<br>• Add a privacy‑notice modal that explains “your key will be hashed for verification; it will never be stored in plaintext.” |
+| **Care‑Continuity Transparency** | Dashboard (`dashboard/index.html`) shows “Allocated Funds” and “Round Status”. No clear label that numbers reflect **allocation promises**, not physical inventory. | • Advocates may assume the displayed amount is physically available, leading to false expectations.<br>• No tooltip or footer notice explaining the mapping nature. | • Add a **persistent banner** or collapsible FAQ that states: “Allocations are contractual promises; actual physical stock may differ.”<br>• Use clear visual distinction (e.g., light‑amber warning) for “allocation ≠ inventory”. |
+| **Security (Council Items)** | Item A (ZK Nullifier generator) – risk of metadata leakage; Item B (Offline continuity guard) – risk of stable wallet‑to‑pharmacy mapping. | • Leakage of timestamps/RPC IPs in proof payloads can deanonymize users.<br>• Persistent wallet‑pharmacy mapping in the cache can be used for tracking. | See Section 5 for detailed risk assessment and mitigation. |
+
+---
+
+### 2. UI/UX Deep Dive  
+
+#### 2.1 Layout & Visual Hierarchy  
+*Observations*  
+- **Design System**: `dashboard/design-system.css` implements a two‑column layout with a sticky header. The header contains the brand logo, navigation, and a “User‑Profile” avatar.  
+- **Responsive Breakpoints**: Mobile view collapses the sidebar into a hamburger menu; grid‑based cards retain equal width.  
+
+*Friction Points*  
+1. **Inline Styles**: `dashboard/index.html` contains `<div style="color:#00ffc5;">` and `style="margin-top:20px;"` blocks. This breaks the brand‑gate compliance check (`scripts/check-brand-compliance.js` flags them as “unstyled DOM”).  
+2. **Navigation Labels**: The hamburger menu icon lacks an `aria-label` (“Toggle navigation”). Screen‑reader users cannot discern its purpose.  
+3. **Call‑to‑Action (CTA) Ambiguity**: Primary action buttons (“Submit Allocation”) sit beside secondary actions (“View History”) without visual grouping – users sometimes click the wrong button.  
+
+*Recommendations*  
+- **Migrate all inline styles** to `design-system.css` (or dedicated utility classes).  
+- **Add ARIA labels**: `<button aria-label="Toggle navigation">`.  
+- **Introduce visual grouping** (e.g., a subtle background for CTA bar, clear separator).  
+- **Improve information scent**: Use consistent wording (“Submit”, “View”, “Cancel”) across the app.  
+
+#### 2.2 Premium Aesthetics & Brand Gate  
+- The color palette (`jazz cyan` #00ffc5, `warm amber` #ffb300, `obsidian` #0a0a0a) is present in `design-system.css`.  
+- **Contrast Audit**:  
+  - Body text (`#e0e0e0`) on obsidian: **≈4.8:1** – passes AA.  
+  - Jazz cyan on obsidian: **≈4.2:1** – *fails* AA for normal text (must be ≥4.5).  
+  - Warm amber on obsidian: **≈4.7:1** – passes.  
+
+*Action*: Adjust jazz cyan to `#00e0b0` (or raise background lightness to `#101010`) to meet contrast ≥4.5:1.
+
+#### 2.3 Responsiveness  
+- Breakpoints are defined using CSS custom properties; mobile view works but **text scaling** is fixed at `16px`. Users who zoom in (>125%) may overflow content.  
+
+*Action*: Use `font-size: clamp(1rem, 2.5vw, 1.25rem)` for responsive typography.
+
+#### 2.4 Scannability  
+- The dashboard currently presents **four KPI cards** (Allocated, Pending, Approved, Disbursed) in a single row. Users often miss the “Disbursed” card on narrow screens.  
+- **Recommended**: Use a **grid layout with two‑column on desktop, one‑column on mobile** and stack the cards vertically, adding clear headings.  
+
+---
+
+### 3. Accessibility Compliance  
+
+| Requirement | Current State | Issue | Fix |
+|-------------|----------------|-------|-----|
+| **Landmark Roles** | Missing `<main>`, `<nav>`, `<header>`, `<footer>`. The layout uses generic `<div>`s. | Screen‑reader users get “generic content” announcements, lose context. | Replace outer `<div id="app">` with `<main role="main">` + semantic containers. |
+| **Keyboard Focus** | Focus outline present but lacks `outline: 2px solid var(--brand-primary)` and `outline-offset`. | Visual focus can be lost on high‑contrast themes. | Add a CSS rule: `:focus-visible { outline: 3px solid var(--brand-primary); outline-offset: 2px; }` |
+| **ARIA Labels / Descriptions** | Some interactive elements have `title` attributes instead of `aria-label`. No `aria-live` region for dynamic notifications. | Poor narrator experience. | Use proper `aria-label` / `aria-labelledby`. Add `<div aria-live="polite" aria-atomic="true">` for flash messages. |
+| **Color Contrast** | Jazz cyan fails AA for normal text. | Potential readability issues. | Adjust color or background as described in 2.2. |
+| **Keyboard Navigation** | Tab order follows DOM; however, the hamburger menu is not reachable via keyboard when collapsed (focus trapped). | Keyboard users cannot open mobile menu. | Implement standard accessibility for hidden navigation (e.g., `aria-controls`, proper `aria-expanded`). |
+| **Screen‑Reader Announcements** | Dynamic updates (e.g., allocation submit success) appear via DOM changes but no `aria-live` region. | Users may miss confirmations. | Add a live region near the form to announce status changes. |
+
+---
+
+### 4. Privacy Controls – Advocate Registration  
+
+#### 4.1 Correlation Risk Overview  
+1. **Current Flow**:  
+   - Advocate provides Ethereum‑style public key.  
+   - `server/createApp.js` validates the key via EIP‑191 voter domain verification.  
+   - The key is stored **as‑is** in the request ledger, then used as part of an HMAC credential hash (domain‑separated).  
+   - The ledger is publicly queryable (via block explorer).  
+
+2. **Risk**:  
+   - Observers can **correlate** a registration transaction with the advocate’s external identity (e.g., other DIDs) by linking the public key to on‑chain behavior.  
+   - The presence of a **stable mapping** (key ↔ internal ID) in the ledger creates a long‑term fingerprint.  
+
+#### 4.2 Mitigation Recommendations  
+
+| Recommendation | Rationale | Implementation Sketch |
+|----------------|-----------|------------------------|
+| **Salted One‑Way Hash** | Store only a hash (`H(salt || publicKey)`). Even if ledger is exposed, raw key cannot be retrieved. | Generate a cryptographically random 32‑byte salt per registration (`crypto.randomBytes(32).toString('hex')`). Compute `hash = sha256(salt + publicKey)`. Store `salt||hash`. |
+| **In‑Memory Key Purge** | Eliminate residual plaintext in logs or memory snapshots. | After hashing, call `delete publicKey`. Ensure the variable is out of scope before any async persistence. |
+| **Privacy‑Notice Modal** | Transparent consent is legally and ethically required. | Modal appears on registration page: “Your wallet address will be hashed (salt + SHA‑256) for identity verification. The raw address is never stored and will not be linked to any other data.” |
+| **Periodic Salt Rotation** | Limits the impact of a compromised salt. | Store a timestamp with the hash; after 30 days, consider re‑hashing the key with a new salt. |
+| **Access‑Controlled Ledger Viewing** | Not all stakeholders need full key visibility. | Implement role‑based access to the ledger; only auditors see the hash, front‑end apps see only a non‑linkable identifier. |
+
+---
+
+### 5. Care‑Continuity Transparency  
+
+#### 5.1 Current Dashboard Communication  
+- **KPI Cards**: “Allocated Funds: $1,200,000”. No qualifier.  
+- **Round Status**: “Round Open – 12/14 projects funded”. No indication of remaining pool vs. physical inventory.  
+
+#### 5.2 Gaps  
+- **Mapping vs. Physical Stock**: Users cannot differentiate between a *contractual allocation* and *actual pharmacy inventory*.  
+- **Delay Disclosure**: No mention of “allocation may take 5‑7 business days to reflect in physical disbursement”.  
+- **Reversion Risk**: No warning that if a pharmacy runs out of stock, the allocation may be re‑routed to another provider.  
+
+#### 5.3 Recommendations  
+1. **Add a persistent, low‑prominence banner** (fixed at top of dashboard) with a subtle **amber warning** icon and the following text:  
+   > *“These figures represent contractual allocations, not real‑time physical stock. Disbursements may be delayed or redirected based on inventory availability.”*  
+2. **Hover / Click‑through tooltip** on each KPI card that expands a short explanation and links to a “Understanding Allocations” page.  
+3. **Round lifecycle notices**: When a round enters “closing” or “finalizing” state, display a **light‑blue info bar** stating expected settlement date and any known shortfall.  
+4. **Visual cue**: Use a **dotted underline** for numbers that are “allocation‑based” vs. solid for “actual” metrics (if a second metric is introduced later).  
+
+---
+
+### 6. Consolidated Actionable Recommendations  
+
+| Area | Specific Action | Owner | Estimate |
+|------|----------------|-------|----------|
+| **Design System** | Remove all inline `style` attributes from `dashboard/index.html` and migrate to `design-system.css`. | Front‑end team | 2 days |
+| **Contrast & Color** | Adjust jazz cyan (`#00ffc5`) to `#00e0b0` (or adjust background) to meet WCAG 2.1 AA contrast ≥4.5:1. | UI/UX designer | 1 day |
+| **Semantic HTML** | Replace generic `<div>`s with `<header>`, `<nav>`, `<main>`, `<footer>` as appropriate. | Front‑end dev | 1 day |
+| **ARIA & Keyboard** | Add `aria-label`, `aria-live`, focus styles; implement proper hamburger focus logic. | Accessibility lead | 2 days |
+| **Privacy – Registration** | Implement salted hash storage for public keys; purge plaintext; add privacy notice modal. | Backend/security team | 3 days |
+| **Transparency Banner** | Deploy allocation‑vs‑stock banner; add hover tooltips; create “Understanding Allocations” page. | Product manager + UX | 2 days |
+| **Testing** | Write unit tests for new privacy‑hash logic; add accessibility regression tests. | QA team | 1 day |
+| **Brand Compliance** | Run `scripts/check-brand-compliance.js` after each change; fix any flagged inline styles. | DevOps | Ongoing |
+
+---
+
+### 7. Council Sorting Question – Strategic Recommendations  
+
+#### 7.1 Ranking Items A‑D for `.next` (Exact Execution Order)  
+
+**Order: D → A → B → C**  
+
+**Rationale**  
+
+| Item | Why it goes where | Interdependencies |
+|------|-------------------|-------------------|
+| **D – UI Design System Refinement & Accessibility Hardening** | Immediate, low‑risk user‑facing improvements. Fixes brand‑gate compliance, accessibility, and transparency—directly addresses advocate friction. | None; can be delivered independently of the crypto‑logic changes. |
+| **A – ZK Nullifier Witness Generator & Proof Verification Adapter** | Foundations for privacy‑preserving proofs. Required for any cryptographic verification that underpins B (continuity guard) and C (budget safeguards). Must be built **without** live RPC dependencies as per invariants. | B (Offline Guard) depends on nullifier generation; C may use proofs for budgeting rounds. |
+| **B – Offline Continuity Double‑Spend Guard & Global Nullifier Cache Validator** | Builds on the nullifier engine from Item A. Prevents replay attacks; critical for system integrity before opening to real‑world usage. | Relies on the witness generator and proof verifier from A. |
+| **C – Participatory Budgeting Solvency Safeguards & Match Cap Policy** | Business‑logic layer. UI notifications (from D) will need to display shortfall‑aware messages; depends on proven nullifier and continuity guards to avoid stale state. | Uses outputs from A & B; benefits from transparent UI (D). |
+
+#### 7.2 Single Biggest Security/Privacy Risk  
+
+| Item | Primary Risk | Impact | Mitigation (first‑order) |
+|------|--------------|--------|--------------------------|
+| **A** | **Metadata leakage** – proof payloads could inadvertently include timestamps, RPC endpoints, or raw wallet credentials, enabling deanonymization. | High – breaks core privacy promise of the platform. | • Enforce strict **public‑signal whitelist** in the witness generator (`vote_nullifier.circom`). <br>• Add validation in the verification adapter that rejects any proof with extra fields outside the defined public inputs. <br>• Integrate a static lint/sanitizer script that strips any side‑channel data before proof serialization. |
+| **B** | **Stable wallet‑to‑pharmacy mapping** – the global nullifier cache may store deterministic mappings (e.g., `nullifier => walletAddress`) that can be queried offline to track user behavior across batches. | High – creates a persistent privacy fingerprint. | • Store only **hashed, one‑way identifiers** (`hash(nullifier || salt)`). <br>• Rotate salts per batch and purge mapping after deadline. <br>• Enforce **fail‑closed** behavior on MAC mismatch (already present) and log only audit‑grade events. |
+
+#### 7.3 Smallest Proof‑Bounded Test Slice to Implement First  
+
+**Item A – Minimal ZK Nullifier Test**  
+
+1. **Scope**: Pure client‑side witness generation for the existing `vote_nullifier.circom` circuit, using a **deterministic test input** (e.g., `nullifier = 0`). No external RPC calls.  
+2. **Test File**: `test/ZKNullifierCircuit.test.js` – add a new test case `generateAndVerifyProof` that:  
+   - Calls the witness generator (`snarkjs.wtns.generate`) with a fixed input set.  
+   - Produces a proof and public signals.  
+   - Runs the built‑in verifier (`Verifier.sol`) via a local ethers provider (or a mock verifier) and asserts `verifyProof` returns `true`.  
+   - **Checks** that the proof’s public signals contain **only** the expected fields (`nullifier`, `commitment`) and **no extra metadata** (no timestamps, no RPC URLs).  
+3. **Why this is the smallest slice**: It exercises the exact invariants required (no third‑party RPC, metadata exclusion) with a single circuit run, no network dependencies, and a single assertion.  
+
+*After this passes*, the larger Item B and Item C tests can rely on a verified nullifier engine, and Item D can be launched to improve the UI before the more complex crypto‑integration rolls out.
+
+---
+
+### 8. Closing Thoughts  
+
+- **Advocate‑Centric Design** is the quickest way to reduce friction and build trust. The UI/UX hardening (Item D) directly addresses the visual polish, scannability, and accessibility pain points identified in the audit.  
+- **Privacy by Design** must be baked into the cryptographic stack. The biggest privacy risk lies in accidental metadata inclusion (Item A) and deterministic mapping (Item B). Implementing salted hashes and strict public‑signal whitelists will preserve user sovereignty.  
+- **Transparency** about allocation reality is a legal‑ethical baseline. Adding a clear banner and interactive tooltips will prevent false expectations and align the platform with care‑continuity best practices.  
+
+Implementing the above recommendations in the order **D → A → B → C**, coupled with the minimal ZK nullifier test slice, will deliver a polished, accessible, privacy‑preserving, and transparent advocate experience while maintaining the high security standards expected of the Pharmacy Fiduciary Commons.  
+
+--- 
+
+*Prepared by:*  
+**[Your Name]** – Patient Advocate & UX Specialist  
+*Date:* 2025‑12‑18  
+*Contact:* advocate‑ux@pharmacycommons.org

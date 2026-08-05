@@ -1,0 +1,16 @@
+{
+  "recorded_at_utc": "2026-08-05T09:32:20.852099+00:00",
+  "role": "skeptic",
+  "description": "Skeptic (Gemma)",
+  "model": "openrouter/free",
+  "provider": "openrouter",
+  "launcher": "scripts/openrouter_review.py",
+  "packet_path": "C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\review-context\\packet-frontend.json",
+  "context_path": null,
+  "output_path": "C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\reviews/open_claude-packet-review.md",
+  "disclosure_class": "LOCAL_CODE_DIRTY",
+  "approved_disclosure_class": "LOCAL_CODE_DIRTY",
+  "error_status": null,
+  "truncation_status": "not_reported",
+  "reconciliation_status": "reconciled_in_rotational_swarm_review_dossier"
+}
