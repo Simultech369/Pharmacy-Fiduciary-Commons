@@ -1,0 +1,40 @@
+{
+  "schema_version": "pbm-review-packet/v0.1",
+  "packet_id": "packet-implementation-plan",
+  "generated_at_utc": "2026-08-05T17:37:00+00:00",
+  "repo_root": "C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal",
+  "question": "Audit the updated implementation plan for High-Throughput Proxy APIs, Hybrid Vector Search Engine, and Real-Time WebSocket Dashboard Streaming. Evaluate rate-limiting safety, local vector index privacy, and WebSocket connection security.",
+  "lane": "strategist",
+  "budget_tokens": 12000,
+  "estimated_source_tokens": 18000,
+  "estimated_packet_tokens": 4500,
+  "disclosure_class": "LOCAL_CODE_DIRTY",
+  "freshness_labels": [
+    "[committed HEAD]",
+    "[dirty working tree]",
+    "[generated cache]"
+  ],
+  "forbidden_inputs": [
+    "API keys, private keys, seed phrases",
+    "PHI or patient identity",
+    "Live RPC endpoints"
+  ],
+  "known_boundaries": [
+    "Implementation plan is advisory until approved by the human operator.",
+    "All servers, WebSockets, and RAG engines must run 100% locally with zero cloud API dependencies.",
+    "Git pushes remain strictly forbidden per operator directive."
+  ],
+  "review_instructions": [
+    "Return line-anchored recommendations for proxy rate limiting, vector index hashing, and WebSocket origin validation.",
+    "Classify findings as confirmed defect, design risk, stale claim, or false/unsupported."
+  ],
+  "source_snapshot": {
+    "branch": "feature/db-proxy",
+    "head": "0ce42a7"
+  },
+  "output_paths": {
+    "packet": "review-context/packet-implementation-plan.json",
+    "router_metadata_template": "reviews/strategist-packet-router-metadata.json",
+    "review_output_template": "reviews/strategist-packet-review.md"
+  }
+}

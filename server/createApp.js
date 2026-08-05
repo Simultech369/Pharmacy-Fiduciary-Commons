@@ -178,7 +178,7 @@ if (rateLimitInterval.unref) {
 
 function rateLimiter(maxRequests, windowMs) {
   return (req, res, next) => {
-    const ip = req.ip || req.connection.remoteAddress; 
+    const ip = req.ip || req.connection.remoteAddress || "127.0.0.1";
     const now = Date.now();
     
     if (!rateLimitMap.has(ip)) {
@@ -188,6 +188,13 @@ function rateLimiter(maxRequests, windowMs) {
     const record = rateLimitMap.get(ip);
     record.timestamps = record.timestamps.filter(t => now - t < windowMs);
     
+    const remaining = Math.max(0, maxRequests - record.timestamps.length - 1);
+    const resetTime = Math.ceil((now + windowMs) / 1000);
+
+    res.setHeader("X-RateLimit-Limit", maxRequests);
+    res.setHeader("X-RateLimit-Remaining", remaining);
+    res.setHeader("X-RateLimit-Reset", resetTime);
+
     if (record.timestamps.length >= maxRequests) {
       return res.status(429).json({ error: "Too many requests, please try again later" });
     }
@@ -281,6 +288,9 @@ function createApp(supabaseClient, config = {}) {
   app.use(express.json());
   
   app.use((req, res, next) => {
+    const requestId = req.headers["x-request-id"] || crypto.randomUUID();
+    req.requestId = requestId;
+    res.setHeader("X-Request-ID", requestId);
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
