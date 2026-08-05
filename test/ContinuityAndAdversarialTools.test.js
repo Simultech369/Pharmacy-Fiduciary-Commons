@@ -148,7 +148,9 @@ describe("Continuity and adversarial draft tools", function () {
 
     fs.writeFileSync(voucherPath, JSON.stringify(voucher, null, 2));
 
-    const result = nodeTool([continuityTool, "package-relay", tempDir, outputPath], {
+    const globalCachePath = path.join(tempDir, "global-nullifier-cache.json");
+
+    const result = nodeTool([continuityTool, "package-relay", tempDir, outputPath, globalCachePath], {
       env: { LOCAL_MAC_SECRET: secret }
     });
     const batch = JSON.parse(fs.readFileSync(outputPath, "utf8"));
@@ -163,9 +165,60 @@ describe("Continuity and adversarial draft tools", function () {
     expect(JSON.stringify(batch)).to.not.include(voter);
     expect(batch[0].proofRequired).to.include("verifier-signed mock ZK attestation");
 
+    expect(fs.existsSync(globalCachePath)).to.equal(true);
+    const persistedCache = JSON.parse(fs.readFileSync(globalCachePath, "utf8"));
+    expect(persistedCache).to.include(voucher.nullifier.toLowerCase());
+
     const validation = nodeTool([proxyValidator, outputPath]);
     expect(validation.status).to.equal(0);
     expect(validation.stdout).to.include("PROXY INTAKE VALIDATION PASSED");
+  });
+
+  it("fails closed in a secondary process run when referencing the persisted nullifier cache file", function () {
+    const secret = "test-secret-for-continuity";
+    const tempDir1 = fs.mkdtempSync(path.join(os.tmpdir(), "pbm-continuity-proc1-"));
+    const tempDir2 = fs.mkdtempSync(path.join(os.tmpdir(), "pbm-continuity-proc2-"));
+    const globalCachePath = path.join(tempDir1, "global-nullifier-cache.json");
+    const outputPath1 = path.join(tempDir1, "relay-batch-1.json");
+    const outputPath2 = path.join(tempDir2, "relay-batch-2.json");
+
+    const preimage = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const voucher = makeVoucher({ preimage });
+
+    // Process 1: Write voucher to tempDir1 and package relay with globalCachePath
+    fs.writeFileSync(path.join(tempDir1, "voucher-001.json"), JSON.stringify(voucher, null, 2));
+    const proc1Result = nodeTool([continuityTool, "package-relay", tempDir1, outputPath1, globalCachePath], {
+      env: { LOCAL_MAC_SECRET: secret }
+    });
+    expect(proc1Result.status).to.equal(0);
+    expect(fs.existsSync(globalCachePath)).to.equal(true);
+
+    // Process 2: Write distinct voucher file in tempDir2 with SAME nullifier, package with SAME globalCachePath
+    fs.writeFileSync(path.join(tempDir2, "voucher-002.json"), JSON.stringify(voucher, null, 2));
+    const proc2Result = nodeTool([continuityTool, "package-relay", tempDir2, outputPath2, globalCachePath], {
+      env: { LOCAL_MAC_SECRET: secret }
+    });
+
+    expect(proc2Result.status).to.not.equal(0);
+    expect(proc2Result.stderr).to.include("Duplicate nullifier detected");
+  });
+
+  it("fails closed when global nullifier cache file exists but is malformed", function () {
+    const secret = "test-secret-for-continuity";
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pbm-continuity-malformed-cache-"));
+    const globalCachePath = path.join(tempDir, "global-nullifier-cache.json");
+    const outputPath = path.join(tempDir, "relay-batch.json");
+
+    const voucher = makeVoucher({ preimage: "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" });
+    fs.writeFileSync(path.join(tempDir, "voucher-001.json"), JSON.stringify(voucher, null, 2));
+    fs.writeFileSync(globalCachePath, "INVALID_JSON_CONTENT");
+
+    const result = nodeTool([continuityTool, "package-relay", tempDir, outputPath, globalCachePath], {
+      env: { LOCAL_MAC_SECRET: secret }
+    });
+
+    expect(result.status).to.not.equal(0);
+    expect(result.stderr).to.include("Failed to parse global nullifier cache");
   });
 
   it("refuses to package duplicate relay nullifiers", function () {
@@ -239,6 +292,21 @@ describe("Continuity and adversarial draft tools", function () {
     expect(html).to.not.match(/<script[^>]+src=/i);
     expect(html).to.not.include("require(");
     expect(html).to.not.include("node:");
+  });
+
+  it("validates global nullifier cache dry-run rejection on duplicate cross-batch nullifiers", async function () {
+    const { pathToFileURL } = require("node:url");
+    const { validateGlobalNullifierCache } = await import(pathToFileURL(continuityTool).href);
+    const secret = "test-secret-for-continuity";
+    process.env.LOCAL_MAC_SECRET = secret;
+
+    const v1 = makeVoucher({ nullifier: "0x1111111111111111111111111111111111111111111111111111111111111111" });
+    const globalCache = new Set(["0x1111111111111111111111111111111111111111111111111111111111111111"]);
+
+    expect(() => validateGlobalNullifierCache([v1], globalCache)).to.throw("DUPLICATE_NULLIFIER");
+
+    const v2 = makeVoucher({ nullifier: "0x2222222222222222222222222222222222222222222222222222222222222222" });
+    expect(validateGlobalNullifierCache([v2], new Set())).to.be.true;
   });
 
   it("validates proxy relay batches across files as review artifacts", function () {
@@ -416,5 +484,104 @@ describe("Continuity and adversarial draft tools", function () {
     const parsed = JSON.parse(result.stdout);
     expect(parsed).to.have.lengthOf(1);
     expect(parsed[0].classification).to.equal("reconciled");
+  });
+
+  describe("Care Continuity & Human Capabilities Metric Calculator", function () {
+    const careMetrics = path.join(repoRoot, "tools", "resilience", "care-continuity-metrics.mjs");
+
+    it("calculates Continuous Refill Ratio (CRR) and triggers advisory alert when below 90%", async function () {
+      const { calculateCRR } = await import(`file://${careMetrics}`);
+
+      const records = [
+        { patientHash: "0x1", varianceDays: 1 },
+        { patientHash: "0x2", varianceDays: 2 },
+        { patientHash: "0x3", varianceDays: 5 }, // non-compliant (> 3 days)
+        { patientHash: "0x4", varianceDays: 7 }, // non-compliant
+      ];
+
+      const res = calculateCRR(records);
+      expect(res.crr).to.equal(50.0);
+      expect(res.total).to.equal(4);
+      expect(res.compliantCount).to.equal(2);
+      expect(res.advisoryAlert).to.equal(true);
+      expect(res.targetMet).to.equal(false);
+    });
+
+    it("calculates Emergency Fill Access (EFA) ratio and target completion", async function () {
+      const { calculateEFA } = await import(`file://${careMetrics}`);
+
+      const records = [
+        { pharmacyId: "0xPh1", currentCreditLimit: 5000, thirtyDayDemand: 3000 },
+        { pharmacyId: "0xPh2", currentCreditLimit: 2000, thirtyDayDemand: 4000 }, // under capacity
+      ];
+
+      const res = calculateEFA(records);
+      expect(res.efaRatio).to.equal(50.0);
+      expect(res.total).to.equal(2);
+      expect(res.compliantCount).to.equal(1);
+      expect(res.targetMet).to.equal(false);
+    });
+
+    it("calculates Non-Digital Workflow Adoption (NDWA) ratio against 20% target", async function () {
+      const { calculateNDWA } = await import(`file://${careMetrics}`);
+
+      const records = [
+        { id: "tx1", channel: "web_wallet" },
+        { id: "tx2", channel: "web_wallet" },
+        { id: "tx3", channel: "offline_voucher" },
+        { id: "tx4", channel: "sms" }
+      ];
+
+      const res = calculateNDWA(records);
+      expect(res.ndwaRatio).to.equal(50.0);
+      expect(res.offlineCount).to.equal(2);
+      expect(res.targetMet).to.equal(true);
+    });
+
+    it("generates complete care continuity report", async function () {
+      const { generateCareContinuityReport } = await import(`file://${careMetrics}`);
+
+      const report = generateCareContinuityReport(
+        [{ patientHash: "0x1", varianceDays: 0 }],
+        [{ pharmacyId: "0x1", currentCreditLimit: 1000, thirtyDayDemand: 1000 }],
+        [{ id: "1", channel: "offline_voucher" }]
+      );
+
+      expect(report.metrics.continuousRefillRatio.crr).to.equal(100.0);
+      expect(report.metrics.continuousRefillRatio.targetMet).to.equal(true);
+      expect(report.advisoryActionRequired).to.equal(false);
+      expect(report.provenance).to.include("Synthetic / Hashed Local Care Continuity Calculator");
+    });
+  });
+
+  describe("Native State Machine Verifier", function () {
+    const verifierPath = path.resolve(__dirname, "../tools/resilience/state-machine-verifier.mjs");
+
+    it("validates valid debt queue transitions and rejects forbidden jumps", async function () {
+      const { transitionDebtState, DEBT_QUEUE_STATES } = await import(`file://${verifierPath}`);
+
+      expect(transitionDebtState(DEBT_QUEUE_STATES.UNFUNDED, DEBT_QUEUE_STATES.ALLOCATED)).to.equal(DEBT_QUEUE_STATES.ALLOCATED);
+      expect(transitionDebtState(DEBT_QUEUE_STATES.ALLOCATED, DEBT_QUEUE_STATES.DISBURSED)).to.equal(DEBT_QUEUE_STATES.DISBURSED);
+      expect(transitionDebtState(DEBT_QUEUE_STATES.DISBURSED, DEBT_QUEUE_STATES.RECALLED)).to.equal(DEBT_QUEUE_STATES.RECALLED);
+
+      expect(() => transitionDebtState(DEBT_QUEUE_STATES.UNFUNDED, DEBT_QUEUE_STATES.RECALLED))
+        .to.throw(/Forbidden state transition/);
+    });
+
+    it("validates valid budgeting round transitions and rejects invalid jumps", async function () {
+      const { transitionBudgetingRound, BUDGETING_ROUND_STATES } = await import(`file://${verifierPath}`);
+
+      expect(transitionBudgetingRound(BUDGETING_ROUND_STATES.INACTIVE, BUDGETING_ROUND_STATES.PROPOSAL_SUBMISSION)).to.equal(BUDGETING_ROUND_STATES.PROPOSAL_SUBMISSION);
+      expect(() => transitionBudgetingRound(BUDGETING_ROUND_STATES.INACTIVE, BUDGETING_ROUND_STATES.FINALIZED))
+        .to.throw(/Forbidden state transition/);
+    });
+
+    it("validates offline voucher lifecycle transitions", async function () {
+      const { transitionOfflineVoucher, OFFLINE_VOUCHER_STATES } = await import(`file://${verifierPath}`);
+
+      expect(transitionOfflineVoucher(OFFLINE_VOUCHER_STATES.ISSUED, OFFLINE_VOUCHER_STATES.CACHE_VERIFIED)).to.equal(OFFLINE_VOUCHER_STATES.CACHE_VERIFIED);
+      expect(() => transitionOfflineVoucher(OFFLINE_VOUCHER_STATES.ISSUED, OFFLINE_VOUCHER_STATES.SETTLED))
+        .to.throw(/Forbidden state transition/);
+    });
   });
 });

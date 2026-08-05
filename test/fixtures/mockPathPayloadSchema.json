@@ -1,11 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "FuturePublicZKPayload",
+  "title": "MockPathPublicPayload",
   "type": "object",
   "properties": {
     "privacyTarget": {
       "type": "string",
-      "enum": ["unlinkable"]
+      "enum": ["semantic-wallet-linkable"]
     },
     "domain": {
       "type": "string"
@@ -33,6 +33,18 @@
         "type": "string"
       }
     },
+    "walletAddress": {
+      "type": "string"
+    },
+    "stableCredentialHash": {
+      "type": "string"
+    },
+    "npi": {
+      "type": "string"
+    },
+    "ncpdp": {
+      "type": "string"
+    },
     "metadataLeakageBudget": {
       "type": "object",
       "properties": {
@@ -48,9 +60,6 @@
         "allowsNpiOrNcpdp"
       ],
       "additionalProperties": false
-    },
-    "domainSeparation": {
-      "type": "object"
     }
   },
   "additionalProperties": false,

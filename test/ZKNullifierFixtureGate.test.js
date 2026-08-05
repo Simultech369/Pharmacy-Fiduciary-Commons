@@ -20,6 +20,7 @@ const FORBIDDEN_UNLINKABLE_FIELDS = [
 
 describe("ZK/Nullifier Design Fixture and Test Gate", function () {
   let futureSchema;
+  let mockSchema;
   let mockPayload;
   let unlinkablePayload;
   let governanceFixture;
@@ -29,6 +30,9 @@ describe("ZK/Nullifier Design Fixture and Test Gate", function () {
   before(function () {
     futureSchema = JSON.parse(
       fs.readFileSync(path.join(__dirname, "fixtures", "futurePayloadSchema.json"), "utf8")
+    );
+    mockSchema = JSON.parse(
+      fs.readFileSync(path.join(__dirname, "fixtures", "mockPathPayloadSchema.json"), "utf8")
     );
     mockPayload = JSON.parse(
       fs.readFileSync(path.join(__dirname, "fixtures", "mockPathPayload.json"), "utf8")
@@ -47,34 +51,85 @@ describe("ZK/Nullifier Design Fixture and Test Gate", function () {
     );
   });
 
-  // Helper validation function for the payload schema
-  function validateBasicSchema(payload, schema) {
+  // Helper validation function enforcing strict JSON schema bounds including additionalProperties
+  function validateStrictSchema(payload, schema) {
+    if (!payload || typeof payload !== "object") {
+      throw new Error("Schema validation failed: payload must be an object");
+    }
+
     // 1. Check required fields
     schema.required.forEach((field) => {
       expect(payload, `Payload missing required field: ${field}`).to.have.property(field);
     });
 
-    // 2. Validate format of nullifier and membershipRoot
+    // 2. Enforce additionalProperties: false at top level
+    if (schema.additionalProperties === false) {
+      const allowedKeys = Object.keys(schema.properties);
+      const extraKeys = Object.keys(payload).filter((k) => !allowedKeys.includes(k));
+      if (extraKeys.length > 0) {
+        throw new Error(`Schema validation failed: unexpected top-level property '${extraKeys[0]}'`);
+      }
+    }
+
+    // 3. Enforce additionalProperties: false on metadataLeakageBudget
+    if (schema.properties && schema.properties.metadataLeakageBudget) {
+      const leakageSchema = schema.properties.metadataLeakageBudget;
+      leakageSchema.required.forEach((field) => {
+        expect(payload.metadataLeakageBudget, `metadataLeakageBudget missing required field: ${field}`).to.have.property(field);
+      });
+
+      if (leakageSchema.additionalProperties === false) {
+        const allowedLeakageKeys = Object.keys(leakageSchema.properties);
+        const extraLeakageKeys = Object.keys(payload.metadataLeakageBudget || {}).filter(
+          (k) => !allowedLeakageKeys.includes(k)
+        );
+        if (extraLeakageKeys.length > 0) {
+          throw new Error(`Schema validation failed: unexpected metadataLeakageBudget property '${extraLeakageKeys[0]}'`);
+        }
+      }
+    }
+
+    // 4. Validate format of nullifier and membershipRoot
     const hexPattern = /^0x[0-9a-fA-F]{64}$/;
     expect(payload.nullifier).to.match(hexPattern, "nullifier must be a 32-byte hex string");
     expect(payload.membershipRoot).to.match(hexPattern, "membershipRoot must be a 32-byte hex string");
 
-    // 3. Validate types
+    // 5. Validate types
     expect(payload.publicSignals).to.be.an("array");
     expect(payload.metadataLeakageBudget).to.be.an("object");
-
-    schema.properties.metadataLeakageBudget.required.forEach((field) => {
-      expect(payload.metadataLeakageBudget, `metadataLeakageBudget missing required field: ${field}`).to.have.property(field);
-    });
   }
 
   describe("1. Fixture Schema Validation", function () {
-    it("validates mock-path payload against future schema structure", function () {
-      validateBasicSchema(mockPayload, futureSchema);
+    it("validates mock-path payload against mock schema structure", function () {
+      validateStrictSchema(mockPayload, mockSchema);
     });
 
-    it("validates unlinkable-path payload against future schema structure", function () {
-      validateBasicSchema(unlinkablePayload, futureSchema);
+    it("validates unlinkable-path payload against future unlinkable schema structure", function () {
+      validateStrictSchema(unlinkablePayload, futureSchema);
+    });
+
+    it("rejects forbidden real-world identity fields in future unlinkable schema validator", function () {
+      const invalidPayload = { ...unlinkablePayload, npi: "1982736450" };
+      expect(() => validateStrictSchema(invalidPayload, futureSchema)).to.throw(
+        /unexpected top-level property 'npi'/
+      );
+    });
+
+    it("rejects payloads containing unapproved extra top-level properties via strict schema validator", function () {
+      const invalidPayload = { ...unlinkablePayload, unexpectedExtraField: "leaked_data" };
+      expect(() => validateStrictSchema(invalidPayload, futureSchema)).to.throw(
+        /unexpected top-level property 'unexpectedExtraField'/
+      );
+    });
+
+    it("rejects metadataLeakageBudget objects containing unapproved extra properties via strict schema validator", function () {
+      const invalidPayload = {
+        ...unlinkablePayload,
+        metadataLeakageBudget: { ...unlinkablePayload.metadataLeakageBudget, unexpectedLeakageKey: true }
+      };
+      expect(() => validateStrictSchema(invalidPayload, futureSchema)).to.throw(
+        /unexpected metadataLeakageBudget property 'unexpectedLeakageKey'/
+      );
     });
   });
 

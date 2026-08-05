@@ -8,18 +8,27 @@
  * current Solidity mock expects a verifier-signed attestation over voter,
  * nullifier, verifier version, and round root before registerVoterWithMockZK.
  *
+/**
  * Usage:
  *   node tools/resilience/continuity-engine.mjs generate-voucher <roundId>
  *   node tools/resilience/continuity-engine.mjs verify-offline <voucherPath>
- *   node tools/resilience/continuity-engine.mjs package-relay <vouchersDir> <outputPath>
+ *   node tools/resilience/continuity-engine.mjs package-relay <vouchersDir> <outputPath> [globalCachePath]
+ *
+ * Boundary Notice:
+ *   The local nullifier cache provides single-operator sequential replay protection on disk.
+ *   Cross-process file locking, atomic writes, fsync guarantees, and multi-operator shared authority
+ *   remain unresolved gaps for production.
  */
 
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
+function getLocalMacSecret() {
+  return process.env.LOCAL_MAC_SECRET;
+}
+
 const command = process.argv[2];
-const LOCAL_MAC_SECRET = process.env.LOCAL_MAC_SECRET;
 const MIN_MAC_SECRET_LENGTH = 16;
 const REQUIRED_VOUCHER_FIELDS = [
   'roundId',
@@ -38,39 +47,37 @@ Offline Continuity Engine (Draft, Offline Artifacts Only)
 Usage:
   node tools/resilience/continuity-engine.mjs generate-voucher <roundId>
   node tools/resilience/continuity-engine.mjs verify-offline <voucherPath>
-  node tools/resilience/continuity-engine.mjs package-relay <vouchersDir> <outputPath>
+  node tools/resilience/continuity-engine.mjs package-relay <vouchersDir> <outputPath> [globalCachePath]
 `);
   process.exit(1);
 }
 
 function requireLocalMacSecret() {
-  if (!LOCAL_MAC_SECRET) {
+  const secret = getLocalMacSecret();
+  if (!secret) {
     console.error('Error: LOCAL_MAC_SECRET is required for voucher generation and verification.');
     console.error('Set it in the local operator environment; do not commit it to the repo.');
     process.exit(1);
   }
-  if (LOCAL_MAC_SECRET.length < MIN_MAC_SECRET_LENGTH) {
+  if (secret.length < MIN_MAC_SECRET_LENGTH) {
     console.error(`Error: LOCAL_MAC_SECRET must be at least ${MIN_MAC_SECRET_LENGTH} characters.`);
     console.error('Use a high-entropy local secret managed outside the repository.');
     process.exit(1);
   }
 }
 
-function voucherMacMessage(voucher) {
-  const sortedKeys = Object.keys(voucher).filter(key => key !== 'mac').sort();
+function computeVoucherMac(voucher) {
+  requireLocalMacSecret();
+  const sortedKeys = Object.keys(voucher).filter((key) => key !== 'mac').sort();
   const signedFields = {};
   for (const key of sortedKeys) {
     signedFields[key] = voucher[key] ?? null;
   }
-  return JSON.stringify(signedFields);
-}
 
-function calculateVoucherMac(voucher) {
-  return crypto
-    .createHmac('sha256', LOCAL_MAC_SECRET)
-    .update(voucherMacMessage(voucher))
-    .digest('hex')
-    .slice(0, 16);
+  const message = JSON.stringify(signedFields);
+  const hmac = crypto.createHmac('sha256', getLocalMacSecret());
+  hmac.update(message);
+  return `0x${hmac.digest('hex').slice(0, 16)}`;
 }
 
 function assertVoucherShape(voucher) {
@@ -125,54 +132,79 @@ function assertVoucherShape(voucher) {
 }
 
 function assertVoucherMac(voucher) {
-  const calculatedMac = calculateVoucherMac(voucher);
-  if (`0x${calculatedMac}` !== voucher.mac) {
+  const computedMac = computeVoucherMac(voucher);
+  if (computedMac.toLowerCase() !== String(voucher.mac).toLowerCase()) {
     console.error('OFFLINE VERIFICATION FAILED: MAC verification failed against local secret.');
     console.error('Do not treat this voucher as verified. Check the local secret, voucher source, and evidence trail.');
     process.exit(1);
   }
 }
 
-if (!command) {
-  showHelp();
+export function validateGlobalNullifierCache(vouchers, globalCacheSet = new Set()) {
+  const localSeen = new Set(globalCacheSet);
+  for (const voucher of vouchers) {
+    assertVoucherShape(voucher);
+    assertVoucherMac(voucher);
+    const nullifier = String(voucher.nullifier).toLowerCase();
+    if (localSeen.has(nullifier)) {
+      throw new Error(`DUPLICATE_NULLIFIER: Nullifier ${nullifier} already exists in global cache or batch.`);
+    }
+    localSeen.add(nullifier);
+  }
+  for (const n of localSeen) {
+    globalCacheSet.add(n);
+  }
+  return true;
 }
 
-switch (command) {
-  case 'generate-voucher': {
-    requireLocalMacSecret();
+if (!command) {
+  // Module imported without CLI arguments
+} else {
+  switch (command) {
+    case 'test':
+      break;
 
-    const roundId = process.argv[3];
+    case 'generate-voucher': {
+      requireLocalMacSecret();
 
-    if (!roundId) {
-      console.error('Error: Missing roundId.');
-      showHelp();
-    }
+      const roundIdArg = process.argv[3];
+      if (!roundIdArg) {
+        console.error('Error: Missing roundId argument.');
+        showHelp();
+      }
 
-    const preimage = crypto.randomBytes(32).toString('hex');
-    const nullifier = crypto.createHash('sha256').update(preimage).digest('hex');
+      const roundId = parseInt(roundIdArg, 10);
+      if (isNaN(roundId) || roundId <= 0) {
+        console.error('Error: roundId must be a positive integer.');
+        process.exit(1);
+      }
 
-    const voucher = {
-      roundId: parseInt(roundId, 10),
-      preimage: `0x${preimage}`,
-      nullifier: `0x${nullifier}`,
-      mac: 'pending',
-      generatedAt: new Date().toISOString(),
-      status: 'pending_sync',
-      proofFormat: 'offline-voucher-v1-not-zk-proof',
-      warning: 'preimage is bearer recovery material; it is not an on-chain mock ZK proof; voter identity is intentionally not stored'
-    };
-    voucher.mac = `0x${calculateVoucherMac(voucher)}`;
+      const preimage = `0x${crypto.randomBytes(32).toString('hex')}`;
+      const nullifier = `0x${crypto.createHash('sha256').update(preimage).digest('hex')}`;
 
-    const filename = `voucher-${roundId}-${nullifier.slice(0, 8)}.json`;
-    const filepath = path.join(process.cwd(), 'exports', filename);
+      const voucher = {
+        roundId,
+        preimage,
+        nullifier,
+        generatedAt: new Date().toISOString(),
+        status: 'pending_sync',
+        proofFormat: 'offline-voucher-v1-not-zk-proof',
+        warning: 'preimage is bearer recovery material; it is not an on-chain mock ZK proof; voter identity is intentionally not stored'
+      };
 
-    if (!fs.existsSync(path.dirname(filepath))) {
-      fs.mkdirSync(path.dirname(filepath), { recursive: true });
-    }
+      voucher.mac = computeVoucherMac(voucher);
 
-    fs.writeFileSync(filepath, JSON.stringify(voucher, null, 2));
+      const timestamp = Date.now();
+      const filename = `voucher-${roundId}-${timestamp}.json`;
+      const filepath = path.join(process.cwd(), 'exports', filename);
 
-    console.log(`
+      if (!fs.existsSync(path.dirname(filepath))) {
+        fs.mkdirSync(path.dirname(filepath), { recursive: true });
+      }
+
+      fs.writeFileSync(filepath, JSON.stringify(voucher, null, 2));
+
+      console.log(`
 ==================================================
 OFFLINE PAPER VOUCHER GENERATED
 ==================================================
@@ -189,28 +221,28 @@ PRINTING GUIDELINES:
 - A verifier-signed mock ZK proof is still required before on-chain submission.
 ==================================================
 `);
-    break;
-  }
-
-  case 'verify-offline': {
-    requireLocalMacSecret();
-
-    const voucherPath = process.argv[3];
-    if (!voucherPath || !fs.existsSync(voucherPath)) {
-      console.error('Error: Voucher file not found.');
-      process.exit(1);
+      break;
     }
 
-    const voucher = JSON.parse(fs.readFileSync(voucherPath, 'utf8'));
+    case 'verify-offline': {
+      requireLocalMacSecret();
 
-    console.log('Starting Local Failsafe / Rising Floor Schema Verification...');
-    console.log('Analyzing offline voucher syntax using local rules...');
+      const voucherPath = process.argv[3];
+      if (!voucherPath || !fs.existsSync(voucherPath)) {
+        console.error('Error: Voucher file not found.');
+        process.exit(1);
+      }
 
-    assertVoucherShape(voucher);
-    assertVoucherMac(voucher);
+      const voucher = JSON.parse(fs.readFileSync(voucherPath, 'utf8'));
 
-    console.log('Local MAC Verification: SUCCESS');
-    console.log(`
+      console.log('Starting Local Failsafe / Rising Floor Schema Verification...');
+      console.log('Analyzing offline voucher syntax using local rules...');
+
+      assertVoucherShape(voucher);
+      assertVoucherMac(voucher);
+
+      console.log('Local MAC Verification: SUCCESS');
+      console.log(`
 ==================================================
 OFFLINE SCHEMA VERIFICATION RESULT: PASSED
 ==================================================
@@ -220,55 +252,78 @@ Nullifier:          ${voucher.nullifier}
 Verified Status:    LOCAL INTEGRITY ONLY (Failsafe baseline satisfied - NOT A ZK PROOF)
 ==================================================
 `);
-    break;
-  }
-
-  case 'package-relay': {
-    requireLocalMacSecret();
-
-    const vouchersDir = process.argv[3];
-    const outputPath = process.argv[4];
-
-    if (!vouchersDir || !outputPath) {
-      console.error('Error: Missing vouchers directory or output path.');
-      showHelp();
+      break;
     }
 
-    if (!fs.existsSync(vouchersDir)) {
-      console.error('Error: Vouchers directory does not exist.');
-      process.exit(1);
-    }
+    case 'package-relay': {
+      requireLocalMacSecret();
 
-    const files = fs.readdirSync(vouchersDir).filter((file) => file.endsWith('.json') && file.startsWith('voucher-'));
-    const relayBatch = [];
-    const seenNullifiers = new Set();
+      const vouchersDir = process.argv[3];
+      const outputPath = process.argv[4];
+      const globalCachePath = process.argv[5] || process.env.GLOBAL_NULLIFIER_CACHE;
 
-    for (const file of files) {
-      const filepath = path.join(vouchersDir, file);
-      const voucher = JSON.parse(fs.readFileSync(filepath, 'utf8'));
-      assertVoucherShape(voucher);
-      assertVoucherMac(voucher);
+      if (!vouchersDir || !outputPath) {
+        console.error('Error: Missing vouchers directory or output path.');
+        showHelp();
+      }
 
-      if (voucher.status === 'pending_sync') {
-        const nullifier = String(voucher.nullifier).toLowerCase();
-        if (seenNullifiers.has(nullifier)) {
-          console.error(`Duplicate nullifier detected while packaging relay batch: ${voucher.nullifier}`);
-          console.error('Refusing to create a batch that could revert as a unit during later submission.');
+      if (!fs.existsSync(vouchersDir)) {
+        console.error('Error: Vouchers directory does not exist.');
+        process.exit(1);
+      }
+
+      const files = fs.readdirSync(vouchersDir).filter((file) => file.endsWith('.json') && file.startsWith('voucher-'));
+      const relayBatch = [];
+      const batchVouchers = [];
+      const globalSeen = new Set();
+
+      if (globalCachePath && fs.existsSync(globalCachePath)) {
+        try {
+          const cacheData = JSON.parse(fs.readFileSync(globalCachePath, 'utf8'));
+          if (!Array.isArray(cacheData)) {
+            console.error(`Error: Global nullifier cache at ${globalCachePath} is not a valid JSON array.`);
+            process.exit(1);
+          }
+          for (const n of cacheData) globalSeen.add(String(n).toLowerCase());
+        } catch (err) {
+          console.error(`Error: Failed to parse global nullifier cache at ${globalCachePath}: ${err.message}`);
           process.exit(1);
         }
-        seenNullifiers.add(nullifier);
-
-        relayBatch.push({
-          roundId: voucher.roundId,
-          nullifier: voucher.nullifier,
-          proofRequired: 'verifier-signed mock ZK attestation required before registerVoterWithMockZK'
-        });
       }
-    }
 
-    fs.writeFileSync(outputPath, JSON.stringify(relayBatch, null, 2));
+      for (const file of files) {
+        const filepath = path.join(vouchersDir, file);
+        const voucher = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+        assertVoucherShape(voucher);
+        assertVoucherMac(voucher);
 
-    console.log(`
+        if (voucher.status === 'pending_sync') {
+          batchVouchers.push(voucher);
+          relayBatch.push({
+            roundId: voucher.roundId,
+            nullifier: voucher.nullifier,
+            proofRequired: 'verifier-signed mock ZK attestation required before registerVoterWithMockZK'
+          });
+        }
+      }
+
+      try {
+        validateGlobalNullifierCache(batchVouchers, globalSeen);
+      } catch (err) {
+        console.error(`Duplicate nullifier detected while packaging relay batch: ${err.message}`);
+        console.error(`Global nullifier cache validation failed: ${err.message}`);
+        process.exit(1);
+      }
+
+      if (globalCachePath) {
+        const updatedCache = Array.from(globalSeen);
+        fs.mkdirSync(path.dirname(globalCachePath), { recursive: true });
+        fs.writeFileSync(globalCachePath, JSON.stringify(updatedCache, null, 2), 'utf8');
+      }
+
+      fs.writeFileSync(outputPath, JSON.stringify(relayBatch, null, 2));
+
+      console.log(`
 ==================================================
 RELAY BATCH PACKAGED FOR REVIEW
 ==================================================
@@ -279,10 +334,15 @@ NOT READY FOR ON-CHAIN SUBMISSION:
 Each entry still needs a verifier-signed mock ZK attestation.
 ==================================================
 `);
-    break;
-  }
+      break;
+    }
 
-  default:
-    console.error(`Unknown command: ${command}`);
-    showHelp();
+    default:
+      if (['test', 'mocha'].some(t => process.argv[1] && process.argv[1].includes(t))) {
+        // Being executed under test runner
+      } else {
+        console.error(`Unknown command: ${command}`);
+        showHelp();
+      }
+  }
 }
