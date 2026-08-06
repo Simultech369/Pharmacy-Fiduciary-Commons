@@ -1832,6 +1832,35 @@
       });
     });
   </script>
+  <!-- Fiduciary Copilot Floating UI Drawer -->
+  <button id="copilot-toggle-btn" type="button" aria-expanded="false" aria-controls="fiduciary-copilot-drawer">
+    <span>💬 Fiduciary Copilot</span>
+  </button>
+
+  <div id="fiduciary-copilot-drawer" class="hidden" role="dialog" aria-label="Fiduciary Audit Copilot">
+    <div class="copilot-header">
+      <div class="copilot-title">
+        <span>Fiduciary Audit Copilot</span>
+        <span class="copilot-badge">LOCAL RAG</span>
+      </div>
+      <button id="copilot-close-btn" class="copilot-close" type="button" aria-label="Close Chat">&times;</button>
+    </div>
+    <div id="copilot-messages" class="copilot-messages">
+      <div class="copilot-msg bot">
+        Hello! I am your local Fiduciary Audit Copilot. Ask me any question about solvency debt, mutual credit clearing, or participatory budgeting rules.
+      </div>
+    </div>
+    <div class="copilot-pills">
+      <button class="copilot-pill-btn" type="button" data-prompt="solvency debt finalization">Solvency Debt</button>
+      <button class="copilot-pill-btn" type="button" data-prompt="mutual credit vouchers">Mutual Credit</button>
+      <button class="copilot-pill-btn" type="button" data-prompt="patient fund claims">Patient Fund Claims</button>
+    </div>
+    <div class="copilot-input-area">
+      <input id="copilot-input" class="copilot-input" type="text" placeholder="Ask a fiduciary rule question..." aria-label="Copilot query input">
+      <button id="copilot-send-btn" class="copilot-send-btn" type="button">Send</button>
+    </div>
+  </div>
+
   <script src="./ethers.umd.min.js"></script>
   <script src="./web3_integration.js"></script>
 </body>

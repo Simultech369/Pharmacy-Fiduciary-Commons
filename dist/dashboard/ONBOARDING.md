@@ -37,6 +37,9 @@ This command compiles our smart contracts, builds dummy claim proofs, runs the t
 dist/dashboard/index.html
 ```
 
+![Pharmacy Fiduciary Commons Dashboard Interface](dashboard/assets/onboarding_mockup.png)
+*Figure 1: The Ledger of Omissions dashboard displaying pass-through gap accounting, deposit provenance badges, and patient fund controls.*
+
 Start with the "First Run Receipt Flow" near the top of the page. It shows the shortest story: synthetic allocations become Merkle proof material, focused contract tests exercise claim/export and patient-fund matching paths, and the dashboard bundle records the public prototype receipt. Values marked as synthetic fixtures are not live PBM claims, real patient records, or mainnet contract state.
 
 ## Five-Minute Guided Tour

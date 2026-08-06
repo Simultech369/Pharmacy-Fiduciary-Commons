@@ -112,6 +112,13 @@ proof generator.
 
 ---
 
+## Fiduciary Dashboard Interface
+
+![Pharmacy Fiduciary Commons Dashboard Interface](dashboard/assets/onboarding_mockup.png)
+*Figure 1: The Ledger of Omissions & Fiduciary Dashboard displaying synthetic PBM pass-through gap accounting, deposit status provenance (`PROVENANCE: LOCAL MOCK / SYNTHETIC`), and Web3 wallet integration.*
+
+---
+
 ## Architecture
 
 ```mermaid
