@@ -1,4 +1,4 @@
-# 40-Model 8-Division Swarm Observatory Roster
+# 45-Model 9-Division Swarm Observatory Roster
 
 **Repository**: `Pharmacy-Fiduciary-Commons`  
 **Schema**: `pbm-swarm-roster/v1.0`  
@@ -91,3 +91,15 @@
 | **DSPy** | `prompt_compiler` | Auto-compiles & optimizes prompts from execution traces. |
 | **SWE-agent** | `github_issue_resolver` | Repo navigation & test suite execution (`npm test`). |
 | **OpenHands** | `sandbox_executor` | Isolated container/loopback execution for dry-run simulations. |
+
+---
+
+## ⚡ Division IX: Enterprise Frontier & Hardware LPUs
+| Model | Role ID | Purpose & Specialization |
+|-------|---------|--------------------------|
+| **Databricks DBRX** | `enterprise_moe_architect` | Databricks 132B MoE open model for enterprise architecture (`databricks/dbrx-instruct`). |
+| **Snowflake Arctic** | `enterprise_data_auditor` | Snowflake enterprise MoE for data governance & SQL validation (`snowflake/snowflake-arctic`). |
+| **SambaNova LPU (Llama 3.1 405B)** | `lpu_ultra_fast_judge` | Ultra-fast SambaNova LPU hardware inference engine. |
+| **Reka AI (Reka Core / Flash)** | `reka_multimodal_critic` | Reka multimodal frontier model (`reka-core` / `reka-flash`). |
+| **Upstage Solar 10.7B** | `dense_solar_synthesizer` | Upstage compact high-density reasoning model (`solar-10.7b`). |
+

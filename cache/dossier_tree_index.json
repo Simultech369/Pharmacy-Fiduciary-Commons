@@ -1,0 +1,1267 @@
+{
+  "repo_root": "C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal",
+  "verified_ground_truth": {
+    "hardhat_tests": {
+      "passing_tests": 280,
+      "evidence": "npm.cmd test"
+    },
+    "brand_gate_b": {
+      "status": "GREEN",
+      "inline_styles_remaining": 0,
+      "entry_id": "Entry 012 / Entry 014"
+    },
+    "db_proxy_rls": {
+      "status": "GREEN",
+      "gate": "Gate DB1",
+      "test_file": "test/server.test.js",
+      "passing_tests": 20,
+      "entry_id": "Entry 015"
+    },
+    "ui_slice_b3": {
+      "status": "GREEN",
+      "entry_id": "Entry 014"
+    }
+  },
+  "lineage_entries_count": 20,
+  "scanned_documents_count": 16,
+  "total_contradictions_found": 0,
+  "contradictions": [],
+  "trees": [
+    {
+      "file": "AGENT_REVIEW_ORCHESTRATION.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Agent Review Orchestration",
+          "level": 1
+        },
+        {
+          "line": 12,
+          "title": "Protocol Consensus Definition",
+          "level": 2
+        },
+        {
+          "line": 57,
+          "title": "Non-Negotiable Boundary",
+          "level": 2
+        },
+        {
+          "line": 69,
+          "title": "Disclosure Classes",
+          "level": 2
+        },
+        {
+          "line": 81,
+          "title": "Cycle State",
+          "level": 2
+        },
+        {
+          "line": 105,
+          "title": "Reviewer Lanes",
+          "level": 2
+        },
+        {
+          "line": 124,
+          "title": "Tooling & Pattern Architecture Policy",
+          "level": 2
+        },
+        {
+          "line": 126,
+          "title": "PageIndex Pattern (Claim Traceability)",
+          "level": 3
+        },
+        {
+          "line": 145,
+          "title": "VVAH Security Scanner (Fenced Execution)",
+          "level": 3
+        },
+        {
+          "line": 161,
+          "title": "Debug Rules",
+          "level": 2
+        },
+        {
+          "line": 177,
+          "title": "Core Loop",
+          "level": 2
+        },
+        {
+          "line": 211,
+          "title": "Reviewer-Cycle Disposition Rule",
+          "level": 2
+        },
+        {
+          "line": 228,
+          "title": "Prompt Templates",
+          "level": 2
+        },
+        {
+          "line": 230,
+          "title": "Codex 5.6 Planning Critic",
+          "level": 3
+        },
+        {
+          "line": 269,
+          "title": "OpenClaude Blind-Spot Reviewer",
+          "level": 3
+        },
+        {
+          "line": 293,
+          "title": "Kimi/Hunyuan Long-Context Contradiction Reviewer",
+          "level": 3
+        },
+        {
+          "line": 325,
+          "title": "Qwen Code-Path Reviewer",
+          "level": 3
+        },
+        {
+          "line": 349,
+          "title": "DeepSeek Invariant Reviewer",
+          "level": 3
+        },
+        {
+          "line": 375,
+          "title": "Cohere Policy Retrieval Reviewer",
+          "level": 3
+        },
+        {
+          "line": 396,
+          "title": "Gemma Private-First Policy Reviewer",
+          "level": 3
+        },
+        {
+          "line": 418,
+          "title": "Zero Proof-Vs-Theater Reviewer",
+          "level": 3
+        },
+        {
+          "line": 443,
+          "title": "Seed-Style Agentic Implementation-Risk Reviewer",
+          "level": 3
+        },
+        {
+          "line": 468,
+          "title": "Muse-Style UX/Strategy Reviewer",
+          "level": 3
+        },
+        {
+          "line": 489,
+          "title": "Qwen 2.5 Coder Structural & Schema Auditor (`qwen2.5-coder:32b` / `72b`)",
+          "level": 3
+        },
+        {
+          "line": 512,
+          "title": "Laguna XS 2.1 Un-aligned Adversarial Critic (`dealignai/Laguna-XS-2.1-CRACK-GGUF`)",
+          "level": 3
+        },
+        {
+          "line": 538,
+          "title": "Current Solvency Review Queue",
+          "level": 2
+        },
+        {
+          "line": 559,
+          "title": "Parked Review Items for Future Codex Review Pass",
+          "level": 2
+        },
+        {
+          "line": 575,
+          "title": "Stop Conditions",
+          "level": 2
+        },
+        {
+          "line": 587,
+          "title": "Agentic Collaboration & Review Framework (ACRF)",
+          "level": 2
+        },
+        {
+          "line": 591,
+          "title": "Philosophy",
+          "level": 3
+        },
+        {
+          "line": 599,
+          "title": "Backlog Lanes",
+          "level": 3
+        },
+        {
+          "line": 601,
+          "title": "1. Agentic Review Layer",
+          "level": 4
+        },
+        {
+          "line": 607,
+          "title": "2. Agentic Operations Layer",
+          "level": 4
+        },
+        {
+          "line": 612,
+          "title": "3. Agentic Communication Layer (Anti-Slop Overlay)",
+          "level": 4
+        }
+      ],
+      "findings": [],
+      "line_count": 619
+    },
+    {
+      "file": "ONBOARDING.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Start Here: Pharmacy Fiduciary Commons",
+          "level": 1
+        },
+        {
+          "line": 7,
+          "title": "The 10-Minute Path",
+          "level": 2
+        },
+        {
+          "line": 45,
+          "title": "Five-Minute Guided Tour",
+          "level": 2
+        },
+        {
+          "line": 71,
+          "title": "What You Should See",
+          "level": 2
+        },
+        {
+          "line": 86,
+          "title": "Plain-Language Tour",
+          "level": 2
+        },
+        {
+          "line": 88,
+          "title": "For Independent Pharmacies",
+          "level": 3
+        },
+        {
+          "line": 98,
+          "title": "For Patient Funds and Advocates",
+          "level": 3
+        },
+        {
+          "line": 106,
+          "title": "For Auditors and Fiduciary Managers",
+          "level": 3
+        },
+        {
+          "line": 110,
+          "title": "Manual Commands",
+          "level": 2
+        },
+        {
+          "line": 138,
+          "title": "Documentation Path",
+          "level": 2
+        },
+        {
+          "line": 150,
+          "title": "Demo Walkthrough Ideas",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 166
+    },
+    {
+      "file": "README.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Pharmacy Fiduciary Commons",
+          "level": 1
+        },
+        {
+          "line": 23,
+          "title": "What This Cannot Do (Adversarial Limitations & Disclaimers)",
+          "level": 2
+        },
+        {
+          "line": 40,
+          "title": "Status Summary",
+          "level": 2
+        },
+        {
+          "line": 46,
+          "title": "What Runs Today",
+          "level": 2
+        },
+        {
+          "line": 65,
+          "title": "Quickstart",
+          "level": 2
+        },
+        {
+          "line": 115,
+          "title": "Fiduciary Dashboard Interface",
+          "level": 2
+        },
+        {
+          "line": 122,
+          "title": "Architecture",
+          "level": 2
+        },
+        {
+          "line": 147,
+          "title": "Current Checkpoint",
+          "level": 2
+        },
+        {
+          "line": 158,
+          "title": "What This Is",
+          "level": 2
+        },
+        {
+          "line": 172,
+          "title": "Core Lifecycle",
+          "level": 2
+        },
+        {
+          "line": 183,
+          "title": "Treasury Buckets",
+          "level": 2
+        },
+        {
+          "line": 190,
+          "title": "Patient Fund",
+          "level": 2
+        },
+        {
+          "line": 200,
+          "title": "Roles",
+          "level": 2
+        },
+        {
+          "line": 211,
+          "title": "Security Properties",
+          "level": 2
+        },
+        {
+          "line": 239,
+          "title": "Merkle Leaf Encoding",
+          "level": 2
+        },
+        {
+          "line": 258,
+          "title": "Deployment Parameters",
+          "level": 2
+        },
+        {
+          "line": 286,
+          "title": "Deployment Script",
+          "level": 2
+        },
+        {
+          "line": 336,
+          "title": "Audit And Production Status",
+          "level": 2
+        },
+        {
+          "line": 355,
+          "title": "Adjacent Designs",
+          "level": 2
+        },
+        {
+          "line": 367,
+          "title": "Background",
+          "level": 2
+        },
+        {
+          "line": 373,
+          "title": "Contributing",
+          "level": 2
+        },
+        {
+          "line": 387,
+          "title": "License",
+          "level": 2
+        },
+        {
+          "line": 393,
+          "title": "Mission",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 399
+    },
+    {
+      "file": "PRODUCTION_READINESS_CHECKLIST.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Production Readiness Checklist",
+          "level": 1
+        },
+        {
+          "line": 7,
+          "title": "1. Front End Build Hygiene",
+          "level": 2
+        },
+        {
+          "line": 26,
+          "title": "2. Database And Authentication",
+          "level": 2
+        },
+        {
+          "line": 47,
+          "title": "2A. Offline And Non-Digital Workflow Safety",
+          "level": 2
+        },
+        {
+          "line": 65,
+          "title": "3. Version Control",
+          "level": 2
+        },
+        {
+          "line": 83,
+          "title": "3A. Patient Fund Matching Liquidity",
+          "level": 2
+        },
+        {
+          "line": 98,
+          "title": "4. APIs",
+          "level": 2
+        },
+        {
+          "line": 119,
+          "title": "5. Hosting And Deployment",
+          "level": 2
+        },
+        {
+          "line": 145,
+          "title": "6. Rate Limiting And Abuse Controls",
+          "level": 2
+        },
+        {
+          "line": 160,
+          "title": "7. Caching",
+          "level": 2
+        },
+        {
+          "line": 175,
+          "title": "8. Scaling",
+          "level": 2
+        },
+        {
+          "line": 191,
+          "title": "9. Error Tracking And Observability",
+          "level": 2
+        },
+        {
+          "line": 208,
+          "title": "10. ADA / WCAG Accessibility",
+          "level": 2
+        },
+        {
+          "line": 230,
+          "title": "11. Contract Security And Scanner Prep",
+          "level": 2
+        },
+        {
+          "line": 246,
+          "title": "Current Repo-Specific Next Fixes",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 255
+    },
+    {
+      "file": "MECHANISM_COVERAGE.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Mechanism Coverage",
+          "level": 1
+        },
+        {
+          "line": 17,
+          "title": "Treasury And Claims",
+          "level": 2
+        },
+        {
+          "line": 38,
+          "title": "Governance And Trust Roots",
+          "level": 2
+        },
+        {
+          "line": 59,
+          "title": "Care Continuity And Scarcity",
+          "level": 2
+        },
+        {
+          "line": 68,
+          "title": "Dashboard And Public Legibility",
+          "level": 2
+        },
+        {
+          "line": 77,
+          "title": "Portability And Credentials",
+          "level": 2
+        },
+        {
+          "line": 87,
+          "title": "Production Readiness",
+          "level": 2
+        },
+        {
+          "line": 101,
+          "title": "Highest-Risk Mismatches",
+          "level": 2
+        },
+        {
+          "line": 121,
+          "title": "Acceptance Test For This File",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 123
+    },
+    {
+      "file": "GOVERNANCE.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Pharmacy Fiduciary Commons: Governance Framework",
+          "level": 1
+        },
+        {
+          "line": 9,
+          "title": "1. Mission",
+          "level": 2
+        },
+        {
+          "line": 15,
+          "title": "2. Eligible Beneficiaries",
+          "level": 2
+        },
+        {
+          "line": 22,
+          "title": "3. Council Duties",
+          "level": 2
+        },
+        {
+          "line": 34,
+          "title": "4. Council Selection, Removal & Patient Voice",
+          "level": 2
+        },
+        {
+          "line": 43,
+          "title": "5. Conflict of Interest (COI) Policy",
+          "level": 2
+        },
+        {
+          "line": 50,
+          "title": "6. How Evidence is Reviewed",
+          "level": 2
+        },
+        {
+          "line": 58,
+          "title": "7. Membership & Participation",
+          "level": 2
+        },
+        {
+          "line": 66,
+          "title": "8. Sanctions, Appeals Timeline & Evidence Window",
+          "level": 2
+        },
+        {
+          "line": 77,
+          "title": "9. Nested Enterprises (Dizzy as Judgment Layer)",
+          "level": 2
+        },
+        {
+          "line": 86,
+          "title": "10. Credential Issuer Key Rotation & Revocation",
+          "level": 2
+        },
+        {
+          "line": 98,
+          "title": "11. Governance Hardening & Decentralization Roadmap",
+          "level": 2
+        },
+        {
+          "line": 102,
+          "title": "Council Power Mitigation",
+          "level": 3
+        },
+        {
+          "line": 107,
+          "title": "Local Subsidiarity & Local Autonomy",
+          "level": 3
+        }
+      ],
+      "findings": [],
+      "line_count": 109
+    },
+    {
+      "file": "COMMONS_CONSTITUTION.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Draft Constitution v0.1 (Non-Ratified)",
+          "level": 1
+        },
+        {
+          "line": 10,
+          "title": "1. Standpoint & Purpose",
+          "level": 2
+        },
+        {
+          "line": 16,
+          "title": "2. Constitutional Principles",
+          "level": 2
+        },
+        {
+          "line": 20,
+          "title": "2.1 No Permanent Sovereign",
+          "level": 3
+        },
+        {
+          "line": 28,
+          "title": "2.2 Subsidiarity",
+          "level": 3
+        },
+        {
+          "line": 32,
+          "title": "2.3 Socialized Surplus, Not Socialized Loss",
+          "level": 3
+        },
+        {
+          "line": 38,
+          "title": "2.4 Forkability and Portability",
+          "level": 3
+        },
+        {
+          "line": 43,
+          "title": "2.5 Pluralism without Fragmentation",
+          "level": 3
+        },
+        {
+          "line": 47,
+          "title": "2.6 Anti-Plutocracy",
+          "level": 3
+        },
+        {
+          "line": 52,
+          "title": "2.7 Contestable Identity",
+          "level": 3
+        },
+        {
+          "line": 58,
+          "title": "2.8 Legible Power",
+          "level": 3
+        },
+        {
+          "line": 63,
+          "title": "2.9 Bounded Experimentation",
+          "level": 3
+        },
+        {
+          "line": 68,
+          "title": "2.10 The Protocol is Not the Community",
+          "level": 3
+        },
+        {
+          "line": 75,
+          "title": "3. Epistemic Claim-Authority Framework",
+          "level": 2
+        },
+        {
+          "line": 93,
+          "title": "4. Participant Rights",
+          "level": 2
+        },
+        {
+          "line": 105,
+          "title": "5. Candidate Amendment Models (For Participant Review)",
+          "level": 2
+        },
+        {
+          "line": 114,
+          "title": "6. Draft Constitutional Alignment Matrix",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 127
+    },
+    {
+      "file": "PATIENT_FUND_POLICY.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Patient Fund Policy",
+          "level": 1
+        },
+        {
+          "line": 7,
+          "title": "1. Preventative Economics",
+          "level": 2
+        },
+        {
+          "line": 13,
+          "title": "2. Funding Sources",
+          "level": 2
+        },
+        {
+          "line": 22,
+          "title": "3. Participatory Budgeting & Squared Vote Weighting",
+          "level": 2
+        },
+        {
+          "line": 33,
+          "title": "4. Anti-Sybil and Identity Requirements",
+          "level": 2
+        },
+        {
+          "line": 42,
+          "title": "5. Prohibited Uses",
+          "level": 2
+        },
+        {
+          "line": 53,
+          "title": "6. Ecological & Resource Efficiency Primitives",
+          "level": 2
+        },
+        {
+          "line": 67,
+          "title": "7. Solvency Warning and Liveness Risk",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 73
+    },
+    {
+      "file": "SECURITY.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Security Policy",
+          "level": 1
+        },
+        {
+          "line": 3,
+          "title": "Current Status",
+          "level": 2
+        },
+        {
+          "line": 7,
+          "title": "Scope",
+          "level": 2
+        },
+        {
+          "line": 24,
+          "title": "Reporting",
+          "level": 2
+        },
+        {
+          "line": 36,
+          "title": "What To Include",
+          "level": 2
+        },
+        {
+          "line": 47,
+          "title": "Response Targets",
+          "level": 2
+        },
+        {
+          "line": 55,
+          "title": "Severity Guide",
+          "level": 2
+        },
+        {
+          "line": 78,
+          "title": "Audit Requirement",
+          "level": 2
+        },
+        {
+          "line": 88,
+          "title": "Privacy, Correlation, and Retaliation Risks",
+          "level": 2
+        },
+        {
+          "line": 97,
+          "title": "Payout Token Assumption",
+          "level": 2
+        },
+        {
+          "line": 101,
+          "title": "Stale Distribution Recovery",
+          "level": 2
+        },
+        {
+          "line": 107,
+          "title": "Dispute Cap-Reservation Tradeoff",
+          "level": 2
+        },
+        {
+          "line": 114,
+          "title": "Content Security Policy (CSP) Guidelines",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 121
+    },
+    {
+      "file": "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "ZK Nullifier Transition Requirements",
+          "level": 1
+        },
+        {
+          "line": 3,
+          "title": "1. Purpose",
+          "level": 2
+        },
+        {
+          "line": 9,
+          "title": "2. Current Leakage Surfaces",
+          "level": 2
+        },
+        {
+          "line": 19,
+          "title": "3. Corrected Revocation Model",
+          "level": 2
+        },
+        {
+          "line": 28,
+          "title": "4. Decisions Required Before Circuits",
+          "level": 2
+        },
+        {
+          "line": 45,
+          "title": "5. Minimal Verifier-Mock Milestone",
+          "level": 2
+        },
+        {
+          "line": 65,
+          "title": "6. Disruption Pass",
+          "level": 2
+        },
+        {
+          "line": 137,
+          "title": "7. Tests That Define Done",
+          "level": 2
+        },
+        {
+          "line": 170,
+          "title": "8. Non-Goals",
+          "level": 2
+        },
+        {
+          "line": 179,
+          "title": "9. Recommended Next Step",
+          "level": 2
+        },
+        {
+          "line": 185,
+          "title": "10. Implemented ZK/Nullifier Design Fixture and Test Gate",
+          "level": 2
+        },
+        {
+          "line": 193,
+          "title": "Remaining Open Design Decisions",
+          "level": 3
+        }
+      ],
+      "findings": [],
+      "line_count": 200
+    },
+    {
+      "file": "NEXT_REVIEW_HANDOFF.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Active Next Review Handoff & .next Roadmap",
+          "level": 1
+        },
+        {
+          "line": 15,
+          "title": "1. Executive Summary of Current State",
+          "level": 2
+        },
+        {
+          "line": 26,
+          "title": "2. Immediate `.next` Execution Roadmap",
+          "level": 2
+        },
+        {
+          "line": 30,
+          "title": "Milestone 1: Argona0x Anti-Bias Swarm Observatory Hardening",
+          "level": 3
+        },
+        {
+          "line": 35,
+          "title": "Milestone 2: Paul Bakaus Impeccable & Emil Kowalski Visual System",
+          "level": 3
+        },
+        {
+          "line": 39,
+          "title": "Milestone 3: 18-Point Swarm Observatory & Inference Scaling Engine",
+          "level": 3
+        },
+        {
+          "line": 47,
+          "title": "3. Recommended Loop Decision",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 54
+    },
+    {
+      "file": "review-context/SINGLE_REPO_STATE_LEDGER.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Single Compact Repository State Ledger",
+          "level": 1
+        },
+        {
+          "line": 7,
+          "title": "Core State Matrix",
+          "level": 3
+        },
+        {
+          "line": 16,
+          "title": "File Boundaries",
+          "level": 3
+        },
+        {
+          "line": 18,
+          "title": "Files in Primary Implementation Slice",
+          "level": 4
+        },
+        {
+          "line": 29,
+          "title": "State Ledger & Control Files in Review Scope (Proof Dependencies)",
+          "level": 4
+        },
+        {
+          "line": 39,
+          "title": "Files Explicitly Excluded",
+          "level": 4
+        },
+        {
+          "line": 46,
+          "title": "Claim Status & Verification",
+          "level": 3
+        },
+        {
+          "line": 48,
+          "title": "Claims Currently Believed Fixed `[live verification just run]`",
+          "level": 4
+        },
+        {
+          "line": 58,
+          "title": "Claims Still Disputed / Open Non-Claims",
+          "level": 4
+        },
+        {
+          "line": 65,
+          "title": "Control & Next Actions",
+          "level": 3
+        }
+      ],
+      "findings": [],
+      "line_count": 69
+    },
+    {
+      "file": "review-context/agent_work_lineage_ledger.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Agent Work Lineage Ledger & Audit Registry",
+          "level": 1
+        },
+        {
+          "line": 12,
+          "title": "1. Lineage Entry Schema",
+          "level": 2
+        },
+        {
+          "line": 47,
+          "title": "Router Receipt Record",
+          "level": 3
+        },
+        {
+          "line": 108,
+          "title": "Review Claim Record",
+          "level": 3
+        },
+        {
+          "line": 157,
+          "title": "2. Implied Claim vs. Actual Proof Audit Protocol",
+          "level": 2
+        },
+        {
+          "line": 171,
+          "title": "Entry 001: Supabase SECURITY DEFINER RPC Lockdown",
+          "level": 3
+        },
+        {
+          "line": 197,
+          "title": "Entry 002: Domain-Separated HMAC Credential Blinding",
+          "level": 3
+        },
+        {
+          "line": 222,
+          "title": "Entry 003: Cryptographic Nullifier Unlinkability Bounds",
+          "level": 3
+        },
+        {
+          "line": 247,
+          "title": "Entry 004: Dashboard HTML Injection Sanitation",
+          "level": 3
+        },
+        {
+          "line": 272,
+          "title": "Entry 005: Actual-Dispatch Router Receipt Harness Verification",
+          "level": 3
+        },
+        {
+          "line": 298,
+          "title": "Entry 006: Spec Gate A \u2014 Project-Scoped ZK Nullifier Circuit Signal Boundary",
+          "level": 3
+        },
+        {
+          "line": 325,
+          "title": "Entry 007: Phase 1 Project-Scoped VoteNullifier Circuit Implementation",
+          "level": 3
+        },
+        {
+          "line": 352,
+          "title": "Entry 008: Brand Gate B Slice B1 + B4 Linter Skeleton Implementation",
+          "level": 3
+        },
+        {
+          "line": 379,
+          "title": "Entry 009: Brand Gate B1.1 Rendered Build Integration & Dist Verification",
+          "level": 3
+        },
+        {
+          "line": 407,
+          "title": "Entry 010: Brand Gate B2.1 Patient Fund Inline Style Extraction",
+          "level": 3
+        },
+        {
+          "line": 437,
+          "title": "Entry 011: Brand Gate B2.2 Portability Verifier & Activity Log Inline Style Extraction",
+          "level": 3
+        },
+        {
+          "line": 467,
+          "title": "Entry 012: Brand Gate B 100% Visual Governance Completion",
+          "level": 3
+        },
+        {
+          "line": 497,
+          "title": "Entry 013: Legacy Full-Repo OSS Swarm Review & 8-Lens Multi-Model Audit",
+          "level": 3
+        },
+        {
+          "line": 528,
+          "title": "Entry 014: UI Slice B3 Guided Tour Banner & Onboarding Polish",
+          "level": 3
+        },
+        {
+          "line": 559,
+          "title": "Entry 015: Gate DB1 Database Proxy Security & Multi-Tenant RLS Hardening",
+          "level": 3
+        },
+        {
+          "line": 585,
+          "title": "Entry 016: PageIndex Dossier Tree Indexer & Document Status Reconciliation",
+          "level": 3
+        },
+        {
+          "line": 613,
+          "title": "Entry 017: Codex Review Reconciliation \u2014 SQL RLS Schema, Final Commit Fail-Safe & Strict ZK Leakage Gates",
+          "level": 3
+        },
+        {
+          "line": 642,
+          "title": "Entry 018: OSS Council Pass 2 (Skeptic & Advocate) \u2014 Dry-Run Global Nullifier Cache Validation",
+          "level": 3
+        },
+        {
+          "line": 668,
+          "title": "Entry 019: Slither Static Analysis & Solhint Audit Gate",
+          "level": 3
+        },
+        {
+          "line": 695,
+          "title": "Entry 020: Codex 5.6 Reconciliation \u2014 Diff Hygiene, CLI Global Cache Wiring & Strict ZK Schema Validator",
+          "level": 3
+        }
+      ],
+      "findings": [],
+      "line_count": 721
+    },
+    {
+      "file": "review-context/SWARM_ROSTER_40_MODELS.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "45-Model 9-Division Swarm Observatory Roster",
+          "level": 1
+        },
+        {
+          "line": 9,
+          "title": "\ud83c\udf0a Division I: Non-Transformer & Continuous Dynamics",
+          "level": 2
+        },
+        {
+          "line": 16,
+          "title": "\ud83d\udee0\ufe0f Division II: Program Synthesis & Code Foundations",
+          "level": 2
+        },
+        {
+          "line": 31,
+          "title": "\ud83d\udee1\ufe0f Division III: Adversarial & Security Red-Team",
+          "level": 2
+        },
+        {
+          "line": 43,
+          "title": "\ud83e\udde0 Division IV: Chain-of-Thought & Logic",
+          "level": 2
+        },
+        {
+          "line": 52,
+          "title": "\ud83c\udf0f Division V: Multimodal & Asian Frontier Labs",
+          "level": 2
+        },
+        {
+          "line": 64,
+          "title": "\ud83c\udfdb\ufe0f Division VI: Systems Architects & High-Judgment Judges",
+          "level": 2
+        },
+        {
+          "line": 77,
+          "title": "\ud83c\udfe0 Division VII: Local Offline Resident Ensemble",
+          "level": 2
+        },
+        {
+          "line": 87,
+          "title": "\ud83e\udd16 Division VIII: Autonomous Developer Agent Frameworks",
+          "level": 2
+        },
+        {
+          "line": 97,
+          "title": "\u26a1 Division IX: Enterprise Frontier & Hardware LPUs",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 105
+    },
+    {
+      "file": "reviews/rotational_swarm_review_dossier.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Rotational OSS Swarm Review Dossier (Pass 2)",
+          "level": 1
+        },
+        {
+          "line": 12,
+          "title": "Executive Summary & Matrix Overview",
+          "level": 2
+        },
+        {
+          "line": 28,
+          "title": "Domain Findings & Synthesis",
+          "level": 2
+        },
+        {
+          "line": 30,
+          "title": "Domain 1: EVM Smart Contracts (`qwen_coder` harness via `DeepSeek-R1`) `[external reviewer claim]`",
+          "level": 3
+        },
+        {
+          "line": 34,
+          "title": "Domain 2: DB Proxy & RLS Security (`deepseek_reasoner` harness via `Claude 3.5 Sonnet`) `[external reviewer claim]`",
+          "level": 3
+        },
+        {
+          "line": 38,
+          "title": "Domain 3: ZK Nullifier & Identity Circuits (`zero_zk` harness via `Qwen 2.5 Coder 32B`) `[external reviewer claim]`",
+          "level": 3
+        },
+        {
+          "line": 42,
+          "title": "Domain 4: Offline Continuity Engine (`free_code` harness via `Llama 3.3 70B`) `[external reviewer claim]`",
+          "level": 3
+        },
+        {
+          "line": 46,
+          "title": "Domain 5: Frontend & Brand Governance (`open_claude` harness via `Gemma 2 27B`) `[external reviewer claim]`",
+          "level": 3
+        },
+        {
+          "line": 50,
+          "title": "Domain 6: Institutional Governance & Policy (`kimi_long_context` harness via `Hermes 3 405B`) `[external reviewer claim]`",
+          "level": 3
+        },
+        {
+          "line": 54,
+          "title": "Domain 7: Solvency & Accounting Invariants (`solvency_debt` harness via `DeepSeek-R1`) `[external reviewer claim]`",
+          "level": 3
+        },
+        {
+          "line": 60,
+          "title": "Verification & Test Suite Summary `[live verification just run]`",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 68
+    },
+    {
+      "file": "reviews/solidity-security-audit-report.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Solidity Static Security Audit Report",
+          "level": 1
+        },
+        {
+          "line": 5,
+          "title": "1. Slither Static Analysis Summary",
+          "level": 2
+        },
+        {
+          "line": 17,
+          "title": "Slither High Severity Findings Categorization & Triage",
+          "level": 3
+        },
+        {
+          "line": 41,
+          "title": "2. Solhint Linter Summary",
+          "level": 2
+        },
+        {
+          "line": 47,
+          "title": "3. Scope Notes",
+          "level": 2
+        }
+      ],
+      "findings": [],
+      "line_count": 50
+    }
+  ],
+  "output_paths": {
+    "dossier_tree_index": "cache/dossier_tree_index.json",
+    "lineage_eval_benchmark": "cache/lineage_eval_benchmark.jsonl"
+  }
+}
