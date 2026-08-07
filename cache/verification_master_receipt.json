@@ -1,13 +1,13 @@
 {
-  "timestamp": "2026-08-07T15:46:28Z",
+  "timestamp": "2026-08-07T15:59:34Z",
   "overall_status": "PASSED",
   "expected_step_count": 5,
   "steps_executed": 5,
   "git_lineage": {
-    "head_commit": "8dac46a09261075278d76d42b79d2354029efbbf",
+    "head_commit": "4b4fbe83e561148bdc373b8e3e6ad0fede1c127d",
     "branch": "feature/db-proxy",
     "is_dirty": true,
-    "dirty_file_count": 1,
+    "dirty_file_count": 2,
     "lineage_tag": "[dirty working tree]"
   },
   "steps": [
@@ -16,35 +16,35 @@
       "command": "C:\\Program Files\\Volta\\npx.cmd --no-install hardhat test",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 176823
+      "duration_ms": 36858
     },
     {
       "step_name": "2. Brand Gate B & Impeccable Linter",
       "command": "C:\\Program Files\\Volta\\npm.cmd run check:frontend",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 3061
+      "duration_ms": 1213
     },
     {
       "step_name": "3. PageIndex Status Auditor",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\index_dossier_tree.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1233
+      "duration_ms": 438
     },
     {
       "step_name": "4. Constitutional Rubric Evaluator",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\eval_constitutional_rubric.py --target C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\reviews\\rotational_swarm_review_dossier.md",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 251
+      "duration_ms": 157
     },
     {
       "step_name": "5. Swarm Observability Dashboard",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\observability_dashboard.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 339
+      "duration_ms": 114
     }
   ]
 }
