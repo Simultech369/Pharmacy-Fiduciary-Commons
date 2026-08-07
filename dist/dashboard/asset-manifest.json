@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-05T22:02:25.903Z",
+  "generatedAt": "2026-08-07T14:20:22.796Z",
   "source": "dashboard",
   "warning": "Static dashboard build only. Do not publish without running check:frontend.",
   "files": [
@@ -15,8 +15,8 @@
     },
     {
       "path": "design-system.css",
-      "bytes": 31367,
-      "sha256": "0d7063c35ea19888c34578203841db32a9dab28ebe2c6eca2ee7fe916df28409"
+      "bytes": 31488,
+      "sha256": "dc4fe82aa5c63f175ae716040978649a6b9074599954dba402bcf0b88c80fa70"
     },
     {
       "path": "web3_integration.min.js",

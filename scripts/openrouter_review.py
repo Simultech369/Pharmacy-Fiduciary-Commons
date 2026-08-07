@@ -256,13 +256,14 @@ def base_metadata(args, config, model, packet_path, output_path, disclosure_clas
         "role": args.role,
         "description": config["description"],
         "model": model,
-        "provider": "openrouter",
+        "provider": "ollama" if getattr(args, "ollama", False) else "openrouter",
         "launcher": "scripts/openrouter_review.py",
         "packet_path": packet_path,
-        "context_path": args.context,
+        "context_path": getattr(args, "context", None),
         "output_path": output_path,
         "disclosure_class": disclosure_class,
         "approved_disclosure_class": args.approve_disclosure,
+        "permute_order": getattr(args, "permute_order", False),
         "error_status": None,
         "truncation_status": "unknown",
         "reconciliation_status": "unreconciled_raw_output",
@@ -279,6 +280,8 @@ def parse_args():
     parser.add_argument("--approve-disclosure", choices=DISCLOSURE_CLASSES, help="Exact operator-approved disclosure class for external routing")
     parser.add_argument("--challenger", action="store_true", help="Enable Challenger Mode red-team persona suffix")
     parser.add_argument("--permute-order", action="store_true", help="Invert packet items order to eliminate LLM judge position bias")
+    parser.add_argument("--ollama", action="store_true", help="Route request to local Ollama instance (port 11434)")
+    parser.add_argument("--ollama-host", default="http://localhost:11434", help="Local Ollama endpoint URL")
     return parser.parse_args()
 
 
