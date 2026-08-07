@@ -1,21 +1,25 @@
 # Active Next Review Handoff & .next Roadmap
 
 > **Data Freshness & Lineage Declaration**:
-> Prepared from `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal` after Phase 1 Native Harness Engineering:
+> Prepared from `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal` after 11 Atomic Substrate Commits:
 > - Branch: `feature/db-proxy`
+> - HEAD Commit: `adb1b91` (`[committed HEAD]`).
 > - Active Test Suite: **280/280 passing unit tests (100% GREEN)** `[live verification just run]`.
-> - Master Verification Receipt: `cache/verification_master_receipt.json` `[live verification just run]`.
+> - Master Verification Receipt: `cache/verification_master_receipt.json` **PASSED (5/5 steps)** `[live verification just run]`.
 > - PageIndex Target Doc Status: **0 status contradictions** across 15 scanned target documents `[live verification just run]`.
 > - Brand Gate B Linter: **100% Passed (0 inline styles)** `[live verification just run]`.
+> - Operator Directive: **Strict Local Retention** (0 remote pushes executed; waiting 40h for Codex 5.6 online return).
 
 ---
 
 ## 1. Executive Summary of Current State
 
-The repository has completed **Phase 1 Native Harness Engineering** and **Pass 2 Rotational OSS Model Swarm Audits**:
-1. **Native State Machine Verifier (`tools/resilience/state-machine-verifier.mjs`)**: Provides a standalone fail-closed reference model for Treasury Debt Queues (`UNFUNDED` $\rightarrow$ `ALLOCATED` $\rightarrow$ `DISBURSED` $\rightarrow$ `RECALLED`), Participatory Budgeting, and Offline Vouchers; it is not runtime contract enforcement `[dirty working tree]`.
-2. **Master Verification Runner (`scripts/verify_all.py`)**: Executes Hardhat tests, Brand Gate B compliance, PageIndex status auditor, Constitutional rubric evaluator, and Swarm Observatory evidence gate fail-closed in sequence `[dirty working tree]`.
-3. **Grok Swarm Governance & Challenger Framework (`reviews/grok_swarm_audit_governance_framework.md`)**: Configured 7 tightened domain prompts, $1.5\times / 0.5\times$ consensus weighting, Challenger Mode persona, and Synthesis Ledger reconciliation schema `[dirty working tree]`.
+The repository has completed all 11 atomic substrate commits and 8 Swarm Observatory review runs:
+1. **High-Throughput Relayer Proxy API (`server/createApp.js`)**: Rate-limiting response headers (`X-RateLimit-*`) and request correlation tracing (`X-Request-ID`).
+2. **Local Hybrid RAG Retrieval Engine (`scripts/dossier_rag_retrieval.py`)**: 500-token chunking, TF-IDF + BM25 hybrid search, and line-anchored citations (`[file.md:L10-L25]`).
+3. **Live Dashboard & Fiduciary Copilot UI (`dashboard/index.html` & `scripts/serve-dashboard.js`)**: Real-time RAG API query streaming on `http://localhost:8080` with Brand Gate B 100% compliance.
+4. **Foundry / Forge Stateful Invariants (`test/foundry/PatientFundInvariants.t.sol`)**: Invariant test harness for contract debt non-negativity and matching pool reserves.
+5. **Master Verification Runner (`scripts/verify_all.py`)**: 5/5 steps passed, 0.0% Swarm Inconsistency Score.
 
 ---
 
