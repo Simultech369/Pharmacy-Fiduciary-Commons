@@ -97,6 +97,7 @@ TARGET_DOCS = [
     "NEXT_REVIEW_HANDOFF.md",
     "review-context/SINGLE_REPO_STATE_LEDGER.md",
     "review-context/agent_work_lineage_ledger.md",
+    "review-context/SWARM_ROSTER_40_MODELS.md",
     "reviews/rotational_swarm_review_dossier.md",
     "reviews/solidity-security-audit-report.md",
 ]
