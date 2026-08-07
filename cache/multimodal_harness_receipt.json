@@ -1,0 +1,10 @@
+{
+  "recorded_at_utc": "2026-08-07T15:52:47.419016+00:00",
+  "harness": "aider-qwen",
+  "framework": "Aider (git_diff_engine)",
+  "model": "qwen-2.5-coder-32b",
+  "role": "formal_contract_checker",
+  "mode": "dry-run",
+  "offline": false,
+  "status": "PASSED_DRY_RUN"
+}
