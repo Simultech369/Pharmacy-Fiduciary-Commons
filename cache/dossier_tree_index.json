@@ -23,7 +23,7 @@
     }
   },
   "lineage_entries_count": 20,
-  "scanned_documents_count": 17,
+  "scanned_documents_count": 18,
   "total_contradictions_found": 0,
   "contradictions": [],
   "trees": [
@@ -891,28 +891,28 @@
           "level": 2
         },
         {
-          "line": 28,
+          "line": 29,
           "title": "2. Triplicated Handoff Schema for Codex 5.6",
           "level": 2
         },
         {
-          "line": 30,
+          "line": 31,
           "title": "Section A: Verified Findings",
           "level": 3
         },
         {
-          "line": 36,
+          "line": 38,
           "title": "Section B: Unresolved Risks & Explicit Non-Claims",
           "level": 3
         },
         {
-          "line": 41,
+          "line": 43,
           "title": "Section C: Exact Scope of Next Agent's Job (Codex 5.6)",
           "level": 3
         }
       ],
       "findings": [],
-      "line_count": 44
+      "line_count": 46
     },
     {
       "file": "review-context/SINGLE_REPO_STATE_LEDGER.md",
@@ -943,33 +943,33 @@
           "level": 4
         },
         {
-          "line": 39,
+          "line": 42,
           "title": "Files Explicitly Excluded",
           "level": 4
         },
         {
-          "line": 46,
+          "line": 49,
           "title": "Claim Status & Verification",
           "level": 3
         },
         {
-          "line": 48,
+          "line": 51,
           "title": "Claims Currently Believed Fixed `[live verification just run]`",
           "level": 4
         },
         {
-          "line": 58,
+          "line": 62,
           "title": "Claims Still Disputed / Open Non-Claims",
           "level": 4
         },
         {
-          "line": 65,
+          "line": 70,
           "title": "Control & Next Actions",
           "level": 3
         }
       ],
       "findings": [],
-      "line_count": 69
+      "line_count": 74
     },
     {
       "file": "review-context/agent_work_lineage_ledger.md",
@@ -1222,6 +1222,38 @@
           "line": 74,
           "title": "Run offline local sandbox loop (Harness 4)",
           "level": 1
+        }
+      ],
+      "findings": [],
+      "line_count": 76
+    },
+    {
+      "file": "review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "AI Systems Concept Coverage",
+          "level": 1
+        },
+        {
+          "line": 11,
+          "title": "Weakest Valid Claim Rule",
+          "level": 2
+        },
+        {
+          "line": 24,
+          "title": "Coverage Matrix",
+          "level": 2
+        },
+        {
+          "line": 51,
+          "title": "Council Role Mapping For External Skill Intake",
+          "level": 2
+        },
+        {
+          "line": 66,
+          "title": "Model Roster Boundary",
+          "level": 2
         }
       ],
       "findings": [],
