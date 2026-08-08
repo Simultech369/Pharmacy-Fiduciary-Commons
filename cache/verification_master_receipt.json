@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-08-08T14:23:50Z",
+  "timestamp": "2026-08-08T14:34:37Z",
   "overall_status": "PASSED",
   "expected_step_count": 5,
   "steps_executed": 5,
   "git_lineage": {
-    "head_commit": "a2d471c50d104a47af893fb46efc34f8398384b4",
+    "head_commit": "64d1ee283a8eab4571c377e9b423eebbbd9ea1ff",
     "branch": "feature/db-proxy",
     "is_dirty": true,
     "dirty_file_count": 1,
@@ -16,35 +16,35 @@
       "command": "C:\\Program Files\\Volta\\npx.cmd --no-install hardhat test",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 420378
+      "duration_ms": 500315
     },
     {
       "step_name": "2. Brand Gate B & Impeccable Linter",
       "command": "C:\\Program Files\\Volta\\npm.cmd run check:frontend",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 9328
+      "duration_ms": 5167
     },
     {
       "step_name": "3. PageIndex Status Auditor",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\index_dossier_tree.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 2273
+      "duration_ms": 880
     },
     {
       "step_name": "4. Constitutional Rubric Evaluator",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\eval_constitutional_rubric.py --target C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\reviews\\rotational_swarm_review_dossier.md",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 728
+      "duration_ms": 460
     },
     {
       "step_name": "5. Swarm Observability Dashboard",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\observability_dashboard.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 567
+      "duration_ms": 424
     }
   ]
 }
