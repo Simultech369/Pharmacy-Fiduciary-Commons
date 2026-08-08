@@ -5,8 +5,8 @@ Status: planning and review-control surface. This file maps recent AI-systems to
 Snapshot for this coverage pass:
 
 - Repo: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
-- Branch / HEAD when prepared: `feature/db-proxy` @ `6dc01cb81a859e18eaed520c40b51c9622a04937`
-- Worktree after this pass: expected dirty until the retrieval-eval slice is committed or reverted
+- Branch / HEAD baseline when prepared: `feature/db-proxy` @ `9805bc12dc639872116fe512df8225ebb0e49470`
+- Worktree after this pass: expected dirty until the compact handoff refresh is committed or reverted
 
 ## Weakest Valid Claim Rule
 
@@ -36,9 +36,9 @@ For this repo, that means:
 | Real-time observability | Local receipts, summary JSON, and benchmark reports. | No OpenTelemetry, Prometheus, Grafana, alerting, or hosted tracing. | Keep local JSON receipts until there is a real service boundary. |
 | Security guardrail middleware | Public-form threat tests, packet forbidden-input rules, credential parser checks, and review-rubric gates exist. | No Promptfoo suite, WAF, hosted moderation, or runtime prompt-injection proxy. | Add hostile artifact fixtures before external prompt injection tooling. |
 | Local-first development | Local scripts, Hardhat, static dashboard, offline continuity tools, and no-cost retrieval eval. | No Ollama + SQLite-vec/FastAPI/LanceDB/Docker mirror. | Use local-first only where it reduces disclosure or cost; avoid new stacks for resume value alone. |
-| Streaming copilot UI | Dashboard has local completed-response RAG API support through `scripts/serve-dashboard.js`. | No token streaming, optimistic UI, or streaming error recovery. | Do not add streaming until the dashboard has a real user workflow needing it. |
+| Streaming copilot UI | Local prototype dashboard has completed-response RAG API support through `scripts/serve-dashboard.js`. | No token streaming, optimistic UI, or streaming error recovery. | Do not add streaming until the dashboard has a real user workflow needing it. |
 | Fine-tuning with LoRA | Not addressed. | No dataset, training objective, before/after eval, DPO, or forgetting checks. | Park. This repo needs deterministic proof and privacy boundaries more than fine-tuning. |
-| Multi-tenant SaaS agent | Supabase schema/RLS and JS policy simulation cover part of tenant isolation. | No Stripe billing, per-tenant usage accounting, production PostgREST exercise, or SaaS auth flow. | Finish production RLS/PostgREST verification before billing or SaaS agent work. |
+| Multi-tenant SaaS agent | Local Supabase schema/RLS policy simulation and tests cover part of tenant isolation. | No Stripe billing, per-tenant usage accounting, production PostgREST exercise, or SaaS auth flow. | Finish production RLS/PostgREST verification before billing or SaaS agent work. |
 | CI/CD for AI systems | GitHub Actions and local `scripts/verify_all.py` cover deterministic gates. | No canary, rollback, ArgoCD, feature flags, or quality-drop deployment rollback. | Do not add deployment automation until production readiness gates pass. |
 | Vector DB at scale | Not implemented. | No million-vector index, metadata filters, backup/recovery, or shard planning. | Park until actual retrieval corpus size demands it. |
 | Agent memory system | Review/process docs describe claim memory discipline. | No Redis/vector memory, eviction policy, or cross-session app memory. | Keep memory as explicit docs and receipts; avoid hidden agent memory for fiduciary claims. |
@@ -73,4 +73,3 @@ The 45-model roster in `review-context/SWARM_ROSTER_40_MODELS.md` is a planning 
 - cost and rate-limit ceiling;
 - receipt metadata;
 - output reconciliation against local evidence.
-
