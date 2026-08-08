@@ -886,33 +886,33 @@
           "level": 1
         },
         {
-          "line": 15,
+          "line": 19,
           "title": "1. Executive Summary of Current State",
           "level": 2
         },
         {
-          "line": 29,
+          "line": 33,
           "title": "2. Triplicated Handoff Schema for Codex 5.6",
           "level": 2
         },
         {
-          "line": 31,
+          "line": 35,
           "title": "Section A: Verified Findings",
           "level": 3
         },
         {
-          "line": 38,
+          "line": 42,
           "title": "Section B: Unresolved Risks & Explicit Non-Claims",
           "level": 3
         },
         {
-          "line": 43,
+          "line": 49,
           "title": "Section C: Exact Scope of Next Agent's Job (Codex 5.6)",
           "level": 3
         }
       ],
       "findings": [],
-      "line_count": 46
+      "line_count": 52
     },
     {
       "file": "review-context/SINGLE_REPO_STATE_LEDGER.md",
@@ -954,7 +954,7 @@
         },
         {
           "line": 51,
-          "title": "Claims Currently Believed Fixed `[live verification just run]`",
+          "title": "Claims Currently Believed Fixed `[generated cache]`",
           "level": 4
         },
         {
@@ -963,13 +963,13 @@
           "level": 4
         },
         {
-          "line": 70,
+          "line": 71,
           "title": "Control & Next Actions",
           "level": 3
         }
       ],
       "findings": [],
-      "line_count": 74
+      "line_count": 75
     },
     {
       "file": "review-context/agent_work_lineage_ledger.md",
@@ -1257,7 +1257,7 @@
         }
       ],
       "findings": [],
-      "line_count": 76
+      "line_count": 75
     },
     {
       "file": "reviews/rotational_swarm_review_dossier.md",
