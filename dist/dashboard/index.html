@@ -56,4 +56,183 @@
       Not audited. Not deployed to mainnet. Do not use real funds.
     </p></footer><script src="./dashboard-inline.min.js"></script><button id="copilot-toggle-btn" type="button" aria-expanded="false" aria-controls="fiduciary-copilot-drawer"><span>💬 Fiduciary Copilot</span></button><div id="fiduciary-copilot-drawer" class="hidden" role="dialog" aria-label="Fiduciary Audit Copilot"><div class="copilot-header"><div class="copilot-title"><span>Fiduciary Audit Copilot</span><span class="copilot-badge">LOCAL RAG</span></div><button id="copilot-close-btn" class="copilot-close" type="button" aria-label="Close Chat">&times;</button></div><div id="copilot-messages" class="copilot-messages"><div class="copilot-msg bot">
         Hello! I am your local Fiduciary Audit Copilot. Ask me any question about solvency debt, mutual credit clearing, or participatory budgeting rules.
-      </div></div><div class="copilot-pills"><button class="copilot-pill-btn" type="button" data-prompt="solvency debt finalization">Solvency Debt</button><button class="copilot-pill-btn" type="button" data-prompt="mutual credit vouchers">Mutual Credit</button><button class="copilot-pill-btn" type="button" data-prompt="patient fund claims">Patient Fund Claims</button></div><div class="copilot-input-area"><input id="copilot-input" class="copilot-input" type="text" placeholder="Ask a fiduciary rule question..." aria-label="Copilot query input"><button id="copilot-send-btn" class="copilot-send-btn" type="button">Send</button></div></div><script src="./ethers.umd.min.js"></script><script src="./web3_integration.min.js"></script></body></html>
+      </div></div>
+          errors.push("Missing or invalid exported_at timestamp.");
+        }
+
+        for (const field of ["claims", "merkle_proofs", "votes", "receipts"]) {
+          if (!Array.isArray(payload[field])) {
+            errors.push(`${field} must be an array.`);
+          }
+        }
+
+        if (payload.schema_version === undefined) {
+          errors.push("Completeness field schema_version is missing.");
+        } else {
+          if (payload.schema_version !== "1.1.0") {
+            errors.push("Unsupported schema_version; expected 1.1.0.");
+          }
+          if (payload.is_partial === undefined) {
+            errors.push("Completeness field is_partial is missing.");
+          } else if (typeof payload.is_partial !== "boolean") {
+            errors.push("is_partial must be a boolean.");
+          }
+          if (payload.warnings === undefined) {
+            errors.push("Completeness field warnings is missing.");
+          } else if (!Array.isArray(payload.warnings)) {
+            errors.push("warnings must be an array.");
+          } else if (payload.warnings.some((warning) => typeof warning !== "string")) {
+            errors.push("warnings entries must be strings.");
+          }
+        }
+
+        if (payload.is_partial === false && Array.isArray(payload.warnings) && payload.warnings.length > 0) {
+          errors.push("A complete export cannot contain partial-export warnings.");
+        }
+
+        if (payload.is_partial === true) {
+          if (allowPartial) {
+            if (Array.isArray(payload.warnings)) {
+              for (const w of payload.warnings) {
+                warnings.push(`[Partial Export Warning] ${w}`);
+              }
+            } else {
+              warnings.push("Export is marked as partial.");
+            }
+          } else {
+            errors.push("Export is marked as partial (contains query failures). Check 'Allow Partial RPC Data' to override.");
+            if (Array.isArray(payload.warnings)) {
+              for (const w of payload.warnings) {
+                errors.push(`[Partial Export Error] ${w}`);
+              }
+            }
+          }
+        }
+
+        if (errors.length === 0) {
+          const receiptsByHash = new Map();
+          for (const receipt of payload.receipts) {
+            if (!receipt.hash || !ethers.isHexString(receipt.hash, 32)) {
+              errors.push(`Receipt has invalid hash: ${receipt.hash}`);
+              continue;
+            }
+            receiptsByHash.set(receipt.hash.toLowerCase(), receipt);
+          }
+
+          for (const claim of payload.claims) {
+            let pharmacy;
+            try {
+              pharmacy = ethers.getAddress(claim.pharmacyAddress);
+            } catch {
+              errors.push(`Claim ${claim.claimId || "(unknown)"} has invalid pharmacyAddress.`);
+              continue;
+            }
+
+            if (pharmacy !== exporter) {
+              errors.push(`Claim ${claim.claimId || "(unknown)"} pharmacyAddress does not match exporter.`);
+            }
+
+            if (!receiptsByHash.has(String(claim.transactionHash || "").toLowerCase())) {
+              errors.push(`Claim ${claim.claimId || "(unknown)"} is missing a matching receipt.`);
+            }
+
+            if (claim.metadataProvenance !== "synthetic-placeholder" && claim.ndc === "unavailable-off-chain") {
+              errors.push(`Claim ${claim.claimId || "(unknown)"} has unavailable clinical metadata without synthetic provenance.`);
+            }
+          }
+
+          for (const proof of payload.merkle_proofs) {
+            if (!ethers.isHexString(proof.claimRoot, 32)) {
+              errors.push(`Merkle proof at index ${proof.leafIndex} has invalid claimRoot.`);
+              continue;
+            }
+
+            try {
+              const pharmacy = ethers.getAddress(proof.pharmacy);
+              if (pharmacy !== exporter) {
+                errors.push(`Merkle proof at index ${proof.leafIndex} pharmacy does not match exporter.`);
+              }
+
+              const leaf = merkleLeafJS(pharmacy, BigInt(proof.grossAmount), BigInt(proof.eligibleCap));
+              const proofItems = Array.isArray(proof.proof) ? proof.proof : [];
+              const valid = verifyMerkleProofJS(proofItems, proof.claimRoot, leaf);
+              if (!valid) {
+                errors.push(`Merkle proof at index ${proof.leafIndex} does not verify against claimRoot.`);
+              }
+            } catch (err) {
+              errors.push(`Merkle proof at index ${proof.leafIndex} is malformed: ${err.message}`);
+            }
+          }
+
+          for (const vote of payload.votes) {
+            try {
+              const voter = ethers.getAddress(vote.voter);
+              if (voter !== exporter) {
+                errors.push(`Vote for project ${vote.project || "(unknown)"} voter does not match exporter.`);
+              }
+            } catch {
+              errors.push(`Vote for project ${vote.project || "(unknown)"} has invalid voter address.`);
+            }
+          }
+
+          if (payload.merkle_proofs.length === 0 && payload.claims.length > 0) {
+            if (allowIncomplete) {
+              warnings.push("Claims exist without Merkle proof material; export is not independently claim-verifiable.");
+            } else {
+              errors.push("Claims exist without Merkle proof material; export is not independently claim-verifiable. Check 'Allow Incomplete Merkle Proofs' to override.");
+            }
+          }
+        }
+      }
+
+      // Offline notice
+      warnings.push("Offline prototype: checks untrusted export self-consistency only. Authoritative chain provenance requires verify-export.js with --rpc and confirmed roots.");
+
+      // 3. Render results
+      resultsEl.style.display = "block";
+      if (errors.length === 0) {
+        if (payload.is_partial === true) {
+          statusEl.style.color = "var(--accent-orange)";
+          statusEl.innerText = "⚠ partial accepted with override";
+          titleEl.innerText = "Verification Success (Partial Override)";
+          titleEl.style.color = "var(--accent-orange)";
+        } else {
+          statusEl.style.color = "var(--accent-green-text)";
+          statusEl.innerText = "Structural Check Passed Locally";
+          titleEl.innerText = "Verification Success";
+          titleEl.style.color = "var(--accent-green-text)";
+        }
+
+        const li = document.createElement("li");
+        li.style.color = "var(--text-main)";
+        li.innerText = "✓ JSON structure complies with schema.";
+        listEl.appendChild(li);
+
+        const li2 = document.createElement("li");
+        li2.style.color = "var(--text-main)";
+        li2.innerText = "Merkle proofs are internally consistent with the claimRoot supplied by this payload.";
+        listEl.appendChild(li2);
+      } else {
+        statusEl.style.color = "var(--accent-red-text)";
+        statusEl.innerText = "❌ Verification Failed";
+        titleEl.innerText = "Verification Errors";
+        titleEl.style.color = "var(--accent-red-text)";
+
+        errors.forEach(err => {
+          const li = document.createElement("li");
+          li.style.color = "var(--accent-red-text)";
+          li.innerText = `• ${err}`;
+          listEl.appendChild(li);
+        });
+      }
+
+      warnings.forEach(warn => {
+        const li = document.createElement("li");
+        li.style.color = "var(--accent-orange)";
+        li.innerText = `⚠️ ${warn}`;
+        listEl.appendChild(li);
+      });
+    });
+  </script><button id="copilot-toggle-btn" type="button" aria-expanded="false" aria-controls="fiduciary-copilot-drawer"><span>💬 Fiduciary Copilot</span></button><div id="fiduciary-copilot-drawer" class="hidden" role="dialog" aria-label="Fiduciary Audit Copilot"><div class="copilot-header"><div class="copilot-title"><span>Fiduciary Audit Copilot</span><span class="copilot-badge">LOCAL RAG</span></div><button id="copilot-close-btn" class="copilot-close" type="button" aria-label="Close Chat">&times;</button></div><div id="copilot-messages" class="copilot-messages"><div class="copilot-msg bot">
+        Hello! I am your local Fiduciary Audit Copilot. Ask me any question about solvency debt, mutual credit clearing, or participatory budgeting rules.
+      </div></div><div class="copilot-pills"><button class="copilot-pill-btn" type="button" data-prompt="solvency debt finalization">Solvency Debt</button><button class="copilot-pill-btn" type="button" data-prompt="mutual credit vouchers">Mutual Credit</button><button class="copilot-pill-btn" type="button" data-prompt="patient fund claims">Patient Fund Claims</button></div><div class="copilot-input-area"><input id="copilot-input" class="copilot-input" type="text" list="copilot-query-suggestions" placeholder="Ask a fiduciary rule question..." aria-label="Copilot query input"><datalist id="copilot-query-suggestions"><option value="solvency debt finalization"></option><option value="mutual credit clearing"></option><option value="patient fund claims"></option><option value="zk nullifier bounds"></option><option value="EIP-712 relayer attestation"></option></datalist><button id="copilot-send-btn" class="copilot-send-btn" type="button">Send</button></div></div><script src="./ethers.umd.min.js"></script><script src="./web3_integration.min.js"></script></body></html>

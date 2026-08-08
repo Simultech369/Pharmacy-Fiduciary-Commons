@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-07T14:20:22.796Z",
+  "generatedAt": "2026-08-07T16:19:29.293Z",
   "source": "dashboard",
   "warning": "Static dashboard build only. Do not publish without running check:frontend.",
   "files": [
     {
       "path": "index.html",
-      "bytes": 36284,
-      "sha256": "1b209b8adc618ce7598c7146c86828a5dc7ea89eb155760447e492b10d2a4470"
+      "bytes": 44865,
+      "sha256": "07ccb23fe63174ebb4fddb13ec5cee96f9b46931f4a81fefefdf93d095653e6a"
     },
     {
       "path": "dashboard-inline.min.js",
