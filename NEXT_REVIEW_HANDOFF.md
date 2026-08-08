@@ -1,11 +1,11 @@
 # Active Next Review Handoff & Codex 5.6 Pre-Push Brief
 
-`feature/db-proxy @ 9805bc12dc639872116fe512df8225ebb0e49470`
+`feature/db-proxy @ d1bd06e81aacfe34f93e5fed9e8b4fe553c02f04`
 
 > **Data Freshness & Lineage Declaration**:
 > Prepared from `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal` for `feature/db-proxy` promotion review:
 > - Branch: `feature/db-proxy`
-> - Full Commit Hash: `9805bc12dc639872116fe512df8225ebb0e49470` (`[dirty working tree]` during handoff review).
+> - Full Commit Hash: `d1bd06e81aacfe34f93e5fed9e8b4fe553c02f04` (`[dirty working tree]` during handoff review).
 > - Release Scope: **Evidence-governance and handoff calibration hardening only** (does not advance production launch readiness).
 > - Repository Posture: *Pharmacy Fiduciary Commons is a local/testnet prototype exploring transparent on-chain rebate pass-through, patient-fund routing, and continuity tooling for independent pharmacies. It is not audited, holds no real funds or PHI, uses semantic mocks for privacy primitives, and is not ready for mainnet or production use. Current work focuses on hardening evidence, governance boundaries, and fail-closed behavior before any external audit.*
 > - Active Test Suite: The repository Hardhat suite reported **280 passing tests** `[generated cache]`.
@@ -35,6 +35,7 @@ The repository has completed its feature commit range and 8 Swarm Observatory re
 ### Section A: Verified Findings
 - **Smart Contracts & Test Suite**: The repository Hardhat suite reported 280 passing tests (`PatientFundParticipatoryBudgeting.sol` and `PBMRebateTreasury.sol` included). Solvency debt queuing, matching pool recycling, and 90-day epoch recalls are exercised by that suite.
 - **Relayer Proxy Security**: Local proxy tests exercise EIP-191 voter domain verification, EIP-712 relayer attestation signatures, and 15-second request leases; Supabase/RLS evidence is limited to local schema/policy simulation and tests.
+- **ZK Circuit & Schema Gates**: Circom constraints (`circuits/vote_nullifier.circom`) and fixture validators (`test/ZKNullifierFixtureGate.test.js`) enforce specified mock/schema public-boundary constraints, ensuring forbidden identity and witness fields remain outside public signals.
 - **Visual Governance**: Brand Gate B 100% visual compliance (0 inline styles in source or `dist/`).
 - **PageIndex Integrity**: 18 target documentation files scanned with 0 status contradictions.
 - **Local Dossier Retrieval Eval**: `scripts/eval_dossier_rag.py` passes 12 golden repo questions and 4 adversarial no-hit queries with hit rate@5 1.0, MRR 0.875, NDCG@5 0.9036, and no-hit accuracy 1.0.
@@ -42,11 +43,11 @@ The repository has completed its feature commit range and 8 Swarm Observatory re
 ### Section B: Unresolved Risks & Explicit Non-Claims
 - **[NOT AUDITED]**: Local prototype only: no live deployment, no live fund custody, no live fund movement, and no live PHI.
 - **[PHYSICAL MEDICINE]**: On-chain mutual credit vouchers reserve financial ledger allocations only, not physical drug supply or distributor delivery.
-- **[SEMANTIC ZK MOCK]**: Verifier and nullifier boundaries are enforced via strict schema validators (`test/ZKNullifierFixtureGate.test.js`), but production unlinkability remains a spec design (`IDENTITY_NULLIFIER_DESIGN.md`).
+- **[SEMANTIC ZK MOCK & NO UNLINKABILITY CLAIM]**: Current gates enforce specified mock/schema public-boundary constraints; production zero-knowledge unlinkability remains a spec-only design (`IDENTITY_NULLIFIER_DESIGN.md`) and is NOT implemented or audited.
 - **[RETRIEVAL BOUNDS]**: Lexical local dossier retrieval with line citations, not vector DB/embeddings or production RAG.
 - **[RECEIPT BOUNDS]**: Execution receipts are non-cryptographic local run metadata, not asymmetric cryptographic proof.
 
 ### Section C: Exact Scope of Next Agent's Job (Codex 5.6)
-1. **Synchronous Baseline Check**: Run `python scripts/verify_all.py` to confirm 5/5 steps pass cleanly.
-2. **Commit Lineage Review**: Inspect the current `feature/db-proxy` commit range and verify it against live git history before promotion.
-3. **Remote Git Push**: Execute `git push --set-upstream origin feature/db-proxy` once operator gives final sign-off!
+1. **Synchronous Baseline Check**: Run `python scripts/verify_all.py` to confirm 5/5 steps pass cleanly (`[live verification just run]`).
+2. **Git Commit of Refreshed Receipt**: Commit `cache/verification_master_receipt.json` if operator wishes to persist the latest verification receipt before pushing.
+3. **Commit Lineage & Promotion**: Branch `feature/db-proxy @ d1bd06e` is up to date with `origin/feature/db-proxy` (`0 ahead / 0 behind`). No push is required unless a new commit (e.g. receipt update) is created.
