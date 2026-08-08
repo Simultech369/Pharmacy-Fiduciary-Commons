@@ -882,7 +882,7 @@
       "sections": [
         {
           "line": 1,
-          "title": "Active Next Review Handoff & .next Roadmap",
+          "title": "Active Next Review Handoff & Codex 5.6 Pre-Push Brief",
           "level": 1
         },
         {
@@ -891,33 +891,28 @@
           "level": 2
         },
         {
-          "line": 26,
-          "title": "2. Immediate `.next` Execution Roadmap",
+          "line": 28,
+          "title": "2. Triplicated Handoff Schema for Codex 5.6",
           "level": 2
         },
         {
           "line": 30,
-          "title": "Milestone 1: Argona0x Anti-Bias Swarm Observatory Hardening",
+          "title": "Section A: Verified Findings",
           "level": 3
         },
         {
-          "line": 35,
-          "title": "Milestone 2: Paul Bakaus Impeccable & Emil Kowalski Visual System",
+          "line": 36,
+          "title": "Section B: Unresolved Risks & Explicit Non-Claims",
           "level": 3
         },
         {
-          "line": 39,
-          "title": "Milestone 3: 18-Point Swarm Observatory & Inference Scaling Engine",
+          "line": 41,
+          "title": "Section C: Exact Scope of Next Agent's Job (Codex 5.6)",
           "level": 3
-        },
-        {
-          "line": 47,
-          "title": "3. Recommended Loop Decision",
-          "level": 2
         }
       ],
       "findings": [],
-      "line_count": 54
+      "line_count": 44
     },
     {
       "file": "review-context/SINGLE_REPO_STATE_LEDGER.md",
