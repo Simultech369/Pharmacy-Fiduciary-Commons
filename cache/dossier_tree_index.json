@@ -23,7 +23,7 @@
     }
   },
   "lineage_entries_count": 20,
-  "scanned_documents_count": 16,
+  "scanned_documents_count": 17,
   "total_contradictions_found": 0,
   "contradictions": [],
   "trees": [
@@ -1164,6 +1164,73 @@
       ],
       "findings": [],
       "line_count": 105
+    },
+    {
+      "file": "review-context/MULTIMODAL_ROSTER_LOOPS.md",
+      "sections": [
+        {
+          "line": 1,
+          "title": "Multi-Modal OSS Rotating Roles & Agent Harness Combinations",
+          "level": 1
+        },
+        {
+          "line": 9,
+          "title": "1. Multi-Modal OSS Rotating Roles Matrix",
+          "level": 2
+        },
+        {
+          "line": 21,
+          "title": "2. Developer Agent Harness Combinations for Autonomous Loops",
+          "level": 2
+        },
+        {
+          "line": 40,
+          "title": "Combination 1: Surgical Diff Generation Engine",
+          "level": 3
+        },
+        {
+          "line": 45,
+          "title": "Combination 2: Execution-Trace Prompt Compiler",
+          "level": 3
+        },
+        {
+          "line": 50,
+          "title": "Combination 3: Full Repository Issue Resolver",
+          "level": 3
+        },
+        {
+          "line": 55,
+          "title": "Combination 4: Local Isolated Container Sandbox",
+          "level": 3
+        },
+        {
+          "line": 62,
+          "title": "3. Rotational Loop Execution Command Reference",
+          "level": 2
+        },
+        {
+          "line": 65,
+          "title": "Run multi-modal rotational harness simulation across all 4 combinations",
+          "level": 1
+        },
+        {
+          "line": 68,
+          "title": "Run surgical diff loop (Harness 1)",
+          "level": 1
+        },
+        {
+          "line": 71,
+          "title": "Run prompt compilation loop (Harness 2)",
+          "level": 1
+        },
+        {
+          "line": 74,
+          "title": "Run offline local sandbox loop (Harness 4)",
+          "level": 1
+        }
+      ],
+      "findings": [],
+      "line_count": 76
     },
     {
       "file": "reviews/rotational_swarm_review_dossier.md",
