@@ -18,17 +18,22 @@ const MIME_TYPES = {
 
 const { execFile } = require("node:child_process");
 
+function pythonCommand() {
+  if (process.env.PYTHON) {
+    return process.env.PYTHON;
+  }
+  return process.platform === "win32" ? "python" : "python3";
+}
+
 const server = http.createServer((req, res) => {
   const reqUrl = new URL(req.url, `http://localhost:${PORT}`);
   
   if (reqUrl.pathname === "/api/rag") {
     const q = reqUrl.searchParams.get("q") || "solvency";
     const scriptPath = path.resolve(__dirname, "dossier_rag_retrieval.py");
-    const pythonExe = process.platform === "win32" 
-      ? "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe" 
-      : "python3";
+    const pythonExe = pythonCommand();
       
-    execFile(pythonExe, [scriptPath, "--query", q], { encoding: "utf8" }, (err, stdout) => {
+    execFile(pythonExe, [scriptPath, "--query", q, "--json"], { encoding: "utf8" }, (err, stdout) => {
       res.writeHead(200, { 
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*"
@@ -36,7 +41,11 @@ const server = http.createServer((req, res) => {
       if (err) {
         return res.end(JSON.stringify({ error: err.message, raw: stdout || "" }));
       }
-      return res.end(JSON.stringify({ query: q, result: stdout }));
+      try {
+        return res.end(JSON.stringify(JSON.parse(stdout)));
+      } catch (parseErr) {
+        return res.end(JSON.stringify({ query: q, error: parseErr.message, raw: stdout || "" }));
+      }
     });
     return;
   }

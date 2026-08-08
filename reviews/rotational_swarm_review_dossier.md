@@ -20,7 +20,7 @@ Pass 2 executed a **7-Domain Rotational Model Swarm Audit** across the repositor
 | **3. ZK Nullifier & Identity Circuits** | `zero_zk` | `Qwen 2.5 Coder 32B` | Poseidon PRF, public signal order, schema gates | Design Invariant 2 framing verified `[external reviewer claim]` |
 | **4. Offline Continuity Engine** | `free_code` | `Llama 3.3 70B` | Fail-closed cache, MAC vouchers, replay protection | Two-process CLI regression test verified `[external reviewer claim]` |
 | **5. Frontend & Brand Governance** | `open_claude` | `Gemma 2 27B` | Brand Gate B (0 inline styles), ARIA accessibility | 100% extraction compliance verified `[external reviewer claim]` |
-| **6. Institutional Governance** | `kimi_long_context` | `Hermes 3 405B` | PageIndex scanned target doc count, zero contradictions | Target count 15 reconciled `[external reviewer claim]` |
+| **6. Institutional Governance** | `kimi_long_context` | `Hermes 3 405B` | PageIndex scanned target doc count, zero contradictions | Target count 18 reconciled `[external reviewer claim]` |
 | **7. Solvency & Debt Accounting** | `solvency_debt` | `DeepSeek-R1` | Debt queue depletion, recycled matching pool | Treasury debt queue & grace period verified `[external reviewer claim]` |
 
 ---
@@ -49,7 +49,7 @@ Pass 2 executed a **7-Domain Rotational Model Swarm Audit** across the repositor
 
 ### Domain 6: Institutional Governance & Policy (`kimi_long_context` harness via `Hermes 3 405B`) `[external reviewer claim]`
 - **Invariant**: PageIndex indexer must audit all scanned target documents for zero status contradictions `[dirty working tree]`.
-- **Finding**: `scripts/index_dossier_tree.py` verifies zero status contradictions across all 15 scanned target documents `[live verification just run]`.
+- **Finding**: `scripts/index_dossier_tree.py` verifies zero status contradictions across all 18 scanned target documents `[live verification just run]`.
 
 ### Domain 7: Solvency & Accounting Invariants (`solvency_debt` harness via `DeepSeek-R1`) `[external reviewer claim]`
 - **Invariant**: `contracts/PBMRebateTreasury.sol` and `SOLVENCY_DEBT_SEMANTICS.md` must enforce `poolBalance >= totalDebt` and 90-day match reclaim grace periods `[dirty working tree]`.
@@ -60,9 +60,9 @@ Pass 2 executed a **7-Domain Rotational Model Swarm Audit** across the repositor
 ## Verification & Test Suite Summary `[live verification just run]`
 
 - **Hardhat Test Suite**: 280 / 280 passing unit tests `[live verification just run]`.
-- **PageIndex Dossier Indexer**: 0 status contradictions across 15 target documents `[live verification just run]`.
+- **PageIndex Dossier Indexer**: 0 status contradictions across 18 target documents `[live verification just run]`.
 - **Brand Gate B Linter**: 0 inline styles in `dist/dashboard/index.html` `[live verification just run]`.
-- **Router Metadata Receipts**: seven packet router metadata files reconciled into this rotational dossier; the `free_code` packet's possible truncation is explicitly acknowledged and must not be treated as unqualified full-context coverage `[dirty working tree]`.
+- **Router Metadata Receipts**: eight packet router metadata files reconciled into this rotational dossier; the `free_code` packet's possible truncation is explicitly acknowledged and must not be treated as unqualified full-context coverage `[dirty working tree]`.
 
 ---
 *Dossier compiled by Antigravity AI Agent — Pharmacy-Fiduciary-Commons.*

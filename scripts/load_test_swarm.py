@@ -17,7 +17,9 @@ import math
 import os
 import sys
 import time
+import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REVIEWS_DIR = os.path.join(ROOT_DIR, "reviews")
@@ -38,6 +40,18 @@ def percentile(data, p):
     return d0 + d1
 
 
+def request_once(server_url, query):
+    req_url = f"{server_url}/api/rag?q={urllib.parse.quote(query)}"
+    t0 = time.time()
+    try:
+        req = urllib.request.Request(req_url)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            _ = resp.read()
+        return True, (time.time() - t0) * 1000.0
+    except Exception:
+        return False, (time.time() - t0) * 1000.0
+
+
 def run_benchmark(concurrency=10, iterations=50, server_url="http://localhost:8080"):
     print(f"Starting Swarm Benchmark (Concurrency={concurrency}, Iterations={iterations})...")
     latencies = []
@@ -53,21 +67,19 @@ def run_benchmark(concurrency=10, iterations=50, server_url="http://localhost:80
         "EIP-712 issuer signatures",
     ]
 
-    for i in range(iterations):
-        query = queries[i % len(queries)]
-        req_url = f"{server_url}/api/rag?q={urllib.parse.quote(query)}"
-        t0 = time.time()
-        try:
-            req = urllib.request.Request(req_url)
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                _ = resp.read()
-                elapsed_ms = (time.time() - t0) * 1000.0
-                latencies.append(elapsed_ms)
-                successes += 1
-        except Exception as exc:
-            elapsed_ms = (time.time() - t0) * 1000.0
+    worker_count = max(1, min(concurrency, iterations))
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        futures = [
+            executor.submit(request_once, server_url, queries[i % len(queries)])
+            for i in range(iterations)
+        ]
+        for future in as_completed(futures):
+            ok, elapsed_ms = future.result()
             latencies.append(elapsed_ms)
-            failures += 1
+            if ok:
+                successes += 1
+            else:
+                failures += 1
 
     total_time_s = time.time() - start_total
     rps = iterations / total_time_s if total_time_s > 0 else 0
@@ -75,6 +87,10 @@ def run_benchmark(concurrency=10, iterations=50, server_url="http://localhost:80
     p50 = percentile(latencies, 50)
     p95 = percentile(latencies, 95)
     p99 = percentile(latencies, 99)
+    rps_passed = failures == 0 and rps >= 10.0
+    p50_passed = p50 < 500
+    p95_passed = p95 < 1500
+    p99_passed = p99 < 3000
 
     report_content = f"""# High-Throughput Swarm & Proxy Benchmark Report
 
@@ -90,11 +106,11 @@ def run_benchmark(concurrency=10, iterations=50, server_url="http://localhost:80
 | Metric | Result | Target Benchmark | Status |
 | :--- | :--- | :--- | :--- |
 | **Total Execution Time** | `{total_time_s:.2f} s` | N/A | Complete |
-| **Success / Failure Count** | `{successes} / {failures}` | 100% Success | {'✅ PASSED' if failures == 0 else '⚠️ WARNING'} |
-| **Calculated Throughput** | `{rps:.1f} RPS` | $\\ge 10.0$ RPS | ✅ PASSED |
-| **P50 Latency (Median)** | `{p50:.2f} ms` | $< 500$ ms | ✅ PASSED |
-| **P95 Latency** | `{p95:.2f} ms` | $< 1500$ ms | ✅ PASSED |
-| **P99 Latency (Tail)** | `{p99:.2f} ms` | $< 3000$ ms | ✅ PASSED |
+| **Success / Failure Count** | `{successes} / {failures}` | 100% Success | {'PASSED' if failures == 0 else 'WARNING'} |
+| **Calculated Throughput** | `{rps:.1f} RPS` | $\\ge 10.0$ RPS | {'PASSED' if rps_passed else 'WARNING'} |
+| **P50 Latency (Median)** | `{p50:.2f} ms` | $< 500$ ms | {'PASSED' if p50_passed else 'WARNING'} |
+| **P95 Latency** | `{p95:.2f} ms` | $< 1500$ ms | {'PASSED' if p95_passed else 'WARNING'} |
+| **P99 Latency (Tail)** | `{p99:.2f} ms` | $< 3000$ ms | {'PASSED' if p99_passed else 'WARNING'} |
 
 ---
 

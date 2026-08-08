@@ -13,7 +13,7 @@
 | :--- | :--- | :--- | :--- |
 | **Total Execution Time** | `7.62 s` | N/A | Complete |
 | **Success / Failure Count** | `30 / 0` | 100% Success | ✅ PASSED |
-| **Calculated Throughput** | `3.9 RPS` | $\ge 10.0$ RPS | ✅ PASSED |
+| **Calculated Throughput** | `3.9 RPS` | $\ge 10.0$ RPS | WARNING |
 | **P50 Latency (Median)** | `222.97 ms` | $< 500$ ms | ✅ PASSED |
 | **P95 Latency** | `304.11 ms` | $< 1500$ ms | ✅ PASSED |
 | **P99 Latency (Tail)** | `707.85 ms` | $< 3000$ ms | ✅ PASSED |

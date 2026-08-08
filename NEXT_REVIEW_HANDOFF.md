@@ -3,10 +3,10 @@
 > **Data Freshness & Lineage Declaration**:
 > Prepared from `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal` after 27 Atomic Substrate Commits:
 > - Branch: `feature/db-proxy`
-> - HEAD Commit: `d78a171` (`[committed HEAD]`).
+> - HEAD Commit: `6dc01cb` (`[dirty working tree]` while the local dossier retrieval eval slice is under review).
 > - Active Test Suite: **280/280 passing unit tests (100% GREEN)** `[live verification just run]`.
 > - Master Verification Receipt: `cache/verification_master_receipt.json` **PASSED (5/5 steps)** `[live verification just run]`.
-> - PageIndex Target Doc Status: **0 status contradictions** across 17 scanned target documents `[live verification just run]`.
+> - PageIndex Target Doc Status: **0 status contradictions** across 18 scanned target documents `[live verification just run]`.
 > - Brand Gate B Linter: **100% Passed (0 inline styles)** `[live verification just run]`.
 > - Operator Directive: **Strict Local Retention** (0 remote pushes executed; preparing for Codex 5.6 online return in 1 hour).
 
@@ -16,12 +16,13 @@
 
 The repository has completed 27 atomic substrate commits and 8 Swarm Observatory review runs:
 1. **High-Throughput Relayer Proxy API (`server/createApp.js`)**: Rate-limiting response headers (`X-RateLimit-*`) and request correlation tracing (`X-Request-ID`).
-2. **Local Hybrid RAG Retrieval Engine (`scripts/dossier_rag_retrieval.py`)**: 500-token chunking, TF-IDF + BM25 hybrid search, and line-anchored markdown citations (`[file.md:L10-L25]`).
-3. **Live Dashboard & Fiduciary Copilot UI (`dashboard/index.html` & `scripts/serve-dashboard.js`)**: Real-time RAG API query streaming on `http://localhost:8080` with datalist autocomplete and Brand Gate B 100% compliance.
+2. **Local Dossier Retrieval Engine (`scripts/dossier_rag_retrieval.py`)**: section-aware 500-token Markdown chunking, lexical TF-IDF/overlap scoring, deterministic reranking, JSON output, and line-anchored citations (`[file.md:L10-L25]`). This is not PDF/page-number production RAG.
+3. **Live Dashboard & Fiduciary Copilot UI (`dashboard/index.html` & `scripts/serve-dashboard.js`)**: local completed-response RAG API on `http://localhost:8080` with datalist autocomplete and Brand Gate B 100% compliance. This is not token streaming.
 4. **Foundry / Forge Stateful Invariants (`test/foundry/PatientFundInvariants.t.sol`)**: Stateful property invariant test suite for solvency debt non-negativity and matching reserves.
 5. **45-Model / 9-Division Swarm Observatory Roster (`review-context/SWARM_ROSTER_40_MODELS.md`)**: Complete council roster across 9 specialized divisions including local Ollama (`http://localhost:11434`) fallbacks.
 6. **Multi-Modal Developer Agent Loop Harness (`scripts/multimodal_swarm_harness.py`)**: Rotational harness orchestrating Aider, DSPy, SWE-agent, and OpenHands sandbox loops.
-7. **Swarm & Proxy Load Testing Suite (`scripts/load_test_swarm.py`)**: High-throughput benchmark generator exporting median P50 (222ms) latency metrics to `reviews/benchmark_report.md`.
+7. **Swarm & Proxy Load Testing Suite (`scripts/load_test_swarm.py`)**: local concurrent benchmark harness exporting latency metrics to `reviews/benchmark_report.md`; prior reports now warn when RPS misses its stated target.
+8. **AI Systems Concept Coverage (`review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md`)**: maps RAG, routing, evals, observability, local-first, fine-tuning, inference, and agent-framework ideas into repo-local coverage, gaps, and parked items.
 
 ---
 
@@ -31,7 +32,8 @@ The repository has completed 27 atomic substrate commits and 8 Swarm Observatory
 - **Smart Contracts**: `PatientFundParticipatoryBudgeting.sol` and `PBMRebateTreasury.sol` pass all 280 unit tests. Solvency debt queuing, matching pool recycling, and 90-day epoch recalls are verified.
 - **Relayer Proxy Security**: EIP-191 voter domain verification, EIP-712 relayer attestation signatures, 15-second request leases, and Supabase RLS policies are verified.
 - **Visual Governance**: Brand Gate B 100% visual compliance (0 inline styles in source or `dist/`).
-- **PageIndex Integrity**: 17 target documentation files scanned with 0 status contradictions.
+- **PageIndex Integrity**: 18 target documentation files scanned with 0 status contradictions.
+- **Local Dossier Retrieval Eval**: `scripts/eval_dossier_rag.py` passes 12 golden repo questions and 4 adversarial no-hit queries with hit rate@5 1.0, MRR 0.875, NDCG@5 0.9036, and no-hit accuracy 1.0.
 
 ### Section B: Unresolved Risks & Explicit Non-Claims
 - **[NOT AUDITED]**: Local prototype state only. Zero real fund movement on mainnet.
