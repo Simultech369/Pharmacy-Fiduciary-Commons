@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-08-08T14:09:24Z",
+  "timestamp": "2026-08-08T14:15:06Z",
   "overall_status": "PASSED",
   "expected_step_count": 5,
   "steps_executed": 5,
   "git_lineage": {
-    "head_commit": "16833423a64abfc3723b1ec0cb6a6cff24b75aa4",
+    "head_commit": "49d599021f89c000624b5faa6c1b582d34e1825f",
     "branch": "feature/db-proxy",
     "is_dirty": true,
     "dirty_file_count": 1,
@@ -16,35 +16,35 @@
       "command": "C:\\Program Files\\Volta\\npx.cmd --no-install hardhat test",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 113809
+      "duration_ms": 183335
     },
     {
       "step_name": "2. Brand Gate B & Impeccable Linter",
       "command": "C:\\Program Files\\Volta\\npm.cmd run check:frontend",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 13022
+      "duration_ms": 26720
     },
     {
       "step_name": "3. PageIndex Status Auditor",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\index_dossier_tree.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 2446
+      "duration_ms": 1319
     },
     {
       "step_name": "4. Constitutional Rubric Evaluator",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\eval_constitutional_rubric.py --target C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\reviews\\rotational_swarm_review_dossier.md",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 740
+      "duration_ms": 452
     },
     {
       "step_name": "5. Swarm Observability Dashboard",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\observability_dashboard.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 411
+      "duration_ms": 1173
     }
   ]
 }
