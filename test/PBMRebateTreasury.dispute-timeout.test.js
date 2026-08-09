@@ -219,6 +219,7 @@ describe("PBMRebateTreasury dispute timeout retraction", function () {
     expect(await treasury.epochEscrow(0)).to.equal(amtB);
     expect(await treasury.totalEscrowed()).to.equal(amtB);
     expect(await treasury.totalFlaggedNormal()).to.equal(amtA);
+    const distributionPoolAfterFlag = await treasury.distributionPool();
 
     await increaseTime(MIN_EPOCH_DURATION);
     await treasury.connect(council).finalizeEpoch();
@@ -230,6 +231,7 @@ describe("PBMRebateTreasury dispute timeout retraction", function () {
     expect(await treasury.epochRecalled(0)).to.equal(true);
     expect(await treasury.epochEscrow(0)).to.equal(0n);
     expect(await treasury.totalEscrowed()).to.equal(0n);
+    expect(await treasury.distributionPool()).to.equal(distributionPoolAfterFlag);
 
     const patientBeforeRetract = await token.balanceOf(patientFund.address);
     await treasury.connect(pharmacy).retractClaimDispute(0);
@@ -244,6 +246,7 @@ describe("PBMRebateTreasury dispute timeout retraction", function () {
     expect(await treasury.epochRootClaimedTotal(0)).to.equal(0n);
     expect(await treasury.pharmacyClaimedThisEpoch(0, pharmacy.address)).to.equal(0n);
     expect(await treasury.totalFlaggedNormal()).to.equal(0n);
+    expect(await treasury.distributionPool()).to.equal(distributionPoolAfterFlag);
   });
 
   it("retracts an approved exclusion dispute without moving tokens", async function () {
