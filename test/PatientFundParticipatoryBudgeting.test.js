@@ -496,6 +496,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(await pb.recycledMatchingPool()).to.equal(toWei("10000"));
       expect(await pb.roundProjectShares(1n, 0n)).to.equal(0n);
       expect(await pb.totalDebt()).to.equal(toWei("10000"));
+      expect(await pb.currentSolvencyShortfall()).to.equal(await pb.totalDebt());
       expect(await pb.roundDeficit(1n)).to.equal(toWei("10000"));
 
       await pb.connect(council).startRound(0n);
@@ -518,6 +519,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await token.mint(await pb.getAddress(), toWei("10000"));
       await pb.refreshSolvencyDebt();
       expect(await pb.totalDebt()).to.equal(0n);
+      expect(await pb.currentSolvencyShortfall()).to.equal(await pb.totalDebt());
 
       // Claiming Project share succeeds after top-up.
       await pb.claimMatchShare(2n, 0n);
@@ -1650,6 +1652,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await pb.connect(council).finalizeRound(2n);
       expect((await pb.rounds(2n)).state).to.equal(2n);
       expect(await pb.totalDebt()).to.equal(toWei("900"));
+      expect(await pb.currentSolvencyShortfall()).to.equal(await pb.totalDebt());
       expect(await pb.roundDeficit(2n)).to.equal(toWei("900"));
       expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("100"));
 
@@ -1657,6 +1660,7 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await token.mint(await pb.getAddress(), toWei("900"));
       await pb.refreshSolvencyDebt();
       expect(await pb.totalDebt()).to.equal(0n);
+      expect(await pb.currentSolvencyShortfall()).to.equal(await pb.totalDebt());
 
       // Contract balance after Round 2 finalization (reclaiming 1000 matching pool) is 1000.
       expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("1000"));
@@ -1672,11 +1676,13 @@ describe("PatientFundParticipatoryBudgeting", function () {
       await pb.connect(council).startRound(toWei("1000"));
       expect(await pb.currentRound()).to.equal(2n);
       expect(await pb.totalDebt()).to.equal(1n);
+      expect(await pb.currentSolvencyShortfall()).to.equal(await pb.totalDebt());
       expect(await pb.roundDeficit(2n)).to.equal(1n);
 
       await token.mint(await pb.getAddress(), 1n);
       await pb.refreshSolvencyDebt();
       expect(await pb.totalDebt()).to.equal(0n);
+      expect(await pb.currentSolvencyShortfall()).to.equal(await pb.totalDebt());
     });
 
     it("registers multiple projects and asserts gas consumption bounds to prevent sybil/DoS locks", async function () {

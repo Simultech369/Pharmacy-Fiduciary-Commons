@@ -325,6 +325,18 @@ describe("ZK/Nullifier Design Fixture and Test Gate", function () {
         "membershipPathElements",
         "membershipPathIndices"
       ]);
+      expect(projectScopedCircuit.minimalCircomInterface.credentialSecretRequirements).to.deep.include({
+        source: "high-entropy private commitment material",
+        dictionaryResistanceRequired: true
+      });
+      expect(projectScopedCircuit.minimalCircomInterface.credentialSecretRequirements.forbiddenSources).to.include.members([
+        "walletAddress",
+        "npi",
+        "ncpdp",
+        "stableCredentialHash",
+        "rawCredential",
+        "supportTicketId"
+      ]);
       expect(projectScopedCircuit.minimalCircomInterface.publicInputs).to.deep.equal([
         "roundId",
         "projectId",
@@ -344,6 +356,22 @@ describe("ZK/Nullifier Design Fixture and Test Gate", function () {
         statefulness: "stateless",
         returnValue: "proof-validity-only"
       });
+      expect(projectScopedCircuit.publicSignalOrder).to.deep.equal([
+        "domainSeparator",
+        "chainId",
+        "verifyingContract",
+        "roundId",
+        "projectId",
+        "projectRegistryRoot",
+        "membershipRoot",
+        "nullifier",
+        "policyVersion",
+        "relayerPolicyHash",
+        "timestampBucket"
+      ]);
+      expect(projectScopedCircuit.publicSignalOrder).to.not.deep.equal(
+        projectScopedCircuit.minimalCircomInterface.publicSignalOrder
+      );
       expect(projectScopedCircuit.verifierInterface.solidity).to.equal(
         "function verifyProof(bytes calldata proof, uint256[11] calldata publicSignals) external view returns (bool)"
       );

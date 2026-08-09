@@ -2,7 +2,7 @@
 
 **Repository**: `Pharmacy-Fiduciary-Commons`  
 **Schema**: `pbm-multimodal-harness/v1.0`  
-**Purpose**: Autonomously pair multi-modal OSS models with developer agent frameworks for continuous test-driven loop execution.
+**Purpose**: Coordinate multi-modal OSS model lanes with deterministic harnesses for review, verification, disagreement mining, and evidence capture. The harness does not authorize autonomous source edits, commits, pushes, deployments, signing, role changes, or fund movement.
 
 ---
 
@@ -18,7 +18,7 @@
 
 ---
 
-## 2. Developer Agent Harness Combinations for Autonomous Loops
+## 2. Developer Agent Harness Combinations for Review/Verification Loops
 
 ```mermaid
 graph TD
@@ -62,15 +62,15 @@ graph TD
 ## 3. Rotational Loop Execution Command Reference
 
 ```bash
-# Run multi-modal rotational harness simulation across all 4 combinations
-python scripts/multimodal_swarm_harness.py --mode dry-run
+# Plan all configured deterministic harness checks and reviewer lanes
+python scripts/multimodal_swarm_harness.py --mode dry-run --all-harnesses --offline
 
-# Run surgical diff loop (Harness 1)
-python scripts/multimodal_swarm_harness.py --harness aider-qwen --role formal_contract_checker
+# Run a lightweight local execute path against an existing packet
+python scripts/multimodal_swarm_harness.py --mode execute --harness dspy-deepseek --role formal_contract_checker --packet review-context/packet-solvency-debt.json --offline
 
-# Run prompt compilation loop (Harness 2)
-python scripts/multimodal_swarm_harness.py --harness dspy-deepseek --role diagram_architecture_critic
+# Compile a bounded packet before optional reviewer dispatch
+python scripts/multimodal_swarm_harness.py --mode execute --role privacy_zk_validator --question "Is the VoteNullifier path safe against replay and identity leakage?" --files circuits/vote_nullifier.circom test/ZKNullifierFixtureGate.test.js IDENTITY_NULLIFIER_DESIGN.md --offline
 
-# Run offline local sandbox loop (Harness 4)
-python scripts/multimodal_swarm_harness.py --harness openhands-gemma3 --role visual_ui_auditor --offline
+# Dispatch external reviewer lanes only after exact disclosure approval
+python scripts/multimodal_swarm_harness.py --mode execute --role formal_contract_checker --packet review-context/packet-solvency-debt.json --run-reviewers --approve-disclosure PUBLIC_COMMITTED
 ```

@@ -26,6 +26,10 @@ Proper/.npm-cache/
 .DS_Store
 Thumbs.db
 
+# Python local caches
+__pycache__/
+*.pyc
+
 # Env
 .env
 .env.*

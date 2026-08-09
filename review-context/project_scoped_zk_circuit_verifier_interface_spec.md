@@ -63,6 +63,8 @@ The private witness contains:
 - project registry path and index bits, if the project registry root is circuit-checked rather than contract-checked;
 - any random blinding required by the credential commitment scheme.
 
+`credentialSecret` must be high-entropy private commitment material. It must not be a raw credential, stable credential hash, wallet address, NPI/NCPDP, support identifier, or any low-entropy value that could be dictionary-guessed from a public `membershipRoot`, `nullifier`, or proof payload.
+
 The witness must never be persisted by the proxy, printed in browser diagnostics, sent to support logs, included in JSON relay batches, or emitted by contracts.
 
 ## 5. Exact Circom Signal Interface
@@ -229,9 +231,11 @@ The design gate is green when tests assert:
 
 - the exact Circom facade exposes only `[roundId, projectId, domainSeparator, membershipRoot, nullifier]` as public signals;
 - the private witness contains `credentialSecret`, `membershipPathElements`, and `membershipPathIndices`;
+- `credentialSecret` is specified as high-entropy private commitment material and forbidden from raw, stable, wallet, or support identifiers;
 - the public `nullifier` input is constrained to `Poseidon(credentialSecret, roundId, projectId, domainSeparator)`;
 - the host-facing `verifyVoteProof(bytes calldata proof, uint256 root, uint256 nullifier, uint256 roundId, uint256 projectId)` adapter is pinned;
-- the public signal order is canonical and includes `roundId`, `projectId`, `projectRegistryRoot`, `membershipRoot`, `nullifier`, and policy commitments;
+- the minimal Circom facade public signal order is canonical as `[roundId, projectId, domainSeparator, membershipRoot, nullifier]`;
+- the expanded host-verifier signal vector separately binds replay and policy fields including `chainId`, `verifyingContract`, `projectRegistryRoot`, `policyVersion`, `relayerPolicyHash`, and `timestampBucket`;
 - all forbidden identity, support, RPC, and witness fields are excluded from public signals;
 - the verifier interface is stateless and returns only a proof-validity boolean;
 - replay protection is project scoped as `used[roundId][projectId][nullifier]`;

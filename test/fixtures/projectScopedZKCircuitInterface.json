@@ -48,7 +48,19 @@
       "nullifier === Poseidon(credentialSecret, roundId, projectId, domainSeparator)",
       "membershipRoot === recomputeRoot(Poseidon(credentialSecret), membershipPathElements, membershipPathIndices)"
     ],
-    "leafCommitment": "Poseidon(credentialSecret) until issuer-bound opening formula is frozen"
+    "leafCommitment": "Poseidon(credentialSecret) until issuer-bound opening formula is frozen",
+    "credentialSecretRequirements": {
+      "source": "high-entropy private commitment material",
+      "dictionaryResistanceRequired": true,
+      "forbiddenSources": [
+        "walletAddress",
+        "npi",
+        "ncpdp",
+        "stableCredentialHash",
+        "rawCredential",
+        "supportTicketId"
+      ]
+    }
   },
   "publicInputs": {
     "domainSeparator": {
