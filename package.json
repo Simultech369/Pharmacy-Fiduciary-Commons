@@ -32,7 +32,7 @@
     "@openzeppelin/contracts": "^4.9.6",
     "chai": "^6.2.2",
     "ethers": "^6.16.0",
-    "hardhat": "^2.22.16"
+    "hardhat": "^3.9.1"
   },
   "volta": {
     "node": "22.23.1"
