@@ -1,38 +1,36 @@
-**Summary**  
-The `.next` roadmap should prioritize defenses that protect the fiduciary ledger from financial loss before refining privacy or usability. Item B (offline‑continuity double‑spend guard) addresses the most immediate solvency risk, followed by Item A (ZK nullifier witness generator & verifier adapter) to close the privacy‑leak surface introduced by client‑side proof preparation. Item C (participatory‑budgeting solvency safeguards) refines economic invariants, and Item D (design‑system & accessibility) is the lowest‑risk, finish‑last polish.
+﻿**Summary**
+The codebase passes a full test suite and implements solid rateâ€‘limiting, ZKâ€‘circuit hardening, and offline continuity safeguards, but the disputeâ€‘resolution logic lacks explicit 90â€‘day epoch reclamation and clear tolling semantics, creating a highâ€‘severity solvency and auditability exposure.
 
----
+**Positive Observations**
+- 280+ unit, security, EIPâ€‘191/712, Circom, ZK, and continuity tests all pass; verification receipt is clean.
+- Rateâ€‘limit headers, requestâ€‘ID correlation, and 15â€¯s rowâ€‘locked idempotency are correctly applied in `server/createApp.js`.
+- The Circom nullifier circuit and its ZK fixture test enforce strict schema validation, leakage budgets, and walletâ€‘linkable/unlinkable bounds.
+- Offline continuity engineâ€™s `validateGlobalNullifierCache` dryâ€‘run prevents duplicate nullifier relay within an epoch, improving resilience.
+- Clear separation of council, rootâ€‘confirmer, and guardian roles is evident in the governance design.
 
-### Positive Observations  
-- **Test suite health**: 266 passing unit/security/EIP‑191/712/Circom/ZK fixtures give a strong regression baseline.  
-- **Recent hardening**: DB‑proxy RLS, vote‑nullifier circuit, and fixture gate all have 100 % test pass rates, showing the team can deliver security‑focused work with full coverage.  
-- **Documentation indexing**: PageIndex dossier tree confirms zero state contradictions across 42 files, making impact analysis reliable.  
+**Critical Issues (ranked by severity)**
 
----
+1. **Missing 90â€‘day epoch reclamation enforcement** â€“ `retractClaimDispute` only clears claim state; there is no visible logic that, after a 90â€‘day epoch, automatically returns unclaimed amounts to the patientâ€‘fund matching pool and settles the associated `solvencyDebt`.
+   *Evidence*: The excerpt shows `hasClaimed` and `flaggedAmount` reset, but `epochEscrow` and `totalEscrowed` are only reduced at flag time; no epochâ€‘end sweep or reclamation call is present.
+   *Suggested fix*: Add an `epochFinalize()` (or similar) function triggered at epoch transition that iterates over claims older than 90â€¯days, moves their amounts to the matching pool, updates `solvencyDebt` accordingly, and emits a reclamation event. Write unit tests that assert (a) escrow is fully released after epoch expiry and (b) `solvencyDebt >= 0` remains true.
 
-### Critical Issues (ranked by severity)
+2. **Ambiguous dispute timeout tolling** â€“ The `retractClaimDispute` checks `_hasReachedDelay` but defines no explicit toll (fee, penalty, or reservation) and does not account for any compensation when a claim is retracted postâ€‘timeout.
+   *Evidence*: No fee collection, no treasury accounting, and the function merely zeroes state. This opens the possibility of â€œfreeâ€ retractions that drain escrow without proper offset, violating economic invariants.
+   *Suggested fix*: Codify a clear tolling rule (e.g., a fixed percentage fee or flat amount) that is transferred to a designated treasury reserve when retraction occurs after the timeout. Enforce this in `retractClaimDispute`, emit a `RetractionTolled` event, and add integration tests verifying the correct amount is taken and recorded.
 
-| Rank | Item | Issue | Evidence / Reasoning | Suggested Fix |
-|------|------|-------|----------------------|---------------|
-| **1** | **B** | **Accepting a duplicate nullifier → double‑spend** | Offline continuity relay packets are validated only against a *local* cache; if the global nullifier cache is stale or not atomically checked, a replayed packet could be accepted, violating the solvency invariant that each nullifier is spent once. The spec says “fail closed on MAC mismatch or duplicate nullifiers”; a race or missing cache‑sync breaks that guarantee. | Implement a *read‑after‑write* check: before accepting a packet, query the on‑chain nullifier bitmap (or a trusted off‑chain Merkle proof) and reject if the nullifier is already set. Add a unit test that inserts a known nullifier into the cache, replays a packet, and asserts rejection. |
-| **2** | **A** | **Metadata leakage in witness generation** | The witness generator must exclude timestamps, RPC IPs, raw credentials, and any pharmacy‑identifiable data. Current fixtures only verify circuit correctness; they do not assert that the generated witness contains *only* the required public signals (nullifier, epoch, projectId, voteChoice). Leakage would break the privacy budget and could be exploited to link wallets to pharmacies. | Add a deterministic “witness sanity” test: feed a fixed set of inputs, compute the witness, and assert that every byte outside the designated signal positions is zero (or a known constant). Also enforce domain‑separated hashing of any transient data before it touches the witness builder. |
-| **3** | **C** | **Shortfall‑aware notices may be interpreted as guaranteed repayment** | The SOLVENCY_OWNER_DECISION_WORKSHEET.md warns against treating observed shortfall reduction as guaranteed liquidity, but UI/UX still risks presenting “matched amount” as a promise. If the notice is unclear, pharmacies could rely on non‑guaranteed funds, creating solvency drift. | Clarify the notice language: use conditional phrasing (“*if* additional liquidity becomes available”) and add a tooltip that links to the solvency worksheet. Add a UI test that verifies the notice does not contain absolute guarantees (regex check for “will”, “guaranteed”, etc.). |
-| **4** | **D** | **Inline style leaks & accessibility regressions** | The design‑system goal is zero generic AI visual slop and 100 % brand compliance. Inline styles can bypass the CSS audit script (`check-brand-compliance.js`) and introduce unintended contrast or focus‑order issues, especially for screen‑reader users. | Run the brand‑compliance and accessibility scripts as a pre‑commit hook. Add a snapshot test that renders the dashboard in a headless browser and asserts no `style` attribute on any element (except those explicitly whitelisted for dynamic theming). |
+3. **Insufficient multiâ€‘signature retraction bounds** â€“ The function is callable by any address (`nonReentrant whenNotPaused`) and lacks any councilâ€‘level access control or timelock, despite the comment hinting at â€œchannels quarantined funds upon epoch recall.â€
+   *Evidence*: No `onlyCouncil`, `onlyTimelock`, or quorum verification is present; a single malicious pharmacy could clear its own flagged claim, breaking fairness and potentially creating solvency gaps.
+   *Suggested fix*: Introduce a councilâ€‘authorized modifier (e.g., `onlyCouncil` or a timelock contract) that must invoke retraction, or require a multiâ€‘sig execution that respects a councilâ€‘approved retraction window. Unit tests should confirm that unauthorized callers revert.
 
----
+**Suggestions & Experiments**
 
-### Suggestions & Experiments  
-- **Evo‑style proof‑bounded slice for B**: *Single‑test “replay‑detect”* – create a mock global nullifier cache (in‑memory Set), insert a nullifier from packet #1, rebuild an identical offline packet #2, feed it to `continuity-engine.mjs`’s `validatePacket`, and assert the function throws `DuplicateNullifierError`. This isolates the cache‑check logic without needing a full batch submission flow.  
-- **Loopy workflow for A**: After the witness sanity test passes, loop over a fuzzed input space (varying epoch, projectId, voteChoice) using property‑based testing (e.g., `fast-check`) to ensure no stray bits appear in the witness for 10⁴ random cases.  
-- **Experiment for C**: Deploy a testnet fork with a deliberately under‑funded matching pool, run a participatory‑budgeting round, and verify that the UI shows a “shortfall notice” *and* that the contract does not allow withdrawals beyond the actual matched amount. This confirms the notice matches on‑chain reality.  
-- **Documentation polish for D**: Add a markdown lint rule (`remark-lint-no-inline-style`) to catch any future inline CSS in JSX/HTML files, and update the `check-brand-compliance.js` to fail on any `@import` of non‑approved font files.  
+- **Incremental rollout**: Implement the epochâ€‘end reclamation as a separate `epochFinalize()` behind a timelock; allow the council to test on a fork before mainnet activation, reducing risk of accidental fund loss.
+- **Propertyâ€‘based fuzzing**: Use Echidna or Foundry fuzzing on `retractClaimDispute` with varied timestamps, claim amounts, and `DISPUTE_TIMEOUT` values to surface edgeâ€‘case violations of the delay check and escrow reversal.
+- **Privacy audit of witness isolation** (Itemâ€¯2): Run a static analysis on the clientâ€‘side witness preparation code to verify that all forbidden metadata (timestamps, RPC IPs, raw keys) are zeroed before being fed to the Circom verifier; consider a contractâ€‘level invariant that calldata contains no private keys.
+- **Documentation polish**: Add a â€œDispute Lifecycleâ€ diagram (flag â†’ timeout â†’ retract â†’ reclamation) to the repo README and design docs to improve onboarding and reduce misinterpretation of the new policy.
 
----
+**Open Questions**
 
-### Open Questions  
-1. **Cache synchronization latency** – What is the acceptable stale‑window for the global nullifier cache in the offline continuity flow? Is a Merkle‑proof‑based on‑chain read required, or can a trusted relayer periodically push updates with a bounded delay?  
-2. **Witness generator entropy source** – Does the client‑side witness preparation rely on any non‑deterministic entropy (e.g., timestamps for nonce generation) that could inadvertently leak into the proof? If so, what deterministic alternative (e.g., HKDF‑derived round‑specific nonce) is prescribed?  
-3. **Solvency notice fallback** – If the matching pool cap is hit mid‑round, should the UI automatically switch to a “pro‑rata” display mode, or should it block further voting until the next epoch? What are the game‑theoretic implications for participant behavior?  
-4. **Accessibility audit scope** – Which WCAG version (2.1 AA vs 2.2 AA) is the target for the dashboard, and have we mapped each UI component to the specific success criteria (e.g., 1.4.3 Contrast, 2.1.1 Keyboard, 4.1.2 Name Role Value)?  
-
-Answering these will clarify the implementation bounds for Items A and B and ensure that the subsequent rounds of `.next` maintain both safety and usability.
+1. Does the project already contain an `epochEnd()` (or similar) function that handles settlement of unclaimed claims, or is the 90â€‘day reclamation entirely new code?
+2. What exact tolling mechanism (fee percentage, flat amount, or none) is intended for dispute retraction, and which address/treasury receives the collected funds?
+3. Are there defined council members or a multiâ€‘sig contract that should be authorized to invoke retraction, and what quorum/timelock parameters are specified in the governance documentation?

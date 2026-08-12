@@ -43,6 +43,9 @@ tools/credentials/issuer_private.key
 github_overlap_*
 github_union_*
 reviews/slither-report.json
+reviews/model_attempts/
+reviews/model_attempt_ledger.jsonl
+reviews/multimodal_swarm_*
+reviews/*-router-metadata.json
 exports/
 test-export-out.json
-reviews/slither-report.json

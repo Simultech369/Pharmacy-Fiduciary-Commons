@@ -4,7 +4,9 @@ const path = require("node:path");
 
 describe("Dashboard credibility guardrails", function () {
   const dashboardPath = path.join(__dirname, "..", "dashboard", "index.html");
+  const web3Path = path.join(__dirname, "..", "dashboard", "web3_integration.js");
   const dashboard = fs.readFileSync(dashboardPath, "utf8");
+  const web3Integration = fs.readFileSync(web3Path, "utf8");
 
   it("does not attribute synthetic omission fixtures to real PBMs", function () {
     for (const realCompany of ["CVS Caremark", "Express Scripts", "OptumRx"]) {
@@ -28,6 +30,14 @@ describe("Dashboard credibility guardrails", function () {
     expect(dashboard).to.include("amount.textContent = item.amount");
     expect(dashboard).to.include("desc.textContent = item.desc");
     expect(dashboard).not.to.match(/card\.innerHTML\s*=/);
+  });
+
+  it("renders database sync failures without dynamic innerHTML", function () {
+    expect(web3Integration).to.include("statusEl.textContent = `");
+    expect(web3Integration).to.include("Profile sync failed: ${dbErr.message}");
+    expect(web3Integration).to.include('retryBtn.textContent = "Retry Sync";');
+    expect(web3Integration).to.include("statusEl.appendChild(retryBtn);");
+    expect(web3Integration).not.to.match(/statusEl\.innerHTML\s*=\s*`[^`]*dbErr\.message/);
   });
 
   it("keeps the newcomer demo receipt flow visible and labeled", function () {

@@ -7,7 +7,7 @@
 ### Core State Matrix
 
 - **Repo**: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
-- **Current branch baseline**: `feature/db-proxy` @ `9805bc12dc639872116fe512df8225ebb0e49470` (`[dirty working tree]`; generated cache reports the repository Hardhat suite at 280 passing tests)
+- **Current branch baseline**: `feature/db-proxy` @ `c227c039bf24e516e833f07dda1558d455b70b0e` (`[dirty working tree]`; generated cache reports the repository Hardhat suite at 282 passing tests and local branch is 1 commit ahead of `origin/feature/db-proxy`)
 - **Current intended slice**: Native Harness Engineering, Master Verification Runner, State Ledger Control Surface, Brand Gate B / Impeccable Visual Polish, and local dossier retrieval evaluation.
 - **Working Tree Notice**: Reviewers must evaluate working-tree and untracked control content alongside committed HEAD.
 
@@ -52,7 +52,7 @@
 1. **Solvency Packet Compiler**: `scripts/index_dossier_tree.py` includes `contracts/PBMRebateTreasury.sol` and `SOLVENCY_DEBT_SEMANTICS.md`.
 2. **Native State Machine Verifier**: `tools/resilience/state-machine-verifier.mjs` provides a standalone fail-closed reference model for debt queues, PB rounds, and offline vouchers; it is not runtime contract enforcement.
 3. **Portable Master Verification Runner**: `scripts/verify_all.py` executes 5 fail-closed steps with cross-platform binary resolution (`shutil.which`).
-4. **Hardhat Test Suite**: The repository Hardhat suite reported **280 passing tests** `[generated cache]`.
+4. **Hardhat Test Suite**: The repository Hardhat suite reported **282 passing tests** `[generated cache]`.
 5. **Brand Gate B & Impeccable Visual Compliance**: **100% Passed (0 inline styles, curated motion tokens <= 300ms, curated HSL color tokens)** `[generated cache]`.
 6. **PageIndex Status Auditor**: **0 status contradictions across 18 target documents** `[generated cache]`.
 7. **Swarm Observatory Evidence Gate**: **8 reconciled router metadata receipts, 0 evidence violations, 0.0% violation-derived inconsistency score** `[generated cache]`.

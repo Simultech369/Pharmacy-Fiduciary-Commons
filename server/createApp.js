@@ -7,16 +7,35 @@ function sha256(data) {
   return crypto.createHash("sha256").update(data).digest("hex");
 }
 
-function stableStringify(value) {
+const JSON_BODY_LIMIT = "10kb";
+const MAX_CANONICAL_DEPTH = 20;
+const MAX_CANONICAL_KEYS = 1000;
+const MAX_RELAY_PROOF_CHARS = 4096;
+
+function stableStringify(value, depth = 0, state = { keys: 0 }) {
+  if (depth > MAX_CANONICAL_DEPTH) {
+    throw new Error("Canonical payload depth exceeded");
+  }
+
   if (value === null || typeof value !== "object") {
     return JSON.stringify(value);
   }
 
   if (Array.isArray(value)) {
-    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+    state.keys += value.length;
+    if (state.keys > MAX_CANONICAL_KEYS) {
+      throw new Error("Canonical payload key count exceeded");
+    }
+    return `[${value.map((item) => stableStringify(item, depth + 1, state)).join(",")}]`;
   }
 
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
+  const keys = Object.keys(value);
+  state.keys += keys.length;
+  if (state.keys > MAX_CANONICAL_KEYS) {
+    throw new Error("Canonical payload key count exceeded");
+  }
+
+  return `{${keys.sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key], depth + 1, state)}`).join(",")}}`;
 }
 
 const allowedPolicyVersions = new Set([
@@ -44,6 +63,8 @@ function validateRelayIntakeBody(body) {
       if (typeof val !== "boolean") return false;
     } else if (key === "nullifier" || key === "proof") {
       if (typeof val !== "string") return false;
+      if (key === "nullifier" && val.replace(/^0x/, "").length !== 64) return false;
+      if (key === "proof" && val.length > MAX_RELAY_PROOF_CHARS) return false;
       const hexRegex = /^(0x)?[0-9a-fA-F]+$/;
       if (!hexRegex.test(val)) return false;
     }
@@ -285,7 +306,17 @@ function createApp(supabaseClient, config = {}) {
   };
 
   app.use(cors(corsOptions));
-  app.use(express.json());
+  app.use(express.json({ limit: JSON_BODY_LIMIT }));
+
+  app.use((err, req, res, next) => {
+    if (err && err.type === "entity.too.large") {
+      return res.status(413).json({ error: "Request body too large" });
+    }
+    if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+      return res.status(400).json({ error: "Invalid JSON payload" });
+    }
+    next(err);
+  });
   
   app.use((req, res, next) => {
     const requestId = req.headers["x-request-id"] || crypto.randomUUID();
@@ -408,7 +439,12 @@ function createApp(supabaseClient, config = {}) {
       }
 
       // --- ATOMIC DATABASE LEDGER TRANSACTION CLAIM ---
-      const requestHash = sha256(stableStringify(req.body));
+      let requestHash;
+      try {
+        requestHash = sha256(stableStringify(req.body));
+      } catch (err) {
+        return res.status(400).json({ error: "Invalid registration signature payload" });
+      }
       const { data: ledgerRes, error: rpcErr } = await supabaseClient.rpc("register_voter_ledger_start", {
         p_nonce_key: nonceKey,
         p_request_hash: requestHash

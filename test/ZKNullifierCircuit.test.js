@@ -126,6 +126,7 @@ describe("VoteNullifier Circom circuit", function () {
     it("declares the expected Circom version, Poseidon include, and template facade", function () {
       expect(circuitSource).to.include("pragma circom 2.1.0;");
       expect(circuitSource).to.include('include "circomlib/circuits/poseidon.circom";');
+      expect(circuitSource.toLowerCase()).to.not.include("sha256");
       expect(circuitSource).to.include("template VoteNullifier(nLevels)");
       expect(circuitSource).to.include("template ProjectScopedVoteNullifier(MEMBERSHIP_TREE_DEPTH)");
     });
@@ -165,6 +166,20 @@ describe("VoteNullifier Circom circuit", function () {
       expect(interfaceFixture.minimalCircomInterface.constraints).to.include(
         "membershipRoot === recomputeRoot(Poseidon(credentialSecret), membershipPathElements, membershipPathIndices)"
       );
+    });
+
+    it("does not expose the credential secret or direct leaf as the public membership root", function () {
+      expect(normalizedSource).to.include("computedRoot[0] <== leafHash.out;");
+      expect(normalizedSource).to.include("membershipRoot === computedRoot[nLevels];");
+
+      [
+        "membershipRoot === credentialSecret;",
+        "membershipRoot <== credentialSecret;",
+        "membershipRoot === leafHash.out;",
+        "membershipRoot <== leafHash.out;"
+      ].forEach((forbiddenConstraint) => {
+        expect(normalizedSource).to.not.include(forbiddenConstraint);
+      });
     });
   });
 

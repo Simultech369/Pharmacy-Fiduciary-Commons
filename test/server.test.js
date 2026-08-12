@@ -375,6 +375,38 @@ describe("Database API Proxy Server Security Patch", () => {
       expect(res.status).to.equal(401);
       expect(res.body.error).to.equal("Invalid registration signature payload");
     });
+
+    it("rejects oversized JSON request bodies before registration processing", async () => {
+      const payload = await getValidRegistrationPayload();
+      payload.padding = "x".repeat(12 * 1024);
+
+      const res = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload);
+
+      expect(res.status).to.equal(413);
+      expect(res.body.error).to.equal("Request body too large");
+      expect(mockSupabase._mockDb.registration_ledger).to.have.lengthOf(0);
+    });
+
+    it("rejects deeply nested registration payloads before request-hash canonicalization", async () => {
+      const payload = await getValidRegistrationPayload();
+      let nested = {};
+      for (let i = 0; i < 25; i++) {
+        nested = { child: nested };
+      }
+      payload.extra = nested;
+
+      const res = await request(app)
+        .post("/api/voters/register")
+        .set("Origin", "http://localhost:3000")
+        .send(payload);
+
+      expect(res.status).to.equal(400);
+      expect(res.body.error).to.equal("Invalid registration signature payload");
+      expect(mockSupabase._mockDb.registration_ledger).to.have.lengthOf(0);
+    });
   });
 
   describe("Database Request Ledger & Idempotency", () => {

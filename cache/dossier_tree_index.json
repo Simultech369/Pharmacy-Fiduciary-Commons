@@ -23,7 +23,7 @@
     }
   },
   "lineage_entries_count": 20,
-  "scanned_documents_count": 18,
+  "scanned_documents_count": 13,
   "total_contradictions_found": 0,
   "contradictions": [],
   "trees": [
@@ -389,140 +389,6 @@
       "line_count": 399
     },
     {
-      "file": "PRODUCTION_READINESS_CHECKLIST.md",
-      "sections": [
-        {
-          "line": 1,
-          "title": "Production Readiness Checklist",
-          "level": 1
-        },
-        {
-          "line": 7,
-          "title": "1. Front End Build Hygiene",
-          "level": 2
-        },
-        {
-          "line": 26,
-          "title": "2. Database And Authentication",
-          "level": 2
-        },
-        {
-          "line": 47,
-          "title": "2A. Offline And Non-Digital Workflow Safety",
-          "level": 2
-        },
-        {
-          "line": 65,
-          "title": "3. Version Control",
-          "level": 2
-        },
-        {
-          "line": 83,
-          "title": "3A. Patient Fund Matching Liquidity",
-          "level": 2
-        },
-        {
-          "line": 98,
-          "title": "4. APIs",
-          "level": 2
-        },
-        {
-          "line": 119,
-          "title": "5. Hosting And Deployment",
-          "level": 2
-        },
-        {
-          "line": 145,
-          "title": "6. Rate Limiting And Abuse Controls",
-          "level": 2
-        },
-        {
-          "line": 160,
-          "title": "7. Caching",
-          "level": 2
-        },
-        {
-          "line": 175,
-          "title": "8. Scaling",
-          "level": 2
-        },
-        {
-          "line": 191,
-          "title": "9. Error Tracking And Observability",
-          "level": 2
-        },
-        {
-          "line": 208,
-          "title": "10. ADA / WCAG Accessibility",
-          "level": 2
-        },
-        {
-          "line": 230,
-          "title": "11. Contract Security And Scanner Prep",
-          "level": 2
-        },
-        {
-          "line": 246,
-          "title": "Current Repo-Specific Next Fixes",
-          "level": 2
-        }
-      ],
-      "findings": [],
-      "line_count": 255
-    },
-    {
-      "file": "MECHANISM_COVERAGE.md",
-      "sections": [
-        {
-          "line": 1,
-          "title": "Mechanism Coverage",
-          "level": 1
-        },
-        {
-          "line": 17,
-          "title": "Treasury And Claims",
-          "level": 2
-        },
-        {
-          "line": 38,
-          "title": "Governance And Trust Roots",
-          "level": 2
-        },
-        {
-          "line": 59,
-          "title": "Care Continuity And Scarcity",
-          "level": 2
-        },
-        {
-          "line": 68,
-          "title": "Dashboard And Public Legibility",
-          "level": 2
-        },
-        {
-          "line": 77,
-          "title": "Portability And Credentials",
-          "level": 2
-        },
-        {
-          "line": 87,
-          "title": "Production Readiness",
-          "level": 2
-        },
-        {
-          "line": 101,
-          "title": "Highest-Risk Mismatches",
-          "level": 2
-        },
-        {
-          "line": 121,
-          "title": "Acceptance Test For This File",
-          "level": 2
-        }
-      ],
-      "findings": [],
-      "line_count": 123
-    },
-    {
       "file": "GOVERNANCE.md",
       "sections": [
         {
@@ -692,53 +558,6 @@
       "line_count": 127
     },
     {
-      "file": "PATIENT_FUND_POLICY.md",
-      "sections": [
-        {
-          "line": 1,
-          "title": "Patient Fund Policy",
-          "level": 1
-        },
-        {
-          "line": 7,
-          "title": "1. Preventative Economics",
-          "level": 2
-        },
-        {
-          "line": 13,
-          "title": "2. Funding Sources",
-          "level": 2
-        },
-        {
-          "line": 22,
-          "title": "3. Participatory Budgeting & Squared Vote Weighting",
-          "level": 2
-        },
-        {
-          "line": 33,
-          "title": "4. Anti-Sybil and Identity Requirements",
-          "level": 2
-        },
-        {
-          "line": 42,
-          "title": "5. Prohibited Uses",
-          "level": 2
-        },
-        {
-          "line": 53,
-          "title": "6. Ecological & Resource Efficiency Primitives",
-          "level": 2
-        },
-        {
-          "line": 67,
-          "title": "7. Solvency Warning and Liveness Risk",
-          "level": 2
-        }
-      ],
-      "findings": [],
-      "line_count": 73
-    },
-    {
       "file": "SECURITY.md",
       "sections": [
         {
@@ -809,110 +628,6 @@
       ],
       "findings": [],
       "line_count": 121
-    },
-    {
-      "file": "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
-      "sections": [
-        {
-          "line": 1,
-          "title": "ZK Nullifier Transition Requirements",
-          "level": 1
-        },
-        {
-          "line": 3,
-          "title": "1. Purpose",
-          "level": 2
-        },
-        {
-          "line": 9,
-          "title": "2. Current Leakage Surfaces",
-          "level": 2
-        },
-        {
-          "line": 19,
-          "title": "3. Corrected Revocation Model",
-          "level": 2
-        },
-        {
-          "line": 28,
-          "title": "4. Decisions Required Before Circuits",
-          "level": 2
-        },
-        {
-          "line": 45,
-          "title": "5. Minimal Verifier-Mock Milestone",
-          "level": 2
-        },
-        {
-          "line": 65,
-          "title": "6. Disruption Pass",
-          "level": 2
-        },
-        {
-          "line": 137,
-          "title": "7. Tests That Define Done",
-          "level": 2
-        },
-        {
-          "line": 170,
-          "title": "8. Non-Goals",
-          "level": 2
-        },
-        {
-          "line": 179,
-          "title": "9. Recommended Next Step",
-          "level": 2
-        },
-        {
-          "line": 185,
-          "title": "10. Implemented ZK/Nullifier Design Fixture and Test Gate",
-          "level": 2
-        },
-        {
-          "line": 193,
-          "title": "Remaining Open Design Decisions",
-          "level": 3
-        }
-      ],
-      "findings": [],
-      "line_count": 200
-    },
-    {
-      "file": "NEXT_REVIEW_HANDOFF.md",
-      "sections": [
-        {
-          "line": 1,
-          "title": "Active Next Review Handoff & Codex 5.6 Pre-Push Brief",
-          "level": 1
-        },
-        {
-          "line": 19,
-          "title": "1. Executive Summary of Current State",
-          "level": 2
-        },
-        {
-          "line": 33,
-          "title": "2. Triplicated Handoff Schema for Codex 5.6",
-          "level": 2
-        },
-        {
-          "line": 35,
-          "title": "Section A: Verified Findings",
-          "level": 3
-        },
-        {
-          "line": 42,
-          "title": "Section B: Unresolved Risks & Explicit Non-Claims",
-          "level": 3
-        },
-        {
-          "line": 49,
-          "title": "Section C: Exact Scope of Next Agent's Job (Codex 5.6)",
-          "level": 3
-        }
-      ],
-      "findings": [],
-      "line_count": 52
     },
     {
       "file": "review-context/SINGLE_REPO_STATE_LEDGER.md",
@@ -1175,57 +890,117 @@
         },
         {
           "line": 21,
-          "title": "2. Developer Agent Harness Combinations for Autonomous Loops",
+          "title": "2. Candidate Model Experiment Registry",
           "level": 2
         },
         {
-          "line": 40,
+          "line": 51,
+          "title": "Route Aliases",
+          "level": 3
+        },
+        {
+          "line": 81,
+          "title": "3. Empirical Model Attempt Ledger",
+          "level": 2
+        },
+        {
+          "line": 96,
+          "title": "Local Fast CPU Review Profile",
+          "level": 3
+        },
+        {
+          "line": 102,
+          "title": "Partial Receipts And Resume",
+          "level": 3
+        },
+        {
+          "line": 106,
+          "title": "DeepSeek R1 JSON Adapter",
+          "level": 3
+        },
+        {
+          "line": 112,
+          "title": "4. Developer Agent Harness Combinations for Review/Verification Loops",
+          "level": 2
+        },
+        {
+          "line": 131,
           "title": "Combination 1: Surgical Diff Generation Engine",
           "level": 3
         },
         {
-          "line": 45,
+          "line": 136,
           "title": "Combination 2: Execution-Trace Prompt Compiler",
           "level": 3
         },
         {
-          "line": 50,
+          "line": 141,
           "title": "Combination 3: Full Repository Issue Resolver",
           "level": 3
         },
         {
-          "line": 55,
+          "line": 146,
           "title": "Combination 4: Local Isolated Container Sandbox",
           "level": 3
         },
         {
-          "line": 62,
-          "title": "3. Rotational Loop Execution Command Reference",
+          "line": 153,
+          "title": "5. Local Review Artifact Matching",
           "level": 2
         },
         {
-          "line": 65,
-          "title": "Run multi-modal rotational harness simulation across all 4 combinations",
+          "line": 159,
+          "title": "6. Rotational Loop Execution Command Reference",
+          "level": 2
+        },
+        {
+          "line": 162,
+          "title": "Plan all configured deterministic harness checks and reviewer lanes",
           "level": 1
         },
         {
-          "line": 68,
-          "title": "Run surgical diff loop (Harness 1)",
+          "line": 165,
+          "title": "Run a lightweight local execute path against an existing packet",
           "level": 1
         },
         {
-          "line": 71,
-          "title": "Run prompt compilation loop (Harness 2)",
+          "line": 168,
+          "title": "Compile a bounded packet before optional reviewer dispatch",
           "level": 1
         },
         {
-          "line": 74,
-          "title": "Run offline local sandbox loop (Harness 4)",
+          "line": 171,
+          "title": "Dispatch external reviewer lanes only after exact disclosure approval",
+          "level": 1
+        },
+        {
+          "line": 174,
+          "title": "Attempt a local model and record empirical artifacts",
+          "level": 1
+        },
+        {
+          "line": 177,
+          "title": "Run the bounded local CPU quorum and require parseable JSON",
+          "level": 1
+        },
+        {
+          "line": 180,
+          "title": "Resume a partially completed local quorum from the model attempt ledger",
+          "level": 1
+        },
+        {
+          "line": 183,
+          "title": "Test whether DeepSeek R1 7B can produce two valid final-JSON reviews",
+          "level": 1
+        },
+        {
+          "line": 186,
+          "title": "Record blocked external attempts without sending dirty code",
           "level": 1
         }
       ],
       "findings": [],
-      "line_count": 76
+      "line_count": 188
     },
     {
       "file": "review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md",

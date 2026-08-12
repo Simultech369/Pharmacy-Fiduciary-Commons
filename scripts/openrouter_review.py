@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import copy
 import datetime as _dt
 import json
 import os
@@ -164,6 +165,53 @@ STRICT_ADVISORY_HEADER = """Boundary:
 - If context is missing, ask for the smallest additional file or command instead of guessing.
 """
 
+JSON_REVIEW_SCHEMA = {
+    "summary": "one sentence",
+    "findings": [
+        {
+            "severity": "critical|high|medium|low|info",
+            "classification": "confirmed_defect|design_risk|stale_claim|needs_verification|false_unsupported",
+            "claim": "short finding title",
+            "evidence": "repo-relative file path plus exact line(s), function, or packet section",
+            "evidence_path": "repo-relative file path from the packet",
+            "evidence_lines": "exact line or range, or null if not line-grounded",
+            "confidence": "high|medium|low",
+            "recommended_next_step": "test or code check to perform next",
+        }
+    ],
+    "open_questions": ["short question"],
+}
+
+
+def json_review_prompt(max_findings, local_fast=False, reasoning_adapter=False):
+    mode_lines = []
+    if local_fast:
+        mode_lines.extend([
+            "LOCAL FAST MODE:",
+            "- Prefer one concrete finding over broad commentary.",
+            "- Skip background explanation and compliments.",
+            "- If no actionable issue survives, return an empty findings array.",
+        ])
+    if reasoning_adapter:
+        mode_lines.extend([
+            "REASONING MODEL JSON ADAPTER:",
+            "- Do not emit chain-of-thought, markdown, XML tags, or prose outside JSON.",
+            "- If internal reasoning is needed, keep it private and return only the final JSON object.",
+        ])
+    mode_lines.extend([
+        "OUTPUT CONTRACT:",
+        "- Return ONLY one valid JSON object.",
+        f"- Include at most {max_findings} finding(s).",
+        "- Every finding must be grounded in a repo-relative file path that appears in the packet.",
+        "- For confirmed_defect, critical, or high findings, evidence must include exact line(s) and the cited line(s) must contain the named identifier or state transition.",
+        "- If you cannot cite exact packet evidence, classify the item as needs_verification or omit it.",
+        "- Do not invent missing libraries, functions, or line references. If the packet window is too small, say so in open_questions.",
+        "- Use double-quoted JSON strings and no trailing commas.",
+        "- The JSON object must match this schema:",
+        json.dumps(JSON_REVIEW_SCHEMA, indent=2),
+    ])
+    return "\n".join(mode_lines)
+
 
 def load_env():
     env_path = os.path.join(ROOT_DIR, ".env")
@@ -220,16 +268,43 @@ def verify_disclosure(disclosure_class, approved_class, packet_path):
         raise SystemExit(f"Refusing to route {disclosure_class} packet: {packet_path}")
     if disclosure_class != "PUBLIC_COMMITTED" and approved_class != disclosure_class:
         raise SystemExit(
-            "Refusing external review without exact disclosure approval. "
+            "Refusing review routing without exact disclosure approval. "
             f"Packet class is {disclosure_class}; rerun with --approve-disclosure {disclosure_class} only after operator approval."
         )
 
 
-def build_packet_context(packet_path, packet, permute_order=False):
+def compact_packet_for_review(packet, max_files=0, max_file_chars=0):
+    target_packet = copy.deepcopy(packet)
+    files = target_packet.get("files")
+    if not isinstance(files, list):
+        return target_packet
+
+    if max_files and max_files > 0:
+        target_packet["files"] = files[:max_files]
+        target_packet["local_fast_file_window"] = {
+            "included_file_count": len(target_packet["files"]),
+            "original_file_count": len(files),
+            "truncated_file_list": len(files) > len(target_packet["files"]),
+        }
+
+    if max_file_chars and max_file_chars > 0:
+        for file_item in target_packet.get("files", []):
+            content = file_item.get("content")
+            if isinstance(content, str) and len(content) > max_file_chars:
+                file_item["content"] = content[:max_file_chars]
+                file_item["content_truncated_for_local_fast"] = True
+                file_item["original_char_count"] = len(content)
+                file_item["included_char_count"] = max_file_chars
+
+    return target_packet
+
+
+def build_packet_context(packet_path, packet, permute_order=False, max_files=0, max_file_chars=0):
     target_packet = packet
-    if permute_order and isinstance(packet, dict):
-        import copy
-        target_packet = copy.deepcopy(packet)
+    if max_files or max_file_chars:
+        target_packet = compact_packet_for_review(packet, max_files=max_files, max_file_chars=max_file_chars)
+    if permute_order and isinstance(target_packet, dict):
+        target_packet = copy.deepcopy(target_packet)
         if "files" in target_packet and isinstance(target_packet["files"], list):
             target_packet["files"] = list(reversed(target_packet["files"]))
         if "lineage_entries" in target_packet and isinstance(target_packet["lineage_entries"], list):
@@ -243,6 +318,18 @@ def build_packet_context(packet_path, packet, permute_order=False):
     )
 
 
+def append_final_json_contract(context_content, max_findings):
+    return (
+        context_content
+        + "\n\nFINAL OUTPUT REQUIREMENT:\n"
+        + "Return only one valid JSON object. Do not summarize the packet. "
+        + f"Include at most {max_findings} finding(s). "
+        + "The top-level object must contain keys: summary, findings, open_questions. "
+        + "Every finding must cite a packet file path and exact line(s) when claiming a confirmed defect. "
+        + "If you find no actionable issue, return {\"summary\":\"No actionable issue found.\",\"findings\":[],\"open_questions\":[]}."
+    )
+
+
 def write_metadata(path, metadata):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -251,12 +338,17 @@ def write_metadata(path, metadata):
 
 
 def base_metadata(args, config, model, packet_path, output_path, disclosure_class):
+    provider = "openrouter"
+    if getattr(args, "ollama", False):
+        provider = "ollama"
+    elif getattr(args, "local_openai", False):
+        provider = "local_openai_compatible"
     return {
         "recorded_at_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(),
         "role": args.role,
         "description": config["description"],
         "model": model,
-        "provider": "ollama" if getattr(args, "ollama", False) else "openrouter",
+        "provider": provider,
         "launcher": "scripts/openrouter_review.py",
         "packet_path": packet_path,
         "context_path": getattr(args, "context", None),
@@ -264,14 +356,131 @@ def base_metadata(args, config, model, packet_path, output_path, disclosure_clas
         "disclosure_class": disclosure_class,
         "approved_disclosure_class": args.approve_disclosure,
         "permute_order": getattr(args, "permute_order", False),
+        "local_fast": getattr(args, "local_fast", False),
+        "json_review": getattr(args, "json_review", False),
+        "reasoning_json_adapter": getattr(args, "reasoning_json_adapter", False),
+        "max_findings": getattr(args, "max_findings", None),
+        "max_packet_files": getattr(args, "max_packet_files", None),
+        "max_file_chars": getattr(args, "max_file_chars", None),
+        "max_output_tokens": getattr(args, "max_output_tokens", None),
+        "request_timeout_seconds": getattr(args, "request_timeout_seconds", None),
         "error_status": None,
         "truncation_status": "unknown",
         "reconciliation_status": "unreconciled_raw_output",
     }
 
 
+def call_ollama(args, payload, metadata, metadata_path):
+    req_url = args.ollama_host.rstrip("/") + "/api/chat"
+    ollama_payload = {
+        "model": payload["model"],
+        "messages": payload["messages"],
+        "stream": False,
+    }
+    if getattr(args, "local_fast", False) or getattr(args, "json_review", False) or getattr(args, "reasoning_json_adapter", False):
+        ollama_payload["format"] = "json"
+    if payload.get("max_tokens"):
+        ollama_payload["options"] = {"num_predict": payload["max_tokens"]}
+
+    print(f"Initializing local Ollama review context as: {metadata['description']}")
+    print(f"Target Model: {payload['model']}")
+    print(f"Ollama Host: {args.ollama_host}")
+    print(f"Disclosure Class: {metadata['disclosure_class']}")
+
+    try:
+        req_data = json.dumps(ollama_payload).encode("utf-8")
+        req = urllib.request.Request(
+            req_url,
+            data=req_data,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=args.request_timeout_seconds) as response:
+            res_body = response.read().decode("utf-8")
+            res_json = json.loads(res_body)
+    except urllib.error.HTTPError as exc:
+        err_msg = exc.read().decode("utf-8", errors="replace")
+        metadata["error_status"] = f"ollama_http_{exc.code}"
+        metadata["error_detail"] = err_msg[:1000]
+        write_metadata(metadata_path, metadata)
+        print(f"Ollama HTTP Error {exc.code}: {err_msg}")
+        sys.exit(1)
+    except Exception as exc:
+        metadata["error_status"] = "ollama_connection_or_transport_error"
+        metadata["error_detail"] = str(exc)
+        write_metadata(metadata_path, metadata)
+        print(f"Ollama Connection/Transport Error: {exc}")
+        sys.exit(1)
+
+    reply = res_json.get("message", {}).get("content") or res_json.get("response", "")
+    if not reply:
+        metadata["error_status"] = "empty_ollama_message"
+        metadata["error_detail"] = json.dumps(res_json, ensure_ascii=False)[:1000]
+        write_metadata(metadata_path, metadata)
+        print("Error: Empty message returned by Ollama.")
+        sys.exit(1)
+
+    metadata["truncation_status"] = "not_reported"
+    return reply
+
+
+def call_openai_compatible(args, payload, metadata, metadata_path):
+    req_url = args.local_openai_base_url.rstrip("/") + "/chat/completions"
+    metadata["endpoint_url"] = req_url
+    headers = {"Content-Type": "application/json"}
+    load_env()
+    api_key = os.environ.get(args.local_openai_api_key_env) if args.local_openai_api_key_env else None
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    print(f"Initializing local OpenAI-compatible review context as: {metadata['description']}")
+    print(f"Target Model: {payload['model']}")
+    print(f"Base URL: {args.local_openai_base_url}")
+    print(f"Disclosure Class: {metadata['disclosure_class']}")
+
+    try:
+        req_data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(req_url, data=req_data, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=args.request_timeout_seconds) as response:
+            res_body = response.read().decode("utf-8")
+            res_json = json.loads(res_body)
+    except urllib.error.HTTPError as exc:
+        err_msg = exc.read().decode("utf-8", errors="replace")
+        metadata["error_status"] = f"local_openai_http_{exc.code}"
+        metadata["error_detail"] = err_msg[:1000]
+        write_metadata(metadata_path, metadata)
+        print(f"Local OpenAI-compatible HTTP Error {exc.code}: {err_msg}")
+        sys.exit(1)
+    except Exception as exc:
+        metadata["error_status"] = "local_openai_connection_or_transport_error"
+        metadata["error_detail"] = str(exc)
+        write_metadata(metadata_path, metadata)
+        print(f"Local OpenAI-compatible Connection/Transport Error: {exc}")
+        sys.exit(1)
+
+    choices = res_json.get("choices", [])
+    if not choices:
+        metadata["error_status"] = "empty_local_openai_choices"
+        metadata["error_detail"] = json.dumps(res_json, ensure_ascii=False)[:1000]
+        write_metadata(metadata_path, metadata)
+        print("Error: Empty choices returned by local OpenAI-compatible endpoint.")
+        sys.exit(1)
+
+    reply = choices[0].get("message", {}).get("content", "")
+    if not reply:
+        metadata["error_status"] = "empty_local_openai_message"
+        metadata["error_detail"] = json.dumps(res_json, ensure_ascii=False)[:1000]
+        write_metadata(metadata_path, metadata)
+        print("Error: Empty message returned by local OpenAI-compatible endpoint.")
+        sys.exit(1)
+
+    finish_reason = choices[0].get("finish_reason")
+    metadata["truncation_status"] = "possible_truncation" if finish_reason == "length" else "not_reported"
+    return reply
+
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="Packet-aware OpenRouter reviewer router")
+    parser = argparse.ArgumentParser(description="Packet-aware reviewer router")
     parser.add_argument("--role", "-r", choices=sorted(ROLE_CONFIGS), required=True, help="Reviewer lane/persona")
     parser.add_argument("--model", "-m", help="OpenRouter model slug. Required for lanes without a pinned default.")
     parser.add_argument("--context", "-c", help="Context file path for legacy non-packet mode")
@@ -280,8 +489,21 @@ def parse_args():
     parser.add_argument("--approve-disclosure", choices=DISCLOSURE_CLASSES, help="Exact operator-approved disclosure class for external routing")
     parser.add_argument("--challenger", action="store_true", help="Enable Challenger Mode red-team persona suffix")
     parser.add_argument("--permute-order", action="store_true", help="Invert packet items order to eliminate LLM judge position bias")
+    parser.add_argument("--local-fast", action="store_true", help="Use compact local CPU review profile and JSON output")
+    parser.add_argument("--json-review", action="store_true", help="Require model to return a single JSON review object")
+    parser.add_argument("--reasoning-json-adapter", action="store_true", help="Use stricter final-JSON adapter for reasoning models")
+    parser.add_argument("--max-findings", type=int, default=2, help="Maximum findings requested in JSON review mode")
+    parser.add_argument("--max-packet-files", type=int, default=0, help="Maximum packet files included in model context")
+    parser.add_argument("--max-file-chars", type=int, default=0, help="Maximum characters included per packet file")
+    parser.add_argument("--max-output-tokens", type=int, help="Optional max output token cap")
+    parser.add_argument("--request-timeout-seconds", type=int, default=300, help="HTTP request timeout for local model backends")
     parser.add_argument("--ollama", action="store_true", help="Route request to local Ollama instance (port 11434)")
     parser.add_argument("--ollama-host", default="http://localhost:11434", help="Local Ollama endpoint URL")
+    parser.add_argument("--local-openai", action="store_true", help="Route request to a local OpenAI-compatible endpoint")
+    parser.add_argument("--local-openai-base-url", default="http://localhost:11434/v1", help="Local OpenAI-compatible base URL")
+    parser.add_argument("--local-openai-api-key-env", default="", help="Optional env var containing a local OpenAI-compatible API key")
+    parser.add_argument("--output-file", help="Override review output path")
+    parser.add_argument("--metadata-file", help="Override router metadata output path")
     return parser.parse_args()
 
 
@@ -293,6 +515,8 @@ def main():
             pass
 
     args = parse_args()
+    if args.ollama and args.local_openai:
+        raise SystemExit("Choose only one local backend: --ollama or --local-openai.")
     config = ROLE_CONFIGS[args.role]
     model = args.model or config.get("default_model")
     if not model:
@@ -310,7 +534,13 @@ def main():
         output_path = packet_output_path(packet, config)
         metadata_path = packet_metadata_path(packet, args.role)
         verify_disclosure(disclosure_class, args.approve_disclosure, packet_path)
-        context_content = build_packet_context(packet_path, packet, permute_order=args.permute_order)
+        context_content = build_packet_context(
+            packet_path,
+            packet,
+            permute_order=args.permute_order,
+            max_files=args.max_packet_files,
+            max_file_chars=args.max_file_chars,
+        )
     else:
         context_file = safe_repo_or_abs_path(args.context or DEFAULT_CONTEXT_FILE)
         verify_disclosure(disclosure_class, args.approve_disclosure, context_file)
@@ -319,19 +549,22 @@ def main():
         with open(context_file, "r", encoding="utf-8") as f:
             context_content = f.read()
 
-    load_env()
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    metadata = base_metadata(args, config, model, packet_path, output_path, disclosure_class)
-    if not api_key:
-        metadata["error_status"] = "missing_openrouter_api_key"
-        write_metadata(metadata_path, metadata)
-        print("Error: OPENROUTER_API_KEY is not defined in the operator environment or local .env file.")
-        print(f"Router metadata written to: {metadata_path}")
-        sys.exit(1)
+    if args.output_file:
+        output_path = safe_repo_or_abs_path(args.output_file)
+    if args.metadata_file:
+        metadata_path = safe_repo_or_abs_path(args.metadata_file)
 
+    metadata = base_metadata(args, config, model, packet_path, output_path, disclosure_class)
     system_prompt = STRICT_ADVISORY_HEADER + "\n" + load_prompt(config, args.role)
     if args.challenger:
         system_prompt += CHALLENGER_MODE_SNIPPET
+    if args.local_fast or args.json_review or args.reasoning_json_adapter:
+        system_prompt += "\n\n" + json_review_prompt(
+            max_findings=args.max_findings,
+            local_fast=args.local_fast,
+            reasoning_adapter=args.reasoning_json_adapter,
+        )
+        context_content = append_final_json_contract(context_content, args.max_findings)
     payload = {
         "model": model,
         "messages": [
@@ -339,65 +572,85 @@ def main():
             {"role": "user", "content": context_content},
         ],
     }
+    if args.max_output_tokens:
+        payload["max_tokens"] = args.max_output_tokens
+    if (args.local_fast or args.json_review or args.reasoning_json_adapter) and args.local_openai:
+        payload["response_format"] = {"type": "json_object"}
 
-    req_headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/Simultech369/Pharmacy-Fiduciary-Commons",
-        "X-Title": "Pharmacy Fiduciary Commons Audit",
-    }
-
-    req_url = "https://openrouter.ai/api/v1/chat/completions"
-    max_retries = 3
-    retry_delay = 25
-    reply = ""
-    success = False
-
-    print(f"Initializing OpenRouter review context as: {config['description']}")
-    print(f"Target Model: {model}")
-    print(f"Disclosure Class: {disclosure_class}")
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            print(f"Sending request to OpenRouter API (Attempt {attempt}/{max_retries} with {payload['model']})...")
-            req_data = json.dumps(payload).encode("utf-8")
-            req = urllib.request.Request(req_url, data=req_data, headers=req_headers, method="POST")
-            with urllib.request.urlopen(req) as response:
-                res_body = response.read().decode("utf-8")
-                res_json = json.loads(res_body)
-                choices = res_json.get("choices", [])
-                if not choices:
-                    metadata["error_status"] = "empty_choices"
-                    write_metadata(metadata_path, metadata)
-                    print("Error: Empty choices returned in response.")
-                    print(res_body)
-                    sys.exit(1)
-                reply = choices[0].get("message", {}).get("content", "")
-                finish_reason = choices[0].get("finish_reason")
-                metadata["truncation_status"] = "possible_truncation" if finish_reason == "length" else "not_reported"
-                success = True
-                break
-        except urllib.error.HTTPError as exc:
-            err_msg = exc.read().decode("utf-8", errors="replace")
-            metadata["error_status"] = f"http_{exc.code}"
-            metadata["error_detail"] = err_msg[:1000]
+    if args.ollama:
+        reply = call_ollama(args, payload, metadata, metadata_path)
+        success = True
+    elif args.local_openai:
+        reply = call_openai_compatible(args, payload, metadata, metadata_path)
+        success = True
+    else:
+        load_env()
+        api_key = os.environ.get("OPENROUTER_API_KEY")
+        if not api_key:
+            metadata["error_status"] = "missing_openrouter_api_key"
             write_metadata(metadata_path, metadata)
-            print(f"API HTTP Error {exc.code}: {err_msg}")
-            if exc.code == 429 and attempt < max_retries:
-                print(f"Rate limited upstream. Sleeping for {retry_delay} seconds before retrying...")
-                time.sleep(retry_delay)
-                continue
-            print(f"Unrecoverable HTTP error {exc.code}. Exiting.")
+            print("Error: OPENROUTER_API_KEY is not defined in the operator environment or local .env file.")
+            print(f"Router metadata written to: {metadata_path}")
             sys.exit(1)
-        except Exception as exc:
-            metadata["error_status"] = "connection_or_transport_error"
-            metadata["error_detail"] = str(exc)
-            write_metadata(metadata_path, metadata)
-            print(f"Connection/Transport Error: {exc}")
-            if attempt == max_retries:
+
+        req_headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/Simultech369/Pharmacy-Fiduciary-Commons",
+            "X-Title": "Pharmacy Fiduciary Commons Audit",
+        }
+
+        req_url = "https://openrouter.ai/api/v1/chat/completions"
+        max_retries = 3
+        retry_delay = 25
+        reply = ""
+        success = False
+
+        print(f"Initializing OpenRouter review context as: {config['description']}")
+        print(f"Target Model: {model}")
+        print(f"Disclosure Class: {disclosure_class}")
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                print(f"Sending request to OpenRouter API (Attempt {attempt}/{max_retries} with {payload['model']})...")
+                req_data = json.dumps(payload).encode("utf-8")
+                req = urllib.request.Request(req_url, data=req_data, headers=req_headers, method="POST")
+                with urllib.request.urlopen(req) as response:
+                    res_body = response.read().decode("utf-8")
+                    res_json = json.loads(res_body)
+                    choices = res_json.get("choices", [])
+                    if not choices:
+                        metadata["error_status"] = "empty_choices"
+                        write_metadata(metadata_path, metadata)
+                        print("Error: Empty choices returned in response.")
+                        print(res_body)
+                        sys.exit(1)
+                    reply = choices[0].get("message", {}).get("content", "")
+                    finish_reason = choices[0].get("finish_reason")
+                    metadata["truncation_status"] = "possible_truncation" if finish_reason == "length" else "not_reported"
+                    success = True
+                    break
+            except urllib.error.HTTPError as exc:
+                err_msg = exc.read().decode("utf-8", errors="replace")
+                metadata["error_status"] = f"http_{exc.code}"
+                metadata["error_detail"] = err_msg[:1000]
+                write_metadata(metadata_path, metadata)
+                print(f"API HTTP Error {exc.code}: {err_msg}")
+                if exc.code == 429 and attempt < max_retries:
+                    print(f"Rate limited upstream. Sleeping for {retry_delay} seconds before retrying...")
+                    time.sleep(retry_delay)
+                    continue
+                print(f"Unrecoverable HTTP error {exc.code}. Exiting.")
                 sys.exit(1)
-            print(f"Retrying in {retry_delay} seconds...")
-            time.sleep(retry_delay)
+            except Exception as exc:
+                metadata["error_status"] = "connection_or_transport_error"
+                metadata["error_detail"] = str(exc)
+                write_metadata(metadata_path, metadata)
+                print(f"Connection/Transport Error: {exc}")
+                if attempt == max_retries:
+                    sys.exit(1)
+                print(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
 
     if not success:
         metadata["error_status"] = metadata["error_status"] or "unknown_failure"
