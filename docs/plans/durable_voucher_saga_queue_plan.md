@@ -44,6 +44,8 @@ flowchart TD
 | **INV-SAGA-3** | **Bounded Retries** | Transient errors (e.g. 503/504 database connection timeouts) permit at most **3 automatic retries** with exponential backoff (1s, 2s, 4s). |
 | **INV-SAGA-4** | **Unrecoverable Dead-Letter Isolation** | Payloads failing cryptographic verification, domain signatures, or exceeding 3 retries transition directly to `dead_letter` state and never regress to `pending`. |
 | **INV-SAGA-5** | **Zero Identity Leakage** | All error responses emitted by the saga queue return generic error codes (`500 Database transaction failed` / `400 Invalid signature`) without exposing database hostnames, stack traces, or raw patient credentials. |
+| **INV-SAGA-6** | **Multi-Instance Concurrency Shield** | Two proxy workers processing the same saga key concurrently must contend via atomic lease lock. Only one worker claims `pending` status; second worker receives `429 Lease Active` or cached terminal result. |
+| **INV-SAGA-7** | **Multi-Tenant RLS Isolation** | Pharmacy A can only view and query its own saga queue entries (`auth.jwt() ->> 'wallet_address' = pharmacy_address`). Pharmacy B querying Pharmacy A entries receives empty results. |
 
 ---
 
