@@ -151,3 +151,50 @@ Despite its name, `dailyVolumeCap` operates as an **epoch-wide claim volume cap*
 ### Calibrating the Parameter:
 - Do **NOT** set `dailyVolumeCap` to your target daily volume (e.g. `$10,000`). If you do, the contract will block all claims once cumulative monthly claims exceed `$10,000`.
 - **Parameter Calculation:** Set the parameter to represent the target maximum volume for the **entire epoch** rather than a single day. For example, a target of `$10,000` daily volume over a 30-day epoch requires setting the `dailyVolumeCap` parameter to at least `$300,000`.
+
+---
+
+## 8. AI Reliability & Incident Management Runbook (Stage 10)
+
+This section governs operational procedures for non-deterministic AI reviewer swarms, capability probers, and multi-agent review handoffs. AI models act as review witnesses, **never** as sole reliability authorities.
+
+### Fallback Chain Discipline
+Reviewer execution MUST follow a strict deterministic-first fallback hierarchy:
+$$\text{1. Deterministic Rule / Hardhat / Schema Checks} \longrightarrow \text{2. Local Ollama Model Review} \longrightarrow \text{3. Approved External Model Review}$$
+
+### Incident Playbooks
+
+#### Incident A: Hallucinated / Overclaimed Proof Claims
+- **Symptom**: Model review dossier claims ZK privacy, production unlinkability, or solvency proof readiness not backed by test suite execution.
+- **Triage Action**:
+  1. Reject the review claim immediately under the **Weakest Valid Claim Rule**.
+  2. Demote the status label from `[live verification just run]` to `[external reviewer claim]` or `[prototype_static_policy]`.
+  3. Require explicit test command output before promoting the claim.
+
+#### Incident B: Provider Rate-Limiting or Cloud API Outage (HTTP 429 / 500)
+- **Symptom**: OpenRouter or external LLM API fails or returns rate-limit error responses.
+- **Triage Action**:
+  1. Do NOT retry external cloud API with unapproved private diffs.
+  2. Fall back to local Ollama model (`deepseek-r1:1.5b` or equivalent) or local deterministic schema verification (`python scripts/index_dossier_tree.py`).
+  3. Record the provider outage in `reviews/provider_capability_matrix.json` with `callable: false`.
+
+#### Incident C: Multi-Agent Reviewer Disagreement
+- **Symptom**: Secondary models (Codex, Kimi, Grok, Antigravity) emit contradictory review verdicts on contract solvency or proxy security.
+- **Triage Action**:
+  1. **Do NOT force artificial consensus.**
+  2. Record the dissenting agent findings explicitly in the handoff brief under `Unresolved Risks`.
+  3. Gate Level 3 promotion until the human owner resolves the dissent.
+
+#### Incident D: Stale Status Claims / Branch Mismatch
+- **Symptom**: Dossier files claim historical branch baseline (e.g. `feature/db-proxy`) contradicting live Git HEAD (`main`).
+- **Triage Action**:
+  1. Execute `python scripts/index_dossier_tree.py` to audit document status claims against Git truth.
+  2. Reconcile stale header references in `review-context/SINGLE_REPO_STATE_LEDGER.md` and `review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md`.
+  3. Verify index audit reports `0 contradictory claims`.
+
+#### Incident E: Unintended Staging of Raw Model Output / Account Residue
+- **Symptom**: Raw attempt logs containing provider user IDs or raw API error strings (`reviews/model_attempt_ledger.jsonl`) appear in `git status`.
+- **Triage Action**:
+  1. Verify `.gitignore` contains `reviews/model_attempt_ledger.jsonl` and `reviews/model_attempts/`.
+  2. Run `git restore --staged reviews/model_attempt_ledger.jsonl` before committing.
+  3. Execute `git diff --cached --check` to confirm clean staging snapshot.

@@ -218,4 +218,50 @@ describe("Phase 3: Disaster Recovery & Fail-Closed Outage Test Harness", () => {
 
     expect(res.body).to.deep.equal({ error: "Database transaction failed" });
   });
+
+  describe("AI Reliability & Fuzzing Leak Containment", () => {
+    it("rejects deeply nested credential payloads with a generic signature error", async () => {
+      let nestedObj = { leaf: "data" };
+      for (let i = 0; i < 20; i++) {
+        nestedObj = { child: nestedObj };
+      }
+
+      const payload = {
+        walletAddress: testWallet.address,
+        chainId: config.chainId,
+        roundId: config.roundId,
+        credentialData: nestedObj,
+        credentialHash: "0x" + "a".repeat(64),
+        policyVersion: "fiduciary-credential-policy-v1",
+        clientNonce: crypto.randomUUID(),
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        signature: "0x" + "1".repeat(130),
+        issuerSignature: "0x" + "2".repeat(130),
+        relayerNonce: 0,
+        relayerDeadline: Math.floor((Date.now() + 30 * 60 * 1000) / 1000)
+      };
+
+      const res = await request(app)
+        .post("/api/voters/register")
+        .send(payload)
+        .expect(401);
+
+      expect(res.body).to.deep.equal({ error: "Invalid registration signature payload" });
+    });
+
+    it("verifies response payload redacts internal database secrets and raw provider error strings", async () => {
+      const payload = await getValidRegistrationPayload();
+
+      const res = await request(app)
+        .post("/api/voters/register")
+        .send(payload)
+        .expect(500);
+
+      const responseString = JSON.stringify(res.body);
+      expect(responseString).to.not.contain(config.credentialPepper);
+      expect(responseString).to.not.contain("PostgreSQL");
+      expect(responseString).to.not.contain("Supabase");
+      expect(responseString).to.not.contain("stack");
+    });
+  });
 });
