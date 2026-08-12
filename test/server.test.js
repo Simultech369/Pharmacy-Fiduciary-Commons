@@ -642,4 +642,36 @@ describe("Database API Proxy Server Security Patch", () => {
       expect(simulateClaimsRLSPolicy({ role: "service_role", tenantId: null, targetClaim: claimTenantA })).to.be.true;
     });
   });
+
+  describe("GET /api/health/observability - Solvency & System Observability Telemetry Endpoint", () => {
+    it("returns 200 OK with scoped observability, ZK verifier, model observability, and proxy config metadata", async () => {
+      const res = await request(app)
+        .get("/api/health/observability")
+        .expect(200);
+
+      expect(res.body.status).to.equal("healthy");
+      expect(res.body.status_scope).to.equal("endpoint_available");
+      expect(res.body).to.have.property("timestamp");
+      expect(res.body.solvency).to.deep.include({
+        metric_source: "prototype_static_policy",
+        live_contract_reads: false,
+        debt_queue_status: "not_live_instrumented",
+        dispute_retraction_toll_policy: "zero_toll"
+      });
+      expect(res.body.solvency.solvency_debt_total).to.equal(null);
+      expect(res.body.solvency.unclaimed_rebate_escrow).to.equal(null);
+      expect(res.body.solvency.patient_fund_balance).to.equal(null);
+      expect(res.body.zk_verifier).to.deep.equal({
+        active_version: "v1",
+        circuit: "vote_nullifier.circom",
+        signal_order_pinned: true,
+        proof_scope: "local_schema_gate",
+        production_unlinkability: "not_claimed"
+      });
+      expect(res.body.model_observability).to.have.property("matrix_receipt_present");
+      expect(res.body.model_observability.receipt_scope).to.equal("tracked_repo_receipt_presence");
+      expect(res.body.proxy_config).to.have.property("chain_id");
+      expect(res.body.proxy_config).to.have.property("round_id");
+    });
+  });
 });

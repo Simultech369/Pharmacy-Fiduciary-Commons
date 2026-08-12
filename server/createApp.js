@@ -676,6 +676,57 @@ function createApp(supabaseClient, config = {}) {
     }
   });
 
+  // GET /api/health/observability - Solvency & System Observability Telemetry
+  app.get("/api/health/observability", async (req, res) => {
+    try {
+      const fs = require("fs");
+      const path = require("path");
+
+      let matrixReceiptPresent = false;
+      const matrixPath = path.join(__dirname, "..", "reviews", "provider_capability_matrix.json");
+      if (fs.existsSync(matrixPath)) {
+        matrixReceiptPresent = true;
+      }
+
+      const telemetry = {
+        status: "healthy",
+        status_scope: "endpoint_available",
+        timestamp: new Date().toISOString(),
+        solvency: {
+          metric_source: "prototype_static_policy",
+          live_contract_reads: false,
+          debt_queue_status: "not_live_instrumented",
+          solvency_debt_total: null,
+          unclaimed_rebate_escrow: null,
+          patient_fund_balance: null,
+          dispute_retraction_toll_policy: "zero_toll"
+        },
+        zk_verifier: {
+          active_version: "v1",
+          circuit: "vote_nullifier.circom",
+          signal_order_pinned: true,
+          proof_scope: "local_schema_gate",
+          production_unlinkability: "not_claimed"
+        },
+        model_observability: {
+          matrix_receipt_present: matrixReceiptPresent,
+          capability_matrix_path: "reviews/provider_capability_matrix.json",
+          receipt_scope: "tracked_repo_receipt_presence"
+        },
+        proxy_config: {
+          chain_id: config.chainId,
+          round_id: config.roundId,
+          test_mode: config.testMode
+        }
+      };
+
+      res.status(200).json(telemetry);
+    } catch (err) {
+      console.error("Observability health check failure:", err);
+      res.status(500).json({ status: "degraded", error: "Failed to query observability metrics" });
+    }
+  });
+
   app.use((err, req, res, next) => {
     if (err && err.message === "Null Origin not permitted") {
       return res.status(403).json({ error: "CORS policy violation: null origin not permitted" });

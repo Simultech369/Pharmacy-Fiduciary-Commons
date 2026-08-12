@@ -5,7 +5,7 @@ Status: planning and review-control surface. This file maps recent AI-systems to
 Snapshot for this coverage pass:
 
 - Repo: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
-- Branch / HEAD baseline when prepared: `feature/db-proxy` @ `9805bc12dc639872116fe512df8225ebb0e49470`
+- Branch / HEAD baseline when prepared: `main` (`[dirty working tree]`)
 - Worktree after this pass: expected dirty until the compact handoff refresh is committed or reverted
 
 ## Weakest Valid Claim Rule

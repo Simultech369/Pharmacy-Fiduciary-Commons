@@ -7,7 +7,7 @@
 ### Core State Matrix
 
 - **Repo**: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
-- **Current branch baseline**: `feature/db-proxy` @ `c227c039bf24e516e833f07dda1558d455b70b0e` (`[dirty working tree]`; generated cache reports the repository Hardhat suite at 282 passing tests and local branch is 1 commit ahead of `origin/feature/db-proxy`)
+- **Current branch baseline**: `main` (`[dirty working tree]`; local branch updated with Phase 2 & Phase 3 observability and outage harness)
 - **Current intended slice**: Native Harness Engineering, Master Verification Runner, State Ledger Control Surface, Brand Gate B / Impeccable Visual Polish, and local dossier retrieval evaluation.
 - **Working Tree Notice**: Reviewers must evaluate working-tree and untracked control content alongside committed HEAD.
 
