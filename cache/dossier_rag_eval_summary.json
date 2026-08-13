@@ -19,14 +19,14 @@
     {
       "query": "What does an evidenceHash prove and not prove?",
       "expected_files": [
-        "EVIDENCE_METADATA.md"
+        "docs/ops/EVIDENCE_METADATA.md"
       ],
       "top_files": [
-        "EVIDENCE_METADATA.md",
-        "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
+        "docs/ops/EVIDENCE_METADATA.md",
+        "docs/design/ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
         "ONBOARDING.md",
-        "SOLVENCY_REVIEW_AUTHORITY_AND_SAFETY.md",
-        "REVIEW_ITERATION_PROCESS.md"
+        "docs/ops/SOLVENCY_REVIEW_AUTHORITY_AND_SAFETY.md",
+        "docs/ops/REVIEW_ITERATION_PROCESS.md"
       ],
       "hit": true,
       "rank": 1,
@@ -36,13 +36,13 @@
     {
       "query": "Who can see the evidence preimage?",
       "expected_files": [
-        "EVIDENCE_METADATA.md"
+        "docs/ops/EVIDENCE_METADATA.md"
       ],
       "top_files": [
-        "EVIDENCE_METADATA.md",
-        "EVIDENCE_METADATA.md",
-        "EVIDENCE_METADATA.md",
-        "CARE_CONTINUITY.md",
+        "docs/ops/EVIDENCE_METADATA.md",
+        "docs/ops/EVIDENCE_METADATA.md",
+        "docs/ops/EVIDENCE_METADATA.md",
+        "docs/design/CARE_CONTINUITY.md",
         "AGENT_REVIEW_ORCHESTRATION.md"
       ],
       "hit": true,
@@ -53,17 +53,17 @@
     {
       "query": "Does this prototype provide production zero knowledge privacy?",
       "expected_files": [
-        "IDENTITY_NULLIFIER_DESIGN.md",
-        "MECHANISM_COVERAGE.md",
         "README.md",
-        "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md"
+        "docs/design/IDENTITY_NULLIFIER_DESIGN.md",
+        "docs/design/ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
+        "docs/ops/MECHANISM_COVERAGE.md"
       ],
       "top_files": [
-        "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
+        "docs/design/ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
         "README.md",
-        "MECHANISM_COVERAGE.md",
-        "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
-        "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md"
+        "docs/ops/MECHANISM_COVERAGE.md",
+        "docs/design/ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
+        "docs/design/ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md"
       ],
       "hit": true,
       "rank": 1,
@@ -73,12 +73,12 @@
     {
       "query": "What does previewFinalize isSufficient mean under underfunding?",
       "expected_files": [
-        "MECHANISM_COVERAGE.md",
-        "SOLVENCY_DEBT_SEMANTICS.md"
+        "docs/design/SOLVENCY_DEBT_SEMANTICS.md",
+        "docs/ops/MECHANISM_COVERAGE.md"
       ],
       "top_files": [
-        "SOLVENCY_OWNER_DECISION_WORKSHEET.md",
-        "SOLVENCY_DEBT_SEMANTICS.md"
+        "docs/ops/SOLVENCY_OWNER_DECISION_WORKSHEET.md",
+        "docs/design/SOLVENCY_DEBT_SEMANTICS.md"
       ],
       "hit": true,
       "rank": 2,
@@ -88,15 +88,15 @@
     {
       "query": "Can underfunded finalization continue while recording shortfall?",
       "expected_files": [
-        "MECHANISM_COVERAGE.md",
-        "SOLVENCY_DEBT_SEMANTICS.md"
+        "docs/design/SOLVENCY_DEBT_SEMANTICS.md",
+        "docs/ops/MECHANISM_COVERAGE.md"
       ],
       "top_files": [
-        "SOLVENCY_OWNER_DECISION_WORKSHEET.md",
-        "SOLVENCY_DEBT_SEMANTICS.md",
-        "SOLVENCY_OWNER_DECISION_WORKSHEET.md",
+        "docs/ops/SOLVENCY_OWNER_DECISION_WORKSHEET.md",
+        "docs/design/SOLVENCY_DEBT_SEMANTICS.md",
+        "docs/ops/SOLVENCY_OWNER_DECISION_WORKSHEET.md",
         "README.md",
-        "SOLVENCY_DEBT_SEMANTICS.md"
+        "docs/design/SOLVENCY_DEBT_SEMANTICS.md"
       ],
       "hit": true,
       "rank": 2,
@@ -106,16 +106,16 @@
     {
       "query": "Where are public launch and production readiness blockers tracked?",
       "expected_files": [
-        "PRODUCTION_READINESS_CHECKLIST.md",
         "README.md",
-        "ROADMAP.md"
+        "ROADMAP.md",
+        "docs/ops/PRODUCTION_READINESS_CHECKLIST.md"
       ],
       "top_files": [
         "ROADMAP.md",
         "README.md",
-        "PRODUCTION_READINESS_CHECKLIST.md",
+        "docs/ops/PRODUCTION_READINESS_CHECKLIST.md",
         "README.md",
-        "IDENTITY_NULLIFIER_DESIGN.md"
+        "docs/handoffs/NEXT_REVIEW_HANDOFF.md"
       ],
       "hit": true,
       "rank": 1,
@@ -125,15 +125,15 @@
     {
       "query": "Which provider and auth candidates are not active architecture?",
       "expected_files": [
-        "PROVIDER_SELECTION.md",
-        "ROADMAP.md"
+        "ROADMAP.md",
+        "docs/design/PROVIDER_SELECTION.md"
       ],
       "top_files": [
-        "OPEN_DESIGN_DECISIONS.md",
+        "docs/ops/OPEN_DESIGN_DECISIONS.md",
         "ROADMAP.md",
-        "PROVIDER_SELECTION.md",
-        "PRODUCTION_READINESS_CHECKLIST.md",
-        "PROVIDER_SELECTION.md"
+        "docs/design/PROVIDER_SELECTION.md",
+        "docs/ops/PRODUCTION_READINESS_CHECKLIST.md",
+        "docs/design/PROVIDER_SELECTION.md"
       ],
       "hit": true,
       "rank": 2,
@@ -144,14 +144,14 @@
       "query": "How should model reviewer findings be treated before humans authorize action?",
       "expected_files": [
         "AGENT_REVIEW_ORCHESTRATION.md",
-        "REVIEW_ITERATION_PROCESS.md"
+        "docs/ops/REVIEW_ITERATION_PROCESS.md"
       ],
       "top_files": [
-        "REVIEW_ITERATION_PROCESS.md",
-        "REVIEW_ITERATION_PROCESS.md",
-        "REVIEW_ITERATION_PROCESS.md",
-        "SOLVENCY_REVIEW_AUTHORITY_AND_SAFETY.md",
-        "MECHANISM_COVERAGE.md"
+        "docs/ops/REVIEW_ITERATION_PROCESS.md",
+        "docs/ops/REVIEW_ITERATION_PROCESS.md",
+        "docs/ops/REVIEW_ITERATION_PROCESS.md",
+        "docs/ops/SOLVENCY_REVIEW_AUTHORITY_AND_SAFETY.md",
+        "docs/ops/MECHANISM_COVERAGE.md"
       ],
       "hit": true,
       "rank": 1,
@@ -161,16 +161,16 @@
     {
       "query": "What is the non-digital or offline continuity boundary?",
       "expected_files": [
-        "CARE_CONTINUITY.md",
-        "PRODUCTION_READINESS_CHECKLIST.md",
-        "ROADMAP.md"
+        "ROADMAP.md",
+        "docs/design/CARE_CONTINUITY.md",
+        "docs/ops/PRODUCTION_READINESS_CHECKLIST.md"
       ],
       "top_files": [
-        "CARE_CONTINUITY.md",
-        "PRODUCTION_READINESS_CHECKLIST.md",
-        "SCARCITY_GOVERNANCE.md",
+        "docs/design/CARE_CONTINUITY.md",
+        "docs/ops/PRODUCTION_READINESS_CHECKLIST.md",
+        "docs/design/SCARCITY_GOVERNANCE.md",
         "ROADMAP.md",
-        "CARE_CONTINUITY.md"
+        "docs/design/CARE_CONTINUITY.md"
       ],
       "hit": true,
       "rank": 1,
@@ -180,15 +180,15 @@
     {
       "query": "What is the retaliation or payer metadata threat model?",
       "expected_files": [
-        "PROVIDER_SELECTION.md",
-        "RETALIATION_AND_PRIVACY_THREAT_MODEL.md"
+        "docs/design/PROVIDER_SELECTION.md",
+        "docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md"
       ],
       "top_files": [
-        "RETALIATION_AND_PRIVACY_THREAT_MODEL.md",
-        "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
-        "REVIEW_ITERATION_PROCESS.md",
-        "MECHANISM_COVERAGE.md",
-        "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md"
+        "docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md",
+        "docs/design/ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
+        "docs/ops/REVIEW_ITERATION_PROCESS.md",
+        "docs/ops/MECHANISM_COVERAGE.md",
+        "docs/design/ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md"
       ],
       "hit": true,
       "rank": 1,
@@ -198,15 +198,15 @@
     {
       "query": "Where are unresolved policy choices and open design decisions tracked?",
       "expected_files": [
-        "OPEN_DESIGN_DECISIONS.md",
-        "ROADMAP.md"
+        "ROADMAP.md",
+        "docs/ops/OPEN_DESIGN_DECISIONS.md"
       ],
       "top_files": [
-        "OPEN_DESIGN_DECISIONS.md",
+        "docs/ops/OPEN_DESIGN_DECISIONS.md",
         "ROADMAP.md",
-        "MECHANISM_COVERAGE.md",
-        "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
-        "IDENTITY_NULLIFIER_DESIGN.md"
+        "docs/ops/MECHANISM_COVERAGE.md",
+        "docs/design/ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md",
+        "docs/design/IDENTITY_NULLIFIER_DESIGN.md"
       ],
       "hit": true,
       "rank": 1,
@@ -216,16 +216,16 @@
     {
       "query": "What are the Supabase RLS and tenant isolation boundaries?",
       "expected_files": [
-        "MECHANISM_COVERAGE.md",
-        "PRODUCTION_READINESS_CHECKLIST.md",
-        "PROVIDER_SELECTION.md"
+        "docs/design/PROVIDER_SELECTION.md",
+        "docs/ops/MECHANISM_COVERAGE.md",
+        "docs/ops/PRODUCTION_READINESS_CHECKLIST.md"
       ],
       "top_files": [
-        "PROVIDER_SELECTION.md",
-        "OPEN_DESIGN_DECISIONS.md",
-        "PRODUCTION_READINESS_CHECKLIST.md",
+        "docs/design/PROVIDER_SELECTION.md",
+        "docs/ops/OPEN_DESIGN_DECISIONS.md",
+        "docs/ops/PRODUCTION_READINESS_CHECKLIST.md",
         "COMMONS_CONSTITUTION.md",
-        "NEXT_REVIEW_HANDOFF.md"
+        "docs/handoffs/NEXT_REVIEW_HANDOFF.md"
       ],
       "hit": true,
       "rank": 1,

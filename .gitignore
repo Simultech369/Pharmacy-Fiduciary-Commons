@@ -45,6 +45,8 @@ github_union_*
 reviews/slither-report.json
 reviews/model_attempts/
 reviews/model_attempt_ledger.jsonl
+reviews/outcome_memory.json
+reviews/*receipt*.json
 reviews/multimodal_swarm_*
 reviews/*-router-metadata.json
 exports/

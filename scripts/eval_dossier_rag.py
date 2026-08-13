@@ -24,51 +24,51 @@ from dossier_rag_retrieval import rag_query  # noqa: E402
 GOLDEN_CASES = [
     {
         "query": "What does an evidenceHash prove and not prove?",
-        "expected_files": ["EVIDENCE_METADATA.md"],
+        "expected_files": ["docs/ops/EVIDENCE_METADATA.md"],
     },
     {
         "query": "Who can see the evidence preimage?",
-        "expected_files": ["EVIDENCE_METADATA.md"],
+        "expected_files": ["docs/ops/EVIDENCE_METADATA.md"],
     },
     {
         "query": "Does this prototype provide production zero knowledge privacy?",
-        "expected_files": ["README.md", "MECHANISM_COVERAGE.md", "ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md", "IDENTITY_NULLIFIER_DESIGN.md"],
+        "expected_files": ["README.md", "docs/ops/MECHANISM_COVERAGE.md", "docs/design/ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md", "docs/design/IDENTITY_NULLIFIER_DESIGN.md"],
     },
     {
         "query": "What does previewFinalize isSufficient mean under underfunding?",
-        "expected_files": ["SOLVENCY_DEBT_SEMANTICS.md", "MECHANISM_COVERAGE.md"],
+        "expected_files": ["docs/design/SOLVENCY_DEBT_SEMANTICS.md", "docs/ops/MECHANISM_COVERAGE.md"],
     },
     {
         "query": "Can underfunded finalization continue while recording shortfall?",
-        "expected_files": ["SOLVENCY_DEBT_SEMANTICS.md", "MECHANISM_COVERAGE.md"],
+        "expected_files": ["docs/design/SOLVENCY_DEBT_SEMANTICS.md", "docs/ops/MECHANISM_COVERAGE.md"],
     },
     {
         "query": "Where are public launch and production readiness blockers tracked?",
-        "expected_files": ["PRODUCTION_READINESS_CHECKLIST.md", "ROADMAP.md", "README.md"],
+        "expected_files": ["docs/ops/PRODUCTION_READINESS_CHECKLIST.md", "ROADMAP.md", "README.md"],
     },
     {
         "query": "Which provider and auth candidates are not active architecture?",
-        "expected_files": ["PROVIDER_SELECTION.md", "ROADMAP.md"],
+        "expected_files": ["docs/design/PROVIDER_SELECTION.md", "ROADMAP.md"],
     },
     {
         "query": "How should model reviewer findings be treated before humans authorize action?",
-        "expected_files": ["REVIEW_ITERATION_PROCESS.md", "AGENT_REVIEW_ORCHESTRATION.md"],
+        "expected_files": ["docs/ops/REVIEW_ITERATION_PROCESS.md", "AGENT_REVIEW_ORCHESTRATION.md"],
     },
     {
         "query": "What is the non-digital or offline continuity boundary?",
-        "expected_files": ["CARE_CONTINUITY.md", "ROADMAP.md", "PRODUCTION_READINESS_CHECKLIST.md"],
+        "expected_files": ["docs/design/CARE_CONTINUITY.md", "ROADMAP.md", "docs/ops/PRODUCTION_READINESS_CHECKLIST.md"],
     },
     {
         "query": "What is the retaliation or payer metadata threat model?",
-        "expected_files": ["RETALIATION_AND_PRIVACY_THREAT_MODEL.md", "PROVIDER_SELECTION.md"],
+        "expected_files": ["docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md", "docs/design/PROVIDER_SELECTION.md"],
     },
     {
         "query": "Where are unresolved policy choices and open design decisions tracked?",
-        "expected_files": ["OPEN_DESIGN_DECISIONS.md", "ROADMAP.md"],
+        "expected_files": ["docs/ops/OPEN_DESIGN_DECISIONS.md", "ROADMAP.md"],
     },
     {
         "query": "What are the Supabase RLS and tenant isolation boundaries?",
-        "expected_files": ["MECHANISM_COVERAGE.md", "PRODUCTION_READINESS_CHECKLIST.md", "PROVIDER_SELECTION.md"],
+        "expected_files": ["docs/ops/MECHANISM_COVERAGE.md", "docs/ops/PRODUCTION_READINESS_CHECKLIST.md", "docs/design/PROVIDER_SELECTION.md"],
     },
 ]
 

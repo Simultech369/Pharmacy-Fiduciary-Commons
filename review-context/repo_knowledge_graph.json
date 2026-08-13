@@ -1,0 +1,129 @@
+{
+  "$schema": "https://pbm-rebate-treasury.org/schemas/repo_knowledge_graph.v1.json",
+  "version": "1.0.0",
+  "description": "Machine-readable Knowledge Graph control plane mapping repo domain entities, proof invariants, and valid traversal edges.",
+  "nodes": [
+    {
+      "id": "treasury_core",
+      "name": "PBM Rebate Treasury Core Contract",
+      "target_file": "contracts/PBMRebateTreasury.sol",
+      "proof_surface": "test/PBMRebateTreasury.dispute-timeout.test.js",
+      "invariants": [
+        "distributionPool invariance during dispute retraction",
+        "Zero-toll post-timeout claim dispute retraction",
+        "No escrow stranding"
+      ]
+    },
+    {
+      "id": "solvency_fund",
+      "name": "Patient Fund Participatory Budgeting",
+      "target_file": "contracts/PatientFundParticipatoryBudgeting.sol",
+      "proof_surface": "test/foundry/PatientFundInvariants.t.sol",
+      "invariants": [
+        "totalDebt non-negativity",
+        "roundDeficit accounting integrity",
+        "Patient fund value routing"
+      ]
+    },
+    {
+      "id": "db_proxy",
+      "name": "Database API Proxy Server",
+      "target_file": "server/createApp.js",
+      "proof_surface": "test/server.test.js",
+      "invariants": [
+        "Scoped telemetry envelope (live_contract_reads: false)",
+        "EIP-191 voter & EIP-712 relayer domain verification",
+        "Salted HMAC credential blinding",
+        "Multi-tenant RLS isolation"
+      ]
+    },
+    {
+      "id": "disaster_recovery",
+      "name": "Fail-Closed Outage & Fuzz Harness",
+      "target_file": "test/DisasterRecoveryOutage.test.js",
+      "proof_surface": "test/DisasterRecoveryOutage.test.js",
+      "invariants": [
+        "Generic 500 error sanitization during DB outage",
+        "Zero leakage of DB credentials, stack traces, or raw secrets",
+        "Deep JSON payload fuzzing rejection"
+      ]
+    },
+    {
+      "id": "rehearsal_gate",
+      "name": "Rehearsal Risk Evaluator CLI",
+      "target_file": "scripts/rehearse_proposal.py",
+      "proof_surface": "test/rehearse_proposal.test.js",
+      "invariants": [
+        "dizzy.rehearsal_receipt.v1 schema compliance",
+        "automation-recommends-user-approves authority boundary",
+        "execution_claimed: false explicit advisory constraint"
+      ]
+    },
+    {
+      "id": "failure_memory",
+      "name": "Historical Failure Postmortem Library",
+      "target_file": "docs/ops/KNOWN_FAILURE_POSTMORTEMS.md",
+      "proof_surface": "scripts/rehearse_proposal.py",
+      "memories": ["MEM-001", "MEM-002", "MEM-003", "MEM-004", "MEM-005", "MEM-006"]
+    },
+    {
+      "id": "dossier_auditor",
+      "name": "PageIndex Dossier Auditor",
+      "target_file": "scripts/index_dossier_tree.py",
+      "proof_surface": "cache/dossier_tree_index.json",
+      "invariants": [
+        "Audits target documents for stale branch and HEAD status claims",
+        "Writes generated local cache receipts without promotion claims",
+        "Reports contradictory or stale claims before promotion"
+      ]
+    },
+    {
+      "id": "voucher_saga",
+      "name": "Durable Voucher Settlement Saga Queue Plan",
+      "target_file": "docs/plans/durable_voucher_saga_queue_plan.md",
+      "proof_surface": "docs/plans/durable_voucher_saga_queue_plan.md",
+      "invariants": [
+        "INV-SAGA-1 (Strict Idempotency)",
+        "INV-SAGA-2 (Double-Settlement Shield)",
+        "INV-SAGA-3 (Bounded Retries)",
+        "INV-SAGA-4 (Dead-Letter Isolation)",
+        "INV-SAGA-5 (Zero Identity Leakage)",
+        "INV-SAGA-6 (Multi-Instance Concurrency Shield)",
+        "INV-SAGA-7 (Multi-Tenant RLS Isolation)"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "treasury_core",
+      "to": "solvency_fund",
+      "relationship": "ROUTES_RECALLED_VALUE",
+      "verification_cmd": "npx hardhat test test/PBMRebateTreasury.dispute-timeout.test.js"
+    },
+    {
+      "from": "db_proxy",
+      "to": "disaster_recovery",
+      "relationship": "PROTECTS_FAIL_CLOSED_OUTAGES",
+      "verification_cmd": "npx hardhat test test/DisasterRecoveryOutage.test.js"
+    },
+    {
+      "from": "db_proxy",
+      "to": "voucher_saga",
+      "relationship": "SPECIFIES_SETTLEMENT_SAGA_LEASES",
+      "proof_status": "design_only",
+      "verification_cmd": "python scripts/index_dossier_tree.py"
+    },
+    {
+      "from": "rehearsal_gate",
+      "to": "failure_memory",
+      "relationship": "EVALUATES_PROPOSALS_AGAINST_MEMORIES",
+      "verification_cmd": "npx hardhat test test/rehearse_proposal.test.js"
+    },
+    {
+      "from": "dossier_auditor",
+      "to": "treasury_core",
+      "relationship": "INDEXES_PROOF_BOUNDARIES",
+      "verification_cmd": "python scripts/index_dossier_tree.py"
+    }
+  ]
+}

@@ -118,6 +118,46 @@ def detect_risks(candidate):
                 break
     return detected_risks
 
+import subprocess
+
+def get_git_info():
+    try:
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True).strip()
+        status_out = subprocess.check_output(["git", "status", "--porcelain"], cwd=REPO_ROOT, text=True).strip()
+        state = "dirty" if status_out else "clean"
+        return head, state
+    except Exception:
+        return "unknown", "unknown"
+
+def generate_rehearsal_receipt(winning_candidate, evaluated_candidates):
+    git_head, working_tree_state = get_git_info()
+    candidate_ids = [c["candidate_id"] for c in evaluated_candidates]
+    all_detected_risks = []
+    for c in evaluated_candidates:
+        for r in c.get("detected_risks", []):
+            if r["id"] not in [dr["id"] for dr in all_detected_risks]:
+                all_detected_risks.append(r)
+    memory_ids_used = [m["id"] for m in HISTORICAL_FAILURE_MEMORIES]
+
+    return {
+        "schema_version": "dizzy.rehearsal_receipt.v1",
+        "authority_mode": "automation-recommends-user-approves",
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "git_head": git_head,
+        "working_tree_state": working_tree_state,
+        "candidate_ids": candidate_ids,
+        "selected_recommendation": {
+            "candidate_id": winning_candidate["candidate_id"],
+            "title": winning_candidate["title"],
+            "action": winning_candidate["action"],
+            "risk_score": winning_candidate["risk_score"],
+            "recommendation": winning_candidate["recommendation"]
+        },
+        "rejected_risks": all_detected_risks,
+        "memory_ids_used": memory_ids_used,
+        "execution_claimed": False
+    }
+
 def evaluate_candidates(candidates, ledger_path=None):
     print("=" * 60)
     print("REHEARSAL GATE: PRE-EXECUTION RISK EVALUATION")
@@ -158,20 +198,19 @@ def evaluate_candidates(candidates, ledger_path=None):
 
     evaluated_candidates.sort(key=lambda x: x["risk_score"])
     winner = evaluated_candidates[0]
+    receipt = generate_rehearsal_receipt(winner, evaluated_candidates)
 
     print("\n" + "=" * 60)
     print(f"WINNING CANDIDATE: {winner['candidate_id']} - {winner['title']}")
     print("=" * 60)
+    print(f"* Receipt Schema Version: {receipt['schema_version']}")
+    print(f"* Authority Mode: {receipt['authority_mode']}")
+    print(f"* Execution Claimed: {receipt['execution_claimed']} (Advisory Recommendation Only)")
 
     if ledger_path:
         ledger_path.parent.mkdir(parents=True, exist_ok=True)
-        entry = {
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "winning_candidate": winner,
-            "all_candidates": evaluated_candidates
-        }
         with open(ledger_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, separators=(",", ":")) + "\n")
+            f.write(json.dumps(receipt, separators=(",", ":")) + "\n")
         print(f"* Rehearsal Decision Recorded: {ledger_path.relative_to(REPO_ROOT)}")
     else:
         print("* Rehearsal Decision Not Recorded: no ledger path requested")

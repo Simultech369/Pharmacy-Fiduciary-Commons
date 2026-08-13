@@ -11,6 +11,7 @@ Aggregates review router metadata across OSS model runs:
 import glob
 import json
 import os
+import subprocess
 import sys
 import time
 
@@ -35,25 +36,61 @@ REQUIRED_FIELDS = [
 ]
 
 
+def to_repo_path(filepath):
+    return os.path.relpath(filepath, ROOT_DIR).replace(os.sep, "/")
+
+
+def is_git_tracked(filepath):
+    result = subprocess.run(
+        ["git", "-C", ROOT_DIR, "ls-files", "--error-unmatch", "--", to_repo_path(filepath)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def is_git_ignored(filepath):
+    result = subprocess.run(
+        ["git", "-C", ROOT_DIR, "check-ignore", "-q", "--", to_repo_path(filepath)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 def load_router_metadata():
     pattern = os.path.join(REVIEWS_DIR, "*-router-metadata.json")
     files = glob.glob(pattern)
     metadata_records = []
     parse_errors = []
+    skipped_local_artifacts = []
 
     for filepath in sorted(files):
+        source_file = os.path.basename(filepath)
+        if not is_git_tracked(filepath):
+            if is_git_ignored(filepath):
+                skipped_local_artifacts.append({
+                    "file": source_file,
+                    "reason": "ignored_local_generated_evidence",
+                })
+                continue
+            parse_errors.append(f"{source_file}: untracked router metadata is not ignored")
+            continue
+
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                data["_file"] = os.path.basename(filepath)
+                data["_file"] = source_file
                 metadata_records.append(data)
         except Exception as exc:
-            parse_errors.append(f"{os.path.basename(filepath)}: {exc}")
+            parse_errors.append(f"{source_file}: {exc}")
 
-    return metadata_records, parse_errors
+    return metadata_records, parse_errors, skipped_local_artifacts
 
 
-def compute_observability_metrics(records, parse_errors):
+def compute_observability_metrics(records, parse_errors, skipped_local_artifacts):
     total_runs = len(records)
     total_prompt_tokens = 0
     total_completion_tokens = 0
@@ -169,6 +206,8 @@ def compute_observability_metrics(records, parse_errors):
         "evidence_gate_passed": evidence_gate_passed,
         "violations_count": len(violations),
         "violations": violations,
+        "skipped_local_artifacts_count": len(skipped_local_artifacts),
+        "skipped_local_artifacts": skipped_local_artifacts,
     }
 
 
@@ -177,10 +216,11 @@ def main():
     print("SWARM OBSERVATORY METRICS & INCONSISTENCY DASHBOARD")
     print("==================================================")
 
-    records, parse_errors = load_router_metadata()
-    summary = compute_observability_metrics(records, parse_errors)
+    records, parse_errors, skipped_local_artifacts = load_router_metadata()
+    summary = compute_observability_metrics(records, parse_errors, skipped_local_artifacts)
 
     print(f"* Total Swarm Review Runs: {summary['total_runs']}")
+    print(f"* Skipped Local Router Artifacts: {summary['skipped_local_artifacts_count']}")
     print(f"* Successful / Failed Runs: {summary['successful_runs']} / {summary['failed_runs']}")
     print(f"* Models Evaluated: {', '.join(summary['models'])}")
     print(f"* Estimated Total Prompt Tokens: {summary['total_prompt_tokens']}")

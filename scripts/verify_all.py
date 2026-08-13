@@ -6,7 +6,10 @@ Executes unified, fail-closed verification across the entire repository:
 1. Hardhat EVM Contract & State Machine Test Suite (`npx hardhat test`)
 2. Brand Gate B & Impeccable Visual Compliance Linter (`npm run check:frontend`)
 3. PageIndex Status Auditor & Dossier Indexer (`python scripts/index_dossier_tree.py`)
-4. Constitutional Rubric Evaluator (`python scripts/eval_constitutional_rubric.py`)
+4. Local Dossier Retrieval Eval (`python scripts/eval_dossier_rag.py`)
+5. Context Hygiene Auditor (`python scripts/context_hygiene_audit.py`)
+6. Constitutional Rubric Evaluator (`python scripts/eval_constitutional_rubric.py`)
+7. Swarm Observability Dashboard (`python scripts/observability_dashboard.py`)
 
 Outputs a single execution receipt: `cache/verification_master_receipt.json`
 """
@@ -95,14 +98,16 @@ def main():
         ("1. Hardhat Unit & State Machine Tests", [npx_bin, "--no-install", "hardhat", "test"]),
         ("2. Brand Gate B & Impeccable Linter", [npm_bin, "run", "check:frontend"]),
         ("3. PageIndex Status Auditor", [sys.executable, os.path.join(ROOT_DIR, "scripts", "index_dossier_tree.py")]),
+        ("4. Local Dossier Retrieval Eval", [sys.executable, os.path.join(ROOT_DIR, "scripts", "eval_dossier_rag.py")]),
+        ("5. Context Hygiene Auditor", [sys.executable, os.path.join(ROOT_DIR, "scripts", "context_hygiene_audit.py")]),
     ]
     
     if not os.path.exists(DOSSIER_REVIEW_FILE):
         print(f"[FAIL] Missing mandatory proof dependency: {DOSSIER_REVIEW_FILE}", file=sys.stderr)
         sys.exit(1)
         
-    steps.append(("4. Constitutional Rubric Evaluator", [sys.executable, os.path.join(ROOT_DIR, "scripts", "eval_constitutional_rubric.py"), "--target", DOSSIER_REVIEW_FILE]))
-    steps.append(("5. Swarm Observability Dashboard", [sys.executable, os.path.join(ROOT_DIR, "scripts", "observability_dashboard.py")]))
+    steps.append(("6. Constitutional Rubric Evaluator", [sys.executable, os.path.join(ROOT_DIR, "scripts", "eval_constitutional_rubric.py"), "--target", DOSSIER_REVIEW_FILE]))
+    steps.append(("7. Swarm Observability Dashboard", [sys.executable, os.path.join(ROOT_DIR, "scripts", "observability_dashboard.py")]))
         
     expected_step_count = len(steps)
     results = []

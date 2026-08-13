@@ -51,7 +51,7 @@
 #### Claims Currently Believed Fixed `[generated cache]`
 1. **Solvency Packet Compiler**: `scripts/index_dossier_tree.py` includes `contracts/PBMRebateTreasury.sol` and `SOLVENCY_DEBT_SEMANTICS.md`.
 2. **Native State Machine Verifier**: `tools/resilience/state-machine-verifier.mjs` provides a standalone fail-closed reference model for debt queues, PB rounds, and offline vouchers; it is not runtime contract enforcement.
-3. **Portable Master Verification Runner**: `scripts/verify_all.py` executes 5 fail-closed steps with cross-platform binary resolution (`shutil.which`).
+3. **Portable Master Verification Runner**: `scripts/verify_all.py` executes the current master promotion steps with cross-platform binary resolution (`shutil.which`).
 4. **Hardhat Test Suite**: The repository Hardhat suite reported **282 passing tests** `[generated cache]`.
 5. **Brand Gate B & Impeccable Visual Compliance**: **100% Passed (0 inline styles, curated motion tokens <= 300ms, curated HSL color tokens)** `[generated cache]`.
 6. **PageIndex Status Auditor**: **0 status contradictions across 18 target documents** `[generated cache]`.
