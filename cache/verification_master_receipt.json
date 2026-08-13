@@ -1,14 +1,14 @@
 {
-  "timestamp": "2026-08-13T01:06:52Z",
+  "timestamp": "2026-08-13T01:16:12Z",
   "overall_status": "PASSED",
   "expected_step_count": 7,
   "steps_executed": 7,
   "git_lineage": {
-    "head_commit": "ca65bcb923743a52c0e5b3aacda92f657cb5a2b1",
+    "head_commit": "f9aa72775ab36afbdacf535562fa94eb5e2e8bb3",
     "branch": "main",
-    "is_dirty": true,
-    "dirty_file_count": 13,
-    "lineage_tag": "[dirty working tree]"
+    "is_dirty": false,
+    "dirty_file_count": 0,
+    "lineage_tag": "[committed HEAD]"
   },
   "steps": [
     {
@@ -16,49 +16,49 @@
       "command": "C:\\Program Files\\Volta\\npx.cmd --no-install hardhat test",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 80758
+      "duration_ms": 38645
     },
     {
       "step_name": "2. Brand Gate B & Impeccable Linter",
       "command": "C:\\Program Files\\Volta\\npm.cmd run check:frontend",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 2217
+      "duration_ms": 1326
     },
     {
       "step_name": "3. PageIndex Status Auditor",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\index_dossier_tree.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 532
+      "duration_ms": 387
     },
     {
       "step_name": "4. Local Dossier Retrieval Eval",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\eval_dossier_rag.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1074
+      "duration_ms": 1174
     },
     {
       "step_name": "5. Context Hygiene Auditor",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\context_hygiene_audit.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 223
+      "duration_ms": 157
     },
     {
       "step_name": "6. Constitutional Rubric Evaluator",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\eval_constitutional_rubric.py --target C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\reviews\\rotational_swarm_review_dossier.md",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 216
+      "duration_ms": 138
     },
     {
       "step_name": "7. Swarm Observability Dashboard",
       "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\observability_dashboard.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1432
+      "duration_ms": 1256
     }
   ]
 }
