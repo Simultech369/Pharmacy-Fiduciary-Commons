@@ -79,9 +79,9 @@
     },
     {
       "id": "voucher_saga",
-      "name": "Durable Voucher Settlement Saga Queue Plan",
-      "target_file": "docs/plans/durable_voucher_saga_queue_plan.md",
-      "proof_surface": "docs/plans/durable_voucher_saga_queue_plan.md",
+      "name": "Durable Voucher Settlement Saga Queue",
+      "target_file": "server/createApp.js",
+      "proof_surface": "test/VoucherSagaQueue.test.js",
       "invariants": [
         "INV-SAGA-1 (Strict Idempotency)",
         "INV-SAGA-2 (Double-Settlement Shield)",
@@ -109,9 +109,9 @@
     {
       "from": "db_proxy",
       "to": "voucher_saga",
-      "relationship": "SPECIFIES_SETTLEMENT_SAGA_LEASES",
-      "proof_status": "design_only",
-      "verification_cmd": "python scripts/index_dossier_tree.py"
+      "relationship": "IMPLEMENTS_SETTLEMENT_SAGA_LEASES",
+      "proof_status": "local_prototype",
+      "verification_cmd": "npx hardhat test test/VoucherSagaQueue.test.js"
     },
     {
       "from": "rehearsal_gate",

@@ -22,6 +22,7 @@ describe("Context hygiene deterministic audit", function () {
       "workflow_skill",
       "deterministic_gate"
     );
+    expect(audit.surfaces.map(surface => surface.path)).to.include("test/VoucherSagaQueue.test.js");
     expect(audit.issues).to.deep.equal([]);
   });
 
@@ -35,6 +36,7 @@ describe("Context hygiene deterministic audit", function () {
     expect(plan).to.include("memory_reference");
     expect(plan).to.include("workflow_skill");
     expect(plan).to.include("deterministic_gate");
+    expect(plan).to.include("test/VoucherSagaQueue.test.js");
     expect(plan).to.not.include("strictly under 46 lines");
     expect(plan).to.not.include("100% PASS");
   });

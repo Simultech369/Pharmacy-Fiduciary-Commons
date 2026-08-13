@@ -106,6 +106,12 @@ CONTEXT_SURFACES = [
         "role": "Advanced RAG roadmap non-claim regression tests.",
         "required": True,
     },
+    {
+        "path": "test/VoucherSagaQueue.test.js",
+        "category": "deterministic_gate",
+        "role": "Phase 4 voucher saga idempotency, lease, retry, DLQ, and RLS regression tests.",
+        "required": True,
+    },
 ]
 
 REQUIRED_AGENT_TOKENS = [

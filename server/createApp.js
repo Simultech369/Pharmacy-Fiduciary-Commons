@@ -11,6 +11,8 @@ const JSON_BODY_LIMIT = "10kb";
 const MAX_CANONICAL_DEPTH = 20;
 const MAX_CANONICAL_KEYS = 1000;
 const MAX_RELAY_PROOF_CHARS = 4096;
+const MAX_VOUCHER_CLIENT_NONCE_CHARS = 128;
+const MAX_VOUCHER_RETRY_ATTEMPTS = 3;
 
 function stableStringify(value, depth = 0, state = { keys: 0 }) {
   if (depth > MAX_CANONICAL_DEPTH) {
@@ -177,6 +179,149 @@ function verifyRelaySignature({
   if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
     throw new Error("Invalid relay signature");
   }
+}
+
+function deriveVoucherSagaKey({ voucherId, pharmacyAddress, amount, clientNonce }) {
+  return sha256([
+    voucherId.toLowerCase(),
+    pharmacyAddress.toLowerCase(),
+    amount.toString(),
+    clientNonce
+  ].join("|"));
+}
+
+function normalizeVoucherAmount(amount) {
+  if (typeof amount === "number") {
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      throw new Error("Invalid voucher amount");
+    }
+    return amount.toString();
+  }
+
+  if (typeof amount !== "string" || !/^[1-9][0-9]*$/.test(amount)) {
+    throw new Error("Invalid voucher amount");
+  }
+
+  return BigInt(amount).toString();
+}
+
+function validateVoucherReconcilePayload(body) {
+  const allowedVoucherKeys = new Set([
+    "pharmacyAddress",
+    "chainId",
+    "roundId",
+    "voucherId",
+    "amount",
+    "clientNonce",
+    "expiresAt",
+    "signature"
+  ]);
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new Error("Invalid voucher reconciliation payload");
+  }
+
+  for (const key of Object.keys(body)) {
+    if (!allowedVoucherKeys.has(key)) {
+      throw new Error("Invalid voucher reconciliation payload");
+    }
+  }
+
+  const {
+    pharmacyAddress,
+    chainId,
+    roundId,
+    voucherId,
+    amount,
+    clientNonce,
+    expiresAt,
+    signature
+  } = body;
+
+  if (
+    !ethers.isAddress(pharmacyAddress) ||
+    chainId === undefined ||
+    roundId === undefined ||
+    typeof voucherId !== "string" ||
+    typeof clientNonce !== "string" ||
+    typeof expiresAt !== "string" ||
+    typeof signature !== "string"
+  ) {
+    throw new Error("Invalid voucher reconciliation payload");
+  }
+
+  if (!/^(0x)[0-9a-fA-F]{64}$/.test(voucherId)) {
+    throw new Error("Invalid voucher reconciliation payload");
+  }
+
+  if (
+    clientNonce.length === 0 ||
+    clientNonce.length > MAX_VOUCHER_CLIENT_NONCE_CHARS ||
+    !/^[a-zA-Z0-9:_-]+$/.test(clientNonce)
+  ) {
+    throw new Error("Invalid voucher reconciliation payload");
+  }
+
+  if (!/^(0x)?[0-9a-fA-F]{130}$/.test(signature)) {
+    throw new Error("Invalid voucher reconciliation payload");
+  }
+
+  return {
+    pharmacyAddress: pharmacyAddress.toLowerCase(),
+    chainId: Number(chainId),
+    roundId: roundId.toString(),
+    voucherId: voucherId.toLowerCase(),
+    amount: normalizeVoucherAmount(amount),
+    clientNonce,
+    expiresAt,
+    signature
+  };
+}
+
+function verifyVoucherSagaSignature({
+  config,
+  pharmacyAddress,
+  voucherId,
+  amount,
+  clientNonce,
+  expiresAt,
+  signature
+}) {
+  const canonicalString = [
+    `Pharmacy Fiduciary Commons Database Proxy`,
+    `Version: 1`,
+    `Action: voucher-reconcile`,
+    `Proxy Address: ${config.proxyAddress.toLowerCase()}`,
+    `Chain ID: ${config.chainId}`,
+    `Round ID: ${config.roundId.toString()}`,
+    `Pharmacy: ${pharmacyAddress.toLowerCase()}`,
+    `Voucher ID: ${voucherId.toLowerCase()}`,
+    `Amount: ${amount}`,
+    `Client Nonce: ${clientNonce}`,
+    `Expires At: ${expiresAt}`
+  ].join("\n");
+
+  const recoveredAddress = ethers.verifyMessage(canonicalString, signature);
+  if (recoveredAddress.toLowerCase() !== pharmacyAddress.toLowerCase()) {
+    throw new Error("Invalid voucher reconciliation signature");
+  }
+}
+
+function canonicalVoucherSagaRequest(payload) {
+  return {
+    pharmacyAddress: payload.pharmacyAddress,
+    chainId: payload.chainId,
+    roundId: payload.roundId,
+    voucherId: payload.voucherId,
+    amount: payload.amount,
+    clientNonce: payload.clientNonce,
+    expiresAt: payload.expiresAt,
+    signature: payload.signature
+  };
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // Bounded IP Rate Limiter to prevent memory exhaustion
@@ -676,6 +821,150 @@ function createApp(supabaseClient, config = {}) {
     }
   });
 
+  app.post("/api/vouchers/reconcile", rateLimiter(100, 15 * 60 * 1000), originCheck, async (req, res) => {
+    let sagaKey;
+    let parsedPayload;
+
+    try {
+      try {
+        parsedPayload = validateVoucherReconcilePayload(req.body);
+      } catch (err) {
+        return res.status(400).json({ error: "Invalid voucher reconciliation payload" });
+      }
+
+      if (
+        Number(parsedPayload.chainId) !== Number(config.chainId) ||
+        parsedPayload.roundId !== config.roundId.toString()
+      ) {
+        return res.status(400).json({ error: "Invalid voucher reconciliation payload" });
+      }
+
+      const expiresTime = new Date(parsedPayload.expiresAt).getTime();
+      if (isNaN(expiresTime)) {
+        return res.status(400).json({ error: "Invalid voucher reconciliation payload" });
+      }
+
+      const now = Date.now();
+      const maxAllowedExpiry = now + 15 * 60 * 1000;
+      if (expiresTime <= now || expiresTime > maxAllowedExpiry) {
+        return res.status(401).json({ error: "Invalid voucher reconciliation payload" });
+      }
+
+      sagaKey = deriveVoucherSagaKey(parsedPayload);
+
+      try {
+        verifyVoucherSagaSignature({ config, ...parsedPayload });
+      } catch (err) {
+        await supabaseClient.rpc("voucher_saga_dead_letter", {
+          p_saga_key: sagaKey,
+          p_request_hash: sha256(stableStringify(canonicalVoucherSagaRequest(parsedPayload))),
+          p_voucher_id: parsedPayload.voucherId,
+          p_pharmacy_address: parsedPayload.pharmacyAddress,
+          p_amount: parsedPayload.amount,
+          p_client_nonce: parsedPayload.clientNonce,
+          p_error_code: "invalid_signature"
+        }).catch(() => {});
+        return res.status(401).json({ error: "Invalid voucher reconciliation payload" });
+      }
+
+      let requestHash;
+      try {
+        requestHash = sha256(stableStringify(canonicalVoucherSagaRequest(parsedPayload)));
+      } catch (err) {
+        return res.status(400).json({ error: "Invalid voucher reconciliation payload" });
+      }
+
+      const { data: sagaStartRes, error: sagaStartErr } = await supabaseClient.rpc("voucher_saga_start", {
+        p_saga_key: sagaKey,
+        p_request_hash: requestHash,
+        p_voucher_id: parsedPayload.voucherId,
+        p_pharmacy_address: parsedPayload.pharmacyAddress,
+        p_amount: parsedPayload.amount,
+        p_client_nonce: parsedPayload.clientNonce,
+        p_payload_json: canonicalVoucherSagaRequest(parsedPayload)
+      });
+
+      if (sagaStartErr) {
+        console.error("Voucher saga start RPC failure");
+        return res.status(500).json({ error: "Database transaction failed" });
+      }
+
+      const saga = sagaStartRes && sagaStartRes[0];
+      if (!saga) {
+        return res.status(500).json({ error: "Database transaction failed" });
+      }
+
+      if (saga.status === "mismatch") {
+        return res.status(401).json({ error: "Invalid voucher reconciliation payload" });
+      }
+
+      if (saga.status === "completed") {
+        return res.status(200).json({
+          success: true,
+          sagaKey,
+          status: "completed",
+          replayed: true,
+          result: saga.result_json || null
+        });
+      }
+
+      if (saga.status === "pending" || saga.status === "retrying") {
+        return res.status(429).json({ error: "Voucher settlement lease active" });
+      }
+
+      if (saga.status === "dead_letter") {
+        return res.status(409).json({ error: "Voucher settlement requires manual review", sagaKey });
+      }
+
+      const result = {
+        voucher_id: parsedPayload.voucherId,
+        pharmacy_address: parsedPayload.pharmacyAddress,
+        amount: parsedPayload.amount,
+        settlement_status: "proxy_reconciled",
+        proof_scope: "database_proxy_saga",
+        onchain_settlement: "not_claimed"
+      };
+
+      const retryDelays = Array.isArray(config.sagaRetryDelaysMs)
+        ? config.sagaRetryDelaysMs
+        : [1000, 2000, 4000];
+
+      for (let attempt = 1; attempt <= MAX_VOUCHER_RETRY_ATTEMPTS; attempt++) {
+        const { error: completeErr } = await supabaseClient.rpc("voucher_saga_complete", {
+          p_saga_key: sagaKey,
+          p_result_json: result
+        });
+
+        if (!completeErr) {
+          return res.status(200).json({ success: true, sagaKey, status: "completed", result });
+        }
+
+        console.error("Voucher saga complete RPC failure");
+        await supabaseClient.rpc("voucher_saga_fail", {
+          p_saga_key: sagaKey,
+          p_error_code: "transient_commit_failure",
+          p_transient: true
+        }).catch(() => {});
+
+        if (attempt < MAX_VOUCHER_RETRY_ATTEMPTS) {
+          await delay(Number(retryDelays[attempt - 1] || 0));
+        }
+      }
+
+      return res.status(500).json({ error: "Database transaction failed" });
+    } catch (err) {
+      console.error("Voucher reconcile endpoint failure");
+      if (sagaKey) {
+        await supabaseClient.rpc("voucher_saga_fail", {
+          p_saga_key: sagaKey,
+          p_error_code: "unhandled_proxy_exception",
+          p_transient: false
+        }).catch(() => {});
+      }
+      res.status(500).json({ error: "Database transaction failed" });
+    }
+  });
+
   // GET /api/health/observability - Solvency & System Observability Telemetry
   app.get("/api/health/observability", async (req, res) => {
     try {
@@ -740,4 +1029,10 @@ function createApp(supabaseClient, config = {}) {
   return app;
 }
 
-module.exports = { createApp, verifyRegisterSignature, verifyRelaySignature };
+module.exports = {
+  createApp,
+  verifyRegisterSignature,
+  verifyRelaySignature,
+  verifyVoucherSagaSignature,
+  deriveVoucherSagaKey
+};

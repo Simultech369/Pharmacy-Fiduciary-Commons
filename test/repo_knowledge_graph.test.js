@@ -23,12 +23,16 @@ describe("Repo Knowledge Graph Control Plane", function () {
     }
   });
 
-  it("keeps voucher saga runtime enforcement marked as design-only until implemented", function () {
+  it("tracks voucher saga runtime enforcement as local prototype proof", function () {
     const sagaEdge = graph.edges.find(edge => edge.from === "db_proxy" && edge.to === "voucher_saga");
+    const sagaNode = graph.nodes.find(node => node.id === "voucher_saga");
 
     expect(sagaEdge).to.exist;
-    expect(sagaEdge.relationship).to.equal("SPECIFIES_SETTLEMENT_SAGA_LEASES");
-    expect(sagaEdge.proof_status).to.equal("design_only");
+    expect(sagaEdge.relationship).to.equal("IMPLEMENTS_SETTLEMENT_SAGA_LEASES");
+    expect(sagaEdge.proof_status).to.equal("local_prototype");
+    expect(sagaEdge.verification_cmd).to.equal("npx hardhat test test/VoucherSagaQueue.test.js");
+    expect(sagaNode.target_file).to.equal("server/createApp.js");
+    expect(sagaNode.proof_surface).to.equal("test/VoucherSagaQueue.test.js");
   });
 
   it("keeps rehearsal gate authority advisory instead of executable", function () {
