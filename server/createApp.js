@@ -13,6 +13,11 @@ const MAX_CANONICAL_KEYS = 1000;
 const MAX_RELAY_PROOF_CHARS = 4096;
 const MAX_VOUCHER_CLIENT_NONCE_CHARS = 128;
 const MAX_VOUCHER_RETRY_ATTEMPTS = 3;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const VOTER_REGISTRATION_RATE_LIMIT = 100;
+const RELAY_INTAKE_RATE_LIMIT = 100;
+const VOUCHER_RECONCILIATION_RATE_LIMIT = 50;
+const VOUCHER_SAGA_LEASE_MS = 15 * 1000;
 
 function stableStringify(value, depth = 0, state = { keys: 0 }) {
   if (depth > MAX_CANONICAL_DEPTH) {
@@ -324,6 +329,67 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function buildSagaQueueTelemetry(supabaseClient) {
+  const rows = supabaseClient && supabaseClient._mockDb && supabaseClient._mockDb.voucher_settlement_saga;
+  const emptyCounts = {
+    pending_count: null,
+    retrying_count: null,
+    dead_letter_count: null,
+    completed_count: null,
+    active_leases_count: null
+  };
+
+  if (!Array.isArray(rows)) {
+    return {
+      saga_queue_status: "not_live_instrumented",
+      metric_source: "unavailable_without_live_reader",
+      ...emptyCounts,
+      alert_status: "not_instrumented"
+    };
+  }
+
+  const now = Date.now();
+  const telemetry = {
+    saga_queue_status: "instrumented_in_memory",
+    metric_source: "prototype_memory_snapshot",
+    pending_count: 0,
+    retrying_count: 0,
+    dead_letter_count: 0,
+    completed_count: 0,
+    active_leases_count: 0,
+    alert_status: "healthy"
+  };
+
+  for (const row of rows) {
+    if (!row || typeof row !== "object") {
+      continue;
+    }
+
+    if (row.status === "pending") {
+      telemetry.pending_count += 1;
+    } else if (row.status === "retrying") {
+      telemetry.retrying_count += 1;
+    } else if (row.status === "dead_letter") {
+      telemetry.dead_letter_count += 1;
+    } else if (row.status === "completed") {
+      telemetry.completed_count += 1;
+    }
+
+    if (row.status === "pending" || row.status === "retrying") {
+      const updatedAtMs = new Date(row.updated_at || row.created_at || 0).getTime();
+      if (!Number.isNaN(updatedAtMs) && now - updatedAtMs < VOUCHER_SAGA_LEASE_MS) {
+        telemetry.active_leases_count += 1;
+      }
+    }
+  }
+
+  if (telemetry.dead_letter_count > 0) {
+    telemetry.alert_status = "DLQ_ATTENTION_REQUIRED";
+  }
+
+  return telemetry;
+}
+
 // Bounded IP Rate Limiter to prevent memory exhaustion
 const rateLimitMap = new Map();
 
@@ -345,13 +411,14 @@ if (rateLimitInterval.unref) {
 function rateLimiter(maxRequests, windowMs) {
   return (req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress || "127.0.0.1";
+    const routeKey = `${req.baseUrl || ""}${req.path}:${ip}`;
     const now = Date.now();
     
-    if (!rateLimitMap.has(ip)) {
-      rateLimitMap.set(ip, { timestamps: [] });
+    if (!rateLimitMap.has(routeKey)) {
+      rateLimitMap.set(routeKey, { timestamps: [] });
     }
     
-    const record = rateLimitMap.get(ip);
+    const record = rateLimitMap.get(routeKey);
     record.timestamps = record.timestamps.filter(t => now - t < windowMs);
     
     const remaining = Math.max(0, maxRequests - record.timestamps.length - 1);
@@ -411,6 +478,11 @@ function originCheck(req, res, next) {
 }
 
 function createApp(supabaseClient, config = {}) {
+  // Clear rate limit state in test mode to guarantee test isolation across test files
+  if (config.testMode || config.resetRateLimits) {
+    rateLimitMap.clear();
+  }
+
   // Validate config parameters exist (fail-closed check)
   const requiredConfig = ["chainId", "roundId", "proxyAddress", "contractAddress", "trustedCredentialIssuer", "credentialPepper"];
   for (const param of requiredConfig) {
@@ -480,7 +552,7 @@ function createApp(supabaseClient, config = {}) {
     res.status(200).json({ status: "healthy", proxyAddress: config.proxyAddress });
   });
 
-  app.post("/api/voters/register", rateLimiter(100, 15 * 60 * 1000), originCheck, async (req, res) => {
+  app.post("/api/voters/register", rateLimiter(VOTER_REGISTRATION_RATE_LIMIT, RATE_LIMIT_WINDOW_MS), originCheck, async (req, res) => {
     const {
       walletAddress,
       chainId,
@@ -729,7 +801,7 @@ function createApp(supabaseClient, config = {}) {
     }
   });
 
-  app.post("/api/relay/intake", rateLimiter(100, 15 * 60 * 1000), originCheck, async (req, res) => {
+  app.post("/api/relay/intake", rateLimiter(RELAY_INTAKE_RATE_LIMIT, RATE_LIMIT_WINDOW_MS), originCheck, async (req, res) => {
     try {
       const {
         walletAddress,
@@ -821,7 +893,7 @@ function createApp(supabaseClient, config = {}) {
     }
   });
 
-  app.post("/api/vouchers/reconcile", rateLimiter(100, 15 * 60 * 1000), originCheck, async (req, res) => {
+  app.post("/api/vouchers/reconcile", rateLimiter(VOUCHER_RECONCILIATION_RATE_LIMIT, RATE_LIMIT_WINDOW_MS), originCheck, async (req, res) => {
     let sagaKey;
     let parsedPayload;
 
@@ -977,6 +1049,11 @@ function createApp(supabaseClient, config = {}) {
         matrixReceiptPresent = true;
       }
 
+      res.setHeader("X-RateLimit-Contract-Voter-Registration", VOTER_REGISTRATION_RATE_LIMIT);
+      res.setHeader("X-RateLimit-Contract-Relay-Intake", RELAY_INTAKE_RATE_LIMIT);
+      res.setHeader("X-RateLimit-Contract-Voucher-Reconciliation", VOUCHER_RECONCILIATION_RATE_LIMIT);
+      res.setHeader("X-RateLimit-Contract-Window-Ms", RATE_LIMIT_WINDOW_MS);
+
       const telemetry = {
         status: "healthy",
         status_scope: "endpoint_available",
@@ -1001,6 +1078,26 @@ function createApp(supabaseClient, config = {}) {
           matrix_receipt_present: matrixReceiptPresent,
           capability_matrix_path: "reviews/provider_capability_matrix.json",
           receipt_scope: "tracked_repo_receipt_presence"
+        },
+        saga_queue_telemetry: buildSagaQueueTelemetry(supabaseClient),
+        rate_limit_contracts: {
+          voter_registration_max: VOTER_REGISTRATION_RATE_LIMIT,
+          relay_intake_max: RELAY_INTAKE_RATE_LIMIT,
+          voucher_reconciliation_max: VOUCHER_RECONCILIATION_RATE_LIMIT,
+          window_ms: RATE_LIMIT_WINDOW_MS
+        },
+        sanitized_rca: {
+          trace_scope: "aggregate_counts_only",
+          raw_trace_logging: false,
+          redacted_fields: [
+            "authorization",
+            "cookie",
+            "signature",
+            "credentialPepper",
+            "pharmacyAddress",
+            "voucherId",
+            "amount"
+          ]
         },
         proxy_config: {
           chain_id: config.chainId,

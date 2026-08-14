@@ -112,6 +112,18 @@ CONTEXT_SURFACES = [
         "role": "Phase 4 voucher saga idempotency, lease, retry, DLQ, and RLS regression tests.",
         "required": True,
     },
+    {
+        "path": "test/Phase6Operationalization.test.js",
+        "category": "deterministic_gate",
+        "role": "Phase 6 operationalization saga telemetry and identity redaction regression tests.",
+        "required": True,
+    },
+    {
+        "path": "test/RateLimitingContracts.test.js",
+        "category": "deterministic_gate",
+        "role": "FDE rate-limiting contract and bucket isolation regression tests.",
+        "required": True,
+    },
 ]
 
 REQUIRED_AGENT_TOKENS = [

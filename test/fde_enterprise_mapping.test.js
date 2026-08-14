@@ -23,9 +23,9 @@ describe("FDE enterprise reliability mapping proof boundaries", function () {
   });
 
   it("does not call the focused control-plane slice a full Hardhat suite or production RAG system", function () {
-    expect(mapping).to.include("Focused control-plane and voucher-saga guardrail slice.");
+    expect(mapping).to.include("Focused control-plane, voucher-saga, and operational telemetry guardrail slice.");
     expect(mapping).to.include("Not a production RAG system");
-    expect(mapping).to.include("Phase 4 voucher saga implementation precedes Phase 6 FDE-grade operationalization.");
+    expect(mapping).to.include("Phase 4 voucher saga implementation precedes Phase 6 FDE-grade operationalization, and Phase 6 remains local/prototype-scoped until live metric readers are separately implemented and tested.");
     expect(mapping).to.not.include("40-test Hardhat suite");
     expect(mapping).to.not.include("production RAG benchmark");
   });

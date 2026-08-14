@@ -39,7 +39,7 @@ The non-claims in this document are guarded by explicit non-claim tests in `test
 | **P3: Customer Connector Pack** | Bounded adapters for model sensors and future provider integrations | `review-context/repo_knowledge_graph.json` and control-plane docs define bounded model sensor roles. | Add provider capability checks as read-only evidence sensors with JSON schema validation. | No Salesforce, Slack, HubSpot, Google Workspace, or customer connector pack is claimed. |
 | **P4: Secure Customer RAG System** | Permission-aware dossier retrieval and citation-bounded review packets | `scripts/index_dossier_tree.py` audits a 13-document PageIndex target set for status contradictions. | Add disclosure-class filtering to review packet retrieval and fail if local-only material enters public packets. | Not a production RAG system, vector search engine, or customer document permission layer. |
 | **P5: Real-Time Data Sync and Conflict Resolution** | Durable voucher settlement saga with idempotent retries and DLQ | `POST /api/vouchers/reconcile`, `voucher_saga_*` RPCs, and `test/VoucherSagaQueue.test.js` cover duplicate submission, retry, DLQ, and lease contention in a local prototype. | Add real database integration tests and on-chain settlement worker tests before production settlement claims. | No production CRM/ERP sync engine, live broker, or production exactly-once settlement guarantee is claimed. |
-| **P6: Embedded Analytics Dashboard** | Scoped observability for solvency and system health | `GET /api/health/observability` returns an honest envelope with `live_contract_reads: false`; `test/server.test.js` verifies structure. | Add queue-depth and DLQ metrics after the voucher saga queue exists. | No live solvency dashboard or production analytics product is claimed. |
+| **P6: Embedded Analytics Dashboard** | Scoped observability for solvency and system health | `GET /api/health/observability` returns an honest envelope with `live_contract_reads: false`; `test/Phase6Operationalization.test.js` verifies local saga counts, DLQ alerting, rate-limit contracts, and redaction. | Add live Supabase metric readers or Prometheus/OpenTelemetry export only after integration tests exist. | No live solvency dashboard, production analytics product, or live Supabase metric reader is claimed. |
 | **P7: API Gateway with Contract-Based Rate Limiting** | Proxy guardrails, request caps, idempotency leases, and sanitized outage failures | `server/createApp.js`, `test/server.test.js`, and `test/DisasterRecoveryOutage.test.js` cover payload caps, depth rejection, leases, and sanitized 500s. | Add per-tenant/per-role quota contracts and rate-limit telemetry tests. | No dynamic SLA billing, contract overage automation, or production gateway is claimed. |
 | **P8: Customer-Specific Workflow Orchestrator** | Single-agent control plane with bounded investigation loop | `docs/plans/single_agent_control_plane_review_loop.md` and `review-context/repo_knowledge_graph.json` specify the 7-step review loop. | Add CLI entrypoint that loads only a graph neighborhood for a selected signal. | No production workflow orchestrator or autonomous executor is claimed. |
 | **P9: Privacy-Preserving Data Pipeline** | Credential blinding, response redaction, and forbidden-field boundaries | `server/createApp.js` applies HMAC credential blinding; DR tests assert secret strings are absent from error payloads. | Add DLP-style fixtures for support prompts, exported packets, PHI placeholders, witness material, and raw credentials. | Not a HIPAA compliance engine, PHI classifier, or full DLP system. |
@@ -55,10 +55,10 @@ The FDE mapping reinforces the current execution order:
 
 1. **Finish advisory control-plane hygiene**: keep rehearsal receipts, graph boundaries, and context hygiene deterministic.
 2. **Verify Phase 4 voucher saga locally**: duplicate voucher submission, retry-to-DLQ, and multi-instance lease contention.
-3. **Begin Phase 6 FDE-grade operationalization after Phase 4 behavior exists**: queue depth, retry counts, DLQ counts, and sanitized RCA receipts need a queue to observe.
+3. **Verify Phase 6 FDE-grade operationalization locally**: queue depth, retry counts, DLQ counts, and sanitized RCA receipts are prototype-scoped until live database readers exist.
 4. **Defer enterprise surfaces**: SSO, connectors, self-service portals, billing, and provisioning are not core until the fiduciary settlement path is stronger.
 
-Phase 4 voucher saga implementation precedes Phase 6 FDE-grade operationalization.
+Phase 4 voucher saga implementation precedes Phase 6 FDE-grade operationalization, and Phase 6 remains local/prototype-scoped until live metric readers are separately implemented and tested.
 
 ---
 
@@ -68,5 +68,5 @@ When reporting this artifact, use:
 
 - "FDE patterns mapped to PBM trust surfaces."
 - "Current proof is local and prototype-scoped."
-- "Focused control-plane and voucher-saga guardrail slice."
+- "Focused control-plane, voucher-saga, and operational telemetry guardrail slice."
 - "Customer connectors, enterprise SSO, admin portal, DLP compliance, production data sync, and automated provisioning remain non-claims unless separately implemented and tested."
