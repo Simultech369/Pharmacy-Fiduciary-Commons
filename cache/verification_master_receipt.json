@@ -1,14 +1,14 @@
 {
-  "timestamp": "2026-08-15T05:23:55Z",
+  "timestamp": "2026-08-15T06:09:23Z",
   "overall_status": "PASSED",
   "expected_step_count": 7,
   "steps_executed": 7,
   "git_lineage": {
-    "head_commit": "0c686be92e053068aa4124d9053c95c27448831b",
+    "head_commit": "517b94d0c93a5f0c21d8052f79a68eb83c6c229a",
     "branch": "main",
-    "is_dirty": false,
-    "dirty_file_count": 0,
-    "lineage_tag": "[committed HEAD]"
+    "is_dirty": true,
+    "dirty_file_count": 2,
+    "lineage_tag": "[dirty working tree]"
   },
   "steps": [
     {
@@ -16,49 +16,49 @@
       "command": "npx --no-install hardhat test",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 68738
+      "duration_ms": 125061
     },
     {
       "step_name": "2. Brand Gate B & Impeccable Linter",
       "command": "npm run check:frontend",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1975
+      "duration_ms": 1745
     },
     {
       "step_name": "3. PageIndex Status Auditor",
       "command": "python scripts/index_dossier_tree.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 495
+      "duration_ms": 761
     },
     {
       "step_name": "4. Local Dossier Retrieval Eval",
       "command": "python scripts/eval_dossier_rag.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1271
+      "duration_ms": 1632
     },
     {
       "step_name": "5. Context Hygiene Auditor",
       "command": "python scripts/context_hygiene_audit.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 266
+      "duration_ms": 285
     },
     {
       "step_name": "6. Constitutional Rubric Evaluator",
       "command": "python scripts/eval_constitutional_rubric.py --target reviews/rotational_swarm_review_dossier.md",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 288
+      "duration_ms": 553
     },
     {
       "step_name": "7. Swarm Observability Dashboard",
       "command": "python scripts/observability_dashboard.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1590
+      "duration_ms": 1867
     }
   ]
 }

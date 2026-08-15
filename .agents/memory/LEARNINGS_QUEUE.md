@@ -12,6 +12,8 @@
 | `LRN-002` | 2026-07-27 | Review Orchestration | Record dissenting agent opinions in multi-agent review dossiers instead of forcing artificial consensus. | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `ADOPTED_V0_1` |
 | `LRN-003` | 2026-08-14 | Codex Review Correction | Do not attribute legacy test counts to master verification steps when not stored in receipt JSON. Report receipt pass status and tag Phase 6 test count (323/323) explicitly. | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `PENDING_REVIEW` |
 | `LRN-004` | 2026-08-14 | Codex Review Correction | Label callable endpoints as transport_usable_pending_json_quality when json_valid or quality_valid are false to prevent overclaiming model review usability. | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `PENDING_REVIEW` |
+| `LRN-005` | 2026-08-15 | Codex Review Correction | Explicitly distinguish between test generation commit (0c686be) and receipt-recording commit (517b94d) when stating verification lineage. | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `PENDING_REVIEW` |
+| `LRN-006` | 2026-08-15 | Codex Review Correction | Reference unintegrated draft contracts directly at contracts/*.sol; avoid phantom directory references (e.g. contracts/drafts/). | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `PENDING_REVIEW` |
 
 ---
 
