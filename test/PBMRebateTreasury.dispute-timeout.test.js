@@ -5,6 +5,7 @@ describe("PBMRebateTreasury dispute timeout retraction", function () {
   const toWei = (value) => ethers.parseEther(value);
   const MIN_EPOCH_DURATION = 24 * 60 * 60;
   const RECALL_DELAY = 30 * 24 * 60 * 60;
+  const DisputeResolution = { RELEASE_TO_PHARMACY: 0, SEND_TO_PATIENT_FUND: 1, DISMISS: 2 };
 
   let token;
   let treasury;
@@ -312,10 +313,45 @@ describe("PBMRebateTreasury dispute timeout retraction", function () {
     await treasury.connect(pharmacy).flagClaim(0, gross, gross, proof, evidenceHash("normal-council-resolution"));
     expect(await treasury.disputeFlaggedTimestamp(0, pharmacy.address)).to.be.gt(0n);
 
-    await treasury.connect(council).resolveClaim(0, pharmacy.address, 2, evidenceHash("dismiss-before-timeout"));
+    await treasury.connect(council).resolveClaim(0, pharmacy.address, DisputeResolution.DISMISS, evidenceHash("dismiss-before-timeout"));
 
     expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(0n);
     expect(await treasury.disputeFlaggedTimestamp(0, pharmacy.address)).to.equal(0n);
+    await expectRevert(
+      treasury.connect(pharmacy).retractClaimDispute(0),
+      "NoFlaggedClaim"
+    );
+  });
+
+  it("fails closed on double dispute retraction attempts after timeout elapsed", async function () {
+    await seedDeposit();
+    const gross = toWei("100");
+    const { proof } = await publishSingleLeafRoot(gross, gross);
+
+    await treasury.connect(pharmacy).flagClaim(0, gross, gross, proof, evidenceHash("double-retraction-test"));
+    await increaseTime(await disputeTimeout());
+    await treasury.connect(pharmacy).retractClaimDispute(0);
+
+    // Second retraction attempt must fail with NoFlaggedClaim
+    await expectRevert(
+      treasury.connect(pharmacy).retractClaimDispute(0),
+      "NoFlaggedClaim"
+    );
+  });
+
+  it("prevents retracting an exclusion dispute after dismissal by council", async function () {
+    await seedDeposit();
+    const gross = toWei("100");
+    await publishSingleLeafRoot(gross, gross);
+    const omissionAmount = toWei("50");
+
+    await treasury.connect(pharmacy).flagExclusion(0, omissionAmount, evidenceHash("exclusion-dismissal-test"));
+    await treasury.connect(council).resolveClaim(0, pharmacy.address, DisputeResolution.DISMISS, evidenceHash("dismiss-exclusion"));
+
+    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(0n);
+    expect(await treasury.isExclusionDispute(0, pharmacy.address)).to.equal(false);
+
+    await increaseTime(await disputeTimeout());
     await expectRevert(
       treasury.connect(pharmacy).retractClaimDispute(0),
       "NoFlaggedClaim"
