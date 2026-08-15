@@ -1,14 +1,14 @@
 {
-  "timestamp": "2026-08-15T05:11:29Z",
+  "timestamp": "2026-08-15T05:23:55Z",
   "overall_status": "PASSED",
   "expected_step_count": 7,
   "steps_executed": 7,
   "git_lineage": {
-    "head_commit": "1663b99a371453896be0677dc1e6497ccb62841c",
+    "head_commit": "0c686be92e053068aa4124d9053c95c27448831b",
     "branch": "main",
-    "is_dirty": true,
-    "dirty_file_count": 3,
-    "lineage_tag": "[dirty working tree]"
+    "is_dirty": false,
+    "dirty_file_count": 0,
+    "lineage_tag": "[committed HEAD]"
   },
   "steps": [
     {
@@ -16,49 +16,49 @@
       "command": "npx --no-install hardhat test",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 66994
+      "duration_ms": 68738
     },
     {
       "step_name": "2. Brand Gate B & Impeccable Linter",
       "command": "npm run check:frontend",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 2017
+      "duration_ms": 1975
     },
     {
       "step_name": "3. PageIndex Status Auditor",
       "command": "python scripts/index_dossier_tree.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 588
+      "duration_ms": 495
     },
     {
       "step_name": "4. Local Dossier Retrieval Eval",
       "command": "python scripts/eval_dossier_rag.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1166
+      "duration_ms": 1271
     },
     {
       "step_name": "5. Context Hygiene Auditor",
       "command": "python scripts/context_hygiene_audit.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 160
+      "duration_ms": 266
     },
     {
       "step_name": "6. Constitutional Rubric Evaluator",
       "command": "python scripts/eval_constitutional_rubric.py --target reviews/rotational_swarm_review_dossier.md",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 148
+      "duration_ms": 288
     },
     {
       "step_name": "7. Swarm Observability Dashboard",
       "command": "python scripts/observability_dashboard.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1400
+      "duration_ms": 1590
     }
   ]
 }
