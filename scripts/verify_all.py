@@ -24,6 +24,30 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RECEIPT_PATH = os.path.join(ROOT_DIR, "cache", "verification_master_receipt.json")
 DOSSIER_REVIEW_FILE = os.path.join(ROOT_DIR, "reviews", "rotational_swarm_review_dossier.md")
 
+def sanitize_receipt_arg(arg):
+    base = os.path.basename(arg).lower()
+    if base in ("npx", "npx.cmd", "npx.bat"):
+        return "npx"
+    if base in ("npm", "npm.cmd", "npm.bat"):
+        return "npm"
+    if arg == sys.executable or base.startswith("python"):
+        return "python"
+
+    try:
+        abs_arg = os.path.abspath(arg)
+        root_prefix = ROOT_DIR + os.sep
+        if abs_arg == ROOT_DIR:
+            return "."
+        if abs_arg.startswith(root_prefix):
+            return os.path.relpath(abs_arg, ROOT_DIR).replace(os.sep, "/")
+    except Exception:
+        pass
+
+    return arg
+
+def format_receipt_command(command_args):
+    return " ".join(sanitize_receipt_arg(arg) for arg in command_args)
+
 def run_step(step_name, command_args, cwd=ROOT_DIR):
     print(f"\n==================================================")
     print(f"RUNNING STEP: {step_name}")
@@ -40,7 +64,7 @@ def run_step(step_name, command_args, cwd=ROOT_DIR):
         
     return {
         "step_name": step_name,
-        "command": " ".join(command_args),
+        "command": format_receipt_command(command_args),
         "return_code": res.returncode,
         "status": "PASSED" if res.returncode == 0 else "FAILED",
         "duration_ms": duration_ms

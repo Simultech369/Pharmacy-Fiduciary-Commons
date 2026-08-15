@@ -1,64 +1,64 @@
 {
-  "timestamp": "2026-08-15T03:01:54Z",
+  "timestamp": "2026-08-15T05:11:29Z",
   "overall_status": "PASSED",
   "expected_step_count": 7,
   "steps_executed": 7,
   "git_lineage": {
-    "head_commit": "c6d6041d441638cbf74c45a6d604e7f7a0080a82",
+    "head_commit": "1663b99a371453896be0677dc1e6497ccb62841c",
     "branch": "main",
     "is_dirty": true,
-    "dirty_file_count": 9,
+    "dirty_file_count": 3,
     "lineage_tag": "[dirty working tree]"
   },
   "steps": [
     {
       "step_name": "1. Hardhat Unit & State Machine Tests",
-      "command": "C:\\Program Files\\Volta\\npx.cmd --no-install hardhat test",
+      "command": "npx --no-install hardhat test",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 67769
+      "duration_ms": 66994
     },
     {
       "step_name": "2. Brand Gate B & Impeccable Linter",
-      "command": "C:\\Program Files\\Volta\\npm.cmd run check:frontend",
+      "command": "npm run check:frontend",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 2122
+      "duration_ms": 2017
     },
     {
       "step_name": "3. PageIndex Status Auditor",
-      "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\index_dossier_tree.py",
+      "command": "python scripts/index_dossier_tree.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 413
+      "duration_ms": 588
     },
     {
       "step_name": "4. Local Dossier Retrieval Eval",
-      "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\eval_dossier_rag.py",
+      "command": "python scripts/eval_dossier_rag.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 870
+      "duration_ms": 1166
     },
     {
       "step_name": "5. Context Hygiene Auditor",
-      "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\context_hygiene_audit.py",
+      "command": "python scripts/context_hygiene_audit.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 164
+      "duration_ms": 160
     },
     {
       "step_name": "6. Constitutional Rubric Evaluator",
-      "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\eval_constitutional_rubric.py --target C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\reviews\\rotational_swarm_review_dossier.md",
+      "command": "python scripts/eval_constitutional_rubric.py --target reviews/rotational_swarm_review_dossier.md",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 150
+      "duration_ms": 148
     },
     {
       "step_name": "7. Swarm Observability Dashboard",
-      "command": "C:\\Users\\Josh\\AppData\\Local\\Programs\\Python\\Python312\\python.exe C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal\\scripts\\observability_dashboard.py",
+      "command": "python scripts/observability_dashboard.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1190
+      "duration_ms": 1400
     }
   ]
 }
