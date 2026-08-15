@@ -37,7 +37,23 @@ def classify_endpoint(url_string):
         # Fallback to external if resolution fails
         return "unknown", "external_public"
 
-def generate_router_receipt(source_claim="DIZZY_CHAT_BACKEND=local", override_endpoint=None):
+def is_model_eligible_for_review_pool(model_entry, mode="active_review"):
+    """
+    Evaluates whether a model entry from provider capability matrix is eligible for model pools.
+    - active_review (default): Strictly requires status == 'usable' (valid JSON + quality checks passed).
+    - smoke / probe: Permits 'usable' OR 'transport_usable_pending_json_quality'.
+    Fails closed: Models with 'quarantined*' or 'unverified_candidate' status are rejected in all modes.
+    """
+    if not isinstance(model_entry, dict):
+        return False
+    status = model_entry.get("review_usable", "quarantined")
+    if status.startswith("quarantined") or status == "unverified_candidate" or status == "weak_quality_rejected":
+        return False
+    if mode in ("smoke", "probe"):
+        return status in ("usable", "transport_usable_pending_json_quality")
+    return status == "usable"
+
+def generate_router_receipt(source_claim="DIZZY_CHAT_BACKEND=local", override_endpoint=None, requested_model=None, dispatch_mode="active_review"):
     """
     Evaluates execution parameters, performs loopback verification, and returns the router receipt payload.
     """
@@ -53,6 +69,20 @@ def generate_router_receipt(source_claim="DIZZY_CHAT_BACKEND=local", override_en
             f"Endpoint Mismatch Violation: {source_claim} specified, but resolved endpoint "
             f"'{target_endpoint}' ({resolved_ip}) is classified as '{classification}'."
         )
+
+    # Requested Model Eligibility Gate: Fail closed if requested candidate model is barred from pool
+    if requested_model:
+        # Load matrix if available
+        matrix_path = os.path.join(os.path.dirname(__file__), "../reviews/provider_capability_matrix.json")
+        if os.path.exists(matrix_path):
+            with open(matrix_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                entry = next((m for m in data.get("matrix", []) if m.get("model_id") == requested_model), None)
+                if entry and not is_model_eligible_for_review_pool(entry, mode=dispatch_mode):
+                    raise ValueError(
+                        f"Unverified Candidate Pool Gate Violation: Model '{requested_model}' has "
+                        f"usability status '{entry.get('review_usable')}' and is barred from dispatch mode '{dispatch_mode}'."
+                    )
     
     api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
     credential_used = bool(api_key and classification == "external_public")
@@ -73,9 +103,20 @@ def generate_router_receipt(source_claim="DIZZY_CHAT_BACKEND=local", override_en
     return receipt
 
 def main():
+    req_model = None
+    dispatch_mode = "active_review"
+    if "--model" in sys.argv:
+        idx = sys.argv.index("--model")
+        if idx + 1 < len(sys.argv):
+            req_model = sys.argv[idx + 1]
+    if "--mode" in sys.argv:
+        idx = sys.argv.index("--mode")
+        if idx + 1 < len(sys.argv):
+            dispatch_mode = sys.argv[idx + 1]
+
     if "--verify" in sys.argv:
         try:
-            receipt = generate_router_receipt()
+            receipt = generate_router_receipt(requested_model=req_model, dispatch_mode=dispatch_mode)
             print("==================================================")
             print("✅ ACTUAL-DISPATCH ROUTER RECEIPT VERIFIED")
             print("==================================================")
@@ -89,7 +130,7 @@ def main():
             sys.exit(1)
     
     # Default: Output receipt JSON
-    receipt = generate_router_receipt()
+    receipt = generate_router_receipt(requested_model=req_model, dispatch_mode=dispatch_mode)
     print(json.dumps(receipt, indent=2))
 
 if __name__ == "__main__":

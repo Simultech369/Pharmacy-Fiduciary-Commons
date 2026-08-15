@@ -8,7 +8,7 @@
 
 | ID | Date Added | Category | Item Description | Relevant Document | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `DEC-001` | 2026-07-27 | Solvency Policy | Review and select options on Solvency Owner Decision Worksheet. | [SOLVENCY_OWNER_DECISION_WORKSHEET.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/SOLVENCY_OWNER_DECISION_WORKSHEET.md) | `PENDING_OWNER_REVIEW` |
+| `DEC-001` | 2026-07-27 | Solvency Policy | Review and select options on Solvency Owner Decision Worksheet. | [SOLVENCY_OWNER_DECISION_WORKSHEET.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/docs/ops/SOLVENCY_OWNER_DECISION_WORKSHEET.md) | `PENDING_OWNER_REVIEW` |
 
 ---
 

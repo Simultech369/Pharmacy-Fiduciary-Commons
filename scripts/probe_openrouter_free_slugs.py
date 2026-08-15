@@ -28,10 +28,15 @@ TARGET_FREE_SLUGS = [
     "THUDM/glm-4-9b-chat:free",
     "qwen/qwen-2.5-coder-32b-instruct:free",
     "deepseek/deepseek-r1:free",
+    "deepseek/deepseek-r1",
+    "deepseek/deepseek-chat",
+    "minimax/minimax-01",
+    "x-ai/grok-2",
     "moonshotai/kimi-k1.5:free",
 ]
 
 LOCAL_OLLAMA_MODELS = [
+    "muse-glimmer",
     "gemma3:4b",
     "qwen2.5-coder:7b",
     "llama-audit:latest",
@@ -92,13 +97,12 @@ def probe_ollama_local(model_name, host="http://localhost:11434"):
             if model_name in installed_models or any(m.startswith(model_name) for m in installed_models):
                 entry["installed"] = True
                 entry["callable"] = True
-                if model_name in ["qwen2.5-coder:7b", "gemma3:4b"]:
-                    entry["json_valid"] = True
-                    if model_name == "qwen2.5-coder:7b":
-                        entry["quality_valid"] = True
-                        entry["review_usable"] = "usable"
-                    else:
-                        entry["review_usable"] = "weak_quality_rejected"
+                if entry["json_valid"] and entry["quality_valid"]:
+                    entry["review_usable"] = "usable"
+                elif entry["json_valid"]:
+                    entry["review_usable"] = "transport_usable_pending_json_quality"
+                else:
+                    entry["review_usable"] = "weak_quality_rejected"
     except Exception as exc:
         entry["error_detail"] = str(exc)
 
@@ -156,7 +160,10 @@ def probe_openrouter_slug(slug, catalog_models, api_key=None):
                 res_json = json.loads(resp.read().decode("utf-8"))
                 if res_json.get("choices"):
                     entry["callable"] = True
-                    entry["review_usable"] = "usable"
+                    if entry.get("json_valid") and entry.get("quality_valid"):
+                        entry["review_usable"] = "usable"
+                    else:
+                        entry["review_usable"] = "transport_usable_pending_json_quality"
         except urllib.error.HTTPError as exc:
             entry["callable"] = False
             entry["error_code"] = exc.code
@@ -224,6 +231,46 @@ def main():
     with open(MATRIX_MD_PATH, "w", encoding="utf-8") as f:
         f.write("\n".join(md_content) + "\n")
     print(f"Saved capability matrix MD to {MATRIX_MD_PATH}")
+
+    # Generate reviews/MODEL_INVENTORY.md structured evidence table (13 fields)
+    MODEL_INVENTORY_REVIEWS_PATH = os.path.join(REVIEWS_DIR, "MODEL_INVENTORY.md")
+    MODEL_INVENTORY_ROOT_PATH = os.path.join(ROOT_DIR, "MODEL_INVENTORY.md")
+    inv_lines = [
+        "# Model Inventory & Capability Evidence Ledger — MODEL_INVENTORY.md",
+        "",
+        f"> **Generated at**: {_dt.datetime.now(_dt.timezone.utc).isoformat()}",
+        "> **Governance Rule**: Models must be callable with valid JSON and quality checks before entering active review pools. Unverified candidates remain `quarantined`.",
+        "",
+        "| Source URL / Slug | Provider | Type | Access | Reachable | Callable | JSON Valid | Tool-Use Valid | Quality Valid | Usability Status | Latency Band | Failure Mode / Detail | Evidence Receipt |",
+        "|:---|:---|:---:|:---|:---:|:---:|:---:|:---:|:---:|:---|:---|:---|:---|",
+    ]
+
+    for row in matrix:
+        slug = row.get("model_id")
+        provider = row.get("provider")
+        m_type = "Local" if provider == "ollama" else "Cloud"
+        access = "Open Source" if provider == "ollama" else "Cloud API"
+        source_url = f"https://ollama.com/library/{slug}" if provider == "ollama" else f"https://openrouter.ai/{slug}"
+        reachable = "[YES]" if row.get("endpoint_reachable") else "[NO]"
+        callable_str = "[YES]" if row.get("callable") else "[NO]"
+        json_valid = "[YES]" if row.get("json_valid") else "[NO]"
+        tool_valid = "[N/A]"
+        qual_valid = "[YES]" if row.get("quality_valid") else "[NO]"
+        status = row.get("review_usable", "quarantined")
+        latency = row.get("expected_latency_band", "unknown")
+        failure = str(row.get("error_code") or row.get("error_detail") or "None")
+        receipt = f"[`{row.get('evidence_receipt_path')}`]({row.get('evidence_receipt_path')})"
+
+        inv_lines.append(
+            f"| [`{slug}`]({source_url}) | `{provider}` | `{m_type}` | `{access}` | {reachable} | {callable_str} | {json_valid} | {tool_valid} | {qual_valid} | `{status}` | `{latency}` | `{failure}` | {receipt} |"
+        )
+
+    inv_content = "\n".join(inv_lines) + "\n"
+    with open(MODEL_INVENTORY_REVIEWS_PATH, "w", encoding="utf-8") as f:
+        f.write(inv_content)
+    with open(MODEL_INVENTORY_ROOT_PATH, "w", encoding="utf-8") as f:
+        f.write(inv_content)
+    print(f"Saved model inventory evidence ledger to {MODEL_INVENTORY_REVIEWS_PATH} and {MODEL_INVENTORY_ROOT_PATH}")
 
 if __name__ == "__main__":
     main()
