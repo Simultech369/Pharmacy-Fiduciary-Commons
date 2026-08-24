@@ -1,13 +1,13 @@
 {
-  "timestamp": "2026-08-15T06:09:23Z",
+  "timestamp": "2026-08-24T13:21:33Z",
   "overall_status": "PASSED",
-  "expected_step_count": 7,
-  "steps_executed": 7,
+  "expected_step_count": 9,
+  "steps_executed": 9,
   "git_lineage": {
-    "head_commit": "517b94d0c93a5f0c21d8052f79a68eb83c6c229a",
+    "head_commit": "4a892575d1ef15486baedcc4012a7ec87c0d3838",
     "branch": "main",
     "is_dirty": true,
-    "dirty_file_count": 2,
+    "dirty_file_count": 34,
     "lineage_tag": "[dirty working tree]"
   },
   "steps": [
@@ -16,49 +16,78 @@
       "command": "npx --no-install hardhat test",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 125061
+      "duration_ms": 640967,
+      "observed_counts": {
+        "passing_tests": 387
+      }
     },
     {
       "step_name": "2. Brand Gate B & Impeccable Linter",
       "command": "npm run check:frontend",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1745
+      "duration_ms": 5041
     },
     {
       "step_name": "3. PageIndex Status Auditor",
       "command": "python scripts/index_dossier_tree.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 761
+      "duration_ms": 715,
+      "observed_counts": {
+        "dirty_untracked_files_detected": 34,
+        "contradictory_claims_identified": 0
+      }
     },
     {
       "step_name": "4. Local Dossier Retrieval Eval",
       "command": "python scripts/eval_dossier_rag.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1632
+      "duration_ms": 2161,
+      "observed_counts": {
+        "positive_cases": 26,
+        "adversarial_no_hit_cases": 8
+      }
     },
     {
       "step_name": "5. Context Hygiene Auditor",
       "command": "python scripts/context_hygiene_audit.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 285
+      "duration_ms": 252
     },
     {
       "step_name": "6. Constitutional Rubric Evaluator",
       "command": "python scripts/eval_constitutional_rubric.py --target reviews/rotational_swarm_review_dossier.md",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 553
+      "duration_ms": 247
     },
     {
       "step_name": "7. Swarm Observability Dashboard",
       "command": "python scripts/observability_dashboard.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1867
+      "duration_ms": 2696
+    },
+    {
+      "step_name": "8. Simulated 11-Receipt Dual-Chain Council Verifier",
+      "command": "python scripts/council_orchestrator.py --demo",
+      "return_code": 0,
+      "status": "PASSED",
+      "duration_ms": 385
+    },
+    {
+      "step_name": "9. Agent Claim Lie Detector & Cross-Auditor",
+      "command": "python scripts/verify_agent_claims.py --target reviews/rotational_swarm_review_dossier.md",
+      "return_code": 0,
+      "status": "PASSED",
+      "duration_ms": 6897,
+      "observed_counts": {
+        "claims_audited": 40,
+        "claim_violations": 0
+      }
     }
   ]
 }

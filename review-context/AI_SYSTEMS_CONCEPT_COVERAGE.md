@@ -6,7 +6,17 @@ Snapshot for this coverage pass:
 
 - Repo: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
 - Branch / HEAD baseline when prepared: `main` (`[dirty working tree]`)
-- Worktree after this pass: expected dirty until the compact handoff refresh is committed or reverted
+- Worktree after this pass: dirty; latest local check on 2026-08-24 showed
+  `34` visible `git status --short` entries (`21` modified, `13` untracked).
+- 2026-08-24 reconciliation note: after the repo-local gateway/Gate 0 promotion
+  slice, `python scripts\verify_all.py` passed `9/9` and refreshed
+  `cache\verification_master_receipt.json` at `2026-08-24T13:21:33Z`. That
+  receipt recorded Hardhat `387 passing`, PageIndex `34` dirty/untracked with
+  `0` contradictions, RAG eval `26` positive cases and `8` adversarial no-hit
+  cases, and Agent Claim Lie Detector `40` claims with `0` violations.
+- Scratch council engine note: later on 2026-08-24, the expanded scratch suite
+  passed `208` tests in `113.826s`; current scratch count was `56` non-test
+  Python files and `47` `test_*.py` suites.
 
 ## Weakest Valid Claim Rule
 
@@ -25,7 +35,7 @@ For this repo, that means:
 
 | Topic | Current repo coverage | Gap before stronger claim | Next useful slice |
 |---|---|---|---|
-| Production RAG with citations | Partial local prototype: `scripts/dossier_rag_retrieval.py` retrieves Markdown passages with line citations. `scripts/eval_dossier_rag.py` measures 12 golden questions and 4 adversarial no-hit queries. | No PDF parsing, page numbers, neural embeddings, true cross-encoder reranker, parent-document retrieval, web fallback, or 50+ golden cases. | Expand retrieval eval to 50 repo-specific cases and add metadata filter tests before naming it production RAG. |
+| Production RAG with citations | Partial local prototype: `scripts/dossier_rag_retrieval.py` retrieves Markdown passages with line citations. Latest receipt-backed eval observed 26 positive cases and 8 adversarial no-hit queries. | No PDF parsing, page numbers, neural embeddings, true cross-encoder reranker, parent-document retrieval, web fallback, or 50+ golden cases. | Expand retrieval eval to 50 repo-specific cases and add metadata filter tests before naming it production RAG. |
 | Hybrid search | Partial local lexical hybrid: TF-IDF cosine plus sparse token overlap and deterministic reranking. | No dense embedding index, BM25 library, SQLite-vec, Qdrant, Weaviate, ColBERT, or late interaction. | Keep dependency-free local retrieval for governance docs; add vector DB only if retrieval becomes user-facing infrastructure. |
 | Query expansion and rewriting | Small deterministic PBM synonym expansion in `scripts/dossier_rag_retrieval.py`. | No LLM query rewrite, ambiguity classifier, or learned expansion model. | Add fixed ambiguity fixtures first; avoid model-based rewriting until adversarial no-hit tests are strong. |
 | Citation grounding | Local line-anchored citations and JSON output with `source_url`, `section_title`, and line range. | No answer generator validates that every sentence is supported by cited passages. | Add a citation-grounding checker if generated answers are introduced. |
@@ -73,3 +83,87 @@ The 45-model roster in `review-context/SWARM_ROSTER_40_MODELS.md` is a planning 
 - cost and rate-limit ceiling;
 - receipt metadata;
 - output reconciliation against local evidence.
+
+## 2026-08-24 LLM Engineering Roadmap Reconciliation
+
+Source posture: user-supplied Antigravity matrix over two AI-engineering topic
+lists. This section records a local calibration against the PBM repo and the
+external scratch council engine. It is a roadmap and proof-depth map, not a
+production-readiness claim.
+
+### Immediate Build Order
+
+1. **Verify and extend the repo-local gateway, context assembly, and guardrail
+   slice.**
+   `scripts\council_orchestrator.py` now has a deterministic no-network
+   `ModelGateway.invoke_with_resilience()` simulation, Gate 0 preflight, and
+   log-derived wire-payload reconstruction for qualification probes. The next
+   step is full receipt refresh, then only later live routing, retries, circuit
+   breakers, hosted ZDR evidence, and disclosure-class policy.
+
+2. **Finish proof-boundary cleanup before new product surface.**
+   Keep strengthening `ExecutionSandboxReceipt`, `ApplyAuthorizationReceipt`,
+   route attestation, and generated receipt wording. Live production apply must
+   require container-enforced isolation plus real interactive HMAC approval
+   evidence.
+
+3. **Add deterministic cache and deduplication before neural semantic cache.**
+   The repo already chunks and evaluates local dossier retrieval. The next
+   useful cost-saving layer is stable content hashes, prompt hashes, and
+   no-repeat review packet reuse. Embedding similarity cache can follow only
+   after access-control and false-positive tests exist.
+
+4. **Start multimodal document intake as a bounded proof slice.**
+   Vision-language adapters apply to scanned PBM tables, formulary grids,
+   invoices, and PDFs. Start with deterministic extraction fixtures and
+   redaction checks; do not route real PHI/PII or private claims through hosted
+   vision models.
+
+5. **Treat streaming and async queues as operator-experience hardening, not the
+   next proof primitive.**
+   Scratch `council_api_server.py` has SSE formatting and the scratch runtime has
+   DLQ/checkpoint primitives. Promote them after the proof-boundary and gateway
+   slices, when the dashboard has a real long-running council workflow to show.
+
+### First Topic List Calibration
+
+| Topic bucket | Project status | Calibration |
+| --- | --- | --- |
+| Tokenizer, RoPE/ALiBi, hand-wired attention, MHA, Transformer blocks, mini-former training | Park | These are base-model internals. They do not improve fiduciary proof, Solidity solvency, or receipt truthfulness right now. |
+| Embeddings | Implement further | Retrieval applies, but the repo currently uses deterministic lexical/TF-IDF-style retrieval rather than a durable neural embedding lifecycle. Add dense embeddings only behind metadata-filter and no-hit tests. |
+| Objective comparison, SFT/DPO/RLHF/GRPO | Narrowly apply | Scratch `rlvr_ruler_reward_engine.py` models RLVR/RULER-style rewards. Use RLVR only for verifiable invariant breaking, compiler/proof checks, or formal verification. Park SFT/RLHF on auditor seats to preserve independent dissent. |
+| Sampling, KV cache, speculative decoding, quantization, serving stacks, hardware budgets | Implement selectively | Gateway sampling controls and local quantized model inventory are relevant. Speculative decoding and KV-cache work should wait for measured local inference bottlenecks; prompt/content dedup is cheaper and safer first. |
+| Long context | Partial / planning | Roster docs name long-context lanes, but a roster entry is not proof. Count this only when a live route produces receipt-backed review output on an allowed disclosure class. |
+| Data pipelines and synthetic data | Addressed / implement further | Repo dossier indexing and review-packet compilation are real. Scratch red-team and PBM fraud specs add synthetic fixtures. Promote only tests tied to active PBM claims. |
+| Eval harnesses, RAG, tool use / agents, red-team suite | Core pillar | These are the strongest fit: `scripts\verify_all.py`, `scripts\verify_agent_claims.py`, `scripts\dossier_rag_retrieval.py`, `scripts\eval_dossier_rag.py`, repo `scripts\council_orchestrator.py`, and scratch council/red-team modules. |
+| Vision-language adapters | Start | Needed for scanned PBM evidence, but must begin with sanitized fixtures, OCR/table extraction proof, and prompt-injection gates. |
+| Interpretability | Limited scratch utility | Scratch reasoning-trace extraction can help debug reviewer outputs, but hidden chain-of-thought should not become governance proof. Use only structured, admissible explanations and receipt-backed findings. |
+| Full capstone model system | Prototype / control plane | The PBM Treasury plus scratch Council Engine is a capstone-style integrated system, but production status still depends on proof-boundary, deployment, data-retention, and approval-gate completion. |
+
+### Fifteen Backend Systems Calibration
+
+| # | System | Current status | Next implementation action |
+| --- | --- | --- | --- |
+| 1 | LLM gateway / proxy | Scratch implemented; repo-local partial/no-network promotion | Keep the new `ModelGateway.invoke_with_resilience()` simulation receipt-backed, then add retries, circuit breakers, route attestation, and ZDR boundaries only with live provider evidence. |
+| 2 | Token metering / billing | Budget metering scratch; billing parked | Keep SQLite-style budget reservations for paid model dispatch. Do not add Stripe billing unless this becomes a tenant SaaS product. |
+| 3 | Streaming response infrastructure | Scratch prototype | Add SSE/WebSocket backpressure only after dashboard workflows need real-time jury traces. |
+| 4 | RAG serving pipeline | Repo local prototype | Add incremental indexing, metadata filters, larger evals, and scanned-doc fixtures before calling it production RAG. |
+| 5 | Semantic cache layer | Not yet production | Start with deterministic prompt/content-hash cache and duplicate packet suppression; add embedding cache later. |
+| 6 | Async agent job queue | Scratch implemented | Promote checkpoint + DLQ semantics for long-running council jobs only after gateway proof is repo-local. |
+| 7 | Tool execution sandbox | Scratch implemented; repo proof boundary hardened | Keep negative tests for mock/live isolation, then require live Docker/Podman evidence for production apply. |
+| 8 | Multi-tenant knowledge base | Partial / scratch | Do not overclaim. Add row-level metadata filtering tests before storing tenant-specific vectors or claims. |
+| 9 | Prompt and config versioning | Partial | Convert prompt/model/config hashes into a small registry with rollback and receipt linkage. |
+| 10 | Eval pipeline backend | Repo core pillar | Maintain `verify_all.py` as the master gate; keep durable observed counts in receipts. |
+| 11 | Observability for LLM traffic | Repo and scratch local | Keep local receipts and JSON summaries now; add OpenTelemetry-style traces only at service boundaries. |
+| 12 | Webhook and event fan-out | Scratch transport only | Add signed external webhooks later. Current TCP/Merkle gossip is not Ed25519-authenticated webhook infrastructure. |
+| 13 | Context assembly service | Scratch implemented; repo-local partial/no-network promotion | Log-derived reconstruction checks now guard the local gateway demo and qualification probes; extend them before any external model dispatch from repo workflows. |
+| 14 | Guardrails middleware | Scratch implemented; repo-local Gate 0 partial promotion | Gate 0 prompt-injection rejection is covered locally; PII/PHI redaction, domain policy, and L3 lifecycle hooks still need repo CLI/runtime promotion. |
+| 15 | Model fallback and routing | Scratch implemented; repo fallback not proven | Keep fallback/routing as future work behind disclosure-class and budget checks. No live provider dispatch, hosted ZDR attestation, or paid model call is proven by the repo-local gateway simulation. |
+
+### Parked By Default
+
+Do not spend PBM implementation cycles on custom tokenizer construction,
+from-scratch Transformer internals, CUDA/Triton/FlashAttention, toy MoE routing,
+state-space architecture experiments, diffusion language models, scaling-law
+research, or SFT/RLHF of governance auditor seats. These may be useful learning
+projects, but they are not the current fiduciary control-plane bottleneck.
