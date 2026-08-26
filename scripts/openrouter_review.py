@@ -15,6 +15,7 @@ REVIEWS_DIR = os.path.join(ROOT_DIR, "reviews")
 DEFAULT_CONTEXT_FILE = "C:/Users/Josh/.gemini/antigravity/brain/5450a484-4a05-425b-96b4-0d604544248b/llama3_review_context.md"
 
 DISCLOSURE_CLASSES = [
+    "PUBLIC_SAFE",
     "PUBLIC_COMMITTED",
     "LOCAL_PLANNING",
     "LOCAL_CODE_DIRTY",

@@ -70,7 +70,7 @@ Recommended classifications: `verified defect`, `verified contradiction`, `plaus
 | Focused patient-fund Hardhat tests | Hardhat artifacts/cache and local mock chain state | Mixed | Run only after explicit validation approval; use local mocks and record artifacts written. |
 | Full test suite | Hardhat artifacts/cache plus unrelated test surfaces | Mixed/broad | Hold until exact scope is approved. |
 | Dashboard build/check commands | Build outputs or generated assets may change | Unknown until inspected | Classify exact command before running. |
-| `scripts/pre_commit_audit.py` | Provider/network access, review outputs, possible credentials | Held | Requires explicit approval for exact packet and disclosure. |
+| `scripts/pre_commit_audit.py` | Provider/network access, review outputs, possible credentials | Held | External route is packet-gated to `PUBLIC_SAFE` only and requires exact `PBM_APPROVE_EXTERNAL_REVIEW=PUBLIC_SAFE`; dirty code remains local-only. |
 | `scripts/openrouter_review.py` | External disclosure and review outputs | Held | Requires explicit approval for exact packet and provider route. |
 | Top-up or recovery experiments | Token balances, accounts, approvals, RPC/provider state | Prohibited in planning | Use only local mock-token tests after separate approval. |
 | Git stage/commit/push | Repository/public state | Requires explicit approval | Stage only exact approved files. |

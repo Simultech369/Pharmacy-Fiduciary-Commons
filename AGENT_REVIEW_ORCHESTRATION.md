@@ -71,8 +71,9 @@ More autonomy in review orchestration must mean more explicit gates, not more pe
 | Class | Contents | Default route |
 |---|---|---|
 | `PUBLIC_COMMITTED` | Public GitHub commit files only, no local dirty/untracked artifacts | May be prepared for external review only after explicit approval |
+| `PUBLIC_SAFE` | Locally staged docs/tests or other packet-proven public-safe artifacts with verified provenance and no blocked paths | Pre-commit external review may run only with exact `PBM_APPROVE_EXTERNAL_REVIEW=PUBLIC_SAFE` |
 | `LOCAL_PLANNING` | Untracked handoffs, prompts, review-context notes, local docs | Local or explicitly approved external review only |
-| `LOCAL_CODE_DIRTY` | Modified working tree files not yet committed | Local review only unless the user approves exact file disclosure |
+| `LOCAL_CODE_DIRTY` | Modified working tree files not yet committed | Local review only in the pre-commit hook; do not route externally through OpenRouter/free |
 | `SECRET_OR_SENSITIVE` | Credentials, API keys, PHI, patient/pharmacy identity, witness material, private keys, support-ticket identifiers, stable wallet-to-pharmacy mappings | Never send to reviewer prompts |
 | `LIVE_PRIVILEGED` | Production RPCs, deploy keys, multisig/role operations, real funds, database service roles | Never send or use in review cycles |
 
