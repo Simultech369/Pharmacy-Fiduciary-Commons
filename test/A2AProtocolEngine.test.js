@@ -274,5 +274,65 @@ print("DISTRIBUTED_MERKLE_SYNC_VERIFIED")
     const output = runPython(script);
     expect(output).to.include("DISTRIBUTED_MERKLE_SYNC_VERIFIED");
   });
-});
 
+  it("verifies read-only External Agent Cards, JSON-RPC conversion, privacy redaction, and remote execution blocking", () => {
+    const script = `
+import sys
+import os
+sys.path.insert(0, os.path.join(r"${repoRoot}", "tools", "council"))
+
+import time
+from external_a2a_adapter import ExternalA2AAdapter, JSONRPCRequest, AgentCard
+from council_contracts import A2AMessage
+
+# 1. Create Agent Card
+card = ExternalA2AAdapter.create_agent_card(
+    agent_id="agent.antigravity.v1",
+    name="Antigravity Fiduciary Verifier",
+    description="Autonomous PBM rebate treasury formal verifier",
+    capabilities=["solvency_audit", "smt_z3_bounds", "benford_triage"]
+)
+assert card.read_only_mode is True
+assert card.remote_execution_permitted is False
+assert card.security_clearance == "PUBLIC_SAFE"
+
+# 2. Convert to JSON-RPC and assert privacy redaction
+msg = A2AMessage(
+    message_id="msg_a2a_001",
+    conversation_id="conv_a2a_101",
+    sender_agent_id="agent.antigravity.v1",
+    recipient_agent_id="agent.codex.v1",
+    intent="TASK_PROPOSAL",
+    payload_data={
+        "local_file": "C:\\\\Users\\\\Josh\\\\Desktop\\\\PBMRebateTreasuryFinal\\\\contracts\\\\PBMRebateTreasury.sol",
+        "secret_key": "private_key_super_secret_123",
+        "normal_field": "verified_status_ok"
+    },
+    context_snapshot_sha256="aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899",
+    nonce="nonce_a2a_123",
+    timestamp=time.time()
+)
+rpc_req = ExternalA2AAdapter.to_jsonrpc_request(msg)
+assert rpc_req.jsonrpc == "2.0"
+assert rpc_req.params["data"]["local_file"] == "[REDACTED_LOCAL_PATH]"
+assert "secret_key" not in rpc_req.params["data"]
+assert rpc_req.params["data"]["normal_field"] == "verified_status_ok"
+
+# 3. Handle allowed read-only RPC
+card_req = JSONRPCRequest(method="council.getAgentCard", params={}, id="req_card")
+res = ExternalA2AAdapter.handle_external_request(card_req, card)
+assert res.error is None
+assert res.result["agent_id"] == "agent.antigravity.v1"
+
+# 4. Handle dangerous execution RPC -> must be blocked (-32601)
+exec_req = JSONRPCRequest(method="council.executeCode", params={"code": "import os; os.system('ls')"}, id="req_bad")
+exec_res = ExternalA2AAdapter.handle_external_request(exec_req, card)
+assert exec_res.error is not None
+assert exec_res.error["code"] == -32601
+
+print("EXTERNAL_A2A_ADAPTER_VERIFIED")
+`;
+    const output = runPython(script);
+    expect(output).to.include("EXTERNAL_A2A_ADAPTER_VERIFIED");
+  });
+});
