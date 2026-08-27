@@ -571,4 +571,89 @@ describe("PBMRebateTreasury stateful invariant fuzzing", function () {
       }
     }
   }
+
+  it("proves Multi-Asset and Forced Transfer Contamination Immunity (Invariant 5)", async function () {
+    // 1. Initial deposit and verification
+    await treasury.connect(depositor).depositRebate(toWei("25000"), "Batch Alpha");
+    await assertInvariants("Initial Deposit");
+
+    // 2. Deploy foreign token and force transfer into treasury
+    const MockERC20 = await ethers.getContractFactory("MockERC20");
+    const spamToken = await MockERC20.deploy("Spam Airdrop", "SPAM", 18);
+    await spamToken.waitForDeployment();
+    await spamToken.mint(depositor.address, toWei("1000000"));
+    await spamToken.connect(depositor).transfer(await treasury.getAddress(), toWei("500000"));
+
+    // 3. Force ETH transfer into treasury
+    const ForceETH = await ethers.getContractFactory("ForceETH");
+    const forceETH = await ForceETH.deploy({ value: toWei("5") });
+    await forceETH.waitForDeployment();
+    await forceETH.forceSend(await treasury.getAddress());
+
+    // 4. Assert primary token solvency and buckets remain 100% uncontaminated
+    const [isSolvent, delta, expected, actual] = await treasury.solvencyCheck();
+    expect(isSolvent).to.be.true;
+    expect(delta).to.equal(0n);
+    expect(expected).to.equal(toWei("25000"));
+    expect(actual).to.equal(toWei("25000"));
+    await assertInvariants("Post Forced Transfers");
+
+    // 5. Recover extraneous assets via council sweep (ERC20 -> patientFund) and timelock (ETH -> environmentalFund)
+    await treasury.connect(council).sweep(await spamToken.getAddress(), toWei("500000"));
+    expect(await spamToken.balanceOf(patientFund.address)).to.equal(toWei("500000"));
+
+    const sweepETHData = treasury.interface.encodeFunctionData("sweepETH", []);
+    await timelock.connect(council).schedule(await treasury.getAddress(), 0, sweepETHData, ethers.ZeroHash, ethers.ZeroHash, 1);
+    await increaseTime(2);
+    await timelock.connect(council).execute(await treasury.getAddress(), 0, sweepETHData, ethers.ZeroHash, ethers.ZeroHash);
+    expect(await ethers.provider.getBalance(environmentalFund.address)).to.be.greaterThan(toWei("4.9"));
+
+    // 6. Solvency remains strictly zero-delta
+    await assertInvariants("Post Sweep Recovery");
+  });
+
+  it("proves Exclusion Remediation & Bounded Historical Conservation (Invariant 6)", async function () {
+    // 1. Fund initial remediation reserve
+    await treasury.connect(council).fundExclusionRemediation(toWei("5000"));
+    expect(await treasury.exclusionRemediationReserve()).to.equal(toWei("5000"));
+    await assertInvariants("Fund Exclusion Remediation 5000");
+
+    // 2. Setup epoch with active allocation
+    await treasury.connect(depositor).depositRebate(toWei("10000"), "Remediation Batch");
+    const alloc = toWei("1000");
+    const entries = [{ pharmacy: pharmacies[0].address, amount: alloc, cap: alloc }];
+    const tree = buildTree(entries);
+    await treasury.connect(council).proposeRoot(tree.root, alloc);
+    await treasury.connect(rootConfirmer).confirmRoot(0);
+
+    // 3. Flag exclusion claims against epoch 0
+    await treasury.connect(pharmacies[1]).flagExclusion(0, toWei("1200"), evidenceHash("ex-claim-1"));
+    await treasury.connect(pharmacies[2]).flagExclusion(0, toWei("800"), evidenceHash("ex-claim-2"));
+    await assertInvariants("Flag 2 Exclusion Claims");
+
+    // 4. Approve only pharmacy 1
+    await treasury.connect(rootConfirmer).approveExclusionClaim(0, pharmacies[1].address);
+    await assertInvariants("Approve Exclusion Claim 1");
+
+    // 5. Resolve pharmacy 1 (Release from exclusion reserve -> 90% pharmacy, 10% gov reserve)
+    await treasury.connect(council).resolveClaim(
+      0,
+      pharmacies[1].address,
+      DisputeResolution.RELEASE_TO_PHARMACY,
+      evidenceHash("resolve-release-1")
+    );
+    expect(await treasury.exclusionRemediationReserve()).to.equal(toWei("3800"));
+    expect(await token.balanceOf(pharmacies[1].address)).to.equal(toWei("1080"));
+    await assertInvariants("Resolve Exclusion Claim 1 (Release)");
+
+    // 6. Resolve pharmacy 2 (Dismissed)
+    await treasury.connect(council).resolveClaim(
+      0,
+      pharmacies[2].address,
+      DisputeResolution.DISMISS,
+      evidenceHash("resolve-dismiss-2")
+    );
+    expect(await treasury.exclusionRemediationReserve()).to.equal(toWei("3800"));
+    await assertInvariants("Resolve Exclusion Claim 2 (Dismiss)");
+  });
 });
