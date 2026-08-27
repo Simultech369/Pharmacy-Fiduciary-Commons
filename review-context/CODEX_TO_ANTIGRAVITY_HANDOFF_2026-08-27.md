@@ -624,3 +624,131 @@ Avoid:
 "all scanners prove safe", or "9/9 passed" unless the receipt is present and
 fresh for the exact staged tree.
 ```
+
+## 13. Codex Live Update After Antigravity A2A/Solvency Commits
+
+Codex reconciled Antigravity's latest packet on 2026-08-27 and observed this
+newer repository state:
+
+```text
+Repository Root:
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
+
+Branch:
+main
+
+Current HEAD observed by Codex:
+a73d9b9f909d0a79887e0b0eea1a0471a0f9b43a
+
+Local branch state:
+main is ahead of origin/main by 7 commits.
+
+Latest local commits:
+a73d9b9 test(fuzz): add Invariant 5 (multi-asset contamination immunity) and Invariant 6 (exclusion remediation conservation)
+b1e00e4 feat(a2a): add external read-only Agent Card adapter and JSON-RPC gateway
+5e03646 fix(council): resolve test cwd and blueprint discovery in CLI and vision miner
+cb22ae1 docs(handoff): sync Codex-to-Antigravity handoff and calibrate triage boundaries
+68b6508 feat(council): Implement Benford's Law anomaly detection and SMT Z3 formal invariant proofs
+7be1cb9 feat(governance): harden pre-commit external disclosure gate and packet deduplication
+45af107 Promote repo-local council gateway proof boundary
+```
+
+Fresh receipt observed by Codex:
+
+```text
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\cache\verification_master_receipt.json
+timestamp: 2026-08-27T17:04:55Z
+overall_status: PASSED
+expected_step_count: 9
+steps_executed: 9
+git_lineage.head_commit: a73d9b9f909d0a79887e0b0eea1a0471a0f9b43a
+git_lineage.is_dirty: false
+git_lineage.dirty_file_count: 0
+Hardhat passing_tests: 422
+Agent claims audited: 40
+Agent claim violations: 0
+PageIndex contradictions: 0
+```
+
+### New Codex Slice - Agent Task Router
+
+Codex implemented a narrow, repo-local Task Router inspired by the Delta-LoRA
+coordination metaphor. This is an orchestration/router pattern only. It does
+not train, fine-tune, or mutate model weights.
+
+New files:
+
+```text
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\task_router.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\test_task_router.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\AgentTaskRouter.test.js
+```
+
+Modified file:
+
+```text
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\review-context\CODEX_TO_ANTIGRAVITY_HANDOFF_2026-08-27.md
+```
+
+What the Task Router proves locally:
+
+```text
+- Classifies broad tasks into bounded specialist roles:
+  A2A_PROTOCOL_REVIEWER, SECURITY_REVIEWER, TEST_WRITER, FORMAL_PROVER,
+  SOLIDITY_SEMANTICS_REVIEWER, ADVERSARIAL_RED_TEAM, LICENSE_REVIEWER,
+  UI_REVIEWER, DEBUGGER, INTEGRATOR.
+- Each assignment declares scope files, non-scope, context fields, expected
+  output contract, validation gate, mutation boundary, external disclosure
+  boundary, and escalation triggers.
+- L3 terms such as commit, stage, push, deploy, mainnet, secret, private key,
+  constitution edit, or paid model force human_l3_required=True and block file
+  mutation by delegated agents.
+- Solidity/CEI/solvency tasks are routed to HumanOwner final decision and mark
+  higher_review_recommended=True.
+- External A2A tasks stay read-only and explicitly preserve "no remote
+  execution authority" as non-scope.
+- Overbroad file context is flagged with rejected_overbroad_context=True and
+  per-assignment file scope is capped.
+```
+
+Proof boundary:
+
+```text
+This is a deterministic local routing receipt generator. It does not invoke
+external agents, does not execute remote A2A calls, does not apply patches, does
+not stage/commit/push, and does not replace human L3 authorization.
+```
+
+Focused verification run by Codex:
+
+```powershell
+Set-Location -LiteralPath 'C:\Users\Josh\Desktop\PBMRebateTreasuryFinal'
+python -B -m unittest tools/council/test_task_router.py
+# Result: Ran 4 tests, OK
+
+npx.cmd --no-install hardhat test test\AgentTaskRouter.test.js --no-compile
+# Result: 3 passing
+
+npx.cmd --no-install hardhat test test\A2AProtocolEngine.test.js test\AgentTaskRouter.test.js --no-compile
+# Result: 11 passing
+
+python -B -m py_compile tools\council\task_router.py tools\council\test_task_router.py
+# Result: passed
+```
+
+Recommended next Antigravity action:
+
+```text
+1. Review the Task Router API and role boundaries.
+2. Check whether AgentTaskRouteReceipt should remain module-local or become a
+   canonical council_contracts.py section in a deliberate contract-version bump.
+3. If accepted, run the focused checks above plus the normal master verifier.
+4. If still green, ask the operator for L3 authorization before staging and
+   committing the four-file Task Router slice.
+```
+
+Suggested commit message if accepted:
+
+```text
+feat(council): add bounded agent task router for specialist delegation
+```
