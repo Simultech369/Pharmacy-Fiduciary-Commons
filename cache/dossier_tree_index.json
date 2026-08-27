@@ -51,158 +51,158 @@
           "level": 2
         },
         {
-          "line": 81,
+          "line": 82,
           "title": "Cycle State",
           "level": 2
         },
         {
-          "line": 105,
+          "line": 106,
           "title": "Reviewer Lanes",
           "level": 2
         },
         {
-          "line": 124,
+          "line": 125,
           "title": "Tooling & Pattern Architecture Policy",
           "level": 2
         },
         {
-          "line": 126,
+          "line": 127,
           "title": "PageIndex Pattern (Claim Traceability)",
           "level": 3
         },
         {
-          "line": 145,
+          "line": 146,
           "title": "VVAH Security Scanner (Fenced Execution)",
           "level": 3
         },
         {
-          "line": 161,
+          "line": 162,
           "title": "Debug Rules",
           "level": 2
         },
         {
-          "line": 177,
+          "line": 178,
           "title": "Core Loop",
           "level": 2
         },
         {
-          "line": 211,
+          "line": 212,
           "title": "Reviewer-Cycle Disposition Rule",
           "level": 2
         },
         {
-          "line": 228,
+          "line": 229,
           "title": "Prompt Templates",
           "level": 2
         },
         {
-          "line": 230,
+          "line": 231,
           "title": "Codex 5.6 Planning Critic",
           "level": 3
         },
         {
-          "line": 269,
+          "line": 270,
           "title": "OpenClaude Blind-Spot Reviewer",
           "level": 3
         },
         {
-          "line": 293,
+          "line": 294,
           "title": "Kimi/Hunyuan Long-Context Contradiction Reviewer",
           "level": 3
         },
         {
-          "line": 325,
+          "line": 326,
           "title": "Qwen Code-Path Reviewer",
           "level": 3
         },
         {
-          "line": 349,
+          "line": 350,
           "title": "DeepSeek Invariant Reviewer",
           "level": 3
         },
         {
-          "line": 375,
+          "line": 376,
           "title": "Cohere Policy Retrieval Reviewer",
           "level": 3
         },
         {
-          "line": 396,
+          "line": 397,
           "title": "Gemma Private-First Policy Reviewer",
           "level": 3
         },
         {
-          "line": 418,
+          "line": 419,
           "title": "Zero Proof-Vs-Theater Reviewer",
           "level": 3
         },
         {
-          "line": 443,
+          "line": 444,
           "title": "Seed-Style Agentic Implementation-Risk Reviewer",
           "level": 3
         },
         {
-          "line": 468,
+          "line": 469,
           "title": "Muse-Style UX/Strategy Reviewer",
           "level": 3
         },
         {
-          "line": 489,
+          "line": 490,
           "title": "Qwen 2.5 Coder Structural & Schema Auditor (`qwen2.5-coder:32b` / `72b`)",
           "level": 3
         },
         {
-          "line": 512,
+          "line": 513,
           "title": "Laguna XS 2.1 Un-aligned Adversarial Critic (`dealignai/Laguna-XS-2.1-CRACK-GGUF`)",
           "level": 3
         },
         {
-          "line": 538,
+          "line": 539,
           "title": "Current Solvency Review Queue",
           "level": 2
         },
         {
-          "line": 559,
+          "line": 560,
           "title": "Parked Review Items for Future Codex Review Pass",
           "level": 2
         },
         {
-          "line": 575,
+          "line": 576,
           "title": "Stop Conditions",
           "level": 2
         },
         {
-          "line": 587,
+          "line": 588,
           "title": "Agentic Collaboration & Review Framework (ACRF)",
           "level": 2
         },
         {
-          "line": 591,
+          "line": 592,
           "title": "Philosophy",
           "level": 3
         },
         {
-          "line": 599,
+          "line": 600,
           "title": "Backlog Lanes",
           "level": 3
         },
         {
-          "line": 601,
+          "line": 602,
           "title": "1. Agentic Review Layer",
           "level": 4
         },
         {
-          "line": 607,
+          "line": 608,
           "title": "2. Agentic Operations Layer",
           "level": 4
         },
         {
-          "line": 612,
+          "line": 613,
           "title": "3. Agentic Communication Layer (Anti-Slop Overlay)",
           "level": 4
         }
       ],
       "findings": [],
-      "line_count": 619
+      "line_count": 620
     },
     {
       "file": "ONBOARDING.md",
@@ -658,33 +658,33 @@
           "level": 4
         },
         {
-          "line": 42,
+          "line": 43,
           "title": "Files Explicitly Excluded",
           "level": 4
         },
         {
-          "line": 49,
+          "line": 50,
           "title": "Claim Status & Verification",
           "level": 3
         },
         {
-          "line": 51,
+          "line": 52,
           "title": "Claims Currently Believed Fixed `[generated cache]`",
           "level": 4
         },
         {
-          "line": 62,
+          "line": 70,
           "title": "Claims Still Disputed / Open Non-Claims",
           "level": 4
         },
         {
-          "line": 71,
+          "line": 79,
           "title": "Control & Next Actions",
           "level": 3
         }
       ],
       "findings": [],
-      "line_count": 75
+      "line_count": 83
     },
     {
       "file": "review-context/agent_work_lineage_ledger.md",
@@ -823,57 +823,52 @@
       "sections": [
         {
           "line": 1,
-          "title": "45-Model 9-Division Swarm Observatory Roster",
+          "title": "48-Model 5-Tier Swarm Observatory & Council Roster",
           "level": 1
         },
         {
           "line": 9,
-          "title": "\ud83c\udf0a Division I: Non-Transformer & Continuous Dynamics",
+          "title": "\ud83c\udfdb\ufe0f Architecture Overview & 5-Tier Classification",
           "level": 2
         },
         {
-          "line": 16,
-          "title": "\ud83d\udee0\ufe0f Division II: Program Synthesis & Code Foundations",
+          "line": 41,
+          "title": "\ud83d\udc51 Tier 0: Apex Paid Judges (Escalations & Tie-Breakers)",
           "level": 2
         },
         {
-          "line": 31,
-          "title": "\ud83d\udee1\ufe0f Division III: Adversarial & Security Red-Team",
+          "line": 54,
+          "title": "\ud83d\ude80 Tier 1: Frontier Cloud & SOTA Open Models (Specialist Audits)",
           "level": 2
         },
         {
-          "line": 43,
-          "title": "\ud83e\udde0 Division IV: Chain-of-Thought & Logic",
+          "line": 74,
+          "title": "\ud83d\udcbb Tier 2: Local OSS Fast Workers & Reasoners (Air-Gapped Audits)",
           "level": 2
         },
         {
-          "line": 52,
-          "title": "\ud83c\udf0f Division V: Multimodal & Asian Frontier Labs",
+          "line": 96,
+          "title": "\ud83c\udfad Tier 3: Uncensored Adversarial Red-Team Scouts (Hostile Fuzzing)",
           "level": 2
         },
         {
-          "line": 64,
-          "title": "\ud83c\udfdb\ufe0f Division VI: Systems Architects & High-Judgment Judges",
+          "line": 110,
+          "title": "\ud83d\udee1\ufe0f Tier 4: Execution Harnesses & Baseline Controls (Quarantined from Voting)",
           "level": 2
         },
         {
-          "line": 77,
-          "title": "\ud83c\udfe0 Division VII: Local Offline Resident Ensemble",
+          "line": 131,
+          "title": "\u2696\ufe0f 4-Gate Model Qualification Ladder",
           "level": 2
         },
         {
-          "line": 87,
-          "title": "\ud83e\udd16 Division VIII: Autonomous Developer Agent Frameworks",
-          "level": 2
-        },
-        {
-          "line": 97,
-          "title": "\u26a1 Division IX: Enterprise Frontier & Hardware LPUs",
+          "line": 149,
+          "title": "\ud83d\udd12 11-Receipt Dual-Chain Verification Rules",
           "level": 2
         }
       ],
       "findings": [],
-      "line_count": 105
+      "line_count": 163
     },
     {
       "file": "review-context/MULTIMODAL_ROSTER_LOOPS.md",
@@ -940,7 +935,7 @@
         },
         {
           "line": 146,
-          "title": "Combination 4: Local Isolated Container Sandbox",
+          "title": "Combination 4: Local Sandbox Or Container Harness",
           "level": 3
         },
         {
@@ -1011,28 +1006,53 @@
           "level": 1
         },
         {
-          "line": 11,
+          "line": 21,
           "title": "Weakest Valid Claim Rule",
           "level": 2
         },
         {
-          "line": 24,
+          "line": 34,
           "title": "Coverage Matrix",
           "level": 2
         },
         {
-          "line": 51,
+          "line": 61,
           "title": "Council Role Mapping For External Skill Intake",
           "level": 2
         },
         {
-          "line": 66,
+          "line": 76,
           "title": "Model Roster Boundary",
           "level": 2
+        },
+        {
+          "line": 87,
+          "title": "2026-08-24 LLM Engineering Roadmap Reconciliation",
+          "level": 2
+        },
+        {
+          "line": 94,
+          "title": "Immediate Build Order",
+          "level": 3
+        },
+        {
+          "line": 128,
+          "title": "First Topic List Calibration",
+          "level": 3
+        },
+        {
+          "line": 143,
+          "title": "Fifteen Backend Systems Calibration",
+          "level": 3
+        },
+        {
+          "line": 163,
+          "title": "Parked By Default",
+          "level": 3
         }
       ],
       "findings": [],
-      "line_count": 75
+      "line_count": 169
     },
     {
       "file": "reviews/rotational_swarm_review_dossier.md",

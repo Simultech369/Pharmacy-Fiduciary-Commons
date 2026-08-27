@@ -537,4 +537,87 @@ describe("PharmacyMutualCredit", function () {
       expect(councilAfter - councilBefore).to.equal(1000n);
     });
   });
+
+  describe("Capacity & Zero-Sum Invariance Property Fuzzing", function () {
+    it("maintains strict zero-sum conservation and capacity limits across 50 random transfers", async function () {
+      const signers = await ethers.getSigners();
+      const participants = [signers[1], signers[2], signers[3], signers[4]];
+      const limits = [10000n, 20000n, 15000n, 30000n];
+
+      for (let i = 0; i < participants.length; i++) {
+        await credit.connect(council).registerParticipant(participants[i].address, limits[i]);
+      }
+
+      // Helper to check zero-sum and limit bounds
+      async function assertMutualCreditInvariants() {
+        let sum = 0n;
+        for (let i = 0; i < participants.length; i++) {
+          const bal = await credit.balances(participants[i].address);
+          const lim = await credit.creditLimits(participants[i].address);
+          sum += bal;
+          expect(bal >= -lim).to.be.true; // balance cannot violate credit limit
+        }
+        expect(sum).to.equal(0n); // zero-sum conservation
+      }
+
+      // Initial state check
+      await assertMutualCreditInvariants();
+
+      // Pseudo-random stateful transfer simulation
+      let seed = 42;
+      function pseudoRandom(max) {
+        seed = (seed * 9301 + 49297) % 233280;
+        return Math.floor((seed / 233280) * max);
+      }
+
+      for (let step = 0; step < 50; step++) {
+        const fromIdx = pseudoRandom(participants.length);
+        let toIdx = pseudoRandom(participants.length);
+        if (fromIdx === toIdx) toIdx = (toIdx + 1) % participants.length;
+
+        const fromSigner = participants[fromIdx];
+        const toSigner = participants[toIdx];
+        const amount = BigInt(pseudoRandom(5000) + 1);
+
+        const fromBal = await credit.balances(fromSigner.address);
+        const fromLim = await credit.creditLimits(fromSigner.address);
+        const canCover = fromBal - amount >= -fromLim;
+
+        if (canCover) {
+          await credit.connect(fromSigner).transferCredit(toSigner.address, amount);
+        } else {
+        await expectRevert(
+          credit.connect(fromSigner).transferCredit(toSigner.address, amount),
+          "CreditLimitExceeded"
+        );
+      }
+
+      await assertMutualCreditInvariants();
+    }
+  });
+
+  it("verifies mathematical capacity bounds under extreme edge cases (limit=0, negative balance, max int256)", async function () {
+    // Register pharmacyA, pharmacyB, and pZero (with 0 limit)
+    const signers = await ethers.getSigners();
+    const pZero = signers[5];
+    await credit.connect(council).registerParticipant(pharmacyA.address, 1000n);
+    await credit.connect(council).registerParticipant(pharmacyB.address, 1000n);
+    await credit.connect(council).registerParticipant(pZero.address, 0n);
+
+    // pZero cannot send credit because balance (0) - 1 < 0 with limit 0
+    await expectRevert(
+      credit.connect(pZero).transferCredit(pharmacyA.address, 1n),
+      "CreditLimitExceeded"
+    );
+
+    // pZero can receive credit from pharmacyA
+    await credit.connect(pharmacyA).transferCredit(pZero.address, 500n);
+    expect(await credit.balances(pZero.address)).to.equal(500n);
+
+    // Now pZero has positive balance 500n, can transfer up to 500n even with 0 limit
+    await credit.connect(pZero).transferCredit(pharmacyB.address, 500n);
+    expect(await credit.balances(pZero.address)).to.equal(0n);
+    expect(await credit.balances(pharmacyB.address)).to.equal(500n);
+  });
+  });
 });

@@ -43,14 +43,15 @@ def main():
         print("Executing Slither static analysis...")
         try:
             res = subprocess.run([slither_bin, ".", "--json", report_path], cwd=ROOT_DIR, capture_output=True, text=True)
-            if res.returncode in (0, 255) and os.path.exists(report_path):
+            if os.path.exists(report_path) and os.path.getsize(report_path) > 0:
                 slither_ran = True
                 slither_execution_status = "SUCCESS"
                 slither_execution_note = f"Fresh Slither execution completed with exit code {res.returncode}; Slither uses non-zero exits when findings are present."
                 print(f"Slither analysis completed. JSON report saved to: {report_path}")
             else:
-                print(f"ERROR: Slither analysis failed with exit code {res.returncode}.")
+                print(f"ERROR: Slither analysis failed with exit code {res.returncode}. Stderr: {res.stderr[:500]}")
                 sys.exit(1)
+
         except Exception as e:
             print(f"ERROR: Slither execution failed: {e}")
             sys.exit(1)

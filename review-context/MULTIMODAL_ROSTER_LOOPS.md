@@ -1,7 +1,7 @@
 # Multi-Modal OSS Rotating Roles & Agent Harness Combinations
 
-**Repository**: `Pharmacy-Fiduciary-Commons`  
-**Schema**: `pbm-multimodal-harness/v1.0`  
+**Repository**: `Pharmacy-Fiduciary-Commons`
+**Schema**: `pbm-multimodal-harness/v1.0`
 **Purpose**: Coordinate multi-modal OSS model lanes with deterministic harnesses for review, verification, disagreement mining, and evidence capture. The harness does not authorize autonomous source edits, commits, pushes, deployments, signing, role changes, or fund movement.
 
 ---
@@ -143,10 +143,10 @@ graph TD
 - **Loop Strategy**: Reads high-level feature issues, maps cross-file dependencies via PageIndex, executes build commands (`npm run build:dashboard`).
 - **Verification Rule**: Must pass Brand Gate B linter (`npm run check:frontend`).
 
-### Combination 4: Local Isolated Container Sandbox
+### Combination 4: Local Sandbox Or Container Harness
 - **Harness**: **OpenHands (`sandbox_executor`) + Local Gemma 3 (Ollama port 11434)**
-- **Loop Strategy**: Runs offline dry-run simulations inside isolated Docker container loopbacks.
-- **Verification Rule**: Zero external network egress during test loop execution.
+- **Loop Strategy**: Runs offline dry-run simulations or Docker executions, with the receipt required to declare the actual isolation mode.
+- **Verification Rule**: Zero external network egress during test loop execution only counts as proven when container execution is live and receipt-backed.
 
 ---
 

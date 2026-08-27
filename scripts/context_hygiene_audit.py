@@ -124,6 +124,36 @@ CONTEXT_SURFACES = [
         "role": "FDE rate-limiting contract and bucket isolation regression tests.",
         "required": True,
     },
+    {
+        "path": "scripts/compile_review_packet.py",
+        "category": "deterministic_gate",
+        "role": "Permission-aware review packet compiler and sensitivity classifier.",
+        "required": True,
+    },
+    {
+        "path": "scripts/verify_agent_claims.py",
+        "category": "deterministic_gate",
+        "role": "Agent claim lie detector and receipt cross-auditor.",
+        "required": True,
+    },
+    {
+        "path": "test/ReviewPacketCompiler.test.js",
+        "category": "deterministic_gate",
+        "role": "Permission-aware review packet compiler regression tests.",
+        "required": True,
+    },
+    {
+        "path": "test/ZeroDatabaseLiveness.test.js",
+        "category": "deterministic_gate",
+        "role": "Zero-database resilience and offline continuity liveness tests.",
+        "required": True,
+    },
+    {
+        "path": "test/AgentClaimVerifier.test.js",
+        "category": "deterministic_gate",
+        "role": "Agent claim lie detector regression tests.",
+        "required": True,
+    },
 ]
 
 REQUIRED_AGENT_TOKENS = [

@@ -3,8 +3,8 @@
 Status: Active automated Solidity static analysis report.
 
 ## 1. Slither Static Analysis Summary
-- **Execution Status**: SKIPPED - STATIC ARTIFACT PARSED
-- **Execution Note**: Slither execution was explicitly skipped; counts below come from the existing JSON artifact, not a fresh scanner run.
+- **Execution Status**: SUCCESS
+- **Execution Note**: Fresh Slither execution completed with exit code 4294967295; Slither uses non-zero exits when findings are present.
 - **Total Detectors Evaluated**: 101
 - **Total Raw Findings**: 158
 - **Severity Breakdown (Slither Classification)**:

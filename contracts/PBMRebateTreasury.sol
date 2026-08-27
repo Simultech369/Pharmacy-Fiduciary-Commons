@@ -1514,6 +1514,42 @@ contract PBMRebateTreasury is
         return (totalEscrowed, totalFlaggedNormal, totalFlaggedExclusion);
     }
 
+    /**
+     * @notice Performs an atomic on-chain solvency balance check.
+     * @dev Compares actual ERC-20 token balance held by the contract against the sum of
+     *      all accounting obligations: distributionPool + governanceReserve +
+     *      exclusionRemediationReserve + totalEscrowed + totalFlaggedNormal.
+     * @return isSolvent True if actual token balance >= total accounting obligations.
+     * @return delta The surplus (or deficit if insolvent) in token base units.
+     * @return expectedBalance Sum of all accounting bucket obligations.
+     * @return actualBalance Real ERC-20 balance held by this contract.
+     */
+    function solvencyCheck()
+        external
+        view
+        returns (
+            bool isSolvent,
+            uint256 delta,
+            uint256 expectedBalance,
+            uint256 actualBalance
+        )
+    {
+        actualBalance = token.balanceOf(address(this));
+        expectedBalance = distributionPool +
+            governanceReserve +
+            exclusionRemediationReserve +
+            totalEscrowed +
+            totalFlaggedNormal;
+
+        if (actualBalance >= expectedBalance) {
+            isSolvent = true;
+            delta = actualBalance - expectedBalance;
+        } else {
+            isSolvent = false;
+            delta = expectedBalance - actualBalance;
+        }
+    }
+
     /// @notice How much a pharmacy has claimed in a given epoch.
     /// @param epoch    The epoch to query.
     /// @param pharmacy The pharmacy address.

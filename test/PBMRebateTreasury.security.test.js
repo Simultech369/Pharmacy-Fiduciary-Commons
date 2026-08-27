@@ -1265,6 +1265,13 @@ describe("PBMRebateTreasury security baseline", function () {
       const expectedBalance = distPool + govRes + exclRes + totalEscrow + totalFlaggedNorm;
       expect(contractBalance).to.equal(expectedBalance);
 
+      // Verify on-chain solvencyCheck() view returns accurate solvency state
+      const [isSolvent, delta, expBal, actBal] = await treasury.solvencyCheck();
+      expect(isSolvent).to.be.true;
+      expect(delta).to.equal(0n);
+      expect(expBal).to.equal(expectedBalance);
+      expect(actBal).to.equal(contractBalance);
+
       // Verify global aggregate variables match
       expect(await treasury.totalEscrowed()).to.equal(totalEscrow);
       expect(await treasury.totalFlaggedNormal()).to.equal(totalFlaggedNorm);
@@ -1804,7 +1811,32 @@ describe("PBMRebateTreasury security baseline", function () {
 
         const expectedBalance = distPool + govRes + exclRes + contractEscrowsAndFlags;
         expect(contractBalance).to.equal(expectedBalance, `Step ${step}: overall balance invariant broken`);
+
+        // Assert solvencyCheck() view agrees
+        const [isSolvent, delta, expBal, actBal] = await treasury.solvencyCheck();
+        expect(isSolvent).to.be.true;
+        expect(delta).to.equal(0n);
+        expect(expBal).to.equal(expectedBalance);
+        expect(actBal).to.equal(contractBalance);
       }
+    });
+
+    it("accurately reports solvency surplus when surplus tokens are donated or transferred", async function () {
+      await seedDeposit(toWei("1000"));
+      const [initSolvent, initDelta, initExpected, initActual] = await treasury.solvencyCheck();
+      expect(initSolvent).to.be.true;
+      expect(initDelta).to.equal(0n);
+      expect(initExpected).to.equal(toWei("1000"));
+      expect(initActual).to.equal(toWei("1000"));
+
+      // Send 50 extra tokens directly to contract
+      await token.connect(depositor).transfer(await treasury.getAddress(), toWei("50"));
+
+      const [surplusSolvent, surplusDelta, surplusExpected, surplusActual] = await treasury.solvencyCheck();
+      expect(surplusSolvent).to.be.true;
+      expect(surplusDelta).to.equal(toWei("50")); // 50 token surplus
+      expect(surplusExpected).to.equal(toWei("1000"));
+      expect(surplusActual).to.equal(toWei("1050"));
     });
   });
 });

@@ -1,105 +1,163 @@
-# 45-Model 9-Division Swarm Observatory Roster
+# 48-Model 5-Tier Swarm Observatory & Council Roster
 
-**Repository**: `Pharmacy-Fiduciary-Commons`  
-**Schema**: `pbm-swarm-roster/v1.0`  
-**Purpose**: Multi-model adversarial consensus, program synthesis, security red-teaming, and local offline verification.
-
----
-
-## 🌊 Division I: Non-Transformer & Continuous Dynamics
-| Model | Role ID | Purpose & Specialization |
-|-------|---------|--------------------------|
-| **Liquid AI (LFMs)** | `liquid_dynamics_critic` | Non-transformer continuous-time state & sequence dynamics modeling. |
+**Repository**: `Pharmacy-Fiduciary-Commons`
+**Schema**: `pbm-swarm-roster/v2.0`
+**Purpose**: Dual-chain multi-agent council convocation, adversarial security red-teaming, 4-gate model qualification, and 11-receipt cryptographic verification.
 
 ---
 
-## 🛠️ Division II: Program Synthesis & Code Foundations
-| Model | Role ID | Purpose & Specialization |
-|-------|---------|--------------------------|
-| **Poolside Laguna** | `program_synthesis_specialist` | Execution-guided code generation & repair. |
-| **FreeCode Qwen 2.5 Coder 32B** | `code_synthesizer_32b` | Massive multi-file program synthesis (`openrouter/free`). |
-| **Mistral Codestral 22B** | `devstral_specialist` | Codebase refactoring & bug hunting. |
-| **Yi-Coder 34B / 9B** | `repository_ingestor` | 128k long-context cross-file dependency mapping. |
-| **Phind CodeLlama 34B** | `technical_search_engineer` | Technical Q&A & algorithm synthesis. |
-| **WizardCoder 34B** | `python_script_automator` | Python & automation script specialist. |
-| **StarCoder2 15B** | `bigcode_foundation` | Open-community code generation foundation. |
-| **CodeGemma 7B** | `local_code_probe` | Lightweight Google open code model. |
-| **Jun Song Checkpoints** | `junsong_hf_specialist` | Fine-tuned code & reasoning checkpoints. |
+## 🏛️ Architecture Overview & 5-Tier Classification
+
+```
+┌─────────────────────────────────────────────────────────────┬───────┬──────────────────────────────────────────┐
+│ TIER & CATEGORY                                             │ COUNT │ PRIMARY ROLE & ROUTE COMPLIANCE          │
+├─────────────────────────────────────────────────────────────┼───────┼──────────────────────────────────────────┤
+│ 👑 Tier 0: Apex Paid Judges                                 │   5   │ Escalation, high-stakes tie-breaking     │
+│    (GPT-5.6 Sol, GPT-5.3 Codex, Claude 3.7 Sonnet Thought,   │       │ • Route: APEX_PAID (SQLite reservation)  │
+│     Gemini 3.1 Pro Preview, o3-high)                        │       │                                          │
+├─────────────────────────────────────────────────────────────┼───────┼──────────────────────────────────────────┤
+│ 🚀 Tier 1: Frontier Cloud & SOTA Open Models                │  12   │ Frontier synthesis & specialist audits   │
+│    (Qwen-3.8 Coder, GLM-5.3 Cyber SoTA, Qwen3.6-27b Groq,   │       │ • Route: HOSTED_NO_TRAIN / ZDR un-attested │
+│     Gemini 3.6 Flash 1M, DeepSeek-V3/V4, GPT-OSS-120B, etc.)│       │ • Providers: SiliconFlow, Groq, Google   │
+├─────────────────────────────────────────────────────────────┼───────┼──────────────────────────────────────────┤
+│ 💻 Tier 2: Local OSS Fast Workers & Reasoners               │  14   │ Rapid local audit, zero data leakage     │
+│    (Qwen2.5-Coder 7B/14B/32B, DeepSeek-R1 1.5B/7B/14B,      │       │ • Route: LOCAL_ONLY_VERIFIED             │
+│     GLM-4, Mistral NeMo 12B, Gemma3, Phi-4, Granite 3.1)    │       │ • Provider: Air-gapped Ollama / Localhost│
+├─────────────────────────────────────────────────────────────┼───────┼──────────────────────────────────────────┤
+│ 🎭 Tier 3: Uncensored Adversarial Red-Team Scouts           │   6   │ Hostile fuzzer & pre-dispatch red-team   │
+│    (Jiunsong SuperGemma-12B/26B GGUFs, SuperDeepseek-V4,    │       │ • Route: LOCAL_ONLY_VERIFIED             │
+│     SuperQwen-AgentWorld, Hermes 3, Tulu 3)                 │       │ • Goal: Bypasses without RLHF refusal    │
+├─────────────────────────────────────────────────────────────┼───────┼──────────────────────────────────────────┤
+│ 🛡️ Tier 4: Execution Harnesses & Negative Control Baselines │  11   │ Fuzzing, optimization & sandbox repairs  │
+│    • Harnesses (Promptfoo, DSPy, Zero, InclusionAI, Aider)  │       │ • Quarantined from Voting Ballot         │
+│    • Baselines (WizardCoder, Phind, StarCoder2, Arctic)     │       │ • Used for Sandboxing & Fuzzing          │
+├─────────────────────────────────────────────────────────────┼───────┼──────────────────────────────────────────┤
+│ TOTAL REGISTERED IN CATALOG                                 │  48   │ All tracked with typed qualification     │
+└─────────────────────────────────────────────────────────────┴───────┴──────────────────────────────────────────┘
+```
 
 ---
 
-## 🛡️ Division III: Adversarial & Security Red-Team
-| Model | Role ID | Purpose & Specialization |
-|-------|---------|--------------------------|
-| **xAI Grok-2** | `adversarial_critic` | Unfiltered edge-case hunting & security auditing. |
-| **Promptfoo** | `redteam_security_harness` | Fuzzing engine for prompt injection & schema drift. |
-| **DeepGrove** | `deepgrove_code_auditor` | Codebase vulnerability detection. |
-| **InclusionAI** | `inclusion_audit_critic` | Governance & financial security auditor. |
-| **NVIDIA Nemotron 70B** | `alignment_&_reward_critic` | RLHF alignment & safety evaluation. |
-| **Llama Audit** | `local_security_auditor` | Custom local audit Modelfile (`llama-audit:latest`). |
+## 👑 Tier 0: Apex Paid Judges (Escalations & Tie-Breakers)
+*Compliance Tier: `APEX_PAID` (SQLite spend triggers enforce strict reservation caps)*
+
+| Model | Role ID | Specialization & Focus |
+|:---|:---|:---|
+| **GPT-5.6 Sol** | `apex_solvency_judge` | Deep state-machine debt queue & solvency invariants |
+| **GPT-5.3 Codex** | `apex_code_judge` | Multi-file architectural refactoring & core Hardhat suite |
+| **Claude 3.7 Sonnet Thought** | `apex_fiduciary_judge` | Fiduciary duty & Ostrom commons constitutional compliance |
+| **Gemini 3.1 Pro Preview** | `apex_context_judge` | 2M+ token repository-wide history & cross-document audit |
+| **OpenAI o3-high** | `apex_logic_evaluator` | Formal mathematical proofs & EVM state-transition checks |
 
 ---
 
-## 🧠 Division IV: Chain-of-Thought & Logic
-| Model | Role ID | Purpose & Specialization |
-|-------|---------|--------------------------|
-| **DeepSeek R1 (671B/70B/7B)** | `chain_of_thought_critic` | Deep math & algorithmic reasoning (`deepseek/deepseek-r1`). |
-| **OpenAI o1 / o3-mini** | `deliberate_reasoning_probe` | Multi-step reasoning probes (`openai/o3-mini`). |
-| **DeepSeek V3** | `moe_logic_titan` | 671B MoE universal logic. |
+## 🚀 Tier 1: Frontier Cloud & SOTA Open Models (Specialist Audits)
+*Compliance Tier: `HOSTED_NO_TRAIN` (provider no-train/ZDR status is `ASSERTION_UNATTESTED` until account-level evidence is attached)*
+
+| Model | Provider / Route | Role ID | Specialization & Focus |
+|:---|:---|:---|:---|
+| **Qwen-3.8 Coder** | SiliconFlow | `qwen_frontier_coder` | AST analysis, EVM gas optimization, and strict JSON output |
+| **GLM-5.3 Cyber SoTA** | SiliconFlow | `glm_cyber_auditor` | Smart contract cybersecurity, access control, & reentrancy |
+| **Qwen 3.6-27B** | Groq | `qwen_lpu_reviewer` | Ultra-low latency code diff audit (<500ms) |
+| **Gemini 3.6 Flash (1M)** | Google AI Studio | `gemini_slicer` | 1M token cross-dossier needle-in-a-haystack verification |
+| **DeepSeek-V3** | SiliconFlow / API | `deepseek_v3_titan` | 671B MoE universal logic & protocol architecture |
+| **DeepSeek-V4 (Cloud)** | SiliconFlow | `deepseek_v4_frontier` | Next-gen reasoning & smart contract vulnerability detection |
+| **MiniMax-01 (Text-01)** | Direct API | `minimax_4m_auditor` | 4M token context whole-repository single-prompt ingestion |
+| **Moonshot Kimi-k1.5** | Direct API | `kimi_context_anchor` | Long-context claim contradiction & lineage auditor |
+| **Meta Llama 3.3 70B** | Groq / OpenRouter | `llama3_3_70b_critic` | Open-weights consensus titan & instruction following |
+| **Mistral Codestral 2501** | Mistral API | `codestral_specialist` | High-precision fill-in-the-middle code repair |
+| **GPT-OSS-120B** | SiliconFlow | `gpt_oss_architect` | Open-weight foundation architecture analysis |
+| **Cohere Command R+** | Direct API | `schema_compliance_titan` | RAG retrieval validation and structured JSON formatting |
 
 ---
 
-## 🌏 Division V: Multimodal & Asian Frontier Labs
-| Model | Role ID | Purpose & Specialization |
-|-------|---------|--------------------------|
-| **Tencent Hunyuan 3** | `tencent_hy3_synthesizer` | Multi-task code & math synthesis. |
-| **StepFun Step-1 / Step-2** | `multimodal_step_reasoner` | Multi-step visual & logical reasoning. |
-| **Xiaomi MiMo** | `mimo_edge_reasoner` | Compact edge & multimodal reasoning model. |
-| **01.AI Zero** | `zero_foundation_model` | 01.AI Zero foundation series. |
-| **MiniMax abab6.5t** | `minimax_long_context` | High-speed long-context reasoning. |
-| **Moonshot AI Kimi** | `kimi_128k_reasoner` | 128k long-context reasoning model. |
+## 💻 Tier 2: Local OSS Fast Workers & Reasoners (Air-Gapped Audits)
+*Compliance Tier: `LOCAL_ONLY_VERIFIED` (Air-gapped localhost Ollama / vLLM, zero external leakage)*
+
+| Model | Host / Engine | Role ID | Specialization & Focus |
+|:---|:---|:---|:---|
+| **Qwen 2.5 Coder 7B** | Ollama (`qwen2.5-coder:7b`) | `local_qwen_7b` | Rapid pre-commit linter & Solidity reentrancy triage |
+| **Qwen 2.5 Coder 14B** | Ollama (`qwen2.5-coder:14b`) | `local_qwen_14b` | Mid-tier local code synthesis & test generation |
+| **Qwen 2.5 Coder 32B** | Ollama / vLLM | `local_qwen_32b` | Heavy local smart contract audit & AST analysis |
+| **DeepSeek-R1 1.5B** | Ollama (`deepseek-r1:1.5b`) | `local_r1_1_5b` | Ultra-lightweight logic checks & fast triage |
+| **DeepSeek-R1 7B** | Ollama (`deepseek-r1:7b`) | `local_r1_7b` | Local chain-of-thought mathematical reasoning |
+| **DeepSeek-R1 14B** | Ollama (`deepseek-r1:14b`) | `local_r1_14b` | Heavy local chain-of-thought solvency auditor |
+| **GLM-4 (9B)** | Ollama (`glm4:latest`) | `local_glm4` | Structured JSON extraction & multi-step instruction adherence |
+| **Mistral NeMo (12B)** | Ollama (`mistral:latest`) | `local_mistral_nemo` | Strict grammar compliance & documentation formatting |
+| **Google Gemma 3 (4B)** | Ollama (`gemma3:4b`) | `local_gemma3_4b` | Lightweight edge synthesizer & basic sanity checks |
+| **Google Gemma 3 (12B)** | Ollama (`gemma3:12b`) | `local_gemma3_12b` | Multi-file reasoning & brand compliance checking |
+| **Microsoft Phi-4 (14B)** | Ollama (`phi4:14b`) | `local_phi4` | Synthetic reasoning & algebraic invariant verification |
+| **IBM Granite 3.1 (8B)** | Ollama (`granite3.1:8b`) | `local_granite` | Enterprise code governance & license boundary checks |
+| **Llama Audit** | Ollama (`llama-audit:latest`) | `local_llama_audit` | Custom security Modelfile for smart contract patterns |
+| **Yi-Coder 9B** | Ollama (`yi-coder:9b`) | `local_yi_coder` | Cross-file function call graph & import analysis |
 
 ---
 
-## 🏛️ Division VI: Systems Architects & High-Judgment Judges
-| Model | Role ID | Purpose & Specialization |
-|-------|---------|--------------------------|
-| **Anthropic Claude 3.7 / 3.5 Sonnet** | `systems_architect` | Gold standard architecture & code hygiene. |
-| **OpenAI GPT-4o** | `universal_judge` | Universal execution judge (`openai/gpt-4o`). |
-| **Google Gemini 2.5 Pro / 2.0 Flash** | `context_grounding_judge` | Long-context retrieval & system prompt grounding. |
-| **Meta Llama 3.1 405B / 3.3 70B** | `open_weights_titan` | Heavyweight open-weights consensus titan (`meta-llama/llama-3.3-70b-instruct:free`). |
-| **Cohere Command R+** | `schema_compliance_auditor` | Structured JSON schema & RAG auditor. |
-| **Abacus AI Smaug 72B** | `abacus_reasoning_judge` | Fine-tuned reasoning champion. |
-| **Magic.dev** | `long_context_architect` | 100M token context code architect. |
+## 🎭 Tier 3: Uncensored Adversarial Red-Team Scouts (Hostile Fuzzing)
+*Compliance Tier: `LOCAL_ONLY_VERIFIED` (Local GGUFs, bypasses corporate RLHF refusal filters)*
+
+| Model | Format / Source | Role ID | Specialization & Focus |
+|:---|:---|:---|:---|
+| **Jiunsong SuperGemma 12B** | Uncensored GGUF | `scout_supergemma_12b` | Unfiltered exploit payload generation & reentrancy hunting |
+| **Jiunsong SuperGemma 26B** | Uncensored GGUF | `scout_supergemma_26b` | Complex multi-transaction griefing & dispute tolling fuzzing |
+| **SuperDeepSeek-V4** | Uncensored GGUF | `scout_superdeepseek` | Hostile game-theoretic arbitrage & solvency drain attacks |
+| **SuperQwen-AgentWorld** | Uncensored GGUF | `scout_superqwen` | Multi-agent coordination attack simulation & sybil proofs |
+| **Hermes 3 (70B/8B)** | Nous Research GGUF | `scout_hermes3` | Uncensored roleplay & adversarial boundary probing |
+| **Tulu 3 (70B/8B)** | AllenAI Open GGUF | `scout_tulu3` | Unaligned instruction following & vulnerability synthesis |
 
 ---
 
-## 🏠 Division VII: Local Offline Resident Ensemble
-| Model | Role ID | Purpose & Specialization |
-|-------|---------|--------------------------|
-| **Google Gemma 3 (4B / 12B)** | `gemma3:4b` | Default local synthesizer & judge (`http://localhost:11434`). |
-| **Qwen 2.5 Coder 7B** | `qwen2.5-coder:7b` | Fast local code synthesizer. |
-| **DeepSeek R1 7B / 1.5B** | `deepseek-r1:7b` | Local chain-of-thought logic critic. |
-| **Mistral 7B** | `mistral:latest` | Local prose & instruction follower. |
+## 🛡️ Tier 4: Execution Harnesses & Baseline Controls (Quarantined from Voting)
+*Status: `QUARANTINED_FROM_BALLOT` (Used as Fuzzers, Prompt Compilers, Sandbox Patch Provers, and Negative Controls)*
+
+| Tool / Baseline | Category / Repo Link | Role in Pipeline |
+|:---|:---|:---|
+| **Promptfoo** | Security Harness | Automated 4-gate red-team regression matrix & comment injection fuzzing |
+| **DSPy (Stanford)** | Prompt Compiler | Algorithmic prompt compiler ensuring 100% JSON compliance on local models |
+| **Free-Code** | Telemetry-Free Agent ([`freecodexyz/free-code`](https://github.com/freecodexyz/free-code)) | Clean buildable Claude Code fork with multi-provider routing (OpenAI Codex, Bedrock, Vertex) |
+| **OpenClaude** | Multi-Provider CLI ([`Gitlawb/openclaude`](https://github.com/Gitlawb/openclaude)) | Terminal agent runner with background session execution and multi-provider profiles |
+| **Zero** | Air-Gapped CLI ([`Gitlawb/zero`](https://github.com/Gitlawb/zero)) | Go-based local terminal agent with strict permission sandboxing and zero telemetry |
+| **InclusionAI** | Financial Risk ([`inclusionAI`](https://github.com/inclusionAI)) | Ant Group financial agent safety, solvency invariant & escrow benchmarks |
+| **Aider** | Patch Prover | In-sandbox git diff generation & Hardhat test-driven repair |
+| **OpenHands / SWE-Agent** | Container Sandbox | Docker or mock execution with explicit `ExecutionSandboxReceipt.isolation_mode` |
+| **WizardCoder 34B** | 2023 Negative Baseline | Surface-level syntax check baseline (Negative control anchor) |
+| **Phind CodeLlama 34B** | 2023 Negative Baseline | Legacy Q&A baseline comparison |
+| **StarCoder2 15B** | 2023 Negative Baseline | Open community baseline comparison |
+| **Snowflake Arctic** | Enterprise Legacy | Deprecated enterprise benchmark anchor |
+| **01.AI Zero Ghost** | Legacy Endpoint | Deprecated historical endpoint placeholder |
 
 ---
 
-## 🤖 Division VIII: Autonomous Developer Agent Frameworks
-| Harness | Role ID | Purpose & Specialization |
-|---------|---------|--------------------------|
-| **Aider** | `git_diff_engine` | Surgical multi-file diff generation & clean commit formatting. |
-| **DSPy** | `prompt_compiler` | Auto-compiles & optimizes prompts from execution traces. |
-| **SWE-agent** | `github_issue_resolver` | Repo navigation & test suite execution (`npm test`). |
-| **OpenHands** | `sandbox_executor` | Isolated container/loopback execution for dry-run simulations. |
+## ⚖️ 4-Gate Model Qualification Ladder
+
+Every candidate model must pass all 4 gates to graduate to `REVIEW_USABLE_FRESH`:
+
+```
+[MODEL IN CATALOG]
+       │
+       ▼ (Gate 1: Schema Conformance — Valid JSON object & required keys)
+       ▼ (Gate 2: Benign Control Test — No hallucinated flaws on clean code)
+       ▼ (Gate 3: Grounded Bug Detection — Accurately cites exact vulnerable line)
+       ▼ (Gate 4: Issues Sealed ModelQualificationReceipt)
+       │
+       ├──► Status: REVIEW_USABLE_FRESH ──► Eligible for 3-Family Voting Council
+       └──► Failed Gate ───────────────► Quarantined (Blocked from Voting Ballot)
+```
 
 ---
 
-## ⚡ Division IX: Enterprise Frontier & Hardware LPUs
-| Model | Role ID | Purpose & Specialization |
-|-------|---------|--------------------------|
-| **Databricks DBRX** | `enterprise_moe_architect` | Databricks 132B MoE open model for enterprise architecture (`databricks/dbrx-instruct`). |
-| **Snowflake Arctic** | `enterprise_data_auditor` | Snowflake enterprise MoE for data governance & SQL validation (`snowflake/snowflake-arctic`). |
-| **SambaNova LPU (Llama 3.1 405B)** | `lpu_ultra_fast_judge` | Ultra-fast SambaNova LPU hardware inference engine. |
-| **Reka AI (Reka Core / Flash)** | `reka_multimodal_critic` | Reka multimodal frontier model (`reka-core` / `reka-flash`). |
-| **Upstage Solar 10.7B** | `dense_solar_synthesizer` | Upstage compact high-density reasoning model (`solar-10.7b`). |
+## 🔒 11-Receipt Dual-Chain Verification Rules
 
+Before any candidate patch is treated as authorized, `CouncilReceiptVerifier.verify_full_apply_chain` enforces all 11 receipt invariants for the declared policy mode:
+
+1. `SnapshotReceipt`: Exact Git HEAD SHA-256 digest.
+2. `PacketSensitivityReceipt`: Data disclosure classification (e.g. `INTERNAL_NO_TRAIN_OK`).
+3. `PatchReceipt`: Exact file paths and unified diff hunk digests.
+4. `ExecutionSandboxReceipt`: Explicit `isolation_mode`; Docker proof requires `DOCKER_CONTAINER_ENFORCED`, `network=none`, and exit code 0.
+5. `CouncilRosterReceipt`: Frozen roster with N=3 distinct families (e.g. Qwen + GLM + Mistral).
+6. `ModelQualificationReceipt`: Verified `REVIEW_USABLE_FRESH` for all voting seats.
+7. `CouncilVoteReceipt`: Approvals $\ge \lceil 2N/3 \rceil$ (Supermajority consensus).
+8. `SpendLedgerReceipt`: SQLite spend trigger verification within budget limits.
+9. `AdversarialScoutReceipt`: Tier 3 red-team fuzzing execution output.
+10. `RouteAttestationReceipt`: Endpoint classification plus attestation status; hosted-provider ZDR/no-train claims require account-level evidence.
+11. `ApplyAuthorizationReceipt`: Explicit `auth_mode`; cryptographic human proof requires an interactive or externally signed approval artifact.

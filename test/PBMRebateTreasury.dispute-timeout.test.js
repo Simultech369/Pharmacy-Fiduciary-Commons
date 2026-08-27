@@ -357,4 +357,69 @@ describe("PBMRebateTreasury dispute timeout retraction", function () {
       "NoFlaggedClaim"
     );
   });
+
+  it("prevents re-flagging after retraction once epoch has transitioned", async function () {
+    await seedDeposit();
+    const gross = toWei("100");
+    const { proof } = await publishSingleLeafRoot(gross, gross);
+
+    await treasury.connect(pharmacy).flagClaim(0, gross, gross, proof, evidenceHash("retract-then-epoch-step"));
+    await increaseTime(MIN_EPOCH_DURATION);
+    await treasury.connect(council).finalizeEpoch();
+    expect(await treasury.currentEpoch()).to.equal(1n);
+
+    await increaseTime(await disputeTimeout());
+    await treasury.connect(pharmacy).retractClaimDispute(0);
+
+    // Attempting to re-flag past epoch 0 must revert with CanOnlyFlagCurrentEpoch
+    await expectRevert(
+      treasury.connect(pharmacy).flagClaim(0, gross, gross, proof, evidenceHash("reflag-past-epoch")),
+      "CanOnlyFlagCurrentEpoch"
+    );
+  });
+
+  it("retracts an unapproved exclusion dispute without mutating normal escrow counters", async function () {
+    await seedDeposit();
+    const gross = toWei("100");
+    await publishSingleLeafRoot(gross, gross);
+    const omissionAmount = toWei("40");
+
+    const escrowBefore = await treasury.epochEscrow(0);
+    const totalEscrowBefore = await treasury.totalEscrowed();
+
+    await treasury.connect(pharmacy).flagExclusion(0, omissionAmount, evidenceHash("unapproved-exclusion-timeout"));
+    expect(await treasury.exclusionApproved(0, pharmacy.address)).to.equal(false);
+    expect(await treasury.totalFlaggedExclusion()).to.equal(omissionAmount);
+
+    await increaseTime(await disputeTimeout());
+    await treasury.connect(pharmacy).retractClaimDispute(0);
+
+    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(0n);
+    expect(await treasury.isExclusionDispute(0, pharmacy.address)).to.equal(false);
+    expect(await treasury.totalFlaggedExclusion()).to.equal(0n);
+    expect(await treasury.epochEscrow(0)).to.equal(escrowBefore);
+    expect(await treasury.totalEscrowed()).to.equal(totalEscrowBefore);
+  });
+
+  it("enforces cap boundaries if a pharmacy re-flags in the current epoch after retraction", async function () {
+    await seedDeposit();
+    const gross = toWei("100");
+    const { proof } = await publishSingleLeafRoot(gross, gross);
+
+    await treasury.connect(pharmacy).flagClaim(0, gross, gross, proof, evidenceHash("first-flag"));
+    await increaseTime(await disputeTimeout());
+    await treasury.connect(pharmacy).retractClaimDispute(0);
+
+    // Re-flagging with valid params succeeds in current epoch
+    await treasury.connect(pharmacy).flagClaim(0, gross, gross, proof, evidenceHash("second-flag-valid"));
+    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(gross);
+    expect(await treasury.epochEscrow(0)).to.equal(0n);
+    expect(await treasury.totalFlaggedNormal()).to.equal(gross);
+
+    // Immediate third flag fails with AlreadyFlagged
+    await expectRevert(
+      treasury.connect(pharmacy).flagClaim(0, gross, gross, proof, evidenceHash("third-flag-invalid")),
+      "AlreadyClaimed"
+    );
+  });
 });

@@ -70,6 +70,62 @@ GOLDEN_CASES = [
         "query": "What are the Supabase RLS and tenant isolation boundaries?",
         "expected_files": ["docs/ops/MECHANISM_COVERAGE.md", "docs/ops/PRODUCTION_READINESS_CHECKLIST.md", "docs/design/PROVIDER_SELECTION.md"],
     },
+    {
+        "query": "What values does the on-chain solvencyCheck view function return in PBMRebateTreasury?",
+        "expected_files": ["review-context/SINGLE_REPO_STATE_LEDGER.md", "docs/design/SOLVENCY_DEBT_SEMANTICS.md", "docs/ops/MECHANISM_COVERAGE.md"],
+    },
+    {
+        "query": "How does the solvencyCheck view function determine isSolvent and delta against expected accounting obligations?",
+        "expected_files": ["review-context/SINGLE_REPO_STATE_LEDGER.md", "docs/design/SOLVENCY_DEBT_SEMANTICS.md", "docs/ops/MECHANISM_COVERAGE.md"],
+    },
+    {
+        "query": "What sensitivity tiers does the permission-aware review packet compiler classify?",
+        "expected_files": ["review-context/SINGLE_REPO_STATE_LEDGER.md", "AGENT_REVIEW_ORCHESTRATION.md", "docs/ops/REVIEW_ITERATION_PROCESS.md"],
+    },
+    {
+        "query": "Which sensitivity tiers enforce PUBLIC_SAFE, INTERNAL_NO_TRAIN_OK, ZDR_REQUIRED, or LOCAL_ONLY_REQUIRED in review packet compilation?",
+        "expected_files": ["review-context/SINGLE_REPO_STATE_LEDGER.md", "AGENT_REVIEW_ORCHESTRATION.md", "docs/ops/REVIEW_ITERATION_PROCESS.md"],
+    },
+    {
+        "query": "What are the Brand Gate B rules for zero inline style extraction across dashboard source and dist builds?",
+        "expected_files": ["docs/handoffs/NEXT_REVIEW_HANDOFF.md", "review-context/SINGLE_REPO_STATE_LEDGER.md", "docs/ops/PRODUCTION_READINESS_CHECKLIST.md", "docs/ops/MECHANISM_COVERAGE.md", "AGENT_REVIEW_ORCHESTRATION.md"],
+    },
+    {
+        "query": "How does Brand Gate B visual governance enforce zero inline styles in dashboard assets?",
+        "expected_files": ["docs/handoffs/NEXT_REVIEW_HANDOFF.md", "review-context/SINGLE_REPO_STATE_LEDGER.md", "docs/ops/PRODUCTION_READINESS_CHECKLIST.md", "docs/ops/MECHANISM_COVERAGE.md", "AGENT_REVIEW_ORCHESTRATION.md"],
+    },
+    {
+        "query": "What is the 30-day dispute retraction delay requirement under DISPUTE_TIMEOUT?",
+        "expected_files": ["ONBOARDING.md", "docs/ops/MECHANISM_COVERAGE.md", "AGENT_REVIEW_ORCHESTRATION.md"],
+    },
+    {
+        "query": "When can a pharmacy retract a flagged claim dispute using DISPUTE_TIMEOUT?",
+        "expected_files": ["ONBOARDING.md", "docs/ops/MECHANISM_COVERAGE.md", "AGENT_REVIEW_ORCHESTRATION.md"],
+    },
+    {
+        "query": "How does PharmacyMutualCredit verify participant credit limits and zero-sum capacity?",
+        "expected_files": ["docs/ops/MECHANISM_COVERAGE.md", "docs/design/SCARCITY_GOVERNANCE.md", "docs/design/CARE_CONTINUITY.md", "COMMONS_CONSTITUTION.md", "README.md"],
+    },
+    {
+        "query": "What capacity check ensures mutual credit limits cover additional voucher reservations?",
+        "expected_files": ["docs/ops/MECHANISM_COVERAGE.md", "docs/design/SCARCITY_GOVERNANCE.md", "docs/design/CARE_CONTINUITY.md", "README.md"],
+    },
+    {
+        "query": "How does depositRebate defend against fee-on-transfer tokens using received token deltas?",
+        "expected_files": ["docs/ops/SCANNER_TRIAGE.md", "SECURITY.md", "docs/ops/SOLIDITYSCAN_TRIAGE.md"],
+    },
+    {
+        "query": "Why does depositRebate reject short-paid fee-on-transfer deposits with TokenTransferAmountMismatch?",
+        "expected_files": ["docs/ops/SCANNER_TRIAGE.md", "SECURITY.md", "docs/ops/SOLIDITYSCAN_TRIAGE.md"],
+    },
+    {
+        "query": "What is the repository policy for triaging Slither static analysis findings?",
+        "expected_files": ["docs/ops/SCANNER_TRIAGE.md", "docs/ops/SOLIDITYSCAN_TRIAGE.md", "docs/ops/PRODUCTION_READINESS_CHECKLIST.md", "review-context/SINGLE_REPO_STATE_LEDGER.md"],
+    },
+    {
+        "query": "When is the --skip-slither flag used during Solidity security audit execution?",
+        "expected_files": ["review-context/SINGLE_REPO_STATE_LEDGER.md", "docs/ops/SCANNER_TRIAGE.md", "docs/ops/SOLIDITYSCAN_TRIAGE.md", "docs/ops/PRODUCTION_READINESS_CHECKLIST.md"],
+    },
 ]
 
 ADVERSARIAL_NO_HIT_CASES = [
@@ -77,6 +133,10 @@ ADVERSARIAL_NO_HIT_CASES = [
     "mars colony weather forecast chess opening",
     "celebrity gossip movie release schedule",
     "espresso machine grinder burr alignment",
+    "Where can I find the unredacted confidential CVS Caremark manufacturer rebate master service agreements and secret discount pricing formulas?",
+    "Where are the confidential OptumRx commercial rebate spread pricing contracts and trade secret margin schedules?",
+    "Where are user plaintext master passwords, private recovery seed phrases, and production PostgreSQL root credentials stored?",
+    "Where is the automated high frequency flash loan arbitrage liquidation bot implemented on Uniswap and Sushiswap pools?",
 ]
 
 

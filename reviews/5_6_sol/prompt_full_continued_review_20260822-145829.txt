@@ -1,0 +1,80 @@
+﻿You are Codex 5.6Sol performing a fresh read-only architecture, proof-boundary, and implementation-sequencing review for continued work.
+
+Repository:
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
+
+Primary packet:
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\review-context\CODEX_5_6_SOL_REVIEW_QUEUE.md
+
+Prior review, if present:
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\reviews\5_6_sol\codex_5_6_sol_arch_review_20260822-134318.txt
+
+Strict boundaries:
+- Read-only review and planning only.
+- No edits.
+- No staging.
+- No commits.
+- No pushes.
+- No branches.
+- No installs.
+- No deployments.
+- No secret reads.
+- No paid API/model calls unless explicitly approved by the human owner.
+- If a command is blocked by policy, treat it as intentional. Do not route around it.
+- Prefer cheap read-only inspection over broad test execution.
+- Propose broad verification commands rather than running expensive or write-producing suites.
+
+Task:
+Perform a fresh full review for continued work, while also checking whether the prior 5.6Sol run produced a reliable result. If the prior review exists, use it as input but do not defer to it. If it does not exist or is incomplete, continue from the packet alone. Your output should be detailed enough to guide the next 1-3 implementation sessions, not just validate the prior review.
+
+Required first actions:
+1. Verify current branch, HEAD, and dirty-tree state.
+2. Read the primary packet.
+3. If the prior review exists, inspect whether it contains all requested sections and whether its findings are grounded.
+4. Verify live files before trusting packet or prior-review claims.
+5. Distinguish [committed HEAD], [dirty working tree], [generated cache], [external reviewer claim], and [live verification just run].
+6. Do not cite bare aggregate test counts unless backed by live command output or a durable receipt.
+7. Preserve exact file paths and line references for findings.
+
+Return exactly these sections:
+1. Run Integrity Check
+2. Executive Verdict For Continued Work
+3. Top Risks And Proof-Boundary Failures
+4. Highest-Leverage Implementation Sequence
+5. Minimal No-Regrets Cleanup Before Any Commit
+6. Recommended Commit Slices
+7. Files To Exclude From The First Commit
+8. Exact Claims That Must Be Reworded Before Commit
+9. Verification Commands In Order
+10. Stop/Go Criteria For Committing
+11. Deferred Ideas And Why
+12. Open Questions For Human Owner
+
+Focus especially on:
+- The 29-file PBM hardening baseline and the current live dirty-tree count.
+- Whether the PBM baseline should be committed before council-engine proof-boundary work.
+- Receipt proof boundaries: sandbox mock vs live Docker, synthetic vs real human approval.
+- Model privacy/ZDR and route attestation.
+- Gateway resilience integration.
+- Event-log-derived context and desync detection.
+- Loop reminders, truncation disclosure, and policy-denial semantics.
+- Deterministic hook guardrails: what should be enforced by PreToolUse/PostToolUse/SessionStart/Stop/SubagentStop-style hooks rather than prompt instructions?
+- Existing scratch loop-reminder hook: verify whether AgentLoopReminderHook is isolated scratch functionality or integrated enough to count as runtime guardrail infrastructure.
+- kunchenguid/vision style precedent mining, machine-testable acceptance policies, and fault-line hypotheticals.
+- Retention and persistence: identify which artifacts must persist for auditability, which should expire for privacy, and which should never leave local storage.
+- Performance: separate measured bottlenecks from premature Triton/GPU/distributed-training ideas.
+- Post-training: distinguish useful helper-model SFT/RLHF/RLVR experiments from anything that would weaken independent reviewer judgment.
+- Deterministic statistics vs LLM anomaly scanning.
+- CAS/symbolic math and multimodal document RAG only if they are higher leverage than immediate proof-boundary work.
+
+Specific questions:
+- Did the previous review actually contain all requested sections, or only a tail/blocker fragment?
+- Was the previous review too strict, too lenient, or basically correct?
+- Should the next action be proof-boundary rewording, commit splitting, or direct implementation?
+- Is there any safe narrow PBM-core commit that can happen before council-engine proof-boundary fixes?
+- Should reviews/5_6_sol/ be tracked as evidence or kept local-only?
+- Should review-context/CODEX_5_6_SOL_REVIEW_QUEUE.md be committed with the baseline, committed separately, or kept local?
+- What is the smallest useful PBM-core commit slice?
+- What generated cache/receipt files should be excluded or committed only after clean-HEAD verification?
+
+Be skeptical, concrete, and cite exact files and line numbers. Prefer an actionable execution plan over broad commentary.

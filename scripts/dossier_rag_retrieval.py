@@ -30,8 +30,10 @@ TARGET_DOCUMENTS = [
     "COMMONS_CONSTITUTION.md",
     "AGENT_REVIEW_ORCHESTRATION.md",
     "PORTABILITY.md",
+    "SECURITY.md",
     "docs/design/CARE_CONTINUITY.md",
     "docs/design/IDENTITY_NULLIFIER_DESIGN.md",
+    "docs/design/PATIENT_FUND_POLICY.md",
     "docs/design/PROVIDER_SELECTION.md",
     "docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md",
     "docs/design/SCARCITY_GOVERNANCE.md",
@@ -43,8 +45,11 @@ TARGET_DOCUMENTS = [
     "docs/ops/OPEN_DESIGN_DECISIONS.md",
     "docs/ops/PRODUCTION_READINESS_CHECKLIST.md",
     "docs/ops/REVIEW_ITERATION_PROCESS.md",
+    "docs/ops/SCANNER_TRIAGE.md",
+    "docs/ops/SOLIDITYSCAN_TRIAGE.md",
     "docs/ops/SOLVENCY_OWNER_DECISION_WORKSHEET.md",
     "docs/ops/SOLVENCY_REVIEW_AUTHORITY_AND_SAFETY.md",
+    "review-context/SINGLE_REPO_STATE_LEDGER.md",
 ]
 
 STOPWORDS = {
@@ -78,6 +83,11 @@ QUERY_EXPANSIONS = {
     "readiness": ["production", "launch", "checklist", "mainnet", "prototype", "gate"],
     "mainnet": ["production", "readiness", "launch", "audit", "custody", "gate"],
     "retaliation": ["privacy", "payer", "pbm", "pharmacy", "identity", "metadata"],
+    "solvencycheck": ["solvency", "issolvent", "delta", "expectedbalance", "actualbalance", "obligations", "shortfall"],
+    "issolvent": ["solvencycheck", "solvent", "delta", "expectedbalance", "actualbalance", "solvency"],
+    "capacitycovers": ["capacity", "credit", "limit", "mutual", "voucher", "reservation"],
+    "slither": ["static", "analysis", "detector", "triage", "audit", "scanner", "skip"],
+    "depositrebate": ["deposit", "rebate", "fee", "transfer", "delta", "tokentransferamountmismatch"],
 }
 
 
@@ -98,6 +108,11 @@ def expand_query_tokens(query):
         "patient fund": ["matching", "participatory", "budgeting", "claim", "share"],
         "model review": ["reviewer", "advisory", "human", "governance"],
         "page number": ["citation", "source", "line", "section"],
+        "fee on transfer": ["fee-on-transfer", "delta", "tokentransferamountmismatch", "short-paid", "rebase"],
+        "brand gate": ["inline", "style", "extraction", "compliance", "design-system"],
+        "dispute timeout": ["retract", "retraction", "flagged", "30", "delay"],
+        "mutual credit": ["credit", "limit", "capacity", "voucher", "zero-sum"],
+        "sensitivity tiers": ["public_safe", "internal_no_train_ok", "zdr_required", "local_only_required", "compiler"],
     }
     for phrase, additions in phrase_expansions.items():
         if phrase in query_lower:
@@ -314,15 +329,20 @@ def file_url(relative_path, start_line, end_line):
     return f"file:///{abs_path}#L{start_line}-L{end_line}"
 
 
-def rag_query(query, top_k=5, min_score=0.08):
+def rag_query(query, top_k=5, min_score=0.15):
     original_query_tokens = tokenize(query)
     query_tokens = expand_query_tokens(query)
     chunks, idf = build_index()
 
+    unique_orig_count = len(set(original_query_tokens))
+    min_required_overlap = 2 if unique_orig_count >= 3 else 1
+    if unique_orig_count >= 6:
+        min_required_overlap = max(3, math.ceil(unique_orig_count * 0.40))
+
     scored_chunks = []
     for chunk in chunks:
         overlap_count = original_overlap_count(original_query_tokens, chunk)
-        if len(set(original_query_tokens)) >= 3 and overlap_count < 2:
+        if overlap_count < min_required_overlap:
             continue
         score = score_chunk(query_tokens, original_query_tokens, query.lower(), chunk, idf)
         if score >= min_score:
@@ -355,7 +375,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Local line-cited dossier retrieval engine")
     parser.add_argument("--query", type=str, required=True, help="Query string to search in governance dossier")
     parser.add_argument("--top-k", type=int, default=5, help="Number of top results to return")
-    parser.add_argument("--min-score", type=float, default=0.08, help="Minimum score for a result to be returned")
+    parser.add_argument("--min-score", type=float, default=0.15, help="Minimum score for a result to be returned")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     return parser.parse_args()
 
