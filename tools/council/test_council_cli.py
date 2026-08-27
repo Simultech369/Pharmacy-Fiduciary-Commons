@@ -14,10 +14,12 @@ class TestCouncilCLI(unittest.TestCase):
         shutil.rmtree(self.test_state_dir, ignore_errors=True)
 
     def run_cli(self, args: list) -> subprocess.CompletedProcess:
-        cmd = [sys.executable, "council_cli.py"] + args
+        council_dir = os.path.dirname(os.path.abspath(__file__))
+        cli_path = os.path.join(council_dir, "council_cli.py")
+        cmd = [sys.executable, cli_path] + args
         env = os.environ.copy()
         env["COUNCIL_STATE_DIR"] = self.test_state_dir
-        return subprocess.run(cmd, capture_output=True, text=True, env=env)
+        return subprocess.run(cmd, capture_output=True, text=True, env=env, cwd=council_dir)
 
     def test_drift_subcommand(self):
         res = self.run_cli(["drift"])
