@@ -444,3 +444,183 @@ Hardhat reached 419 passing after repair. The next change is to run the full
 9-step verifier with enough time and stamp a real receipt.
 ```
 
+## 11. Latest Scanner And Fuzzer Feedback For Antigravity
+
+Antigravity reported a fresh Solidity static-analysis and linting pass with
+updated reports at these paths:
+
+```text
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\reviews\solidity-security-audit-report.md
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\reviews\slither-report.json
+```
+
+Codex verified both report files exist on disk on 2026-08-27. Codex did not yet
+re-parse their full contents. Treat Antigravity's detailed scanner summary as a
+fresh reviewer claim until the report JSON/markdown is read and tied to the
+current Git status.
+
+Important receipt caveat:
+
+```text
+Codex checked cache\verification_master_receipt.json after Antigravity's latest
+scanner note and did not find the file. Before any commit says "9/9 PASSED" or
+"419 passing", rerun python scripts\verify_all.py or restore/stamp the receipt
+through the normal verifier path, then inspect the JSON.
+```
+
+Scanner tool ordering:
+
+```text
+1. Slither: keep as the fast static-analysis gate. It is good for access-control,
+   dataflow, reentrancy, dangerous calls, and dependency/library warning triage.
+2. Solhint: keep as style and syntax hygiene, not a security proof.
+3. Aderyn: run next as a second static-analysis lens, preferably in WSL if that
+   is where cargo/Aderyn is cleanest.
+4. Foundry invariant fuzzing: high value for TreasurySolvencyInvariant.t.sol,
+   but currently do not overclaim it unless forge is installed/configured and a
+   fresh forge receipt exists.
+5. Echidna: use for deep invariant fuzzing after the properties are made small,
+   explicit, and reproducible. Keep it separate from quick CI.
+6. Mythril/Manticore: use as targeted symbolic probes, not broad scans. Best
+   targets are resolveClaim(), dispute retraction, stale recovery, and privileged
+   admin paths where "unreachable unauthorized transition" matters.
+```
+
+Known scanner-triage calibration:
+
+```text
+Balance-read warnings around invariant-checking code can be expected residuals
+when the code intentionally reads token balances before/after transfer. Treat
+them as findings only if a bypass, stale-accounting path, or state-corruption
+trace is shown.
+```
+
+Suggested scanner command lane:
+
+```powershell
+Set-Location -LiteralPath 'C:\Users\Josh\Desktop\PBMRebateTreasuryFinal'
+slither . --filter-paths "node_modules|test" --exclude-informational
+```
+
+Do not vendor scanner output or snippets from external tools as source code.
+Record tool version, command, cwd, timestamp, and current HEAD/dirty status in
+the report. Keep license/provenance notes for any external pattern mining
+(`aeonfun/aeon`, `MiroShark/MiroShark`, or others); borrow ideas, not code,
+unless license compatibility and attribution are explicit.
+
+## 12. 3.1 Pro Ideas - Codex Triage
+
+### Thought A - Materialize Anomaly Sentries
+
+Recommendation: good next feature, but not before the current large dirty state
+is sealed or sliced.
+
+Target paths:
+
+```text
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_fraud_detector.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\test_pbm_fraud_detector.py
+```
+
+Implementation boundary:
+
+```text
+Add Benford's Law as an offline anomaly signal:
+P(d) = log10(1 + 1/d), for first digits 1..9.
+```
+
+Proof boundary:
+
+```text
+Benford is not proof of fraud. It is a triage signal for unusually distributed
+claim/payment populations. It should emit "ANOMALY_REVIEW_REQUIRED", not
+"FRAUD_PROVEN".
+```
+
+Useful tests:
+
+```text
+- accepts a roughly Benford-like synthetic distribution
+- flags an obviously uniform/manipulated first-digit distribution
+- ignores tiny sample sizes or labels them INSUFFICIENT_SAMPLE
+- records statistic, threshold, sample size, and lineage in the receipt
+```
+
+### Thought B - Deepen SMT / Z3 Formal Proofs
+
+Recommendation: valuable, but dependency-gated. Do not add `z3-solver` to the
+repo casually unless dependency policy and environment reproducibility are
+handled. Prefer scratch or optional WSL proof runners first.
+
+Target paths:
+
+```text
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\formal_theorem_prover_engine.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\neurosymbolic_proof_planner.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_rebate_engine.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\test_formal_theorem_prover_engine.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\test_neurosymbolic_proof_planner.py
+```
+
+First proof target:
+
+```text
+For Decimal(18,6) rebate calculation, prove non-negative net rebate under
+bounded assumptions:
+gross_rebate >= 0
+admin_fee >= 0
+admin_fee <= gross_rebate
+pass_through_amount = gross_rebate - admin_fee
+pass_through_amount >= 0
+```
+
+Proof boundary:
+
+```text
+A local Z3 check proves the encoded arithmetic model, not the entire PBM
+business process, not every EVM path, and not all real-world rebate contracts.
+```
+
+### Thought C - State Preservation / L3 Gate
+
+Recommendation: strongest immediate action. Before starting Benford/Z3/Echidna
+implementation, preserve the current milestone.
+
+Minimum pre-commit acceptance:
+
+```text
+1. Re-run git status --short --branch.
+2. Confirm .git\index.lock is absent.
+3. Confirm cache\verification_master_receipt.json exists.
+4. Confirm receipt overall_status == PASSED.
+5. Confirm receipt expected_step_count == 9 and steps_executed == 9.
+6. Confirm current Hardhat passing count from receipt or fresh output.
+7. Stage only the intended slice.
+8. Run git diff --cached --check.
+9. Commit only after explicit operator L3 authorization.
+```
+
+Preferred commit strategy remains sliced, even if the operator chooses one
+larger milestone commit:
+
+```text
+3A: PBM solvency/zero-db/invariant tests.
+3B: Agent claim verifier and bootstrappable master verifier fix.
+3C: Council local swarm/A2A/autonomous/chaos/neurosymbolic promotion.
+3D: RAG/model roster/scanner reports/generated receipts.
+```
+
+If Antigravity chooses a unified commit anyway, the commit message should avoid
+claiming scanner or formal coverage beyond current evidence. Suggested wording:
+
+```text
+feat(council-swarm): promote local council engines and 419-test verifier baseline
+```
+
+Avoid:
+
+```text
+"production A2A", "formal proof complete", "external P2P authenticated",
+"all scanners prove safe", or "9/9 passed" unless the receipt is present and
+fresh for the exact staged tree.
+```
