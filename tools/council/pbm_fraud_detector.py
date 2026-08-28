@@ -309,9 +309,9 @@ class PBMFraudDetector:
             if benford_p < 0.01:
                 return FWAuditResult(
                     claim_id=current_claim.claim_id,
-                    triage_tier="TIER_3_SIU_FREEZE",
-                    ncpdp_reject_code="FLAG_SYNTHETIC_CLAIMS",
-                    reject_reason=f"Benford's Law Anomaly: Statistical clustering detected (p={benford_p:.4f} < 0.01)",
+                    triage_tier="TIER_2_ESCROW_HOLD",
+                    ncpdp_reject_code="ANOMALY_REVIEW_REQUIRED",
+                    reject_reason=f"Benford's Law anomaly review required: statistical clustering detected (p={benford_p:.4f} < 0.01); not proof of fraud",
                     daily_mme=daily_mme,
                     hhi_score=hhi,
                     benfords_p_value=benford_p,
@@ -329,4 +329,3 @@ class PBMFraudDetector:
             benfords_p_value=benford_p,
             audit_passed=True
         )
-

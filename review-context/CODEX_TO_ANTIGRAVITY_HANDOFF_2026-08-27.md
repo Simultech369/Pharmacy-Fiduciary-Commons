@@ -752,3 +752,87 @@ Suggested commit message if accepted:
 ```text
 feat(council): add bounded agent task router for specialist delegation
 ```
+
+## 14. Codex Live Update - PBM Fraud Formal Invariants
+
+Codex implemented the next FORMAL_PROVER lane slice for PBM fraud triage logic.
+This formalizes local detector rule boundaries. It does not prove real-world
+fraud, external PBM business truth, PHI lineage, or on-chain treasury behavior.
+
+New files:
+
+```text
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_fraud_formal_invariants.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\test_pbm_fraud_formal_invariants.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\PBMFraudFormalInvariants.test.js
+```
+
+Modified files:
+
+```text
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_fraud_detector.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\test_pbm_fraud_detector.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\review-context\CODEX_TO_ANTIGRAVITY_HANDOFF_2026-08-27.md
+```
+
+What is now proved locally:
+
+```text
+- MME hard-stop: non-negative MME accumulation, >=200 MME/day implies hard
+  stop, and <200 MME/day cannot trigger the MME hard-stop predicate.
+- Refill-too-soon: C-II, C-III/IV/V, and non-controlled threshold inequalities
+  are checked by Z3 using integer elapsed-day bounds.
+- Duplicate therapy: overlap + same GPI-10/GPI-6 implies Reject 76, while
+  non-overlap cannot reject solely under duplicate-therapy overlap logic.
+- HHI: non-negative pharmacy volume keeps modeled HHI within [0, 10000], and
+  5000/7500 threshold bands map to escrow/SIU routing predicates.
+- Benford: statistical anomaly evidence routes only to
+  ANOMALY_REVIEW_REQUIRED; Benford-only evidence never emits FRAUD_PROVEN.
+```
+
+Runtime calibration change:
+
+```text
+PBMFraudDetector no longer labels Benford anomalies as FLAG_SYNTHETIC_CLAIMS.
+It now returns:
+triage_tier: TIER_2_ESCROW_HOLD
+ncpdp_reject_code: ANOMALY_REVIEW_REQUIRED
+reject_reason includes: not proof of fraud
+```
+
+Proof boundary:
+
+```text
+PBMFraudFormalInvariantReceipt is module-local. It inherits ImmutableContract
+and is sealed by ReceiptEnvelope. Its proof fields explicitly set:
+fraud_proof_claimed: false
+external_business_truth_proven: false
+benford_output_contract: ANOMALY_REVIEW_REQUIRED_ONLY
+```
+
+Focused verification run by Codex:
+
+```powershell
+python -B -m unittest tools/council/test_pbm_fraud_detector.py tools/council/test_pbm_fraud_formal_invariants.py
+# Result: 10 tests passed
+
+npx.cmd --no-install hardhat test test\PBMFraudFormalInvariants.test.js --no-compile
+# Result: 2 passing
+
+npx.cmd --no-install hardhat test test\CouncilEngineModules.test.js test\NeurosymbolicFormalAndP2PEngine.test.js test\PBMFraudFormalInvariants.test.js --no-compile
+# Result: 12 passing
+
+python -B -m unittest tools/council/test_formal_theorem_prover_engine.py tools/council/test_neurosymbolic_proof_planner.py tools/council/test_pbm_fraud_formal_invariants.py
+# Result: 11 tests passed
+
+python -B -m py_compile tools\council\pbm_fraud_detector.py tools\council\pbm_fraud_formal_invariants.py tools\council\test_pbm_fraud_formal_invariants.py
+# Result: passed
+```
+
+Recommended next action:
+
+```text
+Run full council discovery and then the master verifier after this slice is
+reviewed. If accepted, commit with:
+feat(council): add formal PBM fraud invariant receipts and Benford review boundary
+```

@@ -180,8 +180,9 @@ class TestPBMFraudDetector(unittest.TestCase):
         
         audit_res = self.detector.audit_claim(claim, claim_amounts=synthetic_amounts)
         self.assertFalse(audit_res.audit_passed)
-        self.assertEqual(audit_res.triage_tier, "TIER_3_SIU_FREEZE")
-        self.assertEqual(audit_res.ncpdp_reject_code, "FLAG_SYNTHETIC_CLAIMS")
+        self.assertEqual(audit_res.triage_tier, "TIER_2_ESCROW_HOLD")
+        self.assertEqual(audit_res.ncpdp_reject_code, "ANOMALY_REVIEW_REQUIRED")
+        self.assertIn("not proof of fraud", audit_res.reject_reason)
         self.assertLess(audit_res.benfords_p_value, 0.01)
 
 if __name__ == "__main__":
