@@ -212,5 +212,14 @@ class TestCouncilCLI(unittest.TestCase):
         self.assertIn("Gate 1: PASSED", res.stdout)
         self.assertIn("Gate 2 Sandbox  : PASSED", res.stdout)
 
+    def test_route_subcommand(self):
+        res = self.run_cli(["route", "--objective", "reentrancy check on depositRebate in PBMRebateTreasury", "--file", "contracts/PBMRebateTreasury.sol"])
+        self.assertEqual(res.returncode, 0)
+        self.assertIn("AGENT TASK ROUTER:", res.stdout.upper())
+        self.assertIn("Task ID", res.stdout)
+        self.assertIn("Risk Tier", res.stdout)
+        self.assertIn("SOLIDITY_SEMANTICS_REVIEWER", res.stdout)
+        self.assertIn("SECURITY_REVIEWER", res.stdout)
+
 if __name__ == "__main__":
     unittest.main()

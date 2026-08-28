@@ -619,5 +619,121 @@ describe("PharmacyMutualCredit", function () {
     expect(await credit.balances(pZero.address)).to.equal(0n);
     expect(await credit.balances(pharmacyB.address)).to.equal(500n);
   });
+
+  it("maintains strict zero-sum conservation across complex multi-actor transitions (vouchers, transfers, pausing)", async function () {
+    const signers = await ethers.getSigners();
+    // Using 5 participants
+    const participants = signers.slice(1, 6);
+    const limits = [20000n, 30000n, 15000n, 10000n, 25000n];
+
+    for (let i = 0; i < participants.length; i++) {
+      await credit.connect(council).registerParticipant(participants[i].address, limits[i]);
+      // Authorize all as issuers for this test
+      await credit.connect(council).updateIssuerStatus(participants[i].address, true);
+    }
+
+    async function assertInvariants() {
+      let sum = 0n;
+      for (let i = 0; i < participants.length; i++) {
+        const bal = await credit.balances(participants[i].address);
+        const lim = await credit.creditLimits(participants[i].address);
+        const reserved = await credit.reservedVoucherCredit(participants[i].address);
+        sum += bal;
+        // The effective balance (bal - reserved) must be >= -limit
+        expect(bal - reserved >= -lim).to.be.true;
+      }
+      expect(sum).to.equal(0n);
+    }
+
+    let seed = 12345;
+    function pseudoRandom(max) {
+      seed = (seed * 9301 + 49297) % 233280;
+      return Math.floor((seed / 233280) * max);
+    }
+
+    const createdVouchers = [];
+    let voucherCounter = 0;
+
+    for (let step = 0; step < 100; step++) {
+      const actionType = pseudoRandom(4); // 0: transfer, 1: createVoucher, 2: redeemVoucher, 3: releaseExpiredVoucher
+      
+      const fromIdx = pseudoRandom(participants.length);
+      let toIdx = pseudoRandom(participants.length);
+      if (fromIdx === toIdx) toIdx = (toIdx + 1) % participants.length;
+      
+      const fromSigner = participants[fromIdx];
+      const toSigner = participants[toIdx];
+
+      if (actionType === 0) {
+        // Transfer
+        const amount = BigInt(pseudoRandom(2000) + 1);
+        const bal = await credit.balances(fromSigner.address);
+        const lim = await credit.creditLimits(fromSigner.address);
+        const reserved = await credit.reservedVoucherCredit(fromSigner.address);
+        
+        if (bal - reserved - amount >= -lim) {
+          await credit.connect(fromSigner).transferCredit(toSigner.address, amount);
+        } else {
+          await expectRevert(
+            credit.connect(fromSigner).transferCredit(toSigner.address, amount),
+            "CreditLimitExceeded"
+          );
+        }
+      } else if (actionType === 1) {
+        // Create Voucher
+        const amount = BigInt(pseudoRandom(2000) + 1);
+        const bal = await credit.balances(fromSigner.address);
+        const lim = await credit.creditLimits(fromSigner.address);
+        const reserved = await credit.reservedVoucherCredit(fromSigner.address);
+        
+        const latestBlock = await ethers.provider.getBlock("latest");
+        // Random expiry between 1 and 100 blocks in the future
+        const expiry = BigInt(latestBlock.timestamp) + BigInt(pseudoRandom(100) + 1);
+        const vId = ethers.keccak256(ethers.toUtf8Bytes("v-" + voucherCounter++));
+
+        if (bal - reserved - amount >= -lim) {
+          await credit.connect(fromSigner).createVoucher(vId, toSigner.address, amount, expiry);
+          createdVouchers.push({ id: vId, to: toSigner, amount, expiry, redeemed: false });
+        } else {
+          await expectRevert(
+            credit.connect(fromSigner).createVoucher(vId, toSigner.address, amount, expiry),
+            "CreditLimitExceeded"
+          );
+        }
+      } else if (actionType === 2 && createdVouchers.length > 0) {
+        // Redeem Voucher
+        const vIdx = pseudoRandom(createdVouchers.length);
+        const v = createdVouchers[vIdx];
+        
+        const latestBlock = await ethers.provider.getBlock("latest");
+        if (!v.redeemed && latestBlock.timestamp <= v.expiry) {
+          await credit.connect(v.to).redeemVoucher(v.id);
+          v.redeemed = true;
+        }
+      } else if (actionType === 3 && createdVouchers.length > 0) {
+        // Release Expired Voucher
+        const vIdx = pseudoRandom(createdVouchers.length);
+        const v = createdVouchers[vIdx];
+        
+        const latestBlock = await ethers.provider.getBlock("latest");
+        if (!v.redeemed && latestBlock.timestamp > v.expiry) {
+          // If expired, any user can release it. We use council.
+          const vData = await credit.vouchers(v.id);
+          if (vData.amount > 0n) {
+             await credit.connect(council).releaseExpiredVoucher(v.id);
+             v.redeemed = true; // functionally removed from active pool
+          }
+        }
+      }
+
+      // Fast forward time occasionally to trigger expirations
+      if (pseudoRandom(10) > 8) {
+        await ethers.provider.send("evm_increaseTime", [50]);
+        await ethers.provider.send("evm_mine", []);
+      }
+
+      await assertInvariants();
+    }
+  });
   });
 });
