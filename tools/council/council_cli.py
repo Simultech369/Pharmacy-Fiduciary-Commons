@@ -600,9 +600,41 @@ def handle_patch_pipeline_cmd(args):
     print("\nSynthesized Patch Preview:")
     print(patch.strip())
 
+def handle_route_cmd(args):
+    print_banner(f"Agent Task Router: {args.objective[:40]}...")
+    from task_router import AgentTaskRouter
+    router = AgentTaskRouter()
+
+    files = args.file if args.file else []
+    receipt_env = router.route_task(
+        objective=args.objective,
+        candidate_files=files
+    )
+
+    payload = receipt_env.payload
+    print(f"Task ID         : {payload.task_id}")
+    print(f"Risk Tier       : {payload.risk_tier}")
+    print(f"Classification  : {', '.join(payload.task_classification)}")
+    print(f"Final Decision  : {payload.final_decision_owner}")
+    print(f"L3 Auth Required: {'YES' if payload.human_l3_required else 'NO'}")
+    print(f"\nAssignments Generated ({len(payload.assignments)} total):")
+    for a in payload.assignments:
+        print(f"  - Role: {a.role_id}")
+        print(f"    - Scope Files : {len(a.scope_files)}")
+        print(f"    - Can Mutate  : {'YES' if a.can_mutate_files else 'NO'}")
+        print(f"    - Contract    : {a.expected_output_contract}")
+
+    print(f"\nReceipt Hash    : {receipt_env.payload_sha256[:16]}...")
+
 def main():
     parser = argparse.ArgumentParser(description="Multi-Agent Council & Autonomous Engine CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    # Route command
+    route_parser = subparsers.add_parser("route", help="Generate narrow agent routing assignments from a broad objective")
+    route_parser.add_argument("--objective", type=str, required=True, help="High-level task objective")
+    route_parser.add_argument("--file", type=str, action="append", help="Target files to include (can be used multiple times)")
+    route_parser.set_defaults(func=handle_route_cmd)
 
     # Drift command
     drift_parser = subparsers.add_parser("drift", help="Inspect authority drift & tide meter")

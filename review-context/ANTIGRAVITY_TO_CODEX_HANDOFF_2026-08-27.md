@@ -20,3 +20,59 @@ Whenever credits are restored, the next agent's focus should be directed towards
 1. Continuing formal verification strategies if a dedicated forge environment is set up.
 2. Assessing whether the CEI pattern needs to be revisited, or if the "Security Reviewer" path needs to document an explicit waiver for the `depositRebate` Slither warning.
 3. Potentially picking up any L3 integration tests with external JSON-RPC servers (A2A capabilities).
+
+## 4. Codex Reconciliation Addendum
+
+Codex reconciled this handoff against the live repository after it was written.
+The handoff above was generated before the final docs commit and before one
+CLI implementation mismatch was noticed.
+
+Live Git state observed by Codex:
+
+```text
+Repository Root: C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
+Current HEAD: 7e8d746 docs: generate Antigravity to Codex handoff dossier
+origin/main: 7e8d746 docs: generate Antigravity to Codex handoff dossier
+origin/main...HEAD: 0 behind, 0 ahead
+Visible working tree: modified tools/council/council_cli.py
+```
+
+Important receipt boundary:
+
+```text
+cache/verification_master_receipt.json currently records:
+overall_status: PASSED
+steps_executed: 9/9
+Hardhat passing_tests: 426
+git_lineage.head_commit: cf34fb2319e6b6c29633c3874af09c18a2dab1e1
+git_lineage.is_dirty: true
+git_lineage.dirty_file_count: 4
+```
+
+Weakest valid claim:
+
+```text
+The generated receipt proves a dirty-tree verification run reached 426 passing
+Hardhat tests, but it is not a clean committed-HEAD receipt for 7e8d746.
+```
+
+CLI route mismatch found:
+
+```text
+82675b3 committed test coverage for the `route` subcommand, but did not include
+the corresponding `handle_route_cmd` implementation in tools/council/council_cli.py.
+Codex found that implementation in the working tree and replaced its non-ASCII
+terminal bullet with an ASCII hyphen to avoid Windows encoding regressions.
+Focused verification passed:
+python -B -m unittest tools/council/test_council_cli.py
+Result: 29 tests passed
+```
+
+Recommended repair before any next full verification claim:
+
+```text
+1. Review tools/council/council_cli.py.
+2. If accepted, stage and commit the one-file route CLI implementation fix.
+3. Rerun python scripts/verify_all.py so cache/verification_master_receipt.json
+   records the actual clean HEAD and dirty_file_count: 0.
+```
