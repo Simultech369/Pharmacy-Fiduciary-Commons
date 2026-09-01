@@ -276,117 +276,132 @@
         },
         {
           "line": 23,
+          "title": "Public Boundary",
+          "level": 2
+        },
+        {
+          "line": 36,
+          "title": "Credibility Posture",
+          "level": 2
+        },
+        {
+          "line": 49,
           "title": "What This Cannot Do (Adversarial Limitations & Disclaimers)",
           "level": 2
         },
         {
-          "line": 40,
+          "line": 66,
           "title": "Status Summary",
           "level": 2
         },
         {
-          "line": 46,
+          "line": 72,
           "title": "What Runs Today",
           "level": 2
         },
         {
-          "line": 65,
+          "line": 91,
           "title": "Quickstart",
           "level": 2
         },
         {
-          "line": 115,
+          "line": 107,
+          "title": "Formal Verification Lane",
+          "level": 2
+        },
+        {
+          "line": 153,
           "title": "Fiduciary Dashboard Interface",
           "level": 2
         },
         {
-          "line": 122,
+          "line": 160,
           "title": "Architecture",
           "level": 2
         },
         {
-          "line": 147,
+          "line": 185,
           "title": "Current Checkpoint",
           "level": 2
         },
         {
-          "line": 158,
+          "line": 196,
           "title": "What This Is",
           "level": 2
         },
         {
-          "line": 172,
+          "line": 210,
           "title": "Core Lifecycle",
           "level": 2
         },
         {
-          "line": 183,
+          "line": 221,
           "title": "Treasury Buckets",
           "level": 2
         },
         {
-          "line": 190,
+          "line": 228,
           "title": "Patient Fund",
           "level": 2
         },
         {
-          "line": 200,
+          "line": 238,
           "title": "Roles",
           "level": 2
         },
         {
-          "line": 211,
+          "line": 249,
           "title": "Security Properties",
           "level": 2
         },
         {
-          "line": 239,
+          "line": 277,
           "title": "Merkle Leaf Encoding",
           "level": 2
         },
         {
-          "line": 258,
+          "line": 296,
           "title": "Deployment Parameters",
           "level": 2
         },
         {
-          "line": 286,
+          "line": 324,
           "title": "Deployment Script",
           "level": 2
         },
         {
-          "line": 336,
+          "line": 374,
           "title": "Audit And Production Status",
           "level": 2
         },
         {
-          "line": 355,
+          "line": 393,
           "title": "Adjacent Designs",
           "level": 2
         },
         {
-          "line": 367,
+          "line": 405,
           "title": "Background",
           "level": 2
         },
         {
-          "line": 373,
+          "line": 411,
           "title": "Contributing",
           "level": 2
         },
         {
-          "line": 387,
+          "line": 425,
           "title": "License",
           "level": 2
         },
         {
-          "line": 393,
+          "line": 431,
           "title": "Mission",
           "level": 2
         }
       ],
       "findings": [],
-      "line_count": 399
+      "line_count": 437
     },
     {
       "file": "GOVERNANCE.md",
@@ -475,87 +490,92 @@
         },
         {
           "line": 10,
-          "title": "1. Standpoint & Purpose",
+          "title": "Reading Boundary",
           "level": 2
         },
         {
           "line": 16,
+          "title": "1. Standpoint & Purpose",
+          "level": 2
+        },
+        {
+          "line": 22,
           "title": "2. Constitutional Principles",
           "level": 2
         },
         {
-          "line": 20,
+          "line": 26,
           "title": "2.1 No Permanent Sovereign",
           "level": 3
         },
         {
-          "line": 28,
+          "line": 34,
           "title": "2.2 Subsidiarity",
           "level": 3
         },
         {
-          "line": 32,
+          "line": 38,
           "title": "2.3 Socialized Surplus, Not Socialized Loss",
           "level": 3
         },
         {
-          "line": 38,
+          "line": 44,
           "title": "2.4 Forkability and Portability",
           "level": 3
         },
         {
-          "line": 43,
+          "line": 49,
           "title": "2.5 Pluralism without Fragmentation",
           "level": 3
         },
         {
-          "line": 47,
+          "line": 53,
           "title": "2.6 Anti-Plutocracy",
           "level": 3
         },
         {
-          "line": 52,
+          "line": 58,
           "title": "2.7 Contestable Identity",
           "level": 3
         },
         {
-          "line": 58,
+          "line": 64,
           "title": "2.8 Legible Power",
           "level": 3
         },
         {
-          "line": 63,
+          "line": 69,
           "title": "2.9 Bounded Experimentation",
           "level": 3
         },
         {
-          "line": 68,
+          "line": 74,
           "title": "2.10 The Protocol is Not the Community",
           "level": 3
         },
         {
-          "line": 75,
+          "line": 81,
           "title": "3. Epistemic Claim-Authority Framework",
           "level": 2
         },
         {
-          "line": 93,
+          "line": 99,
           "title": "4. Participant Rights",
           "level": 2
         },
         {
-          "line": 105,
+          "line": 111,
           "title": "5. Candidate Amendment Models (For Participant Review)",
           "level": 2
         },
         {
-          "line": 114,
+          "line": 120,
           "title": "6. Draft Constitutional Alignment Matrix",
           "level": 2
         }
       ],
       "findings": [],
-      "line_count": 127
+      "line_count": 133
     },
     {
       "file": "SECURITY.md",

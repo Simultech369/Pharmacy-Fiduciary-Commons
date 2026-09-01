@@ -3,25 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wellbeing Dashboard | Fiduciary Rebate Commons</title>
+  <title>Pharmacy Fiduciary Commons | Dashboard</title>
   <link rel="stylesheet" href="./design-system.css">
   <style>
     :root {
-      --bg-dark: #070a13;
-      --panel-bg: rgba(13, 20, 38, 0.6);
-      --border-color: rgba(255, 255, 255, 0.08);
-      --text-main: #f3f4f6;
-      --text-muted: #cbd5e1;
-      --accent-blue: #3b82f6;
-      --accent-cyan: #06b6d4;
-      --accent-purple: #8b5cf6;
-      --accent-green: #10b981;
-      --accent-green-text: #34d399;
-      --accent-red: #ef4444;
-      --accent-red-text: #f87171;
-      --accent-orange: #f59e0b;
-      --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --font-heading: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg-dark: #fbfbfa;
+      --bg-darker: #f4f3ef;
+      --panel-bg: #ffffff;
+      --border-color: #e7e5df;
+      --text-main: #171717;
+      --text-muted: #6d6a63;
+      --accent-blue: #2e5f8a;
+      --accent-cyan: #2f6f7e;
+      --accent-purple: #625984;
+      --accent-green: #2f6846;
+      --accent-green-text: #2f6846;
+      --accent-red: #a03a3a;
+      --accent-red-text: #8f2f2f;
+      --accent-orange: #8a5b18;
+      --font-body: "Aptos", "Segoe UI Variable", "Helvetica Neue", system-ui, sans-serif;
+      --font-heading: "Aptos Display", "Segoe UI Variable Display", "Helvetica Neue", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", "SF Mono", "JetBrains Mono", monospace;
+      --shadow-panel: none;
+      --shadow-hover: 0 2px 8px rgba(23, 23, 23, 0.04);
+      --border-radius-panel: 8px;
+      --border-radius-card: 6px;
+      --transition-speed: 0.14s;
+      --transition-timing: cubic-bezier(0.16, 1, 0.3, 1);
+      --btn-connect-bg: #171717;
+      --btn-connect-shadow: none;
     }
 
     * {
@@ -32,25 +42,22 @@
 
     body {
       background-color: var(--bg-dark);
-      background-image:
-        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%),
-        radial-gradient(at 50% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 50%);
+      background-image: none;
       background-attachment: fixed;
       color: var(--text-main);
       font-family: var(--font-body);
       min-height: 100vh;
       overflow-x: hidden;
-      line-height: 1.5;
+      line-height: 1.55;
     }
 
     header {
       border-bottom: 1px solid var(--border-color);
-      backdrop-filter: blur(12px);
+      backdrop-filter: none;
       position: sticky;
       top: 0;
       z-index: 100;
-      background: rgba(7, 10, 19, 0.8);
+      background: rgba(251, 251, 250, 0.94);
     }
 
     .header-container {
@@ -71,7 +78,7 @@
     .logo-icon {
       width: 2.25rem;
       height: 2.25rem;
-      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      background: #171717;
       border-radius: 0.5rem;
       display: flex;
       align-items: center;
@@ -79,17 +86,15 @@
       font-weight: 700;
       color: #fff;
       font-family: var(--font-heading);
-      box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+      box-shadow: none;
     }
 
     .logo-text {
       font-family: var(--font-heading);
       font-size: 1.35rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
-      background: linear-gradient(to right, #fff, var(--text-muted));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      letter-spacing: 0;
+      color: var(--text-main);
     }
 
     .badge-unverified {
@@ -156,30 +161,30 @@
       gap: 2.5rem;
     }
 
-    /* Glassmorphism Panel styles */
+    /* Baseline panel styles; design-system.css carries the current public theme. */
     .panel {
       background: var(--panel-bg);
       border: 1px solid var(--border-color);
-      border-radius: 1rem;
-      padding: 2rem;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-      transition: border-color 0.3s ease, transform 0.3s ease;
+      border-radius: var(--border-radius-panel);
+      padding: 1.1rem;
+      backdrop-filter: none;
+      box-shadow: var(--shadow-panel);
+      transition: border-color var(--transition-speed) var(--transition-timing);
     }
 
     .panel:hover {
-      border-color: rgba(255, 255, 255, 0.15);
+      border-color: #d9d6cc;
     }
 
     .panel-title {
       font-family: var(--font-heading);
-      font-size: 1.5rem;
+      font-size: 1rem;
       font-weight: 600;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      letter-spacing: -0.01em;
+      letter-spacing: 0;
     }
 
     .panel-subtitle {
@@ -819,7 +824,7 @@
 <body>
 
   <div class="banner-top-warning">
-    <span>DEMO ONLY — THIS IS LOCAL TEST DATA, NOT REAL PHARMACY REBATES</span>
+    <span>DEMO ONLY - THIS IS LOCAL TEST DATA, NOT REAL PHARMACY REBATES</span>
   </div>
 
   <header>
@@ -828,7 +833,7 @@
         <img src="assets/logo.png" alt="Pharmacy Fiduciary Commons Emblem" class="header-logo-img">
         <div>
           <div class="logo-text">Pharmacy Fiduciary Commons</div>
-          <div class="logo-subtitle">Verifiable Pharmacy Rebate & Patient Fund Prototype</div>
+          <div class="logo-subtitle">Verifiable rebate accounting and patient-fund prototype</div>
         </div>
       </div>
       <div class="header-controls-group">
@@ -847,21 +852,22 @@
       <div class="panel-title panel-title-split">
         <div>
           Database Security
-          <div class="panel-subtitle">The dashboard connects through a local server proxy so client browsers never hold direct database credentials.</div>
+          <div class="panel-subtitle">When enabled, the dashboard uses a local server proxy so client browsers never hold direct database credentials.</div>
         </div>
-        <div id="db-status-badge" class="badge-status-emerald">
-          ● LOCAL SERVER PROXY CONNECTED
+        <div id="db-status-badge" class="badge-unverified-slate">
+          PROXY STATUS UNCHECKED
         </div>
       </div>
+    </section>
     <!-- 5-Minute Guided Tour Banner (UI Slice B3) -->
     <section id="onboarding-tour-banner" class="panel tour-banner-container">
       <div class="panel-title panel-title-split">
         <div>
-          🎓 5-Minute Guided Tour
-          <div class="panel-subtitle">New to the Fiduciary Rebate Commons? Walk through the visual receipt pipeline in 5 minutes.</div>
+          5-Minute Guided Tour
+          <div class="panel-subtitle">A short, evidence-first tour through local fixtures, Merkle commitments, and verifier boundaries.</div>
         </div>
         <div class="tour-header-actions">
-          <a href="ONBOARDING.md" target="_blank" class="tour-docs-link">📄 Open ONBOARDING.md</a>
+          <a href="../ONBOARDING.md" target="_blank" rel="noopener noreferrer" class="tour-docs-link">Open ONBOARDING.md</a>
           <button id="btn-toggle-tour" class="btn-vote btn-toggle-tour-custom" aria-controls="tour-content-body" aria-expanded="true" onclick="toggleOnboardingTour()">Hide Tour</button>
         </div>
       </div>
@@ -869,11 +875,11 @@
       <div id="tour-content-body" class="tour-content-body">
         <div class="tour-intro-row">
           <div class="tour-intro-text">
-            <p><strong>Visual Proof Pipeline:</strong> This prototype separates contract-backed checks from synthetic demo data. Follow the 4 receipt steps below to trace how allocations become Merkle proofs and contract-tested receipts.</p>
+            <p><strong>Proof Boundary Pipeline:</strong> This prototype separates contract-backed checks from synthetic demo data. Follow the 4 receipt steps below to trace how allocations become Merkle proofs and locally tested receipts.</p>
             <div class="tour-color-guide">
-              <span class="color-pill obsidian">Obsidian Dark: Base Monolith</span>
-              <span class="color-pill cyan">Jazz Cyan: Verified Receipt</span>
-              <span class="color-pill amber">Warm Amber: Caution & Fixtures</span>
+              <span class="color-pill obsidian">Canvas: Base Surface</span>
+              <span class="color-pill cyan">Teal: Locally Checked State</span>
+              <span class="color-pill amber">Amber: Caution or Fixture</span>
             </div>
           </div>
           <div class="tour-mockup-wrapper">
@@ -886,9 +892,9 @@
             <div class="tour-step-number">1</div>
             <div class="tour-step-content">
               <h4>Local Allocation</h4>
-              <p class="tour-step-desc">Proves local synthetic allocation file creation.</p>
-              <div class="tour-proof-badge proves">PROVES: Local file output</div>
-              <div class="tour-proof-badge nonproof">DOES NOT PROVE: Live PBM claims</div>
+              <p class="tour-step-desc">Shows local synthetic allocation file creation.</p>
+              <div class="tour-proof-badge proves">LOCAL EVIDENCE: File output</div>
+              <div class="tour-proof-badge nonproof">NON-CLAIM: Live PBM claims</div>
             </div>
           </div>
 
@@ -896,9 +902,9 @@
             <div class="tour-step-number">2</div>
             <div class="tour-step-content">
               <h4>Merkle Commitment</h4>
-              <p class="tour-step-desc">Proves root & proof generation from allocations.</p>
-              <div class="tour-proof-badge proves">PROVES: Off-chain Merkle math</div>
-              <div class="tour-proof-badge nonproof">DOES NOT PROVE: Mainnet state</div>
+              <p class="tour-step-desc">Checks root and proof generation from allocations.</p>
+              <div class="tour-proof-badge proves">LOCAL EVIDENCE: Merkle math</div>
+              <div class="tour-proof-badge nonproof">NON-CLAIM: Mainnet state</div>
             </div>
           </div>
 
@@ -906,9 +912,9 @@
             <div class="tour-step-number">3</div>
             <div class="tour-step-content">
               <h4>Contract Rules Check</h4>
-              <p class="tour-step-desc">Proves Hardhat 280-test suite execution.</p>
-              <div class="tour-proof-badge proves">PROVES: EVM contract logic</div>
-              <div class="tour-proof-badge nonproof">DOES NOT PROVE: Audit sign-off</div>
+              <p class="tour-step-desc">Reports the Hardhat suite execution recorded by the local verifier.</p>
+              <div class="tour-proof-badge proves">LOCAL EVIDENCE: Test execution</div>
+              <div class="tour-proof-badge nonproof">NON-CLAIM: Audit sign-off</div>
             </div>
           </div>
 
@@ -916,15 +922,15 @@
             <div class="tour-step-number">4</div>
             <div class="tour-step-content">
               <h4>Public Receipt</h4>
-              <p class="tour-step-desc">Proves static dashboard bundle rendering.</p>
-              <div class="tour-proof-badge proves">PROVES: Visual transparency</div>
-              <div class="tour-proof-badge nonproof">DOES NOT PROVE: Real-world funding</div>
+              <p class="tour-step-desc">Shows static dashboard bundle rendering.</p>
+              <div class="tour-proof-badge proves">LOCAL EVIDENCE: Static bundle</div>
+              <div class="tour-proof-badge nonproof">NON-CLAIM: Real-world funding</div>
             </div>
           </div>
         </div>
 
         <div class="tour-safeguard-notice">
-          🛡️ <strong>Operational Safeguard:</strong> Flagged disputes lock funds in escrow reserve during an active resolution window before reaching the 30-day retraction timeout (<code>DISPUTE_TIMEOUT</code>), preventing PBMs or councils from burying claims.
+          <strong>Operational Safeguard:</strong> Flagged disputes lock funds in escrow reserve during an active resolution window before reaching the 30-day retraction timeout (<code>DISPUTE_TIMEOUT</code>), preventing PBMs or councils from burying claims.
         </div>
       </div>
     </section>
@@ -991,7 +997,7 @@
       <div class="panel-title">
         <div>
           The Ledger of Omissions
-          <div class="panel-subtitle">Documenting PBM non-participation and missing deposit flows</div>
+          <div class="panel-subtitle">Synthetic missing-deposit scenarios with explicit provenance labels</div>
         </div>
       </div>
 
@@ -1006,7 +1012,7 @@
         </div>
         <div id="gap-calc-box" class="gap-calculator">
           <div class="gap-info">
-            <h4>Estimated Pass-Through Gap</h4>
+            <h4>Fixture Pass-Through Gap</h4>
             <div id="gap-provenance" class="gap-provenance-text">Synthetic fixture; not an estimate about a real company</div>
           </div>
           <div id="estimated-gap" class="gap-value">$2,450,000</div>
@@ -1014,11 +1020,11 @@
       </div>
 
       <div id="omission-grid-container" class="omission-grid">
-        <!-- Dynically populated -->
+        <!-- Dynamically populated -->
       </div>
 
       <div class="omission-disclaimer">
-        * Synthetic demonstration data only. Named-party claims require verified source and methodology metadata.
+        Synthetic demonstration data only. Named-party claims require verified source and methodology metadata.
       </div>
     </section>
 
@@ -1033,7 +1039,7 @@
 
         <div class="stats-row">
           <div class="stat-box">
-            <span class="stat-label">Total Claims Vol</span>
+            <span class="stat-label">Claims Volume</span>
             <span class="stat-num">$842,500</span>
           </div>
           <div class="stat-box">
@@ -1079,7 +1085,7 @@
                 <td><span class="badge-claim-status flagged">Disputed</span></td>
                 <td>
                   <div class="appeal-timer">
-                    ⏳ <span>11d 4h left</span>
+                    <span>11d 4h left</span>
                   </div>
                 </td>
               </tr>
@@ -1104,17 +1110,17 @@
         <div class="pb-intro">
           A 10% share of every gross claim is routed to this fund. This prototype distributes configured round pools using squared vote weights.
           <div class="pb-privacy-note">
-            ⚠️ Privacy Notice: Advocate registration signs and emits a stable credential hash. This creates a linkage correlation risk for on-chain identity. Refer to <a href="OPEN_DESIGN_DECISIONS.md" target="_blank">OPEN_DESIGN_DECISIONS.md</a> for active policy discussion.
+            Privacy notice: Advocate registration signs and emits a stable credential hash. This creates a linkage correlation risk for on-chain identity. Refer to <a href="../docs/ops/OPEN_DESIGN_DECISIONS.md" target="_blank" rel="noopener noreferrer">OPEN_DESIGN_DECISIONS.md</a> for active policy discussion.
           </div>
           <div class="alert-panel-orange alert-panel-orange-spacing">
-            <strong>⚠️ Scarcity & Care-Continuity Disclaimer:</strong> The Patient Fund operates as a ledger allocation engine for matching shares. It does not track, verify, or guarantee physical inventory, delivery, pharmacy stock, clinical outcomes, or patient access. Refer to <a href="SCARCITY_GOVERNANCE.md" target="_blank">SCARCITY_GOVERNANCE.md</a> and <a href="CARE_CONTINUITY.md" target="_blank">CARE_CONTINUITY.md</a>.
+            <strong>Scarcity and care-continuity disclaimer:</strong> The Patient Fund operates as a ledger allocation engine for matching shares. It does not track, verify, or guarantee physical inventory, delivery, pharmacy stock, clinical outcomes, or patient access. Refer to <a href="../docs/design/SCARCITY_GOVERNANCE.md" target="_blank" rel="noopener noreferrer">SCARCITY_GOVERNANCE.md</a> and <a href="../docs/design/CARE_CONTINUITY.md" target="_blank" rel="noopener noreferrer">CARE_CONTINUITY.md</a>.
           </div>
         </div>
 
         <!-- Liquidity & Accounting Balance Board -->
         <div id="liquidity-board" class="liquidity-board-container">
           <h4 class="liquidity-board-title">
-            💰 Liquidity & Accounting Balance
+            Liquidity & Accounting Balance
           </h4>
           <div class="liquidity-board-grid">
             <div>
@@ -1140,7 +1146,7 @@
         <!-- Council Controls Section -->
         <div id="council-controls" class="council-controls-container">
           <h4 class="council-controls-title">
-            ⚙️ Council Operations Portal
+            Council Operations Portal
           </h4>
           <div class="council-actions-row">
             <button id="btn-preview-finalize" class="btn-vote btn-council-preview">Preview Finalization (Dry-Run)</button>
@@ -1182,7 +1188,7 @@
               <div id="proj-0-votes" class="matching-votes">120 votes</div>
             </div>
             <div>
-              <button class="btn-vote" onclick="castVote(0)">✨ Vote</button>
+              <button class="btn-vote" onclick="castVote(0)">Vote</button>
             </div>
           </div>
 
@@ -1201,7 +1207,7 @@
               <div id="proj-1-votes" class="matching-votes">195 votes</div>
             </div>
             <div>
-              <button class="btn-vote" onclick="castVote(1)">✨ Vote</button>
+              <button class="btn-vote" onclick="castVote(1)">Vote</button>
             </div>
           </div>
 
@@ -1220,14 +1226,14 @@
               <div id="proj-2-votes" class="matching-votes">64 votes</div>
             </div>
             <div>
-              <button class="btn-vote" onclick="castVote(2)">✨ Vote</button>
+              <button class="btn-vote" onclick="castVote(2)">Vote</button>
             </div>
           </div>
         </div>
 
         <div class="rollover-box">
           <div class="rollover-title">
-            ⏰ 90-Day Idle Surplus Rollover Warning
+            90-Day Idle Surplus Rollover Warning
           </div>
           <div id="rollover-countdown" class="rollover-countdown">
             Not implemented in the current contract
@@ -1246,14 +1252,14 @@
 
       <div class="eco-metric-row">
         <div class="eco-stat">
-          <div class="eco-icon">♻️</div>
+          <div class="eco-icon"></div>
           <div class="eco-details">
             <h4>Example Waste Metric</h4>
             <div class="eco-num">Demo only</div>
           </div>
         </div>
         <div class="eco-stat">
-          <div class="eco-icon">⚡</div>
+          <div class="eco-icon"></div>
           <div class="eco-details">
             <h4>Example Logistics Metric</h4>
             <div class="eco-num">Demo only</div>
@@ -1261,28 +1267,29 @@
         </div>
       </div>
 
-      <div class="eco-receipt-list">
+        <div class="eco-receipt-list">
         <div class="receipt-item">
           <div>
-            <span class="receipt-name">Placeholder audit artifact</span>
-            <span class="receipt-meta"> • Synthetic fixture • No external verifier</span>
+            <span class="receipt-name">Synthetic review artifact</span>
+            <span class="receipt-meta"> - Synthetic fixture - No external verifier</span>
           </div>
           <span class="receipt-meta">No artifact available</span>
         </div>
         <div class="receipt-item">
           <div>
-            <span class="receipt-name">Placeholder manifest artifact</span>
-            <span class="receipt-meta"> • Synthetic fixture • Not signed</span>
+            <span class="receipt-name">Synthetic manifest artifact</span>
+            <span class="receipt-meta"> - Synthetic fixture - Not signed</span>
           </div>
           <span class="receipt-meta">No artifact available</span>
         </div>
         <div class="receipt-item">
           <div>
-            <span class="receipt-name">Placeholder route artifact</span>
-            <span class="receipt-meta"> • Synthetic fixture • No source file</span>
+            <span class="receipt-name">Synthetic route artifact</span>
+            <span class="receipt-meta"> - Synthetic fixture - No source file</span>
           </div>
           <span class="receipt-meta">No artifact available</span>
         </div>
+      </div>
     </section>
 
     <!-- 4A. On-Chain Commons Activity Log (Gate 10 Pagination) -->
@@ -1292,13 +1299,13 @@
         <span class="status-badge recorded onchain-events-status-badge" id="onchain-events-status">Disconnected</span>
       </div>
       <div class="pb-intro pb-intro-spacing">
-        Audit the historical registration events fetched directly from the participatory budgeting contract. This view query scans blockchain blocks in pagination batches to prevent RPC bottlenecks.
+        Inspect historical registration events when a participatory budgeting contract is connected. This view query scans blockchain blocks in pagination batches to reduce RPC load.
       </div>
       <ul id="onchain-events-list" class="onchain-events-list-custom">
         <!-- Dynamically populated -->
       </ul>
       <div class="flex-center-row">
-        <button id="btn-load-more-events" class="btn-vote btn-load-more-events-custom">🔄 Load More Events</button>
+        <button id="btn-load-more-events" class="btn-vote btn-load-more-events-custom">Load More Events</button>
       </div>
     </section>
 
@@ -1328,7 +1335,7 @@
         </div>
 
         <div class="portability-action-row">
-          <button id="btn-verify-portability" class="btn-vote btn-verify-portability-custom">🔍 Verify Export</button>
+          <button id="btn-verify-portability" class="btn-vote btn-verify-portability-custom">Verify Export</button>
           <div id="portability-verification-status" role="status" aria-live="polite" class="portability-status-text"></div>
         </div>
 
@@ -1337,19 +1344,21 @@
           <ul id="portability-results-list" class="portability-results-list"></ul>
         </div>
       </div>
-    <!-- 5. Visual Cryptographic Receipt Flow Panel -->
+    </section>
+
+    <!-- 5. Local Receipt Flow Panel -->
     <section class="panel visual-inspector-panel">
       <div class="panel-title">
         <div>
-          🧾 Interactive Cryptographic Receipt Inspector
-          <div class="panel-subtitle">Visual step-by-step breakdown of how voter registration signatures, domain containment, and ledger states are verified.</div>
+          Receipt Inspector
+          <div class="panel-subtitle">Local structural review of sample signature fields, domain containment, and request-ledger state.</div>
         </div>
-        <span class="badge-unverified badge-unverified-purple">Live Verifier</span>
+        <span class="badge-unverified badge-unverified-purple">Local Sample</span>
       </div>
 
       <div class="inspector-btn-row">
-        <button id="btn-sample-receipt" class="btn-vote btn-sample-receipt-custom" onclick="generateVisualReceiptSample()">⚡ Generate Sample Receipt</button>
-        <button id="btn-inspect-receipt" class="btn-vote btn-inspect-receipt-custom" onclick="verifyVisualReceiptFlow()">🔍 Run Step-by-Step Verification</button>
+        <button id="btn-sample-receipt" class="btn-vote btn-sample-receipt-custom" onclick="generateVisualReceiptSample()">Generate Sample</button>
+        <button id="btn-inspect-receipt" class="btn-vote btn-inspect-receipt-custom" onclick="verifyVisualReceiptFlow()">Inspect Receipt</button>
       </div>
 
       <!-- Step-by-Step Flow Pipeline -->
@@ -1358,8 +1367,8 @@
         <!-- Step 1: EIP-191 Voter Signature -->
         <div id="receipt-step-1" class="gap-calculator receipt-step-card">
           <div class="gap-info">
-            <h4 class="receipt-step-title-cyan">1. Voter Envelope Signature</h4>
-            <div id="step-1-status" class="receipt-step-status-text">EIP-191 message binding chainId, roundId, & proxyAddress</div>
+            <h4 class="receipt-step-title-cyan">1. Sample Voter Envelope</h4>
+            <div id="step-1-status" class="receipt-step-status-text">Sample EIP-191-shaped fields binding chainId, roundId, and proxyAddress</div>
           </div>
           <div id="step-1-badge" class="badge-unverified receipt-step-badge">Awaiting Generation</div>
         </div>
@@ -1367,8 +1376,8 @@
         <!-- Step 2: EIP-712 Relayer Attestation -->
         <div id="receipt-step-2" class="gap-calculator receipt-step-card">
           <div class="gap-info">
-            <h4 class="receipt-step-title-purple">2. Relayer EIP-712 Attestation</h4>
-            <div id="step-2-status" class="receipt-step-status-text">Trusted credential issuer typed data verification</div>
+            <h4 class="receipt-step-title-purple">2. Sample Relayer Attestation</h4>
+            <div id="step-2-status" class="receipt-step-status-text">Sample EIP-712-shaped credential issuer typed-data fields</div>
           </div>
           <div id="step-2-badge" class="badge-unverified receipt-step-badge">Awaiting Generation</div>
         </div>
@@ -1377,7 +1386,7 @@
         <div id="receipt-step-3" class="gap-calculator receipt-step-card">
           <div class="gap-info">
             <h4 class="receipt-step-title-blue">3. Domain-Separated HMAC</h4>
-            <div id="step-3-status" class="receipt-step-status-text">Keyed SHA-256 blinding preventing public correlation</div>
+            <div id="step-3-status" class="receipt-step-status-text">Domain-separated keyed-hash sample; not production unlinkability</div>
           </div>
           <div id="step-3-badge" class="badge-unverified receipt-step-badge">Awaiting Generation</div>
         </div>
@@ -1386,7 +1395,7 @@
         <div id="receipt-step-4" class="gap-calculator receipt-step-card">
           <div class="gap-info">
             <h4 class="receipt-step-title-green">4. Database Request Ledger</h4>
-            <div id="step-4-status" class="receipt-step-status-text">15-second row-locked state machine claim (`completed`)</div>
+            <div id="step-4-status" class="receipt-step-status-text">Sample request-ledger lifecycle; no production database lock is proven</div>
           </div>
           <div id="step-4-badge" class="badge-unverified receipt-step-badge">Awaiting Generation</div>
         </div>
@@ -1396,8 +1405,8 @@
       <!-- Formatted Receipt Payload Code Block -->
       <div id="receipt-code-box" class="receipt-code-box-custom">
         <div class="receipt-code-box-header">
-          <span>Raw Verifiable Receipt JSON:</span>
-          <button class="btn-vote btn-copy-json-custom" onclick="copyReceiptJson()">📋 Copy JSON</button>
+          <span>Sample Receipt JSON:</span>
+          <button class="btn-vote btn-copy-json-custom" onclick="copyReceiptJson()">Copy JSON</button>
         </div>
         <pre id="receipt-json-output" class="receipt-json-output-custom"></pre>
       </div>
@@ -1406,7 +1415,7 @@
   </main>
 
   <footer>
-    <p>Fiduciary Rebate Commons local prototype. Contract behavior is authoritative; policy and integration concepts remain subject to review.</p>
+    <p>Fiduciary Rebate Commons local prototype. Local contract tests are the current technical reference; policy and integration concepts remain subject to review.</p>
     <p class="footer-legal-notice">
       Not audited. Not deployed to mainnet. Do not use real funds.
     </p>
@@ -1490,11 +1499,11 @@
       document.getElementById("estimated-gap").innerText = data.gap;
       document.getElementById("gap-provenance").innerText = data.mock
         ? "Synthetic fixture; not an estimate about a real company"
-        : `Verified source: ${data.source} | Methodology: ${data.methodology}`;
+        : `Source label: ${data.source} | Methodology: ${data.methodology}`;
 
       // Update Cards
       const container = document.getElementById("omission-grid-container");
-      container.innerHTML = "";
+      container.replaceChildren();
 
       data.quarters.forEach(item => {
         const isRecorded = item.status === "recorded";
@@ -1622,7 +1631,7 @@
       statusEl.style.color = "var(--text-muted)";
       statusEl.innerText = "Verifying...";
       resultsEl.style.display = "none";
-      listEl.innerHTML = "";
+      listEl.replaceChildren();
 
       const jsonText = document.getElementById("portability-json-input").value.trim();
       if (!jsonText) {
@@ -1791,19 +1800,19 @@
       if (errors.length === 0) {
         if (payload.is_partial === true) {
           statusEl.style.color = "var(--accent-orange)";
-          statusEl.innerText = "⚠ partial accepted with override";
+          statusEl.innerText = "Warning partial accepted with override";
           titleEl.innerText = "Verification Success (Partial Override)";
           titleEl.style.color = "var(--accent-orange)";
         } else {
           statusEl.style.color = "var(--accent-green-text)";
-          statusEl.innerText = "Structural Check Passed Locally";
-          titleEl.innerText = "Verification Success";
+          statusEl.innerText = "Local Structural Check Passed";
+          titleEl.innerText = "Local Check Passed";
           titleEl.style.color = "var(--accent-green-text)";
         }
 
         const li = document.createElement("li");
         li.style.color = "var(--text-main)";
-        li.innerText = "✓ JSON structure complies with schema.";
+        li.innerText = "OK: JSON structure complies with schema.";
         listEl.appendChild(li);
 
         const li2 = document.createElement("li");
@@ -1812,14 +1821,14 @@
         listEl.appendChild(li2);
       } else {
         statusEl.style.color = "var(--accent-red-text)";
-        statusEl.innerText = "❌ Verification Failed";
+        statusEl.innerText = "Verification Failed";
         titleEl.innerText = "Verification Errors";
         titleEl.style.color = "var(--accent-red-text)";
 
         errors.forEach(err => {
           const li = document.createElement("li");
           li.style.color = "var(--accent-red-text)";
-          li.innerText = `• ${err}`;
+          li.innerText = `- ${err}`;
           listEl.appendChild(li);
         });
       }
@@ -1827,222 +1836,27 @@
       warnings.forEach(warn => {
         const li = document.createElement("li");
         li.style.color = "var(--accent-orange)";
-        li.innerText = `⚠️ ${warn}`;
+        li.innerText = `Warning: ${warn}`;
         listEl.appendChild(li);
       });
     });
   </script>
   <!-- Fiduciary Copilot Floating UI Drawer -->
   <button id="copilot-toggle-btn" type="button" aria-expanded="false" aria-controls="fiduciary-copilot-drawer">
-    <span>💬 Fiduciary Copilot</span>
+    <span>Fiduciary Copilot</span>
   </button>
 
-  <div id="fiduciary-copilot-drawer" class="hidden" role="dialog" aria-label="Fiduciary Audit Copilot">
+  <div id="fiduciary-copilot-drawer" class="hidden" role="dialog" aria-label="Fiduciary Documentation Assistant">
     <div class="copilot-header">
       <div class="copilot-title">
-        <span>Fiduciary Audit Copilot</span>
-        <span class="copilot-badge">LOCAL RAG</span>
+        <span>Fiduciary Documentation Assistant</span>
+        <span class="copilot-badge">LOCAL DOCS</span>
       </div>
       <button id="copilot-close-btn" class="copilot-close" type="button" aria-label="Close Chat">&times;</button>
     </div>
     <div id="copilot-messages" class="copilot-messages">
       <div class="copilot-msg bot">
-        Hello! I am your local Fiduciary Audit Copilot. Ask me any question about solvency debt, mutual credit clearing, or participatory budgeting rules.
-      </div>
-    </div>
-          errors.push("Missing or invalid exported_at timestamp.");
-        }
-
-        for (const field of ["claims", "merkle_proofs", "votes", "receipts"]) {
-          if (!Array.isArray(payload[field])) {
-            errors.push(`${field} must be an array.`);
-          }
-        }
-
-        if (payload.schema_version === undefined) {
-          errors.push("Completeness field schema_version is missing.");
-        } else {
-          if (payload.schema_version !== "1.1.0") {
-            errors.push("Unsupported schema_version; expected 1.1.0.");
-          }
-          if (payload.is_partial === undefined) {
-            errors.push("Completeness field is_partial is missing.");
-          } else if (typeof payload.is_partial !== "boolean") {
-            errors.push("is_partial must be a boolean.");
-          }
-          if (payload.warnings === undefined) {
-            errors.push("Completeness field warnings is missing.");
-          } else if (!Array.isArray(payload.warnings)) {
-            errors.push("warnings must be an array.");
-          } else if (payload.warnings.some((warning) => typeof warning !== "string")) {
-            errors.push("warnings entries must be strings.");
-          }
-        }
-
-        if (payload.is_partial === false && Array.isArray(payload.warnings) && payload.warnings.length > 0) {
-          errors.push("A complete export cannot contain partial-export warnings.");
-        }
-
-        if (payload.is_partial === true) {
-          if (allowPartial) {
-            if (Array.isArray(payload.warnings)) {
-              for (const w of payload.warnings) {
-                warnings.push(`[Partial Export Warning] ${w}`);
-              }
-            } else {
-              warnings.push("Export is marked as partial.");
-            }
-          } else {
-            errors.push("Export is marked as partial (contains query failures). Check 'Allow Partial RPC Data' to override.");
-            if (Array.isArray(payload.warnings)) {
-              for (const w of payload.warnings) {
-                errors.push(`[Partial Export Error] ${w}`);
-              }
-            }
-          }
-        }
-
-        if (errors.length === 0) {
-          const receiptsByHash = new Map();
-          for (const receipt of payload.receipts) {
-            if (!receipt.hash || !ethers.isHexString(receipt.hash, 32)) {
-              errors.push(`Receipt has invalid hash: ${receipt.hash}`);
-              continue;
-            }
-            receiptsByHash.set(receipt.hash.toLowerCase(), receipt);
-          }
-
-          for (const claim of payload.claims) {
-            let pharmacy;
-            try {
-              pharmacy = ethers.getAddress(claim.pharmacyAddress);
-            } catch {
-              errors.push(`Claim ${claim.claimId || "(unknown)"} has invalid pharmacyAddress.`);
-              continue;
-            }
-
-            if (pharmacy !== exporter) {
-              errors.push(`Claim ${claim.claimId || "(unknown)"} pharmacyAddress does not match exporter.`);
-            }
-
-            if (!receiptsByHash.has(String(claim.transactionHash || "").toLowerCase())) {
-              errors.push(`Claim ${claim.claimId || "(unknown)"} is missing a matching receipt.`);
-            }
-
-            if (claim.metadataProvenance !== "synthetic-placeholder" && claim.ndc === "unavailable-off-chain") {
-              errors.push(`Claim ${claim.claimId || "(unknown)"} has unavailable clinical metadata without synthetic provenance.`);
-            }
-          }
-
-          for (const proof of payload.merkle_proofs) {
-            if (!ethers.isHexString(proof.claimRoot, 32)) {
-              errors.push(`Merkle proof at index ${proof.leafIndex} has invalid claimRoot.`);
-              continue;
-            }
-
-            try {
-              const pharmacy = ethers.getAddress(proof.pharmacy);
-              if (pharmacy !== exporter) {
-                errors.push(`Merkle proof at index ${proof.leafIndex} pharmacy does not match exporter.`);
-              }
-
-              const leaf = merkleLeafJS(pharmacy, BigInt(proof.grossAmount), BigInt(proof.eligibleCap));
-              const proofItems = Array.isArray(proof.proof) ? proof.proof : [];
-              const valid = verifyMerkleProofJS(proofItems, proof.claimRoot, leaf);
-              if (!valid) {
-                errors.push(`Merkle proof at index ${proof.leafIndex} does not verify against claimRoot.`);
-              }
-            } catch (err) {
-              errors.push(`Merkle proof at index ${proof.leafIndex} is malformed: ${err.message}`);
-            }
-          }
-
-          for (const vote of payload.votes) {
-            try {
-              const voter = ethers.getAddress(vote.voter);
-              if (voter !== exporter) {
-                errors.push(`Vote for project ${vote.project || "(unknown)"} voter does not match exporter.`);
-              }
-            } catch {
-              errors.push(`Vote for project ${vote.project || "(unknown)"} has invalid voter address.`);
-            }
-          }
-
-          if (payload.merkle_proofs.length === 0 && payload.claims.length > 0) {
-            if (allowIncomplete) {
-              warnings.push("Claims exist without Merkle proof material; export is not independently claim-verifiable.");
-            } else {
-              errors.push("Claims exist without Merkle proof material; export is not independently claim-verifiable. Check 'Allow Incomplete Merkle Proofs' to override.");
-            }
-          }
-        }
-      }
-
-      // Offline notice
-      warnings.push("Offline prototype: checks untrusted export self-consistency only. Authoritative chain provenance requires verify-export.js with --rpc and confirmed roots.");
-
-      // 3. Render results
-      resultsEl.style.display = "block";
-      if (errors.length === 0) {
-        if (payload.is_partial === true) {
-          statusEl.style.color = "var(--accent-orange)";
-          statusEl.innerText = "⚠ partial accepted with override";
-          titleEl.innerText = "Verification Success (Partial Override)";
-          titleEl.style.color = "var(--accent-orange)";
-        } else {
-          statusEl.style.color = "var(--accent-green-text)";
-          statusEl.innerText = "Structural Check Passed Locally";
-          titleEl.innerText = "Verification Success";
-          titleEl.style.color = "var(--accent-green-text)";
-        }
-
-        const li = document.createElement("li");
-        li.style.color = "var(--text-main)";
-        li.innerText = "✓ JSON structure complies with schema.";
-        listEl.appendChild(li);
-
-        const li2 = document.createElement("li");
-        li2.style.color = "var(--text-main)";
-        li2.innerText = "Merkle proofs are internally consistent with the claimRoot supplied by this payload.";
-        listEl.appendChild(li2);
-      } else {
-        statusEl.style.color = "var(--accent-red-text)";
-        statusEl.innerText = "❌ Verification Failed";
-        titleEl.innerText = "Verification Errors";
-        titleEl.style.color = "var(--accent-red-text)";
-
-        errors.forEach(err => {
-          const li = document.createElement("li");
-          li.style.color = "var(--accent-red-text)";
-          li.innerText = `• ${err}`;
-          listEl.appendChild(li);
-        });
-      }
-
-      warnings.forEach(warn => {
-        const li = document.createElement("li");
-        li.style.color = "var(--accent-orange)";
-        li.innerText = `⚠️ ${warn}`;
-        listEl.appendChild(li);
-      });
-    });
-  </script>
-  <!-- Fiduciary Copilot Floating UI Drawer -->
-  <button id="copilot-toggle-btn" type="button" aria-expanded="false" aria-controls="fiduciary-copilot-drawer">
-    <span>💬 Fiduciary Copilot</span>
-  </button>
-
-  <div id="fiduciary-copilot-drawer" class="hidden" role="dialog" aria-label="Fiduciary Audit Copilot">
-    <div class="copilot-header">
-      <div class="copilot-title">
-        <span>Fiduciary Audit Copilot</span>
-        <span class="copilot-badge">LOCAL RAG</span>
-      </div>
-      <button id="copilot-close-btn" class="copilot-close" type="button" aria-label="Close Chat">&times;</button>
-    </div>
-    <div id="copilot-messages" class="copilot-messages">
-      <div class="copilot-msg bot">
-        Hello! I am your local Fiduciary Audit Copilot. Ask me any question about solvency debt, mutual credit clearing, or participatory budgeting rules.
+        Hello. I can summarize local documentation and prototype rules. Treat answers as navigation help, not audit advice or deployment approval.
       </div>
     </div>
     <div class="copilot-pills">

@@ -7,7 +7,14 @@ coverage/
 coverage.json
 .hh-cache/
 .npm-cache/
-dist/
+# Generated dashboard output stays ignored except public static doc copies that
+# dist/dashboard/index.html links directly.
+dist/*
+!dist/dashboard/
+dist/dashboard/*
+!dist/dashboard/NEXT.md
+!dist/dashboard/docs/
+!dist/dashboard/docs/**
 build/
 *.map
 

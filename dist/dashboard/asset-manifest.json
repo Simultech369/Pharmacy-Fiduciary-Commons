@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-08-07T16:19:29.293Z",
+  "generatedAt": "2026-08-31T17:45:37.445Z",
   "source": "dashboard",
   "warning": "Static dashboard build only. Do not publish without running check:frontend.",
   "files": [
     {
       "path": "index.html",
-      "bytes": 44865,
-      "sha256": "07ccb23fe63174ebb4fddb13ec5cee96f9b46931f4a81fefefdf93d095653e6a"
+      "bytes": 36519,
+      "sha256": "88e41bd758d8b039bf29dc324432733a639ee25704cc27cf65c8c7466fea35be"
     },
     {
       "path": "dashboard-inline.min.js",
-      "bytes": 13517,
-      "sha256": "8bca64c644108ee5780fe4a403bb64deb02ca5e1d231c725477115247610d4ca"
+      "bytes": 13516,
+      "sha256": "daee8368ff1f26afa196fe89866c1eca5c802aafd222e0b9f182f099bce3a642"
     },
     {
       "path": "design-system.css",
-      "bytes": 31488,
-      "sha256": "dc4fe82aa5c63f175ae716040978649a6b9074599954dba402bcf0b88c80fa70"
+      "bytes": 38067,
+      "sha256": "fee863cfe03baf8e7e1859e91f75370c612505459470b7160b1727fb2e12184d"
     },
     {
       "path": "web3_integration.min.js",
-      "bytes": 39866,
-      "sha256": "acb736ec5a16f18ef238c2b05eab87afea5d695af151a14856dccf3287a654c4"
+      "bytes": 33776,
+      "sha256": "089f19ddadd7d64b8c251e7e3fbe979e46cb115b57011227b850728596773ad9"
     },
     {
       "path": "ethers.umd.min.js",
@@ -35,18 +35,18 @@
     },
     {
       "path": "ONBOARDING.md",
-      "bytes": 7271,
-      "sha256": "b5c7c888e47a5f5561868cbdeaea173963e603a6818b96c7570c9423be34c8a7"
+      "bytes": 7461,
+      "sha256": "7d2cbcade803c86ad13861659e599c07e66e661b7db63731c57e7a6b9ebb9d36"
+    },
+    {
+      "path": "NEXT.md",
+      "bytes": 5260,
+      "sha256": "e2a64d1e317800ae475911209a36fa15aff9b6a263173b82ce21da9f00e9793d"
     },
     {
       "path": "README.md",
-      "bytes": 19738,
-      "sha256": "ac41659a5f7ccf8f49d4b104bf98c2f7483b55e56d1a0eb05f7be84d21366fff"
-    },
-    {
-      "path": "MECHANISM_COVERAGE.md",
-      "bytes": 14154,
-      "sha256": "3d20bd0d8b2053a4d6ea391cb2ef24027b34f3a5812bfb4a54ca3d4e746ebeb7"
+      "bytes": 23032,
+      "sha256": "cdbbaa8b6a4ca7c2c41854b2f3241c6ddaecd6c883b2bd4b6181540e7fd79f21"
     },
     {
       "path": "PORTABILITY.md",
@@ -54,29 +54,44 @@
       "sha256": "01bc3ade6d21fa8c3cc7ec78b690f71cf56dd195d5e70ca3b83e98e07438d5bd"
     },
     {
-      "path": "OPEN_DESIGN_DECISIONS.md",
-      "bytes": 5521,
-      "sha256": "fb2518c781b98544da85e24c47b58598a8454481dd33d913969adc8215061397"
-    },
-    {
-      "path": "SCARCITY_GOVERNANCE.md",
-      "bytes": 7371,
-      "sha256": "65e07ce11708838da2ea96237af947907d517e2dc30a723ab72da70036bf04fa"
-    },
-    {
-      "path": "CARE_CONTINUITY.md",
-      "bytes": 6641,
-      "sha256": "71412bf95c22335d83e64bbc5318b136075e09332b056eeb11dfd6cd34e10733"
-    },
-    {
       "path": "GOVERNANCE.md",
       "bytes": 10616,
       "sha256": "3c4ca324e96472e6e0f47f55857c03aa7285d32b29c010f51e88c2cb61bca0e9"
     },
     {
-      "path": "PRODUCTION_READINESS_CHECKLIST.md",
-      "bytes": 15501,
-      "sha256": "def4214fc8f068f2628404d3c74b4ecea7e0d63485686bc75d177c10a64f2dc5"
+      "path": "docs/ops/MECHANISM_COVERAGE.md",
+      "bytes": 14277,
+      "sha256": "8c3340ba608d0b3dd43b8449804650eef68fae101df91cfeacc8065a758b5be8"
+    },
+    {
+      "path": "docs/ops/OPEN_DESIGN_DECISIONS.md",
+      "bytes": 5574,
+      "sha256": "cc8f053b05a66cbb9497741e229fae56d064f91ea82b974e559cb3921e335165"
+    },
+    {
+      "path": "docs/ops/PRODUCTION_READINESS_CHECKLIST.md",
+      "bytes": 15756,
+      "sha256": "338f12aea802280e204b328655b13b7ce7bf34f7a87d15f5927f957f79b319aa"
+    },
+    {
+      "path": "docs/design/CARE_CONTINUITY.md",
+      "bytes": 6707,
+      "sha256": "d4ce6381d828a4b2245b3e00bece0952166665429505651eda7e98850ab4c134"
+    },
+    {
+      "path": "docs/design/IDENTITY_NULLIFIER_DESIGN.md",
+      "bytes": 7388,
+      "sha256": "a59c8e2b059c0e1550f1c6b7dd904d64605a04b0b0af2e8f2a81d6ff7f349f3e"
+    },
+    {
+      "path": "docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md",
+      "bytes": 6621,
+      "sha256": "78f9e9f5ae6a21fe8623905425f8120bdf6d361e7a9d37896e39d07ad88ecea8"
+    },
+    {
+      "path": "docs/design/SCARCITY_GOVERNANCE.md",
+      "bytes": 7371,
+      "sha256": "65e07ce11708838da2ea96237af947907d517e2dc30a723ab72da70036bf04fa"
     }
   ]
 }

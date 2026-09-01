@@ -62,6 +62,8 @@ function buildHtml() {
 
   html = html
     .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/href="\.\.\/ONBOARDING\.md"/g, 'href="ONBOARDING.md"')
+    .replace(/href="\.\.\/docs\//g, 'href="docs/')
     .replace(/<script src="\.\/web3_integration\.js"><\/script>/g, '<script src="./web3_integration.min.js"></script>')
     .replace(/>\s+</g, "><")
     .trim()
@@ -124,19 +126,24 @@ function main() {
 
   const docsToCopy = [
     "ONBOARDING.md",
+    "NEXT.md",
     "README.md",
-    "MECHANISM_COVERAGE.md",
     "PORTABILITY.md",
-    "OPEN_DESIGN_DECISIONS.md",
-    "SCARCITY_GOVERNANCE.md",
-    "CARE_CONTINUITY.md",
     "GOVERNANCE.md",
-    "PRODUCTION_READINESS_CHECKLIST.md"
+    "docs/ops/MECHANISM_COVERAGE.md",
+    "docs/ops/OPEN_DESIGN_DECISIONS.md",
+    "docs/ops/PRODUCTION_READINESS_CHECKLIST.md",
+    "docs/design/CARE_CONTINUITY.md",
+    "docs/design/IDENTITY_NULLIFIER_DESIGN.md",
+    "docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md",
+    "docs/design/SCARCITY_GOVERNANCE.md"
   ];
   for (const docFile of docsToCopy) {
     const srcDoc = path.join(rootDir, docFile);
     if (fs.existsSync(srcDoc)) {
-      fs.copyFileSync(srcDoc, path.join(outputDir, docFile));
+      const destDoc = path.join(outputDir, docFile);
+      fs.mkdirSync(path.dirname(destDoc), { recursive: true });
+      fs.copyFileSync(srcDoc, destDoc);
     }
   }
 

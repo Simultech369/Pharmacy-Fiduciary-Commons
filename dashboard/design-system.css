@@ -1,6 +1,6 @@
 /**
- * Pharmacy Fiduciary Commons — Design System & Theme Engine
- * Visual Identity: Visual Futurist
+ * Pharmacy Fiduciary Commons - Design System & Theme Engine
+ * Visual Identity: Minimal Institutional Stewardship
  * 
  * Cascade Layers Hierarchy:
  * 1. setup      - Import fonts and register properties
@@ -22,48 +22,44 @@
 }
 
 @layer tokens {
-  /* Primary Default Theme: Warm Tactical Stewardship (Selective Jazz Cyan Signals + Industrial Monolith Restraint) */
+  /* Primary Default Theme: Minimal Institutional Stewardship */
   :root, body[data-theme="tactical-stewardship"] {
-    --bg-dark: #0B0F0C; /* Deep Charcoal Green-Black Base */
-    --bg-darker: #060806;
-    --panel-bg: rgba(17, 22, 19, 0.85);
-    --border-color: rgba(16, 185, 129, 0.12);
+    --bg-dark: #FBFBFA;
+    --bg-darker: #F4F3EF;
+    --panel-bg: #FFFFFF;
+    --border-color: #E7E5DF;
     
-    --text-main: #F1F5F9;
-    --text-muted: #94A3B8;
+    --text-main: #171717;
+    --text-muted: #6D6A63;
     
-    --accent-blue: #0284C7;
-    --accent-cyan: #00E5FF; /* Jazz Cyan - Used strictly for active execution signals & verified receipts */
-    --accent-purple: #38BDF8; /* Ice Cyan accent */
-    --accent-green: #10B981; /* Emerald Green - Core stewardship */
-    --accent-green-text: #34D399;
-    --accent-red: #F43F5E;
-    --accent-red-text: #FB7185;
-    --accent-orange: #D97706; /* Brass / Warm Amber - Priority, warnings, & fund matching */
+    --accent-blue: #2E5F8A;
+    --accent-cyan: #2F6F7E;
+    --accent-purple: #625984;
+    --accent-green: #2F6846;
+    --accent-green-text: #2F6846;
+    --accent-red: #A03A3A;
+    --accent-red-text: #8F2F2F;
+    --accent-orange: #8A5B18;
     
-    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-    --font-heading: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --font-body: "Aptos", "Segoe UI Variable", "Helvetica Neue", system-ui, sans-serif;
+    --font-heading: "Aptos Display", "Segoe UI Variable Display", "Helvetica Neue", system-ui, sans-serif;
+    --font-mono: "Cascadia Mono", "SF Mono", "JetBrains Mono", monospace;
     
-    --shadow-panel: 0 10px 32px 0 rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(16, 185, 129, 0.08);
-    --shadow-hover: 0 14px 40px 0 rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 229, 255, 0.25);
-    --border-radius-panel: 0.65rem;
-    --border-radius-card: 0.4rem;
+    --shadow-panel: none;
+    --shadow-hover: 0 2px 8px rgba(23, 23, 23, 0.04);
+    --border-radius-panel: 8px;
+    --border-radius-card: 6px;
     
-    --transition-speed: 0.2s;
+    --transition-speed: 0.14s;
     --transition-timing: cubic-bezier(0.16, 1, 0.3, 1);
     
-    --background-image-body: 
-      radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.06) 0px, transparent 40%),
-      radial-gradient(at 100% 100%, rgba(217, 119, 6, 0.05) 0px, transparent 40%),
-      linear-gradient(rgba(16, 185, 129, 0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(16, 185, 129, 0.015) 1px, transparent 1px);
-    --background-size-body: auto, auto, 40px 40px, 40px 40px;
+    --background-image-body: none;
+    --background-size-body: auto;
       
-    --btn-connect-bg: linear-gradient(135deg, #059669, #0284C7);
-    --btn-connect-shadow: 0 4px 15px rgba(5, 150, 105, 0.25);
+    --btn-connect-bg: #171717;
+    --btn-connect-shadow: none;
     
-    --ambient-overlay: linear-gradient(180deg, rgba(11, 15, 12, 0) 0%, rgba(11, 15, 12, 0.9) 100%);
+    --ambient-overlay: none;
   }
 
   /* Theme: Clinical Futurist */
@@ -85,8 +81,8 @@
     --accent-red-text: hsl(0, 90%, 70%);
     --accent-orange: hsl(28, 95%, 55%);
     
-    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-    --font-heading: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    --font-body: "Aptos", "Segoe UI Variable", "Helvetica Neue", system-ui, sans-serif;
+    --font-heading: "Aptos Display", "Segoe UI Variable Display", "Helvetica Neue", system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
     
     --shadow-panel: inset 0 0 12px hsla(180, 100%, 48%, 0.03), 0 4px 20px rgba(0, 0, 0, 0.6);
@@ -152,6 +148,353 @@
     --btn-connect-shadow: 0px 0px 0px transparent;
     
     --ambient-overlay: none;
+  }
+}
+
+@layer overrides {
+  :root,
+  body {
+    --bg-dark: #FBFBFA !important;
+    --bg-darker: #F4F3EF !important;
+    --panel-bg: #FFFFFF !important;
+    --border-color: #E7E5DF !important;
+    --text-main: #171717 !important;
+    --text-muted: #6D6A63 !important;
+    --accent-blue: #2E5F8A !important;
+    --accent-cyan: #2F6F7E !important;
+    --accent-purple: #625984 !important;
+    --accent-green: #2F6846 !important;
+    --accent-green-text: #2F6846 !important;
+    --accent-red: #A03A3A !important;
+    --accent-red-text: #8F2F2F !important;
+    --accent-orange: #8A5B18 !important;
+    --font-body: "Aptos", "Segoe UI Variable", "Helvetica Neue", system-ui, sans-serif !important;
+    --font-heading: "Aptos Display", "Segoe UI Variable Display", "Helvetica Neue", system-ui, sans-serif !important;
+    --font-mono: "Cascadia Mono", "SF Mono", "JetBrains Mono", monospace !important;
+    --shadow-panel: none !important;
+    --shadow-hover: 0 2px 8px rgba(23, 23, 23, 0.04) !important;
+    --border-radius-panel: 8px !important;
+    --border-radius-card: 6px !important;
+    --transition-speed: 0.14s !important;
+    --transition-timing: cubic-bezier(0.16, 1, 0.3, 1) !important;
+    --background-image-body: none !important;
+    --background-size-body: auto !important;
+    --btn-connect-bg: #171717 !important;
+    --btn-connect-shadow: none !important;
+    --ambient-overlay: none !important;
+  }
+
+  body {
+    background: #FBFBFA !important;
+    color: #171717 !important;
+  }
+
+  body::before {
+    display: none !important;
+  }
+
+  header {
+    background: rgba(251, 251, 250, 0.96) !important;
+    border-bottom: 1px solid #E7E5DF !important;
+    backdrop-filter: none !important;
+  }
+
+  main {
+    gap: 1rem !important;
+    padding: 1rem 1.25rem 2rem !important;
+  }
+
+  .banner-top-warning {
+    background: #FBF3DB !important;
+    color: #6F4E13 !important;
+    border-bottom: 1px solid #E9DDBD !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .header-container {
+    padding: 0.85rem 1.25rem !important;
+  }
+
+  .header-logo-img {
+    border: 1px solid #E7E5DF !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+  }
+
+  .logo-text {
+    background: none !important;
+    color: #171717 !important;
+    -webkit-text-fill-color: #171717 !important;
+    font-size: 1rem !important;
+    letter-spacing: 0 !important;
+  }
+
+  .logo-subtitle,
+  .panel-subtitle,
+  .receipt-step-meta,
+  .project-desc,
+  .pb-intro {
+    color: #6D6A63 !important;
+  }
+
+  .panel {
+    background: #FFFFFF !important;
+    border: 1px solid #E7E5DF !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    padding: 1.1rem !important;
+  }
+
+  .panel:hover {
+    border-color: #D9D6CC !important;
+    box-shadow: 0 2px 8px rgba(23, 23, 23, 0.04) !important;
+    transform: none !important;
+  }
+
+  .panel-title {
+    font-size: 1rem !important;
+    line-height: 1.25 !important;
+    letter-spacing: 0 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .dashboard-grid,
+  .stats-row,
+  .omission-grid,
+  .receipt-flow,
+  .tour-steps-grid,
+  .receipt-pipeline-grid {
+    gap: 0.75rem !important;
+  }
+
+  .stat-box,
+  .omission-card,
+  .project-card,
+  .eco-stat,
+  .receipt-item,
+  .receipt-step,
+  .tour-step-card,
+  .gap-calculator,
+  .first-run-command,
+  .first-run-outcome,
+  .receipt-step-card,
+  .portability-results-box {
+    background: #FFFFFF !important;
+    border: 1px solid #E7E5DF !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+  }
+
+  .stat-box,
+  .omission-card,
+  .receipt-step,
+  .tour-step-card {
+    padding: 0.9rem !important;
+  }
+
+  .stat-label,
+  .receipt-step-label,
+  .matching-label,
+  .badge-unverified-slate,
+  .badge-status-emerald,
+  .status-badge,
+  .badge-claim-status,
+  .receipt-status,
+  .copilot-badge {
+    font-family: var(--font-mono) !important;
+    font-size: 0.68rem !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+  }
+
+  .badge-unverified,
+  .badge-unverified-slate,
+  .badge-status-emerald,
+  .status-badge,
+  .badge-claim-status,
+  .receipt-status,
+  .tour-proof-badge,
+  .project-tag,
+  .copilot-badge {
+    border-radius: 999px !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+
+  .badge-unverified,
+  .receipt-status.synthetic,
+  .tour-proof-badge.nonproof {
+    background: #FBF3DB !important;
+    border: 1px solid #E9DDBD !important;
+    color: #6F4E13 !important;
+  }
+
+  .badge-status-emerald,
+  .receipt-status.contract,
+  .status-badge.recorded,
+  .badge-claim-status.claimed,
+  .tour-proof-badge.proves {
+    background: #EDF3EC !important;
+    border: 1px solid #D7E4D4 !important;
+    color: #2F6846 !important;
+  }
+
+  .receipt-status.prototype,
+  .badge-unverified-slate,
+  .copilot-badge {
+    background: #F4F3EF !important;
+    border: 1px solid #E7E5DF !important;
+    color: #6D6A63 !important;
+  }
+
+  .status-badge.omitted,
+  .badge-claim-status.disputed,
+  .alert-panel-red {
+    background: #FDEBEC !important;
+    border: 1px solid #EBC7C6 !important;
+    color: #8F2F2F !important;
+  }
+
+  .badge-claim-status.flagged,
+  .alert-panel-orange,
+  .rollover-box {
+    background: #FBF3DB !important;
+    border: 1px solid #E9DDBD !important;
+    color: #6F4E13 !important;
+  }
+
+  .alert-panel-green {
+    background: #EDF3EC !important;
+    border: 1px solid #D7E4D4 !important;
+    color: #2F6846 !important;
+  }
+
+  .stat-num,
+  .gap-value,
+  .matching-val,
+  .eco-num {
+    background: none !important;
+    color: #171717 !important;
+    -webkit-text-fill-color: #171717 !important;
+    font-size: clamp(1.05rem, 1.8vw, 1.45rem) !important;
+    text-shadow: none !important;
+  }
+
+  .btn-vote,
+  #btn-connect,
+  #btn-save-db,
+  .copilot-send-btn,
+  .copilot-pill-btn {
+    background: #171717 !important;
+    border: 1px solid #171717 !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    color: #FFFFFF !important;
+    font-family: var(--font-body) !important;
+    letter-spacing: 0 !important;
+    transition: background-color 0.14s var(--transition-timing), border-color 0.14s var(--transition-timing), transform 0.08s ease !important;
+  }
+
+  .btn-vote:hover,
+  #btn-connect:hover,
+  #btn-save-db:hover,
+  .copilot-send-btn:hover,
+  .copilot-pill-btn:hover {
+    background: #333333 !important;
+    border-color: #333333 !important;
+    transform: none !important;
+  }
+
+  .btn-vote:active,
+  #btn-connect:active,
+  #btn-save-db:active,
+  .copilot-send-btn:active,
+  .copilot-pill-btn:active {
+    transform: scale(0.98) !important;
+  }
+
+  .select-pbm,
+  input[type="text"],
+  input[type="password"],
+  textarea,
+  #theme-select {
+    background: #FFFFFF !important;
+    border: 1px solid #D9D6CC !important;
+    border-radius: 6px !important;
+    color: #171717 !important;
+    box-shadow: none !important;
+  }
+
+  table {
+    border: 1px solid #E7E5DF !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+  }
+
+  th {
+    background: #F4F3EF !important;
+    color: #6D6A63 !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.72rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  td {
+    color: #171717 !important;
+  }
+
+  .pharmacy-addr,
+  .receipt-link,
+  .receipt-name-onchain,
+  .liquidity-board-title,
+  .receipt-step-title-cyan,
+  .receipt-step-title-purple,
+  .receipt-step-title-blue,
+  .receipt-step-title-green {
+    color: #2F6F7E !important;
+  }
+
+  .tour-step-number {
+    background: #171717 !important;
+    border-radius: 6px !important;
+    color: #FFFFFF !important;
+  }
+
+  .tour-mockup-wrapper {
+    border: 1px solid #E7E5DF !important;
+    box-shadow: none !important;
+  }
+
+  #fiduciary-copilot-drawer,
+  .copilot-header,
+  .copilot-pills,
+  .copilot-input-area,
+  .copilot-msg.bot,
+  .copilot-msg.user {
+    background: #FFFFFF !important;
+    border-color: #E7E5DF !important;
+    color: #171717 !important;
+    box-shadow: none !important;
+  }
+
+  #copilot-toggle-btn {
+    background: #171717 !important;
+    border: 1px solid #171717 !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+  }
+
+  #copilot-toggle-btn:hover {
+    transform: none !important;
+  }
+
+  .retry-sync-button {
+    margin-left: 0.5rem !important;
+    padding: 0.25rem 0.55rem !important;
+    font-size: 0.75rem !important;
   }
 }
 

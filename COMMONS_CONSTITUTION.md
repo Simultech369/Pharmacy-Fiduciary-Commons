@@ -3,13 +3,19 @@
 **Pharmacy Fiduciary Commons**  
 *Status: Draft Proposal. This document has not been participant-ratified and does not possess binding legal or political authority over the commons.*
 
-This draft proposes a potential interpretive framework. Until ratified, it does not override contracts, governance documents, or existing procedures. For the planned path toward formal validation, see [RATIFICATION_PROCEDURE.md](RATIFICATION_PROCEDURE.md).
+This draft proposes a potential interpretive framework. Until ratified, it does not override contracts, governance documents, or existing procedures. For the planned path toward formal validation, see [RATIFICATION_PROCEDURE.md](docs/ops/RATIFICATION_PROCEDURE.md).
+
+---
+
+## Reading Boundary
+
+This document is a public-facing draft and implementation map. Only statements labeled **Protocol-Enforced** describe behavior intended to be enforced by current smart contract code. Statements labeled **Procedural**, **Aspirational**, **Interpretive**, or **Proposed** are not live guarantees unless another verified document or contract surface says so.
 
 ---
 
 ## 1. Standpoint & Purpose
 
-The Pharmacy Fiduciary Commons is a federated fiduciary commons: collectively governed infrastructure that socializes captured pharmaceutical surplus, resists concentrated authority, aspires to permit local autonomy and meaningful exit, and uses permissionless experimentation without allowing wealth, technical expertise, or institutional status to become permanent political power. For a comparison of this model to transparent Web2 enterprise PBM platforms, see [WEB2_TRANSPARENT_PBM_COMPARISON.md](WEB2_TRANSPARENT_PBM_COMPARISON.md).
+The Pharmacy Fiduciary Commons is a federated fiduciary commons: collectively governed infrastructure that socializes captured pharmaceutical surplus, resists concentrated authority, aspires to permit local autonomy and meaningful exit, and uses permissionless experimentation without allowing wealth, technical expertise, or institutional status to become permanent political power. For a comparison of this model to transparent Web2 enterprise PBM platforms, see [WEB2_TRANSPARENT_PBM_COMPARISON.md](docs/design/WEB2_TRANSPARENT_PBM_COMPARISON.md).
 
 ---
 
@@ -53,7 +59,7 @@ Each principle is categorized by its enforcement nature: **Protocol-Enforced** (
 * **Definition**: Credentials establish limited capabilities, not a totalizing institutional identity. Any sanction, revocation, or exclusion must be reason-coded, visible, and appealable.
 * **Status**: **Partial protocol support plus unimplemented procedure**.
   * Sanction updates emit reason codes and appeal submissions require a non-zero evidence hash, but credential revocation has no general appeal mechanism, and the 14-day council response window is documented rather than contract-enforced.
-  * To protect pharmacy and patient participants from PBM network retaliation and diagnostic profiling, the project defines security through participant safety tiers and the Patient Dignity Protocol, detailed in **[RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md)**.
+  * To protect pharmacy and patient participants from PBM network retaliation and diagnostic profiling, the project defines security through participant safety tiers and the Patient Dignity Protocol, detailed in **[RETALIATION_AND_PRIVACY_THREAT_MODEL.md](docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md)**.
 
 ### 2.8 Legible Power
 * **Definition**: Every privileged action must expose who acted, under what authority, and using what evidence.
@@ -68,7 +74,7 @@ Each principle is categorized by its enforcement nature: **Protocol-Enforced** (
 ### 2.10 The Protocol is Not the Community
 * **Definition**: The blockchain provides commitment and evidence. It does not replace or exhaust social knowledge, lived experience, or legitimate political judgment.
 * **Status**: **Aspirational / interpretive**.
-  * Blockchain commits to allocations but does not govern the human relations surrounding pharmacy operations. The limits of technical value flows vs. actual care continuity, including stockout management and proposed community-jury escalation pathways, are defined in **[CARE_CONTINUITY.md](CARE_CONTINUITY.md)**.
+  * Blockchain commits to allocations but does not govern the human relations surrounding pharmacy operations. The limits of technical value flows vs. actual care continuity, including stockout management and proposed community-jury escalation pathways, are defined in **[CARE_CONTINUITY.md](docs/design/CARE_CONTINUITY.md)**.
 
 ---
 
@@ -86,7 +92,7 @@ To prevent the production of "truth" from becoming an opaque administrative mono
 8. **contested claim**: Unsettled assertions under dispute (e.g., active exclusion disputes).
 9. **unknown or unavailable evidence**: Data that is missing or proprietary (e.g., confidential PBM manufacturer rebate files).
 
-Each claim processed or presented by the commons should carry provenance, confidence metadata where applicable, contestation status, and explicit authority limits. For the schema and rules governing these commitments, see [EVIDENCE_METADATA.md](EVIDENCE_METADATA.md).
+Each claim processed or presented by the commons should carry provenance, confidence metadata where applicable, contestation status, and explicit authority limits. For the schema and rules governing these commitments, see [EVIDENCE_METADATA.md](docs/ops/EVIDENCE_METADATA.md).
 
 ---
 
@@ -116,12 +122,12 @@ Amendments to this draft constitution or the core governance parameters of the c
 | Constitutional Clause | Codebase/Spec Element | Status | Gaps / Next Steps |
 | :--- | :--- | :--- | :--- |
 | **No Permanent Sovereign** | `contracts/OZTimelockControllerImport.sol` | Partial protocol-enforced | Timelock and role isolation alone do not ensure replaceability of all authorities; council elections and removal petitions are unimplemented. |
-| **Subsidiarity** | `contracts/PharmacyMutualCredit.sol` | Aspirational | Most decisions are at the global contract level; local federated autonomy is absent in code. Scarce-resource triage remains proposed in [SCARCITY_GOVERNANCE.md](SCARCITY_GOVERNANCE.md). |
+| **Subsidiarity** | `contracts/PharmacyMutualCredit.sol` | Aspirational | Most decisions are at the global contract level; local federated autonomy is absent in code. Scarce-resource triage remains proposed in [SCARCITY_GOVERNANCE.md](docs/design/SCARCITY_GOVERNANCE.md). |
 | **Socialized Surplus** | `contracts/PBMRebateTreasury.sol` | Partially protocol-enforced | Bucket separation is enforced; broader risk-allocation models remain aspirational. |
 | **Stale Recovery Liveness** | `contracts/PBMRebateTreasury.sol#L1104` | Mitigated tested design risk | Stale recovery is gated by `epochStartTimestamp`, so dust deposits no longer extend the 180-day recovery delay; current-root and unexpired pending-root guards remain. |
 | **Forkability & Portability** | `scripts/export-portability.js` | Tool-supported prototype | Portability depends on off-chain tools; does not guarantee automatic federation or claim recognition. |
 | **Anti-Plutocracy** | `contracts/PatientFundParticipatoryBudgeting.sol` | Partially protocol-enforced | Uses credential-gated approval voting with squared project-weight matching, which amplifies majorities but rejects token weight. |
-| **Contestable Identity** | `contracts/PBMRebateTreasury.sol#L1220` | Partial protocol support + unimplemented procedure | Sanction appeals require evidence hashes, but revocation lacks appeal; the 14-day council response window is only documented, not contract-enforced. Privacy-preserving credentials use the [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) direction. Retaliation mitigations are detailed in [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md). |
+| **Contestable Identity** | `contracts/PBMRebateTreasury.sol#L1220` | Partial protocol support + unimplemented procedure | Sanction appeals require evidence hashes, but revocation lacks appeal; the 14-day council response window is only documented, not contract-enforced. Privacy-preserving credentials use the [IDENTITY_NULLIFIER_DESIGN.md](docs/design/IDENTITY_NULLIFIER_DESIGN.md) direction. Retaliation mitigations are detailed in [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md). |
 | **Legible Power** | Event emission logs | Partially protocol-enforced | Dispute and appeal events bind evidence hashes, but many admin events still do not include complete rationale records. |
 | **Bounded Experimentation**| `contracts/PBMRebateTreasury.sol#L1141` | Partially protocol-enforced | Treasury caps exist; universal sandboxes, reversibility, and explicit risk-bearing rules do not. |
-| **Protocol is Not Community**| `WELLBEING_METRICS.md` | Aspirational / Docs-only | Wellbeing auditing is absent in code (CLI tool not implemented). Care continuity boundaries and proposed escalation frameworks are defined in [CARE_CONTINUITY.md](CARE_CONTINUITY.md). |
+| **Protocol is Not Community**| `WELLBEING_METRICS.md` | Aspirational / Docs-only | Wellbeing auditing is absent in code (CLI tool not implemented). Care continuity boundaries and proposed escalation frameworks are defined in [CARE_CONTINUITY.md](docs/design/CARE_CONTINUITY.md). |

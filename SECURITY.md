@@ -90,9 +90,9 @@ No mainnet deployment should occur until:
 The on-chain voting and registration mechanism uses EIP-712 structured credential signatures that reference `credentialHash`. Because on-chain transactions and event logs are fully public, participants face risks of correlation and corporate retaliation.
 
 For the complete risk vectors and safety architectures, see:
-* **[RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md)**: Details threat actors (PBMs, data brokers), attack scenarios, participant safety tiers, and the Patient Dignity Protocol.
-* **[CARE_CONTINUITY.md](CARE_CONTINUITY.md)**: Addresses the critical distinction between auditable value flows and actual care continuity, outlining stockout/network risks and proposed community-jury escalation pathways.
-* **[IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md)**: Explains the planned scoped-nullifier ZK architecture for cross-round privacy.
+* **[RETALIATION_AND_PRIVACY_THREAT_MODEL.md](docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md)**: Details threat actors (PBMs, data brokers), attack scenarios, participant safety tiers, and the Patient Dignity Protocol.
+* **[CARE_CONTINUITY.md](docs/design/CARE_CONTINUITY.md)**: Addresses the critical distinction between auditable value flows and actual care continuity, outlining stockout/network risks and proposed community-jury escalation pathways.
+* **[IDENTITY_NULLIFIER_DESIGN.md](docs/design/IDENTITY_NULLIFIER_DESIGN.md)**: Explains the planned scoped-nullifier ZK architecture for cross-round privacy.
 
 ## Payout Token Assumption
 
@@ -115,7 +115,7 @@ The `PBMRebateTreasury` contract checks `epochVolume` (disputed and claimed volu
 
 To mitigate Cross-Site Scripting (XSS) and data injection risks in production:
 1. **CSP Configuration**: A strict Content-Security-Policy header should be served by the web server (or configured in the hosting environment config, e.g. Netlify/Vercel headers) restricting sources.
-2. **Recommended CSP Policy**:
+2. **Recommended CSP Policy**: keep production dashboard assets self-hosted and avoid remote script, style, and font providers unless a later security review explicitly approves an exception.
    ```http
-   Content-Security-Policy: default-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data:;
+   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' http://localhost:* ws://localhost:*; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; form-action 'self';
    ```

@@ -5,11 +5,11 @@
 **On-chain rebate transparency infrastructure for independent pharmacies and patient funds.**
 
 ![CI](https://github.com/Simultech369/Pharmacy-Fiduciary-Commons/actions/workflows/test.yml/badge.svg)
-![Audit](https://img.shields.io/badge/audit-not%20audited-dc2626?style=for-the-badge)
-![Mainnet](https://img.shields.io/badge/mainnet-not%20deployed-6b7280?style=for-the-badge)
-![Solidity](https://img.shields.io/badge/solidity-0.8.20-363636?style=for-the-badge&logo=solidity)
-![Node](https://img.shields.io/badge/node-20%20%7C%2022-339933?style=for-the-badge&logo=node.js&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)
+![Audit](https://img.shields.io/badge/audit-not%20audited-dc2626?style=flat)
+![Mainnet](https://img.shields.io/badge/mainnet-not%20deployed-6b7280?style=flat)
+![Solidity](https://img.shields.io/badge/solidity-0.8.20-363636?style=flat&logo=solidity)
+![Node](https://img.shields.io/badge/node-20%20%7C%2022-339933?style=flat&logo=node.js&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat)
 
 </div>
 
@@ -20,26 +20,52 @@
 
 ---
 
+## Public Boundary
+
+| Question | Current answer |
+|----------|----------------|
+| What is this? | Local/testnet infrastructure for verifiable rebate accounting, pharmacy claim proofs, patient-fund allocation, and public proof-boundary review. |
+| What can be verified today? | Solidity tests, Merkle fixtures, export self-consistency checks, static dashboard build checks, and repository verification scripts. |
+| What is synthetic? | Public dashboard PBM names, displayed amounts, onboarding fixtures, and sample receipt payloads. |
+| Is it audited? | No. Independent security audit remains a launch blocker. |
+| Is it deployed? | No mainnet deployment is represented by this repository. |
+| Who should review first? | Solidity/security reviewers, privacy and retaliation-risk reviewers, documentation editors, and dashboard accessibility reviewers. |
+
+---
+
+## Credibility Posture
+
+This project should be read as a prototype fiduciary commons with tests, receipts, privacy caveats, and explicit launch blockers. The public claim is not that the agent system is powerful; the public claim is that every status statement should be traceable to code, tests, generated receipts, or a clearly marked unresolved risk.
+
+Public-facing language should preserve these boundaries:
+
+- local formal checks and Council Engine outputs are off-chain verifier evidence, not an audit replacement;
+- ZK/nullifier work is semantic mock and design-spec evidence unless explicitly marked production-ready;
+- dashboard panels distinguish synthetic fixtures from contract-backed or locally checked evidence;
+- launch, mainnet, real-funds, and public-wallet readiness remain blocked until the production checklist and independent audit requirements are satisfied.
+
+---
+
 ## What This Cannot Do (Adversarial Limitations & Disclaimers)
 
 > [!WARNING]
 > **This system is a smart contract prototype for rebate accounting and custody. It does NOT solve physical supply chain problems:**
 > * **No Physical Medicine or Inventory Guarantees:** This protocol records accounting entries and custody movements. It does not track, verify, or guarantee physical inventory, drug availability, delivery, pharmacy stock, clinical outcomes, or patient access. On-chain actions do not guarantee physical medicine supply or pharmacy fulfillment.
-> * **Mutual Credit Vouchers = Ledger Reservations Only:** Mutual credit vouchers create ledger capacity reservations only — they do not represent or guarantee physical medicine on-chain, and they do not bypass local supply shortages or distributor caps.
-> * **Mutual Credit Clearing ≠ Guaranteed Supply:** The mutual credit clearing mechanism operates as a liquid accounting framework for settlements and liquidity support between pharmacies. It does not guarantee physical supply, logistics, or distribution capacity.
+> * **Mutual Credit Vouchers = Ledger Reservations Only:** Mutual credit vouchers create ledger capacity reservations only - they do not represent or guarantee physical medicine on-chain, and they do not bypass local supply shortages or distributor caps.
+> * **Mutual Credit Clearing != Guaranteed Supply:** The mutual credit clearing mechanism operates as a liquid accounting framework for settlements and liquidity support between pharmacies. It does not guarantee physical supply, logistics, or distribution capacity.
 > * **Scarcity Triage = Proposed Only:** Scarcity-based triage policies and design proposals are theoretical frameworks. They are not executed autonomously on-chain or enforced by smart contracts.
 > * **Centralized Governance Control:** The `COUNCIL_ROLE` retains significant administrative control. Autonomy is restricted to off-chain governance and multi-sig operations; there is no autonomous on-chain local federation execution.
-> * **Privacy and Linkage Risks:** Legacy registration still uses stable credential hashes on-chain, creating a persistent identification vector that could be used for profiling or blacklisting. A mock ZK/nullifier registration slice now exists for semantic testing in `PatientFundParticipatoryBudgeting`, but it is not production privacy: `msg.sender`, public voting events, transaction gas source, timing, and RPC metadata remain linkable. The production zk-nullifier design in [IDENTITY_NULLIFIER_DESIGN.md](IDENTITY_NULLIFIER_DESIGN.md) remains a design specification only.
+> * **Privacy and Linkage Risks:** Legacy registration still uses stable credential hashes on-chain, creating a persistent identification vector that could be used for profiling or blacklisting. A mock ZK/nullifier registration slice now exists for semantic testing in `PatientFundParticipatoryBudgeting`, but it is not production privacy: `msg.sender`, public voting events, transaction gas source, timing, and RPC metadata remain linkable. The production zk-nullifier design in [IDENTITY_NULLIFIER_DESIGN.md](docs/design/IDENTITY_NULLIFIER_DESIGN.md) remains a design specification only.
 > * **Participatory Budgeting Solvency Debt (Liveness & Trust Risk):** The contract no longer hard-reverts when round start/finalization finds the patient-fund balance below outstanding obligations. It records the shortfall as `totalDebt`/`roundDeficit` and lets the round lifecycle continue, but actual project claims still require real token liquidity. These names are prototype accounting labels for observed shortfall changes, not a creditor ledger, repayment schedule, funding proof, or guarantee that claimants can be paid.
 > * **No Professional Advice:** All outputs, files, and dashboards are for local prototype demonstration only. None of the contents constitute legal, financial, or medical advice.
 >
-> For deeper documentation on safety, scarcity, and threat boundaries, see [SCARCITY_GOVERNANCE.md](SCARCITY_GOVERNANCE.md), [CARE_CONTINUITY.md](CARE_CONTINUITY.md), and [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md).
+> For deeper documentation on safety, scarcity, and threat boundaries, see [SCARCITY_GOVERNANCE.md](docs/design/SCARCITY_GOVERNANCE.md), [CARE_CONTINUITY.md](docs/design/CARE_CONTINUITY.md), and [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md).
 
 ---
 
 ## Status Summary
 
-The current checkpoint is a prototype with tested treasury, voting, mutual-credit, portability, and dashboard surfaces, but it is not audited, not mainnet deployed, and not public-wallet ready. Runtime behavior and policy boundaries are tracked in [MECHANISM_COVERAGE.md](MECHANISM_COVERAGE.md); care-continuity and participant-safety boundaries are documented in [CARE_CONTINUITY.md](CARE_CONTINUITY.md), [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](RETALIATION_AND_PRIVACY_THREAT_MODEL.md), and [SCARCITY_GOVERNANCE.md](SCARCITY_GOVERNANCE.md). Public launch remains blocked by [PRODUCTION_READINESS_CHECKLIST.md](PRODUCTION_READINESS_CHECKLIST.md).
+The current checkpoint is a prototype with tested treasury, voting, mutual-credit, portability, and dashboard surfaces, but it is not audited, not mainnet deployed, and not public-wallet ready. Runtime behavior and policy boundaries are tracked in [MECHANISM_COVERAGE.md](docs/ops/MECHANISM_COVERAGE.md); care-continuity and participant-safety boundaries are documented in [CARE_CONTINUITY.md](docs/design/CARE_CONTINUITY.md), [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md), and [SCARCITY_GOVERNANCE.md](docs/design/SCARCITY_GOVERNANCE.md). Public launch remains blocked by [PRODUCTION_READINESS_CHECKLIST.md](docs/ops/PRODUCTION_READINESS_CHECKLIST.md).
 
 ---
 
@@ -70,11 +96,23 @@ Windows PowerShell note: if `npm` is blocked by script execution policy, use `np
 
 For a guided first run, start with [ONBOARDING.md](ONBOARDING.md). It keeps the demo path short and labels which outputs are synthetic fixtures versus contract-backed checks.
 
+For the current public roadmap and contributor focus areas, see [NEXT.md](NEXT.md).
+
 ```bash
 npm.cmd ci
 npm.cmd run compile
 npm.cmd test
 ```
+
+## Formal Verification Lane
+
+This repository includes an off-chain Council Engine lane for local formal checks around fiduciary math and fraud-triage boundaries. Treat this as verifier evidence, not as a substitute for an external audit or production deployment review.
+
+| Surface | What it checks | Boundary |
+|---------|----------------|----------|
+| `tools/council/pbm_fraud_formal_invariants.py` | MME hard-stop bounds, refill-too-soon timing, HHI concentration bounds, and Benford anomaly scoping | Local Python/Z3/schema proofs over project model logic only |
+| `tools/council/formal_theorem_prover_engine.py` | Non-negative rebate arithmetic and formal proof certificate exercises | Off-chain proof harness; not chain authority or market truth |
+| `test/PBMFraudFormalInvariants.test.js` | Hardhat bridge into the Python formal-invariant suite | Local/CI evidence; not a mainnet safety certificate |
 
 Generate Merkle roots and proofs:
 
@@ -341,14 +379,14 @@ are intentionally enabled, set `COUNCIL_SAFE_MODULES` and matching
 | External audit | Pending |
 | Mainnet deployment | Not deployed |
 | Production frontend build | Build/check scripts present; public deployment still pending |
-| Database/API/RLS surface | Gate DB1 Verified in current working tree (server/createApp.js & test/server.test.js passing 19/19) |
+| Database/API/RLS surface | Prototype gate present; rerun local checks before relying on any deployment or public-hosting claim |
 | Rate limiting, caching, scaling, observability | Design gate only; not implemented yet |
 | ADA/WCAG production audit | Pending |
-| Production readiness checklist | See `PRODUCTION_READINESS_CHECKLIST.md` |
-| Mechanism coverage | See `MECHANISM_COVERAGE.md` |
+| Production readiness checklist | See `docs/ops/PRODUCTION_READINESS_CHECKLIST.md` |
+| Mechanism coverage | See `docs/ops/MECHANISM_COVERAGE.md` |
 | Security reporting | See `SECURITY.md` |
-| Open product decisions | See `OPEN_DESIGN_DECISIONS.md` |
-| Implemented design decisions | See `DESIGN_DECISIONS.md` |
+| Open product decisions | See `docs/ops/OPEN_DESIGN_DECISIONS.md` |
+| Implemented design decisions | See `docs/ops/DESIGN_DECISIONS.md` |
 
 ---
 
@@ -396,4 +434,4 @@ Independent pharmacies serve communities that large chains abandon. They dispens
 
 This repository explores that ledger.
 
-Every deposit is permanent. Every ledger absence is visible; calling it an omission requires independent expected-deposit evidence. The machine comes first; the mission can stand on it.
+The design goal is a ledger where deposits, absences, and disputes can be inspected without asking participants to trust private spreadsheets. Calling an absence an omission still requires independent expected-deposit evidence. The machine comes first; the mission can stand on it.

@@ -104,6 +104,15 @@ function checkMechanicalSafety() {
   return !failed;
 }
 
+function resolveChecklistPath() {
+  const candidates = [
+    path.resolve(process.cwd(), "PRODUCTION_READINESS_CHECKLIST.md"),
+    path.resolve(process.cwd(), "docs", "ops", "PRODUCTION_READINESS_CHECKLIST.md")
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate));
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const env = args.env;
@@ -121,9 +130,14 @@ function main() {
     process.exitCode = 1;
     return;
   }
-  console.log("✅ Mechanical safety checks passed.");
+  console.log("[ok] Mechanical safety checks passed.");
 
-  const checklistPath = path.resolve(process.cwd(), "PRODUCTION_READINESS_CHECKLIST.md");
+  const checklistPath = resolveChecklistPath();
+  if (!checklistPath) {
+    console.error("Readiness checklist not found at PRODUCTION_READINESS_CHECKLIST.md or docs/ops/PRODUCTION_READINESS_CHECKLIST.md.");
+    process.exitCode = 1;
+    return;
+  }
   const markdown = fs.readFileSync(checklistPath, "utf8");
   const openItems = uncheckedItems(markdown);
 

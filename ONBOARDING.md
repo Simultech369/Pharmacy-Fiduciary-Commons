@@ -64,9 +64,9 @@ The short explanation:
 - Public receipt: proves the built dashboard can show the result without
   pretending the fixture is real-world PBM data.
 
-The visual tone should stay operational: obsidian dark base, jazz cyan only for
-active or verified states, and warm amber for caution, scarcity, or unresolved
-policy. If a color does not carry meaning, remove it.
+The visual tone should stay institutional: warm canvas, charcoal text, muted
+teal only for active or verified states, and warm amber for caution, scarcity,
+or unresolved policy. If a color does not carry meaning, remove it.
 
 ## What You Should See
 
@@ -140,10 +140,10 @@ Add `--rpc <url>` when you need chain-provenance verification instead of local s
 Read in this order:
 
 1. [README.md](README.md): status, architecture, quickstart, and safety boundaries.
-2. [MECHANISM_COVERAGE.md](MECHANISM_COVERAGE.md): what is implemented, mocked, proposed, or blocked.
+2. [MECHANISM_COVERAGE.md](docs/ops/MECHANISM_COVERAGE.md): what is implemented, mocked, proposed, or blocked.
 3. [PORTABILITY.md](PORTABILITY.md): export schema and verification expectations.
 4. [GOVERNANCE.md](GOVERNANCE.md): council, timelock, confirmer, and guardian role boundaries.
-5. [PRODUCTION_READINESS_CHECKLIST.md](PRODUCTION_READINESS_CHECKLIST.md): launch blockers.
+5. [PRODUCTION_READINESS_CHECKLIST.md](docs/ops/PRODUCTION_READINESS_CHECKLIST.md): launch blockers.
 
 Use the deeper review and threat-model documents after the first demo path is working.
 
