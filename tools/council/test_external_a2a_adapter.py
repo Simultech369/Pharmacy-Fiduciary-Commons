@@ -1,4 +1,5 @@
 import unittest
+import json
 import time
 from council_contracts import A2AMessage
 from external_a2a_adapter import (
@@ -74,6 +75,24 @@ class TestExternalA2AAdapter(unittest.TestCase):
         res = ExternalA2AAdapter.handle_external_request(solv_req, self.card)
         self.assertIsNone(res.error)
         self.assertEqual(res.result.get("attestation_status"), "SOLVENT")
+
+        # 4. Query PBM fraud formal invariant attestation
+        fraud_req = JSONRPCRequest(method="council.queryFraudInvariantAttestation", params={}, id="req_fraud")
+        res = ExternalA2AAdapter.handle_external_request(fraud_req, self.card)
+        self.assertIsNone(res.error)
+        self.assertEqual(res.result.get("attestation_status"), "PROVED")
+        self.assertEqual(res.result.get("benford_output_contract"), "ANOMALY_REVIEW_REQUIRED_ONLY")
+        self.assertFalse(res.result.get("fraud_proof_claimed"))
+        self.assertFalse(res.result.get("external_business_truth_proven"))
+        self.assertFalse(res.result.get("remote_execution_permitted"))
+        self.assertEqual(
+            res.result.get("domains_verified"),
+            ["BENFORD", "DUPLICATE_THERAPY", "HHI", "MME", "REFILL_TOO_SOON"]
+        )
+        serialized = json.dumps(res.result, sort_keys=True)
+        self.assertNotIn("C:\\", serialized)
+        self.assertNotIn("/Users/", serialized)
+        self.assertNotIn("private_key", serialized)
 
     def test_handle_external_request_blocks_remote_execution(self):
         # Disallowed / dangerous methods must return -32601

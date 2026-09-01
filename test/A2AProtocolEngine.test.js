@@ -281,6 +281,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(r"${repoRoot}", "tools", "council"))
 
+import json
 import time
 from external_a2a_adapter import ExternalA2AAdapter, JSONRPCRequest, AgentCard
 from council_contracts import A2AMessage
@@ -324,7 +325,22 @@ res = ExternalA2AAdapter.handle_external_request(card_req, card)
 assert res.error is None
 assert res.result["agent_id"] == "agent.antigravity.v1"
 
-# 4. Handle dangerous execution RPC -> must be blocked (-32601)
+# 4. Handle fraud invariant attestation as read-only public-safe proof summary
+fraud_req = JSONRPCRequest(method="council.queryFraudInvariantAttestation", params={}, id="req_fraud")
+fraud_res = ExternalA2AAdapter.handle_external_request(fraud_req, card)
+assert fraud_res.error is None
+assert fraud_res.result["attestation_status"] == "PROVED"
+assert fraud_res.result["benford_output_contract"] == "ANOMALY_REVIEW_REQUIRED_ONLY"
+assert fraud_res.result["fraud_proof_claimed"] is False
+assert fraud_res.result["external_business_truth_proven"] is False
+assert fraud_res.result["remote_execution_permitted"] is False
+assert fraud_res.result["domains_verified"] == ["BENFORD", "DUPLICATE_THERAPY", "HHI", "MME", "REFILL_TOO_SOON"]
+serialized = json.dumps(fraud_res.result, sort_keys=True)
+assert "C:\\\\" not in serialized
+assert "/Users/" not in serialized
+assert "private_key" not in serialized.lower()
+
+# 5. Handle dangerous execution RPC -> must be blocked (-32601)
 exec_req = JSONRPCRequest(method="council.executeCode", params={"code": "import os; os.system('ls')"}, id="req_bad")
 exec_res = ExternalA2AAdapter.handle_external_request(exec_req, card)
 assert exec_res.error is not None

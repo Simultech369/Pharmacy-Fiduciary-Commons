@@ -60,6 +60,7 @@ class ExternalA2AAdapter:
         "council.getAgentCard",
         "council.verifyReceipt",
         "council.querySolvencyAttestation",
+        "council.queryFraudInvariantAttestation",
         "council.inspectHandoffSchema",
         "council.ping"
     }
@@ -171,8 +172,42 @@ class ExternalA2AAdapter:
                 id=request.id
             )
 
+        if request.method == "council.queryFraudInvariantAttestation":
+            return JSONRPCResponse(
+                jsonrpc="2.0",
+                result=cls._build_fraud_invariant_attestation(),
+                id=request.id
+            )
+
         return JSONRPCResponse(
             jsonrpc="2.0",
             result={"status": "RECEIVED_READ_ONLY"},
             id=request.id
         )
+
+    @classmethod
+    def _build_fraud_invariant_attestation(cls) -> Dict[str, Any]:
+        """
+        Builds a public-safe proof summary for external A2A callers.
+        This exposes hashes and proof-boundary flags only; it does not expose
+        raw local evidence, PHI, or any remote execution capability.
+        """
+        from pbm_fraud_formal_invariants import PBMFraudFormalInvariantEngine
+
+        receipt_envelope = PBMFraudFormalInvariantEngine().prove_all()
+        receipt = receipt_envelope.payload
+        attestation = {
+            "attestation_status": "PROVED" if receipt.all_invariants_proved else "REVIEW_REQUIRED",
+            "proof_suite_id": receipt.proof_suite_id,
+            "proof_digest_sha256": receipt.proof_digest_sha256,
+            "receipt_payload_sha256": receipt_envelope.payload_sha256,
+            "domains_verified": sorted({proof.domain for proof in receipt.invariants}),
+            "invariant_count": len(receipt.invariants),
+            "benford_output_contract": receipt.benford_output_contract,
+            "fraud_proof_claimed": receipt.fraud_proof_claimed,
+            "external_business_truth_proven": receipt.external_business_truth_proven,
+            "proof_boundary": receipt.proof_boundary,
+            "remote_execution_permitted": False,
+            "timestamp": time.time(),
+        }
+        return cls.sanitize_external_payload(attestation)
