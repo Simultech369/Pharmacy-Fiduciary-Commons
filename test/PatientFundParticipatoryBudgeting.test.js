@@ -367,6 +367,69 @@ describe("PatientFundParticipatoryBudgeting", function () {
       expect(r.state).to.equal(2n); // RoundState.Finalized is enum value 2
     });
 
+    it("allows council to set a bounded per-project matching cap", async function () {
+      expect(await pb.projectMatchingCapBps()).to.equal(10000n);
+
+      const tx = await pb.connect(council).updateProjectMatchingCap(5000n);
+      const receipt = await tx.wait();
+      const event = receipt.logs.find((log) => pb.interface.parseLog(log)?.name === "ProjectMatchingCapUpdated");
+      expect(event).to.not.be.undefined;
+      expect(pb.interface.parseLog(event).args.newCapBps).to.equal(5000n);
+      expect(await pb.projectMatchingCapBps()).to.equal(5000n);
+
+      await expectRevert(
+        pb.connect(council).updateProjectMatchingCap(0n),
+        "InvalidCap"
+      );
+      await expectRevert(
+        pb.connect(council).updateProjectMatchingCap(10001n),
+        "InvalidCap"
+      );
+      await expectRevert(
+        pb.connect(attacker).updateProjectMatchingCap(4000n),
+        "AccessControl"
+      );
+    });
+
+    it("keeps per-project cap surplus patient-bound instead of refunding it as dust", async function () {
+      await pb.connect(council).updateProjectMatchingCap(5000n);
+
+      // Project 0 raw share would be 80% of the 10,000 pool. The cap limits it
+      // to 50%, project 1 still receives 20%, and the 30% cap surplus recycles.
+      await pb.connect(voters[0]).castVote(1n, 0n);
+      await pb.connect(voters[1]).castVote(1n, 0n);
+      await pb.connect(voters[2]).castVote(1n, 0n);
+      await pb.connect(voters[3]).castVote(1n, 0n);
+      await pb.connect(voters[4]).castVote(1n, 1n);
+      await pb.connect(voters[5]).castVote(1n, 1n);
+
+      const preview = await pb.previewFinalize(1n);
+      expect(preview.expectedShares[0]).to.equal(toWei("5000"));
+      expect(preview.expectedShares[1]).to.equal(toWei("2000"));
+      expect(preview.totalRequiredAfterFinalize).to.equal(toWei("10000"));
+      expect(preview.isSufficient).to.be.true;
+
+      const councilBefore = await token.balanceOf(council.address);
+      const tx = await pb.connect(council).finalizeRound(1n);
+      const receipt = await tx.wait();
+      const surplusEvent = receipt.logs.find((log) => pb.interface.parseLog(log)?.name === "ProjectMatchingCapSurplusRecycled");
+      expect(surplusEvent).to.not.be.undefined;
+      expect(pb.interface.parseLog(surplusEvent).args.amount).to.equal(toWei("3000"));
+
+      expect(await pb.roundProjectShares(1n, 0n)).to.equal(toWei("5000"));
+      expect(await pb.roundProjectShares(1n, 1n)).to.equal(toWei("2000"));
+      expect(await pb.totalUnclaimedShares()).to.equal(toWei("7000"));
+      expect(await pb.recycledMatchingPool()).to.equal(toWei("3000"));
+      expect(await token.balanceOf(council.address)).to.equal(councilBefore);
+      expect(await pb.requiredSolvencyBalance()).to.equal(toWei("10000"));
+      expect(await pb.currentSolvencyShortfall()).to.equal(0n);
+
+      await pb.claimMatchShare(1n, 0n);
+      await pb.claimMatchShare(1n, 1n);
+      expect(await token.balanceOf(await pb.getAddress())).to.equal(toWei("3000"));
+      expect(await pb.recycledMatchingPool()).to.equal(toWei("3000"));
+    });
+
     it("reverts claims made before round is finalized", async function () {
       // Voter casts vote
       await pb.connect(voters[0]).castVote(1n, 0n);

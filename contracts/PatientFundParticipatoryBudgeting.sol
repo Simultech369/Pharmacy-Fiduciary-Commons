@@ -149,6 +149,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     event ProposalSupported(uint256 indexed roundId, uint256 indexed proposalId, address indexed supporter, uint256 currentSupport);
     event ProjectSupportThresholdUpdated(uint256 newThreshold);
     event ProjectMatchingCapUpdated(uint256 newCapBps);
+    event ProjectMatchingCapSurplusRecycled(uint256 indexed roundId, uint256 amount);
     event LowBalanceDetected(uint256 requested, uint256 actual);
     event DebtQueued(uint256 indexed roundId, uint256 amount);
     event DebtSettled(uint256 indexed roundId, uint256 amount);
@@ -588,21 +589,10 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         if (r.state != RoundState.Active) revert WrongRoundState();
 
         uint256 pool = r.matchingPool;
-        uint256 required = totalUnclaimedShares + pool;
-        uint256 actual = token.balanceOf(address(this));
-        _syncSolvencyDebt(roundId, required, actual);
+        _syncSolvencyDebt(roundId, totalUnclaimedShares + pool, token.balanceOf(address(this)));
 
         uint256 count = r.projectCount;
-        uint256 totalWeight = 0;
-
-        // 1. Calculate weights for all projects
-        uint256[] memory weights = new uint256[](count);
-        for (uint256 i = 0; i < count; i++) {
-            uint256 votes = roundProjects[roundId][i].voteCount;
-            uint256 weight = votes * votes;
-            weights[i] = weight;
-            totalWeight += weight;
-        }
+        uint256 totalWeight = _totalSquaredWeight(roundId, count);
 
         r.state = RoundState.Finalized;
         r.finalizedAt = block.timestamp;
@@ -622,39 +612,15 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
             return;
         }
 
-        // 3. Record matching shares proportionally
-        uint256 distributed = 0;
-        uint256 maxShare = (pool * projectMatchingCapBps) / MAX_BPS;
-
-        for (uint256 i = 0; i < count; i++) {
-            if (weights[i] > 0) {
-                // Calculate proportional share
-                uint256 share = (pool * weights[i]) / totalWeight;
-                if (share > maxShare) {
-                    share = maxShare;
-                }
-                if (share > 0) {
-                    roundProjectShares[roundId][i] = share;
-                    distributed += share;
-                }
-            }
-        }
+        // 3. Record matching shares proportionally, with any capped surplus kept patient-bound.
+        (uint256 distributed, uint256 cappedSurplus) = _recordFinalizedShares(
+            roundId,
+            count,
+            pool,
+            totalWeight
+        );
         totalUnclaimedShares += distributed;
-
-        // Split tiny division dust according to provenance: fresh dust returns to council, while
-        // recycled or externally routed patient-fund dust remains patient-bound for future rounds.
-        if (pool > distributed) {
-            uint256 dust = pool - distributed;
-            uint256 freshLimit = r.freshMatchingPool;
-            uint256 councilRefund = (dust * freshLimit) / pool;
-            uint256 recycledRefund = dust - councilRefund;
-            if (recycledRefund > 0) {
-                recycledMatchingPool += recycledRefund;
-            }
-            if (councilRefund > 0) {
-                _transferAvailable(council, councilRefund);
-            }
-        }
+        _handleFinalizationRemainder(roundId, pool, distributed, cappedSurplus, r.freshMatchingPool);
 
         _syncCurrentSolvencyDebt(roundId);
 
@@ -809,36 +775,114 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         projects = new address[](count);
         expectedShares = new uint256[](count);
 
-        uint256 totalWeight = 0;
-        uint256[] memory weights = new uint256[](count);
-        for (uint256 i = 0; i < count; i++) {
-            projects[i] = roundProjects[roundId][i].recipient;
-            uint256 votes = roundProjects[roundId][i].voteCount;
-            uint256 weight = votes * votes;
-            weights[i] = weight;
-            totalWeight += weight;
-        }
-
         uint256 pool = r.matchingPool;
-        uint256 distributed = 0;
-        uint256 maxShare = (pool * projectMatchingCapBps) / MAX_BPS;
+        (uint256 distributed, uint256 cappedSurplus) = _fillPreviewShares(
+            roundId,
+            count,
+            pool,
+            projects,
+            expectedShares
+        );
 
-        if (totalWeight > 0) {
-            for (uint256 i = 0; i < count; i++) {
-                if (weights[i] > 0) {
-                    uint256 share = (pool * weights[i]) / totalWeight;
-                    if (share > maxShare) {
-                        share = maxShare;
-                    }
-                    expectedShares[i] = share;
-                    distributed += share;
-                }
-            }
+        uint256 recycledRefund = 0;
+        if (pool > distributed + cappedSurplus) {
+            uint256 dust = pool - distributed - cappedSurplus;
+            uint256 councilRefund = (dust * r.freshMatchingPool) / pool;
+            recycledRefund = dust - councilRefund;
         }
 
         actualBalance = token.balanceOf(address(this));
-        totalRequiredAfterFinalize = totalUnclaimedShares + distributed;
+        totalRequiredAfterFinalize = totalUnclaimedShares + distributed + cappedSurplus + recycledRefund;
         isSufficient = actualBalance >= totalUnclaimedShares + pool;
+    }
+
+    function _fillPreviewShares(
+        uint256 roundId,
+        uint256 count,
+        uint256 pool,
+        address[] memory projects,
+        uint256[] memory expectedShares
+    ) internal view returns (uint256 distributed, uint256 cappedSurplus) {
+        uint256 totalWeight = _totalSquaredWeight(roundId, count);
+        uint256 maxShare = (pool * projectMatchingCapBps) / MAX_BPS;
+        for (uint256 i = 0; i < count; i++) {
+            projects[i] = roundProjects[roundId][i].recipient;
+            if (totalWeight == 0) continue;
+            uint256 votes = roundProjects[roundId][i].voteCount;
+            uint256 weight = votes * votes;
+            (uint256 share, uint256 surplus) = _cappedMatchingShare(pool, weight, totalWeight, maxShare);
+            cappedSurplus += surplus;
+            expectedShares[i] = share;
+            distributed += share;
+        }
+    }
+
+    function _totalSquaredWeight(uint256 roundId, uint256 count) internal view returns (uint256 totalWeight) {
+        for (uint256 i = 0; i < count; i++) {
+            uint256 votes = roundProjects[roundId][i].voteCount;
+            totalWeight += votes * votes;
+        }
+    }
+
+    function _recordFinalizedShares(
+        uint256 roundId,
+        uint256 count,
+        uint256 pool,
+        uint256 totalWeight
+    ) internal returns (uint256 distributed, uint256 cappedSurplus) {
+        uint256 maxShare = (pool * projectMatchingCapBps) / MAX_BPS;
+        for (uint256 i = 0; i < count; i++) {
+            uint256 votes = roundProjects[roundId][i].voteCount;
+            uint256 weight = votes * votes;
+            (uint256 share, uint256 surplus) = _cappedMatchingShare(pool, weight, totalWeight, maxShare);
+            cappedSurplus += surplus;
+            if (share > 0) {
+                roundProjectShares[roundId][i] = share;
+                distributed += share;
+            }
+        }
+    }
+
+    function _handleFinalizationRemainder(
+        uint256 roundId,
+        uint256 pool,
+        uint256 distributed,
+        uint256 cappedSurplus,
+        uint256 freshMatchingPool
+    ) internal {
+        if (cappedSurplus > 0) {
+            recycledMatchingPool += cappedSurplus;
+            emit ProjectMatchingCapSurplusRecycled(roundId, cappedSurplus);
+        }
+
+        // Split tiny division dust according to provenance: fresh dust returns to council, while
+        // recycled or externally routed patient-fund dust remains patient-bound for future rounds.
+        // Cap surplus is not dust; it is retained above as patient-bound liquidity.
+        if (pool > distributed + cappedSurplus) {
+            uint256 dust = pool - distributed - cappedSurplus;
+            uint256 councilRefund = (dust * freshMatchingPool) / pool;
+            uint256 recycledRefund = dust - councilRefund;
+            if (recycledRefund > 0) {
+                recycledMatchingPool += recycledRefund;
+            }
+            if (councilRefund > 0) {
+                _transferAvailable(council, councilRefund);
+            }
+        }
+    }
+
+    function _cappedMatchingShare(
+        uint256 pool,
+        uint256 weight,
+        uint256 totalWeight,
+        uint256 maxShare
+    ) internal pure returns (uint256 share, uint256 cappedSurplus) {
+        if (weight == 0) return (0, 0);
+        uint256 rawShare = (pool * weight) / totalWeight;
+        if (rawShare > maxShare) {
+            return (maxShare, rawShare - maxShare);
+        }
+        return (rawShare, 0);
     }
 
     function _syncCurrentSolvencyDebt(uint256 roundId) internal returns (uint256) {
