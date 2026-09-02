@@ -175,6 +175,7 @@ def main():
     steps.append(("7. Swarm Observability Dashboard", [sys.executable, os.path.join(ROOT_DIR, "scripts", "observability_dashboard.py")]))
     steps.append(("8. Simulated 11-Receipt Dual-Chain Council Verifier", [sys.executable, os.path.join(ROOT_DIR, "scripts", "council_orchestrator.py"), "--demo"]))
     steps.append(("9. Agent Claim Lie Detector & Cross-Auditor", [sys.executable, os.path.join(ROOT_DIR, "scripts", "verify_agent_claims.py"), "--target", DOSSIER_REVIEW_FILE]))
+    steps.append(("10. Support/Docs Privacy Leak Scanner", [sys.executable, os.path.join(ROOT_DIR, "scripts", "privacy_leak_scanner.py")]))
 
     expected_step_count = len(steps)
     results = []
