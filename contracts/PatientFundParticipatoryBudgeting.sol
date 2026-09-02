@@ -25,6 +25,9 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     uint256 public constant MAX_PROJECTS_PER_ROUND = 50;
     uint256 public constant MAX_VOTERS_PER_BATCH = 200;
     uint256 public constant MATCH_RECLAIM_GRACE_PERIOD = 90 days;
+
+    uint256 public projectMatchingCapBps = 10000; // 100% default maximum share of the pool per project
+    uint256 public constant MAX_BPS = 10000;
     bytes32 public constant REGISTRATION_TYPEHASH = keccak256(
         "VoterRegistration(uint256 roundId,address voter,uint256 nonce,bytes32 credentialHash,bytes32 policyVersion,uint256 deadline)"
     );
@@ -145,6 +148,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     event ProjectProposed(uint256 indexed roundId, uint256 indexed proposalId, string title, address indexed recipient);
     event ProposalSupported(uint256 indexed roundId, uint256 indexed proposalId, address indexed supporter, uint256 currentSupport);
     event ProjectSupportThresholdUpdated(uint256 newThreshold);
+    event ProjectMatchingCapUpdated(uint256 newCapBps);
     event LowBalanceDetected(uint256 requested, uint256 actual);
     event DebtQueued(uint256 indexed roundId, uint256 amount);
     event DebtSettled(uint256 indexed roundId, uint256 amount);
@@ -179,6 +183,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     error RoundModeMismatch();
     error NullifierAlreadyUsed();
     error InvalidProof();
+    error InvalidCap();
 
     // =========================================================
     // CONSTRUCTOR
@@ -463,6 +468,12 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         return SignatureChecker.isValidSignatureNow(mockZKVerifier, digest, proof);
     }
 
+    function updateProjectMatchingCap(uint256 newCapBps) external onlyRole(COUNCIL_ROLE) {
+        if (newCapBps == 0 || newCapBps > MAX_BPS) revert InvalidCap();
+        projectMatchingCapBps = newCapBps;
+        emit ProjectMatchingCapUpdated(newCapBps);
+    }
+
     function setProjectSupportThreshold(uint256 threshold) external onlyRole(COUNCIL_ROLE) whenNotPaused {
         projectSupportThreshold = threshold;
         emit ProjectSupportThresholdUpdated(threshold);
@@ -613,10 +624,15 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
 
         // 3. Record matching shares proportionally
         uint256 distributed = 0;
+        uint256 maxShare = (pool * projectMatchingCapBps) / MAX_BPS;
+
         for (uint256 i = 0; i < count; i++) {
             if (weights[i] > 0) {
                 // Calculate proportional share
                 uint256 share = (pool * weights[i]) / totalWeight;
+                if (share > maxShare) {
+                    share = maxShare;
+                }
                 if (share > 0) {
                     roundProjectShares[roundId][i] = share;
                     distributed += share;
@@ -805,10 +821,15 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
 
         uint256 pool = r.matchingPool;
         uint256 distributed = 0;
+        uint256 maxShare = (pool * projectMatchingCapBps) / MAX_BPS;
+
         if (totalWeight > 0) {
             for (uint256 i = 0; i < count; i++) {
                 if (weights[i] > 0) {
                     uint256 share = (pool * weights[i]) / totalWeight;
+                    if (share > maxShare) {
+                        share = maxShare;
+                    }
                     expectedShares[i] = share;
                     distributed += share;
                 }
