@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 
-REMOTE_BRANCHES = (
+EXPECTED_REMOTE_BRANCHES = (
     "origin/dependabot/github_actions/actions/checkout-7",
     "origin/dependabot/github_actions/actions/setup-node-7",
     "origin/dependabot/npm_and_yarn/ethers-6.17.0",
@@ -51,12 +51,31 @@ def run_git(args: Iterable[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
+def current_remote_branches() -> set[str]:
+    result = run_git(["branch", "-r", "--format", "%(refname:short)"])
+    if result.returncode != 0:
+        return set()
+
+    return {
+        line.strip()
+        for line in result.stdout.splitlines()
+        if line.strip() and " -> " not in line and line.strip() not in {"origin", "origin/HEAD"}
+    }
+
+
 def branch_is_ancestor(branch: str) -> bool:
     result = run_git(["merge-base", "--is-ancestor", branch, "HEAD"])
     return result.returncode == 0
 
 
-def summarize_branch(branch: str) -> BranchStatus:
+def summarize_branch(branch: str, known_remote_refs: set[str]) -> BranchStatus:
+    if branch not in known_remote_refs:
+        return BranchStatus(
+            branch=branch,
+            status="absent-from-local-remote-refs",
+            note="already cleaned up locally or not fetched; confirm with git ls-remote before quoting public branch counts",
+        )
+
     if branch_is_ancestor(branch):
         return BranchStatus(
             branch=branch,
@@ -83,10 +102,22 @@ def main() -> int:
     print(status.stdout.strip())
     print()
 
+    known_remote_refs = current_remote_branches()
     print("Remote branch reconciliation:")
-    for branch in REMOTE_BRANCHES:
-        item = summarize_branch(branch)
+    for branch in EXPECTED_REMOTE_BRANCHES:
+        item = summarize_branch(branch, known_remote_refs)
         print(f"- {item.branch}: {item.status} - {item.note}")
+
+    discovered_extras = sorted(
+        branch
+        for branch in known_remote_refs
+        if branch not in EXPECTED_REMOTE_BRANCHES and branch != "origin/main"
+    )
+    if discovered_extras:
+        print()
+        print("Additional remote-tracking refs:")
+        for branch in discovered_extras:
+            print(f"- {branch}: review manually")
 
     print()
     print("Recommended public-review sequence:")

@@ -243,6 +243,28 @@
       outline-offset: 3px;
     }
 
+    .skip-link {
+      position: absolute;
+      top: -120px;
+      left: 1.5rem;
+      background: var(--text-main);
+      color: var(--bg-dark);
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--border-radius-card);
+      font-weight: 600;
+      font-size: 0.9rem;
+      z-index: 10000;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+      transition: top 0.15s ease-in-out;
+    }
+
+    .skip-link:focus {
+      top: 1.5rem;
+      outline: 3px solid var(--accent-cyan);
+      outline-offset: 2px;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -822,12 +844,13 @@
   </style>
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <div class="banner-top-warning">
     <span>DEMO ONLY - THIS IS LOCAL TEST DATA, NOT REAL PHARMACY REBATES</span>
   </div>
 
-  <header>
+  <header role="banner">
     <div class="header-container">
       <div class="logo-section logo-section-wrapper">
         <img src="assets/logo.png" alt="Pharmacy Fiduciary Commons Emblem" class="header-logo-img">
@@ -837,15 +860,15 @@
         </div>
       </div>
       <div class="header-controls-group">
-        <span id="provenance-badge" class="badge-unverified-slate">
+        <span id="provenance-badge" class="badge-unverified-slate" aria-live="polite">
           PROVENANCE: LOCAL MOCK / SYNTHETIC
         </span>
-        <button id="btn-connect" class="btn-vote btn-connect-wallet">Connect Wallet</button>
+        <button id="btn-connect" class="btn-vote btn-connect-wallet" aria-label="Connect Web3 Wallet">Connect Wallet</button>
       </div>
     </div>
   </header>
 
-  <main>
+  <main id="main-content" tabindex="-1" role="main">
 
     <!-- Cloud Connection Security Containment Notice -->
     <section class="panel panel-containment-safeguards">
@@ -854,7 +877,7 @@
           Database Security
           <div class="panel-subtitle">When enabled, the dashboard uses a local server proxy so client browsers never hold direct database credentials.</div>
         </div>
-        <div id="db-status-badge" class="badge-unverified-slate">
+        <div id="db-status-badge" class="badge-unverified-slate" aria-live="polite">
           PROXY STATUS UNCHECKED
         </div>
       </div>
@@ -1004,7 +1027,7 @@
       <div class="control-row">
         <div>
           <label for="pbm-selector" class="pbm-selector-label">Select synthetic PBM fixture:</label>
-          <select id="pbm-selector" class="select-pbm" onchange="updateOmissions()">
+          <select id="pbm-selector" class="select-pbm" onchange="updateOmissions()" aria-label="Filter claims by Pharmacy Benefit Manager">
             <option value="northstar">Northstar Benefit Services</option>
             <option value="harbor">Harbor Claims Cooperative</option>
             <option value="summit">Summit Rx Administration</option>
@@ -1057,13 +1080,14 @@
         </div>
 
         <div class="table-container">
-          <table>
+          <table aria-label="Synthetic Pharmacy Rebate Claims Table">
+            <caption class="sr-only">Synthetic Pharmacy Rebate Claims Table</caption>
             <thead>
               <tr>
-                <th>Pharmacy</th>
-                <th>Gross Claims</th>
-                <th>Status</th>
-                <th>Details</th>
+                <th scope="col">Pharmacy</th>
+                <th scope="col">Gross Claims</th>
+                <th scope="col">Status</th>
+                <th scope="col">Details</th>
               </tr>
             </thead>
             <tbody>
@@ -1149,8 +1173,8 @@
             Council Operations Portal
           </h4>
           <div class="council-actions-row">
-            <button id="btn-preview-finalize" class="btn-vote btn-council-preview">Preview Finalization (Dry-Run)</button>
-            <button id="btn-finalize-round" class="btn-vote btn-council-finalize">Finalize Current Round</button>
+            <button id="btn-preview-finalize" class="btn-vote btn-council-preview" aria-label="Preview participatory budgeting finalization (dry-run)">Preview Finalization (Dry-Run)</button>
+            <button id="btn-finalize-round" class="btn-vote btn-council-finalize" aria-label="Finalize current participatory budgeting round">Finalize Current Round</button>
           </div>
           <div id="finalize-preview-results" class="finalize-preview-box">
             <h5 class="finalize-preview-title">Dry-Run Simulation Output:</h5>
@@ -1168,7 +1192,7 @@
           <div id="voter-reg-action" class="voter-reg-action-row">
             <label for="input-signature" class="sr-only">Registration authorization JSON</label>
             <input type="text" id="input-signature" aria-label="Registration authorization JSON" placeholder="Paste registration authorization JSON" class="select-pbm input-signature-json">
-            <button id="btn-register" class="btn-vote btn-voter-register">Register Voter</button>
+            <button id="btn-register" class="btn-vote btn-voter-register" aria-label="Register voter with signature JSON">Register Voter</button>
           </div>
         </div>
 
@@ -1188,7 +1212,7 @@
               <div id="proj-0-votes" class="matching-votes">120 votes</div>
             </div>
             <div>
-              <button class="btn-vote" onclick="castVote(0)">Vote</button>
+              <button class="btn-vote" onclick="castVote(0)" aria-label="Vote for Co-op Pharmacy Solar Grid">Vote</button>
             </div>
           </div>
 
@@ -1207,7 +1231,7 @@
               <div id="proj-1-votes" class="matching-votes">195 votes</div>
             </div>
             <div>
-              <button class="btn-vote" onclick="castVote(1)">Vote</button>
+              <button class="btn-vote" onclick="castVote(1)" aria-label="Vote for Free Insulin Dispensary">Vote</button>
             </div>
           </div>
 
@@ -1226,7 +1250,7 @@
               <div id="proj-2-votes" class="matching-votes">64 votes</div>
             </div>
             <div>
-              <button class="btn-vote" onclick="castVote(2)">Vote</button>
+              <button class="btn-vote" onclick="castVote(2)" aria-label="Vote for Zero-Emission Micro-Logistics">Vote</button>
             </div>
           </div>
         </div>
@@ -1305,7 +1329,7 @@
         <!-- Dynamically populated -->
       </ul>
       <div class="flex-center-row">
-        <button id="btn-load-more-events" class="btn-vote btn-load-more-events-custom">Load More Events</button>
+        <button id="btn-load-more-events" class="btn-vote btn-load-more-events-custom" aria-label="Load more on-chain events">Load More Events</button>
       </div>
     </section>
 
@@ -1322,7 +1346,7 @@
       <div class="flex-col-gap">
         <div>
           <label for="portability-json-input" class="portability-label">Paste exported JSON payload:</label>
-          <textarea id="portability-json-input" class="select-pbm portability-textarea" placeholder='{ "exporter": "0x...", ... }'></textarea>
+          <textarea id="portability-json-input" class="select-pbm portability-textarea" placeholder='{ "exporter": "0x...", ... }' aria-label="Paste exported JSON payload"></textarea>
         </div>
 
         <div class="portability-checkbox-row">
@@ -1335,7 +1359,7 @@
         </div>
 
         <div class="portability-action-row">
-          <button id="btn-verify-portability" class="btn-vote btn-verify-portability-custom">Verify Export</button>
+          <button id="btn-verify-portability" class="btn-vote btn-verify-portability-custom" aria-label="Verify portability JSON export">Verify Export</button>
           <div id="portability-verification-status" role="status" aria-live="polite" class="portability-status-text"></div>
         </div>
 
@@ -1357,8 +1381,8 @@
       </div>
 
       <div class="inspector-btn-row">
-        <button id="btn-sample-receipt" class="btn-vote btn-sample-receipt-custom" onclick="generateVisualReceiptSample()">Generate Sample</button>
-        <button id="btn-inspect-receipt" class="btn-vote btn-inspect-receipt-custom" onclick="verifyVisualReceiptFlow()">Inspect Receipt</button>
+        <button id="btn-sample-receipt" class="btn-vote btn-sample-receipt-custom" onclick="generateVisualReceiptSample()" aria-label="Generate sample visual receipt envelope">Generate Sample</button>
+        <button id="btn-inspect-receipt" class="btn-vote btn-inspect-receipt-custom" onclick="verifyVisualReceiptFlow()" aria-label="Inspect visual receipt verification pipeline">Inspect Receipt</button>
       </div>
 
       <!-- Step-by-Step Flow Pipeline -->
@@ -1406,7 +1430,7 @@
       <div id="receipt-code-box" class="receipt-code-box-custom">
         <div class="receipt-code-box-header">
           <span>Sample Receipt JSON:</span>
-          <button class="btn-vote btn-copy-json-custom" onclick="copyReceiptJson()">Copy JSON</button>
+          <button class="btn-vote btn-copy-json-custom" onclick="copyReceiptJson()" aria-label="Copy sample receipt JSON to clipboard">Copy JSON</button>
         </div>
         <pre id="receipt-json-output" class="receipt-json-output-custom"></pre>
       </div>
@@ -1414,7 +1438,7 @@
 
   </main>
 
-  <footer>
+  <footer role="contentinfo">
     <p>Fiduciary Rebate Commons local prototype. Local contract tests are the current technical reference; policy and integration concepts remain subject to review.</p>
     <p class="footer-legal-notice">
       Not audited. Not deployed to mainnet. Do not use real funds.
@@ -1842,7 +1866,7 @@
     });
   </script>
   <!-- Fiduciary Copilot Floating UI Drawer -->
-  <button id="copilot-toggle-btn" type="button" aria-expanded="false" aria-controls="fiduciary-copilot-drawer">
+  <button id="copilot-toggle-btn" type="button" aria-expanded="false" aria-controls="fiduciary-copilot-drawer" aria-label="Open Fiduciary Documentation Assistant">
     <span>Fiduciary Copilot</span>
   </button>
 
@@ -1873,7 +1897,7 @@
         <option value="zk nullifier bounds"></option>
         <option value="EIP-712 relayer attestation"></option>
       </datalist>
-      <button id="copilot-send-btn" class="copilot-send-btn" type="button">Send</button>
+      <button id="copilot-send-btn" class="copilot-send-btn" type="button" aria-label="Send message to Fiduciary Copilot">Send</button>
     </div>
   </div>
 

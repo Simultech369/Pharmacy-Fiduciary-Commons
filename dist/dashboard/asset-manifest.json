@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-08-31T17:45:37.445Z",
+  "generatedAt": "2026-09-04T01:27:42.232Z",
   "source": "dashboard",
   "warning": "Static dashboard build only. Do not publish without running check:frontend.",
   "files": [
     {
       "path": "index.html",
-      "bytes": 36519,
-      "sha256": "88e41bd758d8b039bf29dc324432733a639ee25704cc27cf65c8c7466fea35be"
+      "bytes": 38009,
+      "sha256": "af5fa1643179e26d185783c41b66c9b219b25847fbab1b529cd269e488e757f2"
     },
     {
       "path": "dashboard-inline.min.js",
@@ -15,8 +15,8 @@
     },
     {
       "path": "design-system.css",
-      "bytes": 38067,
-      "sha256": "fee863cfe03baf8e7e1859e91f75370c612505459470b7160b1727fb2e12184d"
+      "bytes": 38662,
+      "sha256": "d0aa082d310bccafbeefd07be2814d0e1ce9f37cf587d557a1f73b8df18cf00f"
     },
     {
       "path": "web3_integration.min.js",

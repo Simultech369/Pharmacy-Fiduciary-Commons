@@ -50,6 +50,7 @@ tools/credentials/issuer_private.key
 github_overlap_*
 github_union_*
 reviews/slither-report.json
+reviews/aderyn-report.md
 reviews/model_attempts/
 reviews/model_attempt_ledger.jsonl
 reviews/outcome_memory.json
