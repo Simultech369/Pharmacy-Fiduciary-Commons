@@ -8,17 +8,17 @@ Purpose [dirty working tree]: copy-paste this file into a fresh Codex, Antigravi
 Repository root:
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
 
-Current live anchor checked by Codex on 2026-09-04:
-main@c3035199b8e2e763c58c4a1f75eefcad5bb02a1f [committed HEAD]
+Current live anchor rechecked by Codex on 2026-09-04 after the SMT settlement invariant commit:
+main@91695570b6a7e83d53e31521d815a37878bc29f6 [committed HEAD]
 
 Remote sync checked by Codex on 2026-09-04:
 origin/main matches HEAD; rev-list origin/main...HEAD returned 0 0.
 
-Working tree before this handoff file was written:
-clean.
+Historical note:
+This handoff was first drafted at main@c3035199b8e2e763c58c4a1f75eefcad5bb02a1f, then committed in the later SMT settlement invariant slice at main@91695570b6a7e83d53e31521d815a37878bc29f6.
 
-Working tree after this handoff file is written:
-dirty only if this file remains uncommitted.
+Working tree state at Codex recheck on 2026-09-04:
+clean before this reconciliation edit.
 
 Latest local verification receipt:
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\cache\verification_master_receipt.json
@@ -27,15 +27,22 @@ C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\cache\verification_master_receipt.j
 Latest receipt summary from `cache\verification_master_receipt.json` [generated cache]:
 
 ```text
-timestamp: 2026-09-04T15:39:24Z
+timestamp: 2026-09-04T18:09:05Z
 overall_status: PASSED
 steps_executed: 10 / 10
-lineage: main@c3035199b8e2e763c58c4a1f75eefcad5bb02a1f [committed HEAD]
+lineage: main@91695570b6a7e83d53e31521d815a37878bc29f6 [committed HEAD]
 dirty_file_count: 0
-Hardhat observed count: 438 passing tests
+Hardhat observed count: 440 passing tests
 PageIndex: 0 dirty/untracked files detected, 0 contradictory claims identified
 Agent Claim Lie Detector: 40 claims audited, 0 violations
 Privacy Leak Scanner: PASSED
+```
+
+Receipt storage boundary [generated cache]:
+
+```text
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\cache\verification_master_receipt.json exists on disk as generated local evidence.
+It is not present in HEAD as a tracked Git blob at this checkpoint; verify it locally before quoting receipt details in a new session.
 ```
 
 Proof boundary for fresh agents [committed HEAD]:
@@ -274,6 +281,7 @@ C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\DisasterRecoveryOutage.test.js
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\NeurosymbolicFormalAndP2PEngine.test.js
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\PatientFundParticipatoryBudgeting.test.js
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\PBMFraudFormalInvariants.test.js
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\PBMRebateFormalInvariants.test.js
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\PBMRebateTreasury.delta.test.js
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\PBMRebateTreasury.dispute-timeout.test.js
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\PBMRebateTreasury.fuzz.test.js
@@ -344,6 +352,8 @@ PBM, fraud, formal proof, and formalized evidence [committed HEAD]:
 
 ```text
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_rebate_engine.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_rebate_formal_invariants.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\test_pbm_rebate_formal_invariants.py
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_fraud_detector.py
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_fraud_formal_invariants.py
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\formal_theorem_prover_engine.py
@@ -611,11 +621,14 @@ Keep dashboard proof panels tied to generated local receipts and explicit launch
 Run privacy_leak_scanner.py after doc, issue-template, dashboard, or onboarding edits.
 ```
 
-### P2 - Formal invariant SMT fixtures
+### P2 - Formal invariant SMT fixtures [committed HEAD]
 
 Relevant files:
 
 ```text
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_rebate_formal_invariants.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\test_pbm_rebate_formal_invariants.py
+C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\PBMRebateFormalInvariants.test.js
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_fraud_formal_invariants.py
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\test_pbm_fraud_formal_invariants.py
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\test\PBMFraudFormalInvariants.test.js
@@ -626,7 +639,9 @@ C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\tools\council\pbm_rebate_engine.py
 Plan:
 
 ```text
-Add formal constraints only where they prove narrow local arithmetic or state-machine properties.
+The treasury settlement arithmetic lane was added at main@91695570b6a7e83d53e31521d815a37878bc29f6 [committed HEAD].
+It covers local SMT Z3 UNSAT-negation checks for gross-to-net non-negativity, solvency debt conservation, dispute escrow caps, mutual credit zero-sum clearing, and fee-on-transfer intake integrity.
+Add future formal constraints only where they prove narrow local arithmetic or state-machine properties.
 MME bounds: prove threshold classification behavior, not clinical truth.
 Refill-too-soon: prove timestamp comparison and bounded windows, not external dispensing accuracy.
 Duplicate therapy and HHI: prove deterministic classification, not real-world monopoly proof.
@@ -637,7 +652,9 @@ Fast gates:
 
 ```powershell
 Set-Location -LiteralPath 'C:\Users\Josh\Desktop\PBMRebateTreasuryFinal'
+python -m unittest discover tools\council -p "test_pbm_rebate_formal_invariants.py"
 python -m unittest discover tools\council -p "test_pbm_fraud_formal_invariants.py"
+npx.cmd --no-install hardhat test test\PBMRebateFormalInvariants.test.js --no-compile
 npx.cmd --no-install hardhat test test\PBMFraudFormalInvariants.test.js --no-compile
 ```
 
@@ -768,7 +785,7 @@ C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\.agents\AGENTS.md
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal\cache\verification_master_receipt.json
 
 Current anchor from Codex live check on 2026-09-04:
-main@c3035199b8e2e763c58c4a1f75eefcad5bb02a1f [committed HEAD], origin/main synchronized, receipt 10/10 PASSED, 438 Hardhat tests, 0 PageIndex contradictions, 40/40 claims audited, privacy leak scanner passed.
+main@91695570b6a7e83d53e31521d815a37878bc29f6 [committed HEAD], origin/main synchronized, receipt 10/10 PASSED, 440 Hardhat tests, 0 PageIndex contradictions, 40/40 claims audited, privacy leak scanner passed.
 
 First commands:
 Set-Location -LiteralPath 'C:\Users\Josh\Desktop\PBMRebateTreasuryFinal'
@@ -787,6 +804,6 @@ When sealing a milestone, run python scripts\verify_all.py.
 Next suggested work:
 1. Re-anchor and classify any dirty files.
 2. If public review is the goal, keep README/CONTRIBUTING/SECURITY/NEXT/dashboard/issue templates crisp and prototype-honest.
-3. If technical depth is the goal, expand formal PBM fraud invariant fixtures with narrow SMT-style claims.
+3. If technical depth is the goal, extend formal invariant fixtures without broadening local SMT checks into whole-contract formal verification claims.
 4. If repo hygiene is the goal, triage the five remaining Dependabot branches one at a time.
 ```
