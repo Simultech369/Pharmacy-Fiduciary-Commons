@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability Reporting
+    url: https://github.com/Simultech369/Pharmacy-Fiduciary-Commons/blob/main/SECURITY.md
+    about: Please consult SECURITY.md for private reporting instructions before filing public issues on critical vulnerabilities.
+  - name: External Review Guide
+    url: https://github.com/Simultech369/Pharmacy-Fiduciary-Commons/blob/main/docs/review/EXTERNAL_REVIEW_GUIDE.md
+    about: Detailed architecture, review lanes, and proof boundary verification guide.

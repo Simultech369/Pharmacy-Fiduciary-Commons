@@ -1,0 +1,49 @@
+name: Solidity Invariant Review
+description: Propose or challenge a mathematical or state-machine invariant in the contracts.
+title: "[Solidity Invariant]: "
+labels: ["solidity", "invariants", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Solidity Invariant Review
+        Use this template to review state invariants across `PBMRebateTreasury`, `PatientFundParticipatoryBudgeting`, or `PharmacyMutualCredit`.
+  - type: input
+    id: target_contract
+    attributes:
+      label: Target Contract & Function
+      description: File and function name (e.g., `PBMRebateTreasury.sol - flagClaim`).
+      placeholder: "e.g., contracts/PBMRebateTreasury.sol:flagClaim"
+    validations:
+      required: true
+  - type: textarea
+    id: invariant_statement
+    attributes:
+      label: Invariant Statement
+      description: State the expected mathematical invariant (e.g., `Escrow balance >= sum of active flagged claims`).
+    validations:
+      required: true
+  - type: textarea
+    id: counterexample
+    attributes:
+      label: Potential Counterexample or Boundary Condition
+      description: Describe any sequence of calls or integer arithmetic edge cases that violate the invariant.
+    validations:
+      required: true
+  - type: input
+    id: local_verification
+    attributes:
+      label: Local Verification Attempt
+      description: Command, test file, symbolic proof, or "not run" if this is a proposed invariant.
+      placeholder: "e.g., npx hardhat test test/PBMRebateTreasury.fuzz.test.js --no-compile"
+    validations:
+      required: true
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Review Acknowledgements
+      options:
+        - label: "I understand this is an unaudited prototype seeking review and not a production system."
+          required: true
+        - label: "This submission contains no private keys, patient health information, raw claims logs, or wallet-to-pharmacy mappings."
+          required: true

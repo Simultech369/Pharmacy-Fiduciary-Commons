@@ -1,0 +1,53 @@
+name: Docs & UI Accessibility Review
+description: Report documentation overclaims, accessibility barriers, or Brand Gate B issues.
+title: "[Docs/UI]: "
+labels: ["documentation", "accessibility", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Documentation & UI Review
+        We strictly review public claims to avoid overclaiming audit status, mainnet readiness, or production custody. We also enforce WCAG 2.4.1 accessibility and zero inline styles (Brand Gate B).
+  - type: dropdown
+    id: review_area
+    attributes:
+      label: Review Area
+      options:
+        - "Public Claim Overstatement (e.g., sounds audited or mainnet-ready)"
+        - "Dashboard Accessibility (WCAG keyboard nav, focus, ARIA, screen readers)"
+        - "Visual Governance (Brand Gate B, inline style violation)"
+        - "Documentation Clarity / Broken Link"
+    validations:
+      required: true
+  - type: input
+    id: affected_location
+    attributes:
+      label: Document / UI File Path
+      description: e.g., `README.md`, `dashboard/index.html`, or `NEXT.md`.
+      placeholder: "e.g., dashboard/index.html"
+    validations:
+      required: true
+  - type: textarea
+    id: issue_details
+    attributes:
+      label: Observed Issue & Suggested Revision
+      description: What is misleading, inaccessible, or broken, and how should it be worded or styled?
+    validations:
+      required: true
+  - type: input
+    id: local_verification
+    attributes:
+      label: Local Verification Attempt
+      description: Command, accessibility check, screen reader/browser note, or "not run".
+      placeholder: "e.g., npm run check:frontend"
+    validations:
+      required: true
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Review Acknowledgements
+      options:
+        - label: "I understand that this project is an early-stage prototype seeking external review."
+          required: true
+        - label: "This submission contains no private keys, patient health information, raw claims logs, or wallet-to-pharmacy mappings."
+          required: true

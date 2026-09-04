@@ -1,0 +1,62 @@
+name: Security & Custody Review
+description: Submit a security, access control, or fund-loss review finding on the prototype.
+title: "[Security]: "
+labels: ["security", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Security Review Finding
+        Pharmacy Fiduciary Commons is a **tested prototype** seeking external review. It is **not audited** and **not deployed to mainnet**.
+
+        * For critical or exploitable vulnerabilities that require private handling before public release, consult [SECURITY.md](https://github.com/Simultech369/Pharmacy-Fiduciary-Commons/blob/main/SECURITY.md).
+        * Submissions must omit credentials, private keys, or health identifiers.
+  - type: input
+    id: affected_files
+    attributes:
+      label: Affected Contract / File Path
+      description: Specific contract or file under review (e.g., `contracts/PBMRebateTreasury.sol:L566`).
+      placeholder: "e.g., contracts/PBMRebateTreasury.sol"
+    validations:
+      required: true
+  - type: dropdown
+    id: severity_category
+    attributes:
+      label: Severity Category
+      options:
+        - "High: Potential fund lock, insolvency, or Merkle bypass"
+        - "Medium: Role segregation, fee calculation, or reentrancy surface"
+        - "Low / Informational: Gas optimization, code clarity, or event emission"
+    validations:
+      required: true
+  - type: textarea
+    id: finding_details
+    attributes:
+      label: Observed Behavior & Mechanism
+      description: Explain the mechanism, failure condition, and potential fiduciary impact.
+    validations:
+      required: true
+  - type: textarea
+    id: proof_steps
+    attributes:
+      label: Reproduction / Proof Steps
+      description: Hardhat test snippet, reproduction steps, or mathematical proof.
+    validations:
+      required: false
+  - type: input
+    id: local_verification
+    attributes:
+      label: Local Verification Attempt
+      description: Command or review method used, or "not run" if this is a design review.
+      placeholder: "e.g., npx hardhat test test/PBMRebateTreasury.security.test.js"
+    validations:
+      required: true
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Review Acknowledgements
+      options:
+        - label: "I understand this is an unaudited prototype seeking review and must not be used with real funds."
+          required: true
+        - label: "This submission contains no private keys, real credentials, patient health information, raw claims logs, or wallet-to-pharmacy mappings."
+          required: true

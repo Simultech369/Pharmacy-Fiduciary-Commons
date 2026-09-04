@@ -1,0 +1,55 @@
+name: ZK & Privacy Review
+description: Submit feedback on witness isolation, nullifier scope, or side-channel leakage.
+title: "[ZK Privacy]: "
+labels: ["zk", "privacy", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Zero-Knowledge & Witness Privacy Review
+        This repository uses a client witness adapter (`tools/zk/ClientWitnessAdapter.js`) to mitigate side-channel leaks. Reviewing metadata leakage boundaries is an explicit focus.
+
+        * Submissions must omit credentials, private keys, or raw network traces.
+  - type: input
+    id: target_component
+    attributes:
+      label: Target Component
+      description: File or specification under review (e.g., `tools/zk/ClientWitnessAdapter.js`).
+      placeholder: "e.g., tools/zk/ClientWitnessAdapter.js"
+    validations:
+      required: true
+  - type: dropdown
+    id: leakage_vector
+    attributes:
+      label: Leakage Vector Under Review
+      options:
+        - "RPC / Network IP side-channel"
+        - "Nullifier replay or cross-epoch collision"
+        - "BN254 field element normalization or range boundary"
+        - "Off-chain metadata table divergence"
+    validations:
+      required: true
+  - type: textarea
+    id: analysis
+    attributes:
+      label: Analysis & Observed Risk
+      description: Detail how metadata or identity could be correlated despite the client-side adapter.
+    validations:
+      required: true
+  - type: input
+    id: local_verification
+    attributes:
+      label: Local Verification Attempt
+      description: Command, fixture check, proof sketch, or "not run" if this is an architectural review.
+      placeholder: "e.g., npx hardhat test test/ClientWitnessAdapter.test.js --no-compile"
+    validations:
+      required: true
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Review Acknowledgements
+      options:
+        - label: "I understand that ZK/nullifier privacy in this prototype is experimental and not production unlinkability."
+          required: true
+        - label: "This submission contains no real patient records, raw credential material, private network traces, IP addresses, or wallet-to-pharmacy mappings."
+          required: true

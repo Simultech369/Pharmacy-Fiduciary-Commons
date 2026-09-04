@@ -1,0 +1,42 @@
+name: General Bug Report
+description: Report an unexpected script failure, test error, or build issue.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Bug Report
+        Use this form to report test failures, script errors, or verification pipeline issues on supported environments.
+  - type: input
+    id: command_run
+    attributes:
+      label: Command Executed
+      description: The exact command that failed (e.g., `npx hardhat test` or `python scripts/verify_all.py`).
+      placeholder: "e.g., python scripts/verify_all.py"
+    validations:
+      required: true
+  - type: textarea
+    id: error_output
+    attributes:
+      label: Error Output / Traceback
+      description: Paste the terminal error output.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS version, Node version, Python version.
+      placeholder: "e.g., Windows 11, Node 22.23.1, Python 3.12"
+    validations:
+      required: true
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Acknowledgements
+      options:
+        - label: "I have verified that dependencies are installed via `npm install`."
+          required: true
+        - label: "This submission contains no private keys, API secrets, patient health information, raw claims logs, or wallet-to-pharmacy mappings."
+          required: true
