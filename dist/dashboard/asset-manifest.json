@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-04T11:18:37.965Z",
+  "generatedAt": "2026-09-04T17:49:48.839Z",
   "source": "dashboard",
   "warning": "Static dashboard build only. Do not publish without running check:frontend.",
   "files": [
