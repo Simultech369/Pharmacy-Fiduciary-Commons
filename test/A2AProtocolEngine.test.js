@@ -325,7 +325,23 @@ res = ExternalA2AAdapter.handle_external_request(card_req, card)
 assert res.error is None
 assert res.result["agent_id"] == "agent.antigravity.v1"
 
-# 4. Handle fraud invariant attestation as read-only public-safe proof summary
+# 4. Handle solvency attestation as read-only public-safe proof summary
+solv_req = JSONRPCRequest(method="council.querySolvencyAttestation", params={}, id="req_solv")
+solv_res = ExternalA2AAdapter.handle_external_request(solv_req, card)
+assert solv_res.error is None
+assert solv_res.result["attestation_status"] == "SOLVENT"
+assert solv_res.result["proof_status"] == "PROVED"
+assert solv_res.result["solvency_status"] == "CONSERVED"
+assert solv_res.result["audit_replacement_claimed"] is False
+assert solv_res.result["market_truth_claimed"] is False
+assert solv_res.result["remote_execution_permitted"] is False
+assert solv_res.result["domains_verified"] == ["DISPUTE_ESCROW_CAP", "FEE_ON_TRANSFER_INTEGRITY", "GROSS_NET_NON_NEGATIVE", "MUTUAL_CREDIT_ZERO_SUM", "SOLVENCY_DEBT_CONSERVATION"]
+solv_serialized = json.dumps(solv_res.result, sort_keys=True)
+assert "C:\\\\" not in solv_serialized
+assert "/Users/" not in solv_serialized
+assert "private_key" not in solv_serialized.lower()
+
+# 5. Handle fraud invariant attestation as read-only public-safe proof summary
 fraud_req = JSONRPCRequest(method="council.queryFraudInvariantAttestation", params={}, id="req_fraud")
 fraud_res = ExternalA2AAdapter.handle_external_request(fraud_req, card)
 assert fraud_res.error is None
@@ -340,7 +356,7 @@ assert "C:\\\\" not in serialized
 assert "/Users/" not in serialized
 assert "private_key" not in serialized.lower()
 
-# 5. Handle dangerous execution RPC -> must be blocked (-32601)
+# 6. Handle dangerous execution RPC -> must be blocked (-32601)
 exec_req = JSONRPCRequest(method="council.executeCode", params={"code": "import os; os.system('ls')"}, id="req_bad")
 exec_res = ExternalA2AAdapter.handle_external_request(exec_req, card)
 assert exec_res.error is not None

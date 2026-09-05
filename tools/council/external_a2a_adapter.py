@@ -161,14 +161,35 @@ class ExternalA2AAdapter:
                 id=request.id
             )
 
-        if request.method == "council.querySolvencyAttestation":
+        if request.method == "council.verifyReceipt":
+            return JSONRPCResponse(
+                jsonrpc="2.0",
+                result=cls._verify_receipt_envelope(request.params),
+                id=request.id
+            )
+
+        if request.method == "council.inspectHandoffSchema":
             return JSONRPCResponse(
                 jsonrpc="2.0",
                 result={
-                    "attestation_status": "SOLVENT",
-                    "invariants_verified": ["INV_DET_MATH", "INV_SMT_PARTITION"],
-                    "timestamp": time.time()
+                    "schema_version": "A2A-v1.0",
+                    "supported_methods": sorted(list(cls.ALLOWED_EXTERNAL_METHODS)),
+                    "receipt_types": [
+                        "PBMRebateFormalInvariantReceipt",
+                        "PBMFraudFormalInvariantReceipt",
+                        "SubcommitteeConvocationReceipt",
+                    ],
+                    "read_only_mode": True,
+                    "remote_execution_permitted": False,
+                    "timestamp": time.time(),
                 },
+                id=request.id
+            )
+
+        if request.method == "council.querySolvencyAttestation":
+            return JSONRPCResponse(
+                jsonrpc="2.0",
+                result=cls._build_solvency_attestation(),
                 id=request.id
             )
 
@@ -184,6 +205,58 @@ class ExternalA2AAdapter:
             result={"status": "RECEIVED_READ_ONLY"},
             id=request.id
         )
+
+    @classmethod
+    def _build_solvency_attestation(cls) -> Dict[str, Any]:
+        """
+        Builds a public-safe solvency proof summary for external A2A callers.
+        Exposes hashes, SMT proof domains, and proof-boundary flags only;
+        it does not expose raw local evidence, PHI, or any remote execution capability.
+        """
+        from pbm_rebate_formal_invariants import PBMRebateFormalInvariantEngine
+
+        receipt_envelope = PBMRebateFormalInvariantEngine().prove_all()
+        receipt = receipt_envelope.payload
+        attestation = {
+            "attestation_status": "SOLVENT" if receipt.all_invariants_proved else "REVIEW_REQUIRED",
+            "proof_status": "PROVED" if receipt.all_invariants_proved else "REVIEW_REQUIRED",
+            "solvency_status": "CONSERVED" if receipt.all_invariants_proved else "DEFICIT_RISK",
+            "proof_suite_id": receipt.proof_suite_id,
+            "proof_digest_sha256": receipt.proof_digest_sha256,
+            "receipt_payload_sha256": receipt_envelope.payload_sha256,
+            "domains_verified": sorted({proof.domain for proof in receipt.invariants}),
+            "invariant_count": len(receipt.invariants),
+            "target_contracts": receipt.target_contracts,
+            "audit_replacement_claimed": receipt.audit_replacement_claimed,
+            "market_truth_claimed": receipt.market_truth_claimed,
+            "proof_boundary": receipt.proof_boundary,
+            "remote_execution_permitted": False,
+            "timestamp": time.time(),
+        }
+        return cls.sanitize_external_payload(attestation)
+
+    @classmethod
+    def _verify_receipt_envelope(cls, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Verifies a receipt envelope's SHA-256 payload digest in read-only mode."""
+        import hashlib
+        envelope_data = params.get("envelope") or params.get("receipt_envelope") or params
+        if not isinstance(envelope_data, dict):
+            return {"verified": False, "reason": "Missing or invalid envelope object"}
+        payload_data = envelope_data.get("payload")
+        payload_sha256 = envelope_data.get("payload_sha256")
+        if not payload_data or not payload_sha256:
+            return {"verified": False, "reason": "Envelope missing payload or payload_sha256"}
+        computed = hashlib.sha256(
+            json.dumps(payload_data, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        is_valid = (computed == payload_sha256)
+        return {
+            "verified": is_valid,
+            "contract_version": envelope_data.get("contract_version", "unknown"),
+            "payload_sha256_match": is_valid,
+            "remote_execution_permitted": False,
+            "timestamp": time.time(),
+        }
 
     @classmethod
     def _build_fraud_invariant_attestation(cls) -> Dict[str, Any]:

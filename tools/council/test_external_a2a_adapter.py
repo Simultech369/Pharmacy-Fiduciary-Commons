@@ -70,11 +70,25 @@ class TestExternalA2AAdapter(unittest.TestCase):
         self.assertEqual(res.result.get("agent_id"), "agent.antigravity.v1")
         self.assertTrue(res.result.get("read_only_mode"))
 
-        # 3. Query Solvency Attestation
+        # 3. Query Solvency Attestation (dynamic SMT Z3 bridge)
         solv_req = JSONRPCRequest(method="council.querySolvencyAttestation", params={}, id="req_solv")
         res = ExternalA2AAdapter.handle_external_request(solv_req, self.card)
         self.assertIsNone(res.error)
         self.assertEqual(res.result.get("attestation_status"), "SOLVENT")
+        self.assertEqual(res.result.get("proof_status"), "PROVED")
+        self.assertEqual(res.result.get("solvency_status"), "CONSERVED")
+        self.assertFalse(res.result.get("audit_replacement_claimed"))
+        self.assertFalse(res.result.get("market_truth_claimed"))
+        self.assertFalse(res.result.get("remote_execution_permitted"))
+        self.assertEqual(
+            res.result.get("domains_verified"),
+            ["DISPUTE_ESCROW_CAP", "FEE_ON_TRANSFER_INTEGRITY", "GROSS_NET_NON_NEGATIVE", "MUTUAL_CREDIT_ZERO_SUM", "SOLVENCY_DEBT_CONSERVATION"]
+        )
+        self.assertGreater(res.result.get("invariant_count", 0), 0)
+        solv_serialized = json.dumps(res.result, sort_keys=True)
+        self.assertNotIn("C:\\", solv_serialized)
+        self.assertNotIn("/Users/", solv_serialized)
+        self.assertNotIn("private_key", solv_serialized)
 
         # 4. Query PBM fraud formal invariant attestation
         fraud_req = JSONRPCRequest(method="council.queryFraudInvariantAttestation", params={}, id="req_fraud")
@@ -93,6 +107,40 @@ class TestExternalA2AAdapter(unittest.TestCase):
         self.assertNotIn("C:\\", serialized)
         self.assertNotIn("/Users/", serialized)
         self.assertNotIn("private_key", serialized)
+
+        # 5. Inspect handoff schema
+        schema_req = JSONRPCRequest(method="council.inspectHandoffSchema", params={}, id="req_schema")
+        schema_res = ExternalA2AAdapter.handle_external_request(schema_req, self.card)
+        self.assertIsNone(schema_res.error)
+        self.assertEqual(schema_res.result.get("schema_version"), "A2A-v1.0")
+        self.assertTrue(schema_res.result.get("read_only_mode"))
+        self.assertFalse(schema_res.result.get("remote_execution_permitted"))
+        self.assertIn("council.querySolvencyAttestation", schema_res.result.get("supported_methods", []))
+
+        # 6. Verify receipt envelope
+        from pbm_rebate_formal_invariants import PBMRebateFormalInvariantEngine
+        valid_envelope = PBMRebateFormalInvariantEngine().prove_all()
+        verify_req = JSONRPCRequest(
+            method="council.verifyReceipt",
+            params={"envelope": valid_envelope.model_dump()},
+            id="req_verify"
+        )
+        verify_res = ExternalA2AAdapter.handle_external_request(verify_req, self.card)
+        self.assertIsNone(verify_res.error)
+        self.assertTrue(verify_res.result.get("verified"))
+        self.assertTrue(verify_res.result.get("payload_sha256_match"))
+
+        # Tampered envelope verification must fail
+        tampered = valid_envelope.model_dump()
+        tampered["payload"]["all_invariants_proved"] = False
+        bad_verify_req = JSONRPCRequest(
+            method="council.verifyReceipt",
+            params={"envelope": tampered},
+            id="req_bad_verify"
+        )
+        bad_verify_res = ExternalA2AAdapter.handle_external_request(bad_verify_req, self.card)
+        self.assertIsNone(bad_verify_res.error)
+        self.assertFalse(bad_verify_res.result.get("verified"))
 
     def test_handle_external_request_blocks_remote_execution(self):
         # Disallowed / dangerous methods must return -32601
