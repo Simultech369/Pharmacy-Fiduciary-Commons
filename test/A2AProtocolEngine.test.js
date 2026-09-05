@@ -335,7 +335,7 @@ assert solv_res.result["solvency_status"] == "CONSERVED"
 assert solv_res.result["audit_replacement_claimed"] is False
 assert solv_res.result["market_truth_claimed"] is False
 assert solv_res.result["remote_execution_permitted"] is False
-assert solv_res.result["domains_verified"] == ["DISPUTE_ESCROW_CAP", "FEE_ON_TRANSFER_INTEGRITY", "GROSS_NET_NON_NEGATIVE", "MUTUAL_CREDIT_ZERO_SUM", "SOLVENCY_DEBT_CONSERVATION"]
+assert solv_res.result["domains_verified"] == ["DISPUTE_ESCROW_CAP", "FEE_ON_TRANSFER_INTEGRITY", "GROSS_NET_NON_NEGATIVE", "MUTUAL_CREDIT_ZERO_SUM", "PATIENT_FUND_RECYCLE_SINK_BOUND", "SOLVENCY_DEBT_CONSERVATION", "TREASURY_BUCKET_CONSERVATION"]
 solv_serialized = json.dumps(solv_res.result, sort_keys=True)
 assert "C:\\\\" not in solv_serialized
 assert "/Users/" not in solv_serialized

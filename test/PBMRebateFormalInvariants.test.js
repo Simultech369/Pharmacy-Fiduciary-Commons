@@ -17,11 +17,11 @@ describe("PBM rebate formal invariants (SMT Z3 Bridge)", function () {
   it("runs the PBM rebate formal invariant Python test suite", () => {
     const cmd = "python -B -m unittest tools/council/test_pbm_rebate_formal_invariants.py 2>&1";
     const output = execSync(cmd, { cwd: repoRoot, encoding: "utf-8" });
-    expect(output).to.match(/Ran 7 tests/);
+    expect(output).to.match(/Ran 9 tests/);
     expect(output).to.include("OK");
   });
 
-  it("seals and verifies a formal invariant receipt for all five treasury arithmetic domains", () => {
+  it("seals and verifies a formal invariant receipt for all seven treasury arithmetic domains", () => {
     const script = `
 import sys, os
 sys.path.insert(0, os.path.join(r"${repoRoot}", "tools", "council"))
@@ -37,13 +37,15 @@ domains = {proof.domain for proof in receipt.invariants}
 assert receipt.all_invariants_proved is True
 assert receipt.audit_replacement_claimed is False
 assert receipt.market_truth_claimed is False
-assert len(receipt.invariants) == 5
+assert len(receipt.invariants) == 7
 assert domains == {
     "GROSS_NET_NON_NEGATIVE",
     "SOLVENCY_DEBT_CONSERVATION",
     "DISPUTE_ESCROW_CAP",
     "MUTUAL_CREDIT_ZERO_SUM",
     "FEE_ON_TRANSFER_INTEGRITY",
+    "TREASURY_BUCKET_CONSERVATION",
+    "PATIENT_FUND_RECYCLE_SINK_BOUND",
 }
 print("PBM_REBATE_FORMAL_INVARIANTS_VERIFIED")
 `;

@@ -25,6 +25,8 @@ ProofDomain = Literal[
     "DISPUTE_ESCROW_CAP",
     "MUTUAL_CREDIT_ZERO_SUM",
     "FEE_ON_TRANSFER_INTEGRITY",
+    "TREASURY_BUCKET_CONSERVATION",
+    "PATIENT_FUND_RECYCLE_SINK_BOUND",
 ]
 
 
@@ -63,6 +65,8 @@ class PBMRebateFormalInvariantEngine:
         proofs.extend(self.prove_dispute_escrow_cap_monotonicity())
         proofs.extend(self.prove_mutual_credit_zero_sum())
         proofs.extend(self.prove_fee_on_transfer_intake_integrity())
+        proofs.extend(self.prove_treasury_bucket_conservation())
+        proofs.extend(self.prove_patient_fund_recycle_sink_bound())
 
         all_proved = all(proof.solver_status == "PROVED" for proof in proofs)
         digest = hashlib.sha256(
@@ -319,5 +323,86 @@ class PBMRebateFormalInvariantEngine:
                 constraints=constraints,
                 negated_property=z3.Or(received < 0, received > amount),
                 lean4_theorem_stub="theorem fot_intake_bounded (a b_before tax : Real) (h1 : a >= 0) (h2 : 0 <= tax ∧ tax <= a) : (b_before + a - tax) - b_before <= a",
+            )
+        ]
+
+    def prove_treasury_bucket_conservation(self) -> List[RebateInvariantProof]:
+        """Proves contract token balance strictly equals sum of internal accounting buckets under allocations/distributions."""
+        import z3
+
+        b_total = z3.Real("contract_balance")
+        d_pool = z3.Real("distribution_pool")
+        g_res = z3.Real("governance_reserve")
+        e_res = z3.Real("exclusion_remediation_reserve")
+        t_esc = z3.Real("total_escrowed")
+        t_flag = z3.Real("total_flagged_normal")
+        outflow = z3.Real("distribution_outflow")
+
+        b_after = z3.Real("contract_balance_after")
+        d_pool_after = z3.Real("distribution_pool_after")
+
+        constraints = [
+            d_pool >= 0,
+            g_res >= 0,
+            e_res >= 0,
+            t_esc >= 0,
+            t_flag >= 0,
+            b_total == d_pool + g_res + e_res + t_esc + t_flag,
+            outflow >= 0,
+            outflow <= d_pool,
+            b_after == b_total - outflow,
+            d_pool_after == d_pool - outflow,
+        ]
+
+        bucket_sum_after = d_pool_after + g_res + e_res + t_esc + t_flag
+
+        return [
+            self._prove_unsat(
+                invariant_id="REBATE-MATH-006",
+                domain="TREASURY_BUCKET_CONSERVATION",
+                statement="Contract token balance strictly equals the partition sum of the five internal accounting buckets under valid distribution outflows.",
+                assumptions=[
+                    "All bucket balances >= 0",
+                    "b_total == d_pool + g_res + e_res + t_esc + t_flag",
+                    "0 <= outflow <= d_pool",
+                    "b_after == b_total - outflow",
+                    "d_pool_after == d_pool - outflow",
+                ],
+                constraints=constraints,
+                negated_property=b_after != bucket_sum_after,
+                lean4_theorem_stub="theorem treasury_bucket_conservation (d g e t f out : Real) (h_b : out <= d) : ((d + g + e + t + f) - out) = (d - out) + g + e + t + f",
+            )
+        ]
+
+    def prove_patient_fund_recycle_sink_bound(self) -> List[RebateInvariantProof]:
+        """Proves unallocated/recycled round matching funds are non-negative and bounded by initial contribution."""
+        import z3
+
+        c_init = z3.Real("initial_matching_contribution")
+        v_total = z3.Real("total_round_votes")
+        allocated = z3.Real("allocated_matching")
+        recycled = z3.Real("recycled_matching_pool")
+
+        constraints = [
+            c_init >= 0,
+            v_total >= 0,
+            allocated >= 0,
+            allocated <= c_init,
+            recycled == c_init - allocated,
+        ]
+
+        return [
+            self._prove_unsat(
+                invariant_id="REBATE-MATH-007",
+                domain="PATIENT_FUND_RECYCLE_SINK_BOUND",
+                statement="Recycled patient matching funds on round finalization are non-negative and strictly bounded by the initial matching contribution.",
+                assumptions=[
+                    "c_init >= 0",
+                    "0 <= allocated <= c_init",
+                    "recycled == c_init - allocated",
+                ],
+                constraints=constraints,
+                negated_property=z3.Or(recycled < 0, recycled > c_init),
+                lean4_theorem_stub="theorem patient_fund_reclaim_bounded (c a : Real) (h1 : c >= 0) (h2 : 0 <= a ∧ a <= c) : 0 <= c - a ∧ c - a <= c",
             )
         ]

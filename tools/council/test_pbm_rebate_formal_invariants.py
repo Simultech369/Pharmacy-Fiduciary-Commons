@@ -46,13 +46,25 @@ class TestPBMRebateFormalInvariants(unittest.TestCase):
         self.assertEqual(proofs[0].solver_status, "PROVED")
         self.assertIsNone(proofs[0].counterexample)
 
+    def test_treasury_bucket_conservation(self):
+        proofs = self.engine.prove_treasury_bucket_conservation()
+        self.assertEqual(len(proofs), 1)
+        self.assertEqual(proofs[0].solver_status, "PROVED")
+        self.assertIsNone(proofs[0].counterexample)
+
+    def test_patient_fund_recycle_sink_bound(self):
+        proofs = self.engine.prove_patient_fund_recycle_sink_bound()
+        self.assertEqual(len(proofs), 1)
+        self.assertEqual(proofs[0].solver_status, "PROVED")
+        self.assertIsNone(proofs[0].counterexample)
+
     def test_prove_all_receipt_envelope(self):
         envelope = self.engine.prove_all()
         CouncilReceiptVerifier.verify_envelope(envelope, PBMRebateFormalInvariantReceipt)
 
         receipt = envelope.payload
         self.assertTrue(receipt.all_invariants_proved)
-        self.assertEqual(len(receipt.invariants), 5)
+        self.assertEqual(len(receipt.invariants), 7)
         self.assertFalse(receipt.audit_replacement_claimed)
         self.assertFalse(receipt.market_truth_claimed)
         self.assertTrue(receipt.proof_boundary.startswith("Local SMT Z3 proofs"))
@@ -66,6 +78,8 @@ class TestPBMRebateFormalInvariants(unittest.TestCase):
                 "DISPUTE_ESCROW_CAP",
                 "MUTUAL_CREDIT_ZERO_SUM",
                 "FEE_ON_TRANSFER_INTEGRITY",
+                "TREASURY_BUCKET_CONSERVATION",
+                "PATIENT_FUND_RECYCLE_SINK_BOUND",
             },
         )
 

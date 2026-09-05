@@ -82,7 +82,7 @@ class TestExternalA2AAdapter(unittest.TestCase):
         self.assertFalse(res.result.get("remote_execution_permitted"))
         self.assertEqual(
             res.result.get("domains_verified"),
-            ["DISPUTE_ESCROW_CAP", "FEE_ON_TRANSFER_INTEGRITY", "GROSS_NET_NON_NEGATIVE", "MUTUAL_CREDIT_ZERO_SUM", "SOLVENCY_DEBT_CONSERVATION"]
+            ["DISPUTE_ESCROW_CAP", "FEE_ON_TRANSFER_INTEGRITY", "GROSS_NET_NON_NEGATIVE", "MUTUAL_CREDIT_ZERO_SUM", "PATIENT_FUND_RECYCLE_SINK_BOUND", "SOLVENCY_DEBT_CONSERVATION", "TREASURY_BUCKET_CONSERVATION"]
         )
         self.assertGreater(res.result.get("invariant_count", 0), 0)
         solv_serialized = json.dumps(res.result, sort_keys=True)
