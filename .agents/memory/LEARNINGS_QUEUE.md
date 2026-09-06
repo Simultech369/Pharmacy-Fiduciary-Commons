@@ -21,6 +21,7 @@
 | `LRN-011` | 2026-08-26 | Heterogeneous Synergy | Bridge diverse model families and peer CLI runtimes (Codex, OpenClaude, Free-Code, Local OSS) via cryptographic A2A envelopes to prevent single-family echo chambers. | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `PENDING_REVIEW` |
 | `LRN-012` | 2026-09-05 | Codex Review Correction | Scope verifyReceipt claims to canonical payload SHA-256 digest equality; do not claim signature authenticity, issuer trust, or full envelope provenance. | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `PENDING_REVIEW` |
 | `LRN-013` | 2026-09-05 | Codex Review Correction | Label Council Subcommittee Rotation explicitly as deterministic local/simulated receipt verification with model-seat labels; do not claim live independent OSS model evaluation without live inference telemetry. | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `PENDING_REVIEW` |
+| `LRN-014` | 2026-09-06 | P3 Dependabot Triage | Reject tooling updates (e.g. Hardhat v3 ESM migration, OZ v5 structural refactors) that force massive CommonJS/Solidity refactors unless explicitly planned. Fiduciary Domain Primacy forbids tooling-driven domain rewrites. | [.agents/AGENTS.md](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/.agents/AGENTS.md) | `PENDING_REVIEW` |
 
 
 ---
