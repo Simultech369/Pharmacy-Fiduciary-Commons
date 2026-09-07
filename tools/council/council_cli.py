@@ -364,8 +364,8 @@ def handle_proof_cmd(args):
         invariants=[{"name": "non_negativity"}]
     )
     print(f"Plan ID        : {plan.plan_id}")
-    print(f"SMT Clauses    : {len(plan.smt_clauses)} formal proofs")
-    print(f"Proof Verified : {'PASSED (Z3/SMT BOUNDED)' if plan.proof_verified else 'FAILED'}")
+    print(f"SMT Clauses    : {len(plan.smt_clauses)} local check clauses")
+    print(f"Z3 Check       : {'PASSED (LOCAL SMT BOUNDED)' if plan.proof_verified else 'FAILED'}")
     print(f"Proof SHA-256  : {plan.proof_sha256[:16]}...")
 
 def handle_redteam_cmd(args):
@@ -381,7 +381,7 @@ def handle_redteam_cmd(args):
     print(f"Gate 4 Status  : {'PASSED (IMMUNE)' if summary.gate4_passed else 'FAILED'}")
 
 def handle_formal_cmd(args):
-    print_banner("Dual-Engine Lean4 & Dafny Formal Theorem Prover")
+    print_banner("Lean4 & Dafny Scaffold Boundary Reporter")
     from formal_theorem_prover_engine import FormalTheoremProverEngine
     engine = FormalTheoremProverEngine()
     
@@ -395,7 +395,9 @@ def handle_formal_cmd(args):
     cert = engine.generate_lean4_proof_certificate("nat_sum_formula", ["linarith"])
     
     print(f"Dafny Method   : {contract.method_name} -> {contract.verification_status}")
-    print(f"Lean 4 Theorem : {cert.theorem_name} -> Certificate: {cert.certificate_sha256[:16]}...")
+    print(f"Dafny Checker  : invoked={contract.checker_invoked}")
+    print(f"Lean 4 Theorem : {cert.theorem_name} -> {cert.certificate_status} ({cert.certificate_sha256[:16]}...)")
+    print(f"Lean Checker   : invoked={cert.checker_invoked}")
 
 def handle_autotune_cmd(args):
     print_banner("Council Swarm Dynamic Hyperparameter Auto-Tuner")
@@ -725,7 +727,7 @@ def main():
     red_parser.set_defaults(func=handle_redteam_cmd)
 
     # Formal command
-    formal_parser = subparsers.add_parser("formal", help="Run Lean4 & Dafny neural formal theorem prover")
+    formal_parser = subparsers.add_parser("formal", help="Report Lean4/Dafny scaffold boundaries and local Z3 checks")
     formal_parser.set_defaults(func=handle_formal_cmd)
 
     # Autotune command

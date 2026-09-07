@@ -24,7 +24,7 @@ However, the Pharmacy Fiduciary Commons is not designed to compete as "another P
 
 ### Surplus Economics: Corporate Retained vs. Socialized Commons
 * **Web2 SaaS** structures administrative fees to generate corporate profit for investors and venture capital backers.
-* **Pharmacy Fiduciary Commons** programs a socialized surplus directly into the claim pipeline. **10% of every gross claim** is automatically routed to a community-governed Patient Fund. Unclaimed epoch funds, sweeps, and dispute liquidations also flow back to this pool to support community health projects.
+* **Pharmacy Fiduciary Commons** programs a socialized surplus directly into the claim pipeline. By default, **10% of every gross claim** is routed to a community-governed Patient Fund; governance can adjust that claim share within the contract's 5%-30% range. Unclaimed epoch funds, sweeps, and dispute liquidations also flow back to this pool to support community health projects.
 
 ### Forkability & Portability: Vendor Lock-in vs. Exit Package
 * **Web2 SaaS** platforms create high switching costs and vendor lock-in through proprietary APIs and closed data formats.

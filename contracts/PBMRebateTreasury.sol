@@ -44,11 +44,11 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
  * 6. After RECALL_DELAY, unclaimed funds recalled to patientFund.
  *
  * TREASURY BUCKETS (split at deposit time):
- * - Distribution pool  - 99% - pharmacy Merkle claims draw from here.
- * - Governance reserve -  1% - council operations; EXECUTOR_ROLE access only.
+ * - Distribution pool  - default 99% - pharmacy Merkle claims draw from here.
+ * - Governance reserve - default 1% - council operations; EXECUTOR_ROLE access only.
  *
  * PATIENT FUND allocation:
- * - 10% of every gross claim (PATIENT_CLAIM_BP) -> patientFund at claim time.
+ * - Default 10% of every gross claim (patientClaimBP) -> patientFund at claim time.
  * - All unclaimed epoch funds after RECALL_DELAY -> patientFund.
  * - Non-payout token sweeps -> patientFund.
  * - Patient fund is NOT funded at deposit time - allocation is claim-aligned.
@@ -172,10 +172,10 @@ contract PBMRebateTreasury is
     uint256 private constant MAX_PATIENT_CLAIM_BP = 3_000;
     uint256 private constant MAX_GOVERNANCE_BP = 500;
 
-    /// @notice Governance reserve taken at deposit time (1%).
+    /// @notice Governance reserve taken at deposit time (default 1%, capped at 5%).
     uint256 public governanceBP = 100;
 
-    /// @notice Patient share taken from gross claim amount at claim time (10%).
+    /// @notice Patient share taken from gross claim amount at claim time (default 10%, range 5%-30%).
     ///         Draws from distributionPool. patientFund receives this on every claim.
     uint256 public patientClaimBP = 1_000;
 
@@ -202,7 +202,7 @@ contract PBMRebateTreasury is
     /// @notice The ERC-20 payout token (DAI or USDC).
     IERC20  public immutable token;
 
-    /// @notice Receives 10% of every gross claim and all unclaimed recalled funds.
+    /// @notice Receives the configured share of every gross claim and all unclaimed recalled funds.
     ///         Funds free/low-cost drug access for patients in need.
     ///         NOT funded at deposit time - allocation is claim-aligned.
     address public immutable patientFund;
@@ -539,10 +539,10 @@ contract PBMRebateTreasury is
      * @dev    Anyone may deposit - a PBM settlement, a DAO contribution, a grant.
      *         Every deposit is permanently logged on-chain with caller and source string.
      *         Funds split at deposit time into two buckets:
-     *         99% -> distributionPool (pharmacy Merkle claims)
-     *          1% -> governanceReserve (council operations)
+     *         default 99% -> distributionPool (pharmacy Merkle claims)
+     *         default  1% -> governanceReserve (council operations)
      *
-     *         Patient fund is NOT funded at deposit time. It receives 10% of every
+     *         Patient fund is NOT funded at deposit time. It receives the configured share of every
      *         gross claim at claim time, and all unclaimed recalled funds. This keeps
      *         the deposit event clean - the full deposited amount is visible as
      *         entering the system, with deductions occurring only at verified distribution.
@@ -724,7 +724,7 @@ contract PBMRebateTreasury is
      * @dev    Leaf: keccak256(keccak256(abi.encodePacked(msg.sender, amount, eligibleCap)))
      *         `amount`      - gross allocation this epoch.
      *         `eligibleCap` - per-pharmacy maximum; enforced on-chain.
-     *         Claimant receives amount * 90%. Patient fund receives 10%.
+     *         Claimant receives amount minus the current patient share.
      *         Draws from the current epoch's confirmed escrow - not from the raw contract balance.
      *
      * @param amount      Gross allocated amount.
@@ -777,9 +777,10 @@ contract PBMRebateTreasury is
         if (alreadyClaimed + amount > eligibleCap) revert PharmacyCapExceeded();
 
         uint256 newVolume = epochVolume + amount;
+        uint256 newRootClaimed = epochRootClaimedTotal[epoch] + amount;
         if (newVolume > dailyVolumeCap)        revert DailyCapExceeded();
         if (newVolume > hardAbsoluteVolumeCap) revert HardCapExceeded();
-        if (newVolume > epochRootTotal[epoch]) revert RootTotalExceeded();
+        if (newRootClaimed > epochRootTotal[epoch]) revert RootTotalExceeded();
         if (epochEscrow[epoch] < amount)       revert DistributionPoolDepleted();
 
         // Effects
@@ -787,7 +788,7 @@ contract PBMRebateTreasury is
         pharmacyClaimedThisEpoch[epoch][claimant] += amount;
         epochVolume                                 = newVolume;
         epochClaimedTotal[epoch]                  += amount;
-        epochRootClaimedTotal[epoch]              += amount;
+        epochRootClaimedTotal[epoch]               = newRootClaimed;
         epochEscrow[epoch]                         -= amount;
         totalEscrowed                              -= amount;
 
@@ -855,15 +856,16 @@ contract PBMRebateTreasury is
         if (alreadyClaimed + amount > eligibleCap) revert PharmacyCapExceeded();
 
         uint256 newVolume = epochVolume + amount;
+        uint256 newRootClaimed = epochRootClaimedTotal[epoch] + amount;
         if (newVolume > dailyVolumeCap)        revert DailyCapExceeded();
         if (newVolume > hardAbsoluteVolumeCap) revert HardCapExceeded();
-        if (newVolume > epochRootTotal[epoch]) revert RootTotalExceeded();
+        if (newRootClaimed > epochRootTotal[epoch]) revert RootTotalExceeded();
 
         hasClaimed[epoch][msg.sender]                = true;
         pharmacyClaimedThisEpoch[epoch][msg.sender] += amount;
         epochVolume                                   = newVolume;
         epochClaimedTotal[epoch]                    += amount;
-        epochRootClaimedTotal[epoch]                += amount;
+        epochRootClaimedTotal[epoch]                 = newRootClaimed;
         flaggedAmount[epoch][msg.sender]             = amount;
         disputeFlaggedTimestamp[epoch][msg.sender]   = block.timestamp;
         epochEscrow[epoch]                           -= amount;

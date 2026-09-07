@@ -71,7 +71,7 @@ class TestCouncilInteractiveREPL(unittest.TestCase):
         # 8. formal
         cont, out = self.repl.evaluate_line("formal")
         self.assertTrue(cont)
-        self.assertIn("[FORMAL NTP]", out)
+        self.assertIn("[FORMAL SCAFFOLD]", out)
 
         # 9. autotune
         cont, out = self.repl.evaluate_line("autotune")

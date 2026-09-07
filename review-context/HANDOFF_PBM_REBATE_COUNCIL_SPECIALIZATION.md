@@ -1,8 +1,10 @@
 # Specialized Council Handoff: PBM Rebate & Claims Governance Engine
 
-**Domain:** Pharmacy Benefit Manager (PBM) Claims Adjudication, Rebate Transparency, Fraud Detection, Formal Math Proofs  
-**Primary Substrates:** `council_engine` (Python) + Lean4 / SMT Z3 Formal Prover  
+**Domain:** Pharmacy Benefit Manager (PBM) Claims Adjudication, Rebate Transparency, Fraud Detection, Formal Math Proofs
+**Primary Substrates:** `council_engine` (Python) + local SMT Z3 checks plus generated Lean/Dafny-shaped scaffolds
 **Contract Version:** `CONTRACT_VERSION 4.7.0` (Sections 18, 19, 20)
+
+> **Prototype/model-scope notice:** The tokenizer, registry checks, clinical rules, settlement workflow diagram, and Lean/Dafny references below describe proposed or modeled review surfaces unless a live integration and captured verifier receipt are cited. Public-safe proof language remains: SMT-encoded arithmetic invariants passed local Z3 UNSAT-negation checks.
 
 ---
 
@@ -11,7 +13,7 @@
 ```mermaid
 graph TD
     A["Raw Pharmacy Prescription Claims"] --> B["HIPAA Safe Harbor & Air-Gap Tokenizer"]
-    B -->|Sanitized Claims| C["PBM Fraud Detector & Anomaly Sentry"]
+        B -->|Modeled/Sanitized Claims| C["PBM Fraud Detector & Anomaly Sentry"]
     
     subgraph Pre-Pay Fraud & Invariant Sentries
         C -->|Check 1| D1["Benford's Law First-Digit Analysis"]
@@ -27,7 +29,7 @@ graph TD
     
     subgraph Formal Verification & SMT Bounds
         E --> F["Formal Theorem Prover: Lean 4 / Dafny / Z3"]
-        F -->|Proof Verified: R_net >= 0| G["Decimal 18.6 Rebate Engine"]
+        F -->|Local Z3 check under assumptions| G["Decimal 18.6 Rebate Engine"]
     end
     
     G --> H["Quarterly Manufacturer Rebates & Pass-Through Accounting"]
@@ -39,14 +41,14 @@ graph TD
 ## 2. Council Best Practices & Operating Principles
 
 1. **Mathematical Invariant Bounds**:
-   * Formally verify that net manufacturer rebate cannot be negative after administrative fee deduction:
+   * Check the modeled net manufacturer rebate non-negativity invariant under local SMT assumptions:
      $$R_{\text{net}} = R_{\text{gross}} - F_{\text{admin}} \ge 0$$
-   * Invariant verified via `FormalTheoremProverEngine` using SMT Z3 constraint solvers and Lean4 theorem skeletons before financial claim settlement.
+   * The current reviewed evidence is local Z3 UNSAT-negation checking where the solver is invoked. Lean/Dafny-shaped outputs are generated scaffolds unless independent checker execution is captured.
    * Decimal arithmetic uses `Decimal(18, 6)` Banker's Rounding (`ROUND_HALF_EVEN`) to eliminate floating-point drift.
 
 2. **Duplicate Discount & 340B Governance**:
-   * Cross-checks NDC/NPI claims against Medicaid Drug Rebate Programs (MDRP) and 340B Covered Entity registries (HRSA Office of Pharmacy Affairs).
-   * Prevents statutory double-dipping where manufacturers are improperly invoiced for both 340B ceiling prices and commercial rebates on the same dispensation.
+   * Proposed cross-checks would compare NDC/NPI claims against Medicaid Drug Rebate Programs (MDRP) and 340B Covered Entity registries (HRSA Office of Pharmacy Affairs).
+   * This handoff does not establish live registry integration or statutory double-dipping detection.
 
 3. **Statistical Anomaly Sentries & Benford's Law**:
    * Runs Benford's Law distribution tests on claim billing amounts:

@@ -1,5 +1,7 @@
 # Antigravity to Codex (5.5) Handoff Brief
 
+> **Historical/superseded artifact.** This handoff records an older Antigravity/Codex transition and is not current repo state. Re-run `git status`, `git rev-parse HEAD`, and the relevant verification commands before treating any branch, commit, model-capability, or test-count claim below as live evidence.
+
 > **Data Freshness Tag**: `[dirty working tree]` — Antigravity has executed Phase 0 documentation reorganization and model capability prober integration. Full Hardhat suite verified passing.
 
 ---
@@ -26,8 +28,8 @@
 
 2. **Model Capability Matrix & OpenRouter Slug Prober**:
    - Created `scripts/probe_openrouter_free_slugs.py`.
-   - Generated `reviews/provider_capability_matrix.json` (tracked) and `reviews/provider_capability_matrix.md` (formatted with clean `[YES]` / `[NO]` text indicators to prevent Windows console encoding issues).
-   - Proven: `openrouter/free` and `qwen2.5-coder:7b` (local Ollama) are active and review-usable; legacy slugs (`deepseek/deepseek-r1:free`) are quarantined due to 404/paid requirements.
+   - Generated point-in-time `reviews/provider_capability_matrix.json` (tracked) and `reviews/provider_capability_matrix.md` (formatted with clean `[YES]` / `[NO]` text indicators to prevent Windows console encoding issues).
+   - Observed at that time: `openrouter/free` and `qwen2.5-coder:7b` (local Ollama) were active and review-usable; legacy slugs (`deepseek/deepseek-r1:free`) were quarantined due to 404/paid requirements. Re-probe before relying on current availability.
 
 3. **`.gitignore` Hardening**:
    - Cleaned up duplicate lines (`reviews/slither-report.json`).
@@ -36,6 +38,8 @@
 ---
 
 ## 3. Recommended Codex (5.5) Next Actions
+
+> The commands in this section are preserved as historical instructions from that handoff, not recommended live commands for the current checkout.
 
 ### Step 1: Commit Reconciled Working Tree (Level 3 Gate)
 - Commit dirty working tree on `feature/db-proxy` so the docs reorg, capability prober, provider matrix receipts, harness updates, and handoffs become a single clean committed checkpoint:

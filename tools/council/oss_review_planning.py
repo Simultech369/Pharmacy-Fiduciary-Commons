@@ -7,13 +7,22 @@ from log_derived_context_engine import LogDerivedContextEngine
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
 
+ROUTING_POLICY_BLOCK = """
+### ROUTING POLICY
+- Route by capability, not by aspirational name.
+- Use the best available model on this surface.
+- If the preferred model is unavailable, choose the best supported fallback and record the downgrade reason.
+- Do not hardcode a model name unless this surface has explicitly confirmed it.
+- Keep user intent, selected surface, selected model, and downgrade reason aligned to the same live capability registry.
+"""
+
 ARCHITECTURE_SUMMARY = """
 ### SUMMARY OF PLANNING & ARCHITECTURE DECISIONS (MODULES 1 - 4)
 
 1. THREE PROJECT LENSES:
    - Lens 1: Bounties (Exploit discovery, SWE-bench, PoC reversal in container sandbox with exit code 0).
    - Lens 2: PBM Rebate (Healthcare analytics, strict PHI air-gap LOCAL_ONLY/ZDR, deterministic financial math ledger).
-   - Lens 3: Dizzy/Clawd (Autonomous terminal coding agent, MCP tool calling, prompt caching, low-latency streaming).
+   - Lens 3: Capability-matched reasoning surface selected by the live registry (autonomous terminal coding agent, MCP tool calling, prompt caching, low-latency streaming remain surface-dependent, not guaranteed).
 
 2. 11-RECEIPT DUAL-CHAIN CRYPTOGRAPHIC ENGINE:
    - Immutable Pydantic v2 receipts (frozen=True, extra="forbid", SHA-256 payload and envelope hashing).
@@ -33,7 +42,7 @@ ARCHITECTURE_SUMMARY = """
    - 6-drill fixture set: Authority shifts, stale memory conflicts, routing contradictions, comment injections.
 
 5. DRIVER CAPABILITY REGISTRY & RUNTIME STREAM:
-   - ProviderCapabilityRecord: Fail-closed capability registry (unavailable = deny).
+   - ProviderCapabilityRecord: Fail-closed capability registry (unavailable = deny); backend routing, frontend labels, and prompt copy stay aligned to the same live registry.
    - NDJSON/SSE Event Stream for lifecycle observability.
    - Approval Cards for risky actions (patch apply, paid apex calls).
 """
@@ -41,6 +50,7 @@ ARCHITECTURE_SUMMARY = """
 def query_oss_reviewer(model: str, role_lens: str, prompt_focus: str) -> Dict[str, Any]:
     prompt = (
         f"You are a specialized AI system architecture reviewer ({role_lens}).\n"
+        f"{ROUTING_POLICY_BLOCK}\n"
         f"Review the following multi-agent system design decisions:\n\n"
         f"{ARCHITECTURE_SUMMARY}\n\n"
         f"Focus specifically on: {prompt_focus}.\n"

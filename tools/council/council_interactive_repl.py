@@ -63,7 +63,7 @@ class CouncilInteractiveREPL:
             "  - qualify     : Evaluate 5-Gate model statistical qualification (F1 >= 0.90)",
             "  - proof       : Run P3 neuro-symbolic joint program & proof planner",
             "  - redteam     : Execute 20-vector adversarial red-team exploit matrix",
-            "  - formal      : Run Lean 4 & Dafny neural theorem prover & CEGIS engine",
+            "  - formal      : Report generated Lean 4 & Dafny scaffold boundaries",
             "  - autotune    : Calibrate Council seat hyperparameters via AST entropy",
             "  - jury        : Run cross-model heterogeneous jury deliberation",
             "  - pipeline    : Execute Master End-to-End 6-Stage Governance Pipeline",
@@ -137,7 +137,7 @@ class CouncilInteractiveREPL:
             from formal_theorem_prover_engine import FormalTheoremProverEngine
             prover = FormalTheoremProverEngine()
             cert = prover.generate_lean4_proof_certificate("repl_thm", ["n : Nat"])
-            return True, f"[FORMAL NTP] Lean 4 Theorem Proved: {cert.theorem_name} | Verified: {cert.kernel_typecheck_verified}"
+            return True, f"[FORMAL SCAFFOLD] Lean 4 theorem scaffold: {cert.theorem_name} | Checker Invoked: {cert.checker_invoked} | Status: {cert.certificate_status}"
 
         elif cmd == "autotune":
             from council_swarm_autotuner import CouncilSwarmAutoTuner

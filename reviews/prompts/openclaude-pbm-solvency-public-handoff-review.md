@@ -1,3 +1,11 @@
+Routing policy:
+- Route by capability, not by aspirational name.
+- Use the best available model on this surface.
+- If the preferred model is unavailable, choose the best supported fallback and record the downgrade reason.
+- Do not hardcode a model name unless this surface has explicitly confirmed it.
+- Keep user intent, selected surface, selected model, and downgrade reason together in the receipt.
+- Canonical reference: `review-context/SURFACE_CAPABILITY_ROUTING_SPEC.md`
+
 Work in:
 
 C:\Users\Josh\Desktop\PBMRebateTreasuryFinal

@@ -20,6 +20,15 @@ from council_contracts import (
 from council_verifier import CouncilReceiptVerifier
 from governance_rules import INITIAL_FORMAL_RULES
 
+ROUTING_POLICY_BLOCK = """## Routing Policy
+- Route by capability, not by aspirational name.
+- Use the best available model on this surface.
+- If the preferred model is unavailable, choose the best supported fallback and record the downgrade reason.
+- Do not hardcode a model name unless this surface has explicitly confirmed it.
+- Keep user intent, selected surface, selected model, and downgrade reason together in the receipt.
+- Canonical reference: `review-context/SURFACE_CAPABILITY_ROUTING_SPEC.md`
+"""
+
 class HandoffReconciliationDaemon:
     """
     Continuous state monitoring, delta auditing, and handoff packager
@@ -72,6 +81,7 @@ class HandoffReconciliationDaemon:
 **Date:** {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}
 **Baseline:** {baseline_tests} Automated Tests Passing (100% Green across test discovery)
 **Contract Version:** {CONTRACT_VERSION}
+{ROUTING_POLICY_BLOCK}
 
 ## 1. Verified Delta & Assets Created
 ### Newly Created Modules:

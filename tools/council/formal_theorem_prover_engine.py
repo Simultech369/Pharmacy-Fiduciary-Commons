@@ -12,7 +12,9 @@ class DafnyMethodContract(ImmutableContract):
     ensures_clauses: List[str]
     invariants: List[str]
     decreases_clause: Optional[str] = None
-    verification_status: Literal["VERIFIED", "CEGIS_FAILED", "SYNTAX_ERROR"]
+    verification_status: Literal["GENERATED_UNVERIFIED", "CHECKER_VERIFIED", "CEGIS_FAILED", "SYNTAX_ERROR"]
+    checker_invoked: bool = False
+    verification_boundary: str = "Generated Dafny scaffold only; no Dafny verifier execution was invoked."
 
 class Lean4ProofCertificate(ImmutableContract):
     theorem_name: str
@@ -20,15 +22,18 @@ class Lean4ProofCertificate(ImmutableContract):
     tactic_script: List[str]
     proof_tree_depth: int
     kernel_typecheck_verified: bool
+    checker_invoked: bool = False
+    certificate_status: Literal["GENERATED_UNVERIFIED", "KERNEL_TYPECHECKED"] = "GENERATED_UNVERIFIED"
+    verification_boundary: str = "Generated Lean 4 tactic scaffold only; no Lean kernel execution was invoked."
     certificate_sha256: str
     verified_at: float
 
 class FormalTheoremProverEngine:
     """
-    Dual-Engine Neural Theorem Prover (NTP) & Formal Contract Synthesizer:
-    - Synthesizes Dafny method contracts and invariants with CEGIS validation.
-    - Generates Lean 4 AND-OR tactic search proofs.
-    - Emits zero-trust compiler-verifiable proof certificates.
+    Local formal scaffold and SMT helper:
+    - Runs a direct Z3 UNSAT-negation check for the rebate arithmetic helper.
+    - Generates Dafny/Lean-shaped scaffolds for review, without invoking Dafny or Lean.
+    - Emits explicit non-verified labels until checker execution evidence is captured.
     """
 
     def prove_rebate_invariant_z3(
@@ -38,8 +43,9 @@ class FormalTheoremProverEngine:
         admin_fee_pct: float
     ) -> Tuple[bool, Optional[str]]:
         """
-        Uses SMT Z3 to formally prove that the net manufacturer rebate is non-negative 
-        after administrative fees are deducted across all possible bounds.
+        Uses a local Z3 UNSAT-negation check for the modeled net manufacturer
+        rebate non-negativity invariant after administrative fees are deducted
+        across the supplied bounds.
         R_net = R_gross - F_admin >= 0
         """
         import z3
@@ -67,7 +73,7 @@ class FormalTheoremProverEngine:
         result = solver.check()
         
         if result == z3.unsat:
-            # UNSAT means no counterexample exists, the invariant is strictly proved.
+            # UNSAT means no counterexample exists under the encoded assumptions.
             return True, None
         elif result == z3.sat:
             # SAT means a counterexample exists where net rebate becomes negative
@@ -85,15 +91,15 @@ class FormalTheoremProverEngine:
         preconditions: List[str],
         postconditions: List[str]
     ) -> DafnyMethodContract:
-        """Synthesizes a formally verified Dafny method contract with loop invariants."""
+        """Synthesizes an unverified Dafny-shaped method contract scaffold."""
         invariants = [
             "0 <= i <= n",
             "sum == (i * (i + 1)) / 2"
         ]
         
-        # Verify precondition non-vacuity and contract consistency
+        # Lightweight scaffold sanity only. This is not Dafny verifier evidence.
         valid = (len(parameters) > 0 and len(returns) > 0)
-        status: Literal["VERIFIED", "CEGIS_FAILED", "SYNTAX_ERROR"] = "VERIFIED" if valid else "CEGIS_FAILED"
+        status: Literal["GENERATED_UNVERIFIED", "CHECKER_VERIFIED", "CEGIS_FAILED", "SYNTAX_ERROR"] = "GENERATED_UNVERIFIED" if valid else "CEGIS_FAILED"
 
         return DafnyMethodContract(
             method_name=method_name,
@@ -103,7 +109,8 @@ class FormalTheoremProverEngine:
             ensures_clauses=postconditions,
             invariants=invariants,
             decreases_clause="n - i",
-            verification_status=status
+            verification_status=status,
+            checker_invoked=False
         )
 
     def generate_lean4_proof_certificate(
@@ -111,7 +118,7 @@ class FormalTheoremProverEngine:
         theorem_name: str,
         premises: List[str]
     ) -> Lean4ProofCertificate:
-        """Explores Lean 4 AND-OR tactic tree and synthesizes proof certificate."""
+        """Generates an unverified Lean 4 tactic scaffold and content hash."""
         tactics = [
             "intro h1 h2",
             "induction n with",
@@ -129,7 +136,9 @@ class FormalTheoremProverEngine:
             premises_used=premises,
             tactic_script=tactics,
             proof_tree_depth=len(tactics),
-            kernel_typecheck_verified=True,
+            kernel_typecheck_verified=False,
+            checker_invoked=False,
+            certificate_status="GENERATED_UNVERIFIED",
             certificate_sha256=cert_sha,
             verified_at=time.time()
         )

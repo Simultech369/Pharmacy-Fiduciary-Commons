@@ -1,6 +1,7 @@
 # Provider & Model Capability Matrix
 
 > **Generated at**: 2026-08-16T13:39:53.015362+00:00
+> **Scope:** Point-in-time observations only. This matrix is not a current model-availability guarantee; re-run the provider prober before using it as live routing evidence.
 
 | Provider | Model ID | Reachable | Callable | JSON Valid | Quality Valid | Usability Status |
 |:---|:---|:---:|:---:|:---:|:---:|:---|

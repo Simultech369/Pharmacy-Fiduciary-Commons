@@ -40,7 +40,7 @@ For this repo, that means:
 | Query expansion and rewriting | Small deterministic PBM synonym expansion in `scripts/dossier_rag_retrieval.py`. | No LLM query rewrite, ambiguity classifier, or learned expansion model. | Add fixed ambiguity fixtures first; avoid model-based rewriting until adversarial no-hit tests are strong. |
 | Citation grounding | Local line-anchored citations and JSON output with `source_url`, `section_title`, and line range. | No answer generator validates that every sentence is supported by cited passages. | Add a citation-grounding checker if generated answers are introduced. |
 | Retrieval metrics | `scripts/eval_dossier_rag.py` reports hit rate@5, MRR, NDCG@5, and no-hit accuracy. | Golden set is small and local-doc-only. | Grow the golden set; keep thresholds modest until coverage broadens. |
-| Cost-optimized model router | Review router metadata and provider receipts exist in `reviews/*-router-metadata.json`. | No live cost/latency/quality router, spend budget, model fallback policy, or per-request accounting. | Keep as review-only until provider credentials, disclosure class, and cost ceilings are explicit. |
+| Cost-optimized model router | Review router metadata and provider receipts exist in `reviews/*-router-metadata.json`. | No live cost/latency/quality router, capability-registry-backed fallback policy, or per-request accounting. | Keep as review-only until provider credentials, disclosure class, and live capability checks are explicit. |
 | Multi-agent research system | Review packet compiler, PageIndex, observability dashboard, and external reviewer lanes exist. | No autonomous merge, no multi-agent supervisor, no durable task queue, and no model output as truth. | Preserve the human-gated council pattern; add structural effects only to reject/quarantine handoffs, not to act on-chain. |
 | Automated eval harness | Strong for contracts and control surfaces: Hardhat, frontend linter, PageIndex, constitutional rubric, observability gate, and local RAG eval. | Not a general DeepEval/RAGAS/LangSmith setup. | Add only evals tied to active repo claims. |
 | Real-time observability | Local receipts, summary JSON, and benchmark reports. | No OpenTelemetry, Prometheus, Grafana, alerting, or hosted tracing. | Keep local JSON receipts until there is a real service boundary. |
@@ -83,6 +83,8 @@ The 45-model roster in `review-context/SWARM_ROSTER_40_MODELS.md` is a planning 
 - cost and rate-limit ceiling;
 - receipt metadata;
 - output reconciliation against local evidence.
+
+Route by capability, not by aspirational name. For the canonical surface wording, use `review-context/SURFACE_CAPABILITY_ROUTING_SPEC.md`. Model names in this repo are surface-local labels; the selected model and downgrade reason belong in the receipt, not in wishful prompt copy.
 
 ## 2026-08-24 LLM Engineering Roadmap Reconciliation
 

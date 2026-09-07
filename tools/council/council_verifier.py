@@ -1,15 +1,16 @@
 import hashlib
+import json
 import math
 import os
 import re
 import time
-from typing import Optional, List, Dict, Type, Set, Tuple
+from typing import Any, Optional, List, Dict, Type, Set, Tuple
 from council_contracts import (
     CONTRACT_VERSION, ImmutableContract, ReceiptEnvelope, SnapshotReceipt,
     PacketSensitivityReceipt, RouteAttestationReceipt, ModelQualificationReceipt,
     PaidBudgetReservationReceipt, ModelInvocationReceipt, CouncilRosterReceipt,
     CouncilVoteReceipt, PatchReceipt, ExecutionSandboxReceipt, HumanApprovalReceipt,
-    ApplyAuthorizationReceipt
+    ApplyAuthorizationReceipt, ReviewHopTraceReceipt
 )
 from human_approval import ApprovalAuthenticator, DenyAllApprovalAuthenticator
 
@@ -36,6 +37,85 @@ class CouncilReceiptVerifier:
         expected_envelope_digest = hashlib.sha256(expected_envelope_data.encode("utf-8")).hexdigest()
         if envelope.envelope_sha256 != expected_envelope_digest:
             raise VerificationError(f"Envelope digest corrupted for {envelope.receipt_type}")
+        if expected_type is ReviewHopTraceReceipt:
+            cls.verify_review_hop_trace(envelope)
+
+    @staticmethod
+    def _sha256_json(value: Any) -> str:
+        payload = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _is_sha256(value: str) -> bool:
+        return isinstance(value, str) and bool(re.fullmatch(r"[0-9a-f]{64}", value))
+
+    @classmethod
+    def verify_review_hop_trace(cls, envelope: ReceiptEnvelope[ReviewHopTraceReceipt]) -> None:
+        receipt = envelope.payload
+
+        if receipt.provenance_only is not True:
+            raise VerificationError("Review hop trace must be provenance-only")
+        if receipt.remote_execution_permitted is not False:
+            raise VerificationError("Review hop trace cannot permit remote execution")
+        if receipt.production_execution_claimed is not False:
+            raise VerificationError("Review hop trace cannot claim production execution")
+        if receipt.audit_replacement_claimed is not False:
+            raise VerificationError("Review hop trace cannot claim audit replacement")
+        if receipt.git_observation_status == "UNAVAILABLE" and receipt.dirty_files != ["UNKNOWN_GIT_STATUS"]:
+            raise VerificationError("Unavailable Git observations must fail closed with UNKNOWN_GIT_STATUS")
+        if receipt.isolation_mode == "LOCAL_SUBPROCESS_MOCK" and receipt.network_isolated:
+            raise VerificationError("LOCAL_SUBPROCESS_MOCK cannot claim network isolation")
+        if receipt.isolation_mode == "READ_ONLY_NO_EXECUTION" and any(cmd.executed for cmd in receipt.commands):
+            raise VerificationError("READ_ONLY_NO_EXECUTION cannot include executed command records")
+        if receipt.isolation_mode == "DOCKER_CONTAINER_ENFORCED":
+            raise VerificationError("ReviewHopTraceReceipt lacks a linked sandbox receipt for DOCKER_CONTAINER_ENFORCED")
+
+        for field_name in (
+            "reviewed_content_sha256",
+            "toolchain_manifest_sha256",
+            "input_payload_sha256",
+            "output_payload_sha256",
+            "command_manifest_sha256",
+            "execution_environment_hash_sha256",
+        ):
+            if not cls._is_sha256(getattr(receipt, field_name)):
+                raise VerificationError(f"Review hop trace field {field_name} is not a canonical sha256 digest")
+
+        expected_command_manifest = cls._sha256_json([cmd.model_dump() for cmd in receipt.commands])
+        if receipt.command_manifest_sha256 != expected_command_manifest:
+            raise VerificationError("Review hop command manifest hash mismatch")
+
+        for cmd in receipt.commands:
+            expected_cmd_sha = cls._sha256_json([str(part) for part in cmd.command_argv])
+            if cmd.command_sha256 != expected_cmd_sha:
+                raise VerificationError("Review hop command argv hash mismatch")
+            if not cmd.executed:
+                if any(value is not None for value in (cmd.exit_code, cmd.stdout_sha256, cmd.stderr_sha256, cmd.duration_sec)):
+                    raise VerificationError("Non-executed review hop command contains execution artifacts")
+            else:
+                if cmd.exit_code is None:
+                    raise VerificationError("Executed review hop command missing exit_code")
+                if cmd.duration_sec is not None and cmd.duration_sec < 0:
+                    raise VerificationError("Review hop command duration cannot be negative")
+                if cmd.stdout_sha256 is not None and not cls._is_sha256(cmd.stdout_sha256):
+                    raise VerificationError("Review hop stdout digest is not canonical sha256")
+                if cmd.stderr_sha256 is not None and not cls._is_sha256(cmd.stderr_sha256):
+                    raise VerificationError("Review hop stderr digest is not canonical sha256")
+
+        expected_environment_hash = cls._sha256_json({
+            "git_head_commit": receipt.git_head_commit,
+            "git_branch": receipt.git_branch,
+            "git_observation_status": receipt.git_observation_status,
+            "working_tree_dirty": receipt.working_tree_dirty,
+            "dirty_files": receipt.dirty_files,
+            "reviewed_content_sha256": receipt.reviewed_content_sha256,
+            "command_manifest_sha256": receipt.command_manifest_sha256,
+            "toolchain_manifest_sha256": receipt.toolchain_manifest_sha256,
+            "isolation_mode": receipt.isolation_mode,
+            "network_isolated": receipt.network_isolated,
+        })
+        if receipt.execution_environment_hash_sha256 != expected_environment_hash:
+            raise VerificationError("Review hop execution environment hash mismatch")
 
     @staticmethod
     def parse_and_sanitize_patch(raw_patch_bytes: bytes) -> Tuple[Set[str], int]:

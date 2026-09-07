@@ -55,7 +55,7 @@ print("MULTILINGUAL_AST_VERIFIED")
     expect(output).to.include("MULTILINGUAL_AST_VERIFIED");
   });
 
-  it("verifies FormalTheoremProverEngine synthesizes Dafny method contracts and Lean 4 certificates", () => {
+  it("verifies FormalTheoremProverEngine labels Dafny and Lean scaffolds as unverified", () => {
     const script = `
 import sys, os
 sys.path.insert(0, os.path.join(r"${repoRoot}", "tools", "council"))
@@ -72,7 +72,8 @@ dafny = prover.synthesize_dafny_contract(
 )
 assert isinstance(dafny, DafnyMethodContract)
 assert dafny.method_name == "SumFirstN"
-assert dafny.verification_status == "VERIFIED"
+assert dafny.verification_status == "GENERATED_UNVERIFIED"
+assert dafny.checker_invoked is False
 assert len(dafny.invariants) >= 1
 
 lean = prover.generate_lean4_proof_certificate(
@@ -81,13 +82,15 @@ lean = prover.generate_lean4_proof_certificate(
 )
 assert isinstance(lean, Lean4ProofCertificate)
 assert lean.theorem_name == "solvency_non_negative"
-assert lean.kernel_typecheck_verified is True
+assert lean.kernel_typecheck_verified is False
+assert lean.checker_invoked is False
+assert lean.certificate_status == "GENERATED_UNVERIFIED"
 assert len(lean.certificate_sha256) == 64
 
-print("FORMAL_PROVER_VERIFIED")
+print("FORMAL_SCAFFOLD_BOUNDARY_VERIFIED")
 `;
     const output = runPython(script);
-    expect(output).to.include("FORMAL_PROVER_VERIFIED");
+    expect(output).to.include("FORMAL_SCAFFOLD_BOUNDARY_VERIFIED");
   });
 
   it("verifies NeuroSymbolicProofPlanner generates joint program plans and evaluates SMT assertions", () => {
@@ -169,4 +172,3 @@ print("RLVR_DATASET_EXPORTER_VERIFIED")
     expect(output).to.include("RLVR_DATASET_EXPORTER_VERIFIED");
   });
 });
-

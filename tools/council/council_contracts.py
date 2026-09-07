@@ -262,6 +262,46 @@ class ExecutionSandboxReceipt(ImmutableContract):
     duration_sec: float
 
 
+# --- 12b. Review-Hop Trace Receipts ---
+
+class ReviewHopCommandRecord(ImmutableContract):
+    command_argv: List[str]
+    command_sha256: str
+    executed: bool
+    exit_code: Optional[int] = None
+    stdout_sha256: Optional[str] = None
+    stderr_sha256: Optional[str] = None
+    duration_sec: Optional[float] = None
+
+
+class ReviewHopTraceReceipt(ImmutableContract):
+    trace_id: str
+    hop_id: str
+    source_agent_id: str
+    target_agent_id: str
+    hop_kind: Literal["A2A_HANDOFF", "REVIEW_DISPOSITION", "LOCAL_GATE", "ATTESTATION_QUERY"]
+    git_head_commit: str
+    git_branch: str
+    git_observation_status: Literal["OBSERVED", "UNAVAILABLE"]
+    working_tree_dirty: bool
+    dirty_files: List[str]
+    reviewed_content_sha256: str
+    toolchain_manifest_sha256: str
+    input_payload_sha256: str
+    output_payload_sha256: str
+    command_manifest_sha256: str
+    commands: List[ReviewHopCommandRecord]
+    isolation_mode: Literal["READ_ONLY_NO_EXECUTION", "LOCAL_SUBPROCESS_MOCK", "DOCKER_CONTAINER_ENFORCED"]
+    network_isolated: bool
+    execution_environment_hash_sha256: str
+    provenance_only: Literal[True] = True
+    remote_execution_permitted: Literal[False] = False
+    production_execution_claimed: Literal[False] = False
+    audit_replacement_claimed: Literal[False] = False
+    proof_boundary: str
+    traced_at: float = Field(default_factory=time.time)
+
+
 # --- 13. External Human Approval & Apply Authorization Receipts ---
 
 class HumanApprovalReceipt(ImmutableContract):
@@ -603,7 +643,5 @@ class HandoffBundleReceipt(ImmutableContract):
     receipt_chain_tail_sha256: str
     reconciliation_clean: bool
     sealed_at: float = Field(default_factory=time.time)
-
-
 
 

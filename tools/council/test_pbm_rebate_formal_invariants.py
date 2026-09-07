@@ -27,6 +27,10 @@ class TestPBMRebateFormalInvariants(unittest.TestCase):
         self.assertEqual(len(proofs), 1)
         self.assertEqual(proofs[0].solver_status, "PROVED")
         self.assertIsNone(proofs[0].counterexample)
+        self.assertTrue(
+            any("d_new == d_out" in assumption for assumption in proofs[0].assumptions),
+            "SMT debt model must track the Solidity current-outstanding-shortfall transition",
+        )
 
     def test_dispute_escrow_cap_monotonicity(self):
         proofs = self.engine.prove_dispute_escrow_cap_monotonicity()

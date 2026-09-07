@@ -8,12 +8,34 @@ import json
 import re
 import time
 from typing import Dict, Any, List, Optional, Tuple, Literal, Set
-from council_contracts import ImmutableContract, A2AMessage
+from council_contracts import CONTRACT_VERSION, ImmutableContract, A2AMessage, ReceiptEnvelope, ReviewHopTraceReceipt
+from council_verifier import CouncilReceiptVerifier, VerificationError
+from lifecycle_hooks import sanitize_untrusted_text
 
 # Sensitive pattern regular expressions for redaction
-PRIVATE_PATH_REGEX = re.compile(r"([A-Za-z]:\\[^\s\"'>]+|/(?:Users|home|root|var|tmp)/[^\s\"'>]+)")
-PRIVATE_KEY_REGEX = re.compile(r"(?:private_key|secret|password|bearer\s+[A-Za-z0-9_\-\.]+)", re.IGNORECASE)
-PHI_PII_REGEX = re.compile(r"\b(?:\d{3}-\d{2}-\d{4}|\b\d{10}\b(?=.*(?:ssn|npi|patient|dob)))\b", re.IGNORECASE)
+PRIVATE_PATH_REGEX = re.compile(
+    r"([A-Za-z]:\\[^\r\n\"'<>]+|/(?:Users|home|root|var|tmp)/[^\r\n\"'<>]+)"
+)
+PRIVATE_KEY_REGEX = re.compile(
+    r"(?:(?:private[_-]?key|secret(?:[_-]?token|[_-]?key)?|password|api[_-]?key)\s*[:=]\s*[^\s,\"'}]+|"
+    r"\b(?:private[_-]?key|secret(?:[_-]?token|[_-]?key)?|password|api[_-]?key)\b|"
+    r"\bbearer\s+[A-Za-z0-9_\-\.]+)",
+    re.IGNORECASE,
+)
+PHI_PII_REGEX = re.compile(
+    r"\b\d{3}-\d{2}-\d{4}\b|"
+    r"\b(?:ssn|npi|patient|dob)\b[^\r\n\d]{0,32}\b\d{10}\b|"
+    r"\b\d{10}\b[^\r\n]{0,32}\b(?:ssn|npi|patient|dob)\b",
+    re.IGNORECASE,
+)
+MARKDOWN_COMMENT_REGEX = re.compile(r"<!--[\s\S]*?-->")
+CHAT_TEMPLATE_REGEX = re.compile(r"<\|(?:im_start|im_end|system|user|assistant)\|>", re.IGNORECASE)
+INSTRUCTION_OVERRIDE_REGEX = re.compile(
+    r"(?i)(ignore\s+(all\s+)?(rules|directives|instructions)|"
+    r"system\s*override|bypass\s+gate\s+0|developer\s*:|system\s*:)"
+)
+SAFE_EXTERNAL_KEY_REGEX = re.compile(r"^[A-Za-z_][A-Za-z0-9_.:-]{0,63}$")
+MAX_EXTERNAL_STRING_CHARS = 4096
 
 class AgentCard(ImmutableContract):
     """
@@ -95,9 +117,10 @@ class ExternalA2AAdapter:
         if isinstance(data, dict):
             sanitized = {}
             for k, v in data.items():
-                if PRIVATE_KEY_REGEX.search(str(k)):
-                    continue  # Strip secret keys
-                sanitized[k] = cls.sanitize_external_payload(v)
+                key = str(k)
+                if cls._is_unsafe_external_key(key):
+                    continue
+                sanitized[key] = cls.sanitize_external_payload(v)
             return sanitized
         elif isinstance(data, list):
             return [cls.sanitize_external_payload(item) for item in data]
@@ -106,9 +129,30 @@ class ExternalA2AAdapter:
             redacted = PRIVATE_PATH_REGEX.sub("[REDACTED_LOCAL_PATH]", data)
             # Redact secret phrases
             redacted = PRIVATE_KEY_REGEX.sub("[REDACTED_SECRET]", redacted)
+            # Redact direct PHI/PII patterns and strip obvious instruction payloads.
+            redacted = PHI_PII_REGEX.sub("[REDACTED_PHI_PII]", redacted)
+            redacted = MARKDOWN_COMMENT_REGEX.sub("[REMOVED_UNTRUSTED_COMMENT]", redacted)
+            if CHAT_TEMPLATE_REGEX.search(redacted):
+                redacted = "[REMOVED_UNTRUSTED_INSTRUCTION]"
+            redacted, _ = sanitize_untrusted_text(redacted)
+            redacted = INSTRUCTION_OVERRIDE_REGEX.sub("[REMOVED_UNTRUSTED_INSTRUCTION]", redacted)
+            if len(redacted) > MAX_EXTERNAL_STRING_CHARS:
+                redacted = redacted[:MAX_EXTERNAL_STRING_CHARS] + "[TRUNCATED]"
             return redacted
         else:
             return data
+
+    @classmethod
+    def _is_unsafe_external_key(cls, key: str) -> bool:
+        if not SAFE_EXTERNAL_KEY_REGEX.fullmatch(key):
+            return True
+        return any(regex.search(key) for regex in (
+            PRIVATE_PATH_REGEX,
+            PRIVATE_KEY_REGEX,
+            PHI_PII_REGEX,
+            CHAT_TEMPLATE_REGEX,
+            INSTRUCTION_OVERRIDE_REGEX,
+        ))
 
     @classmethod
     def to_jsonrpc_request(cls, message: A2AMessage) -> JSONRPCRequest:
@@ -178,7 +222,10 @@ class ExternalA2AAdapter:
                         "PBMRebateFormalInvariantReceipt",
                         "PBMFraudFormalInvariantReceipt",
                         "SubcommitteeConvocationReceipt",
+                        "ReviewHopTraceReceipt",
                     ],
+                    "trace_receipts_supported": True,
+                    "trace_receipt_boundary": "provenance_only_not_sandbox_or_audit_proof",
                     "read_only_mode": True,
                     "remote_execution_permitted": False,
                     "timestamp": time.time(),
@@ -218,9 +265,9 @@ class ExternalA2AAdapter:
         receipt_envelope = PBMRebateFormalInvariantEngine().prove_all()
         receipt = receipt_envelope.payload
         attestation = {
-            "attestation_status": "SOLVENT" if receipt.all_invariants_proved else "REVIEW_REQUIRED",
-            "proof_status": "PROVED" if receipt.all_invariants_proved else "REVIEW_REQUIRED",
-            "solvency_status": "CONSERVED" if receipt.all_invariants_proved else "DEFICIT_RISK",
+            "attestation_status": "ARITHMETIC_MODEL_CHECKS_PASSED" if receipt.all_invariants_proved else "REVIEW_REQUIRED",
+            "proof_status": "LOCAL_Z3_UNSAT_NEGATION_CHECKS_PASSED" if receipt.all_invariants_proved else "REVIEW_REQUIRED",
+            "runtime_solvency_status": "UNASSESSED_NO_LIVE_BALANCE_OR_LIABILITY_READ",
             "proof_suite_id": receipt.proof_suite_id,
             "proof_digest_sha256": receipt.proof_digest_sha256,
             "receipt_payload_sha256": receipt_envelope.payload_sha256,
@@ -237,23 +284,59 @@ class ExternalA2AAdapter:
 
     @classmethod
     def _verify_receipt_envelope(cls, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Verifies a receipt envelope's SHA-256 payload digest in read-only mode."""
+        """
+        Verifies checksum and known semantic constraints in read-only mode.
+
+        NON-CLAIM: this does not authenticate issuer trust, signatures, or full provenance.
+        """
         import hashlib
         envelope_data = params.get("envelope") or params.get("receipt_envelope") or params
         if not isinstance(envelope_data, dict):
             return {"verified": False, "reason": "Missing or invalid envelope object"}
         payload_data = envelope_data.get("payload")
         payload_sha256 = envelope_data.get("payload_sha256")
+        receipt_type = envelope_data.get("receipt_type")
+        contract_version = envelope_data.get("contract_version")
+        envelope_sha256 = envelope_data.get("envelope_sha256")
+        created_at = envelope_data.get("created_at")
         if not payload_data or not payload_sha256:
             return {"verified": False, "reason": "Envelope missing payload or payload_sha256"}
         computed = hashlib.sha256(
             json.dumps(payload_data, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
-        is_valid = (computed == payload_sha256)
+        payload_match = (computed == payload_sha256)
+        contract_version_match = (contract_version == CONTRACT_VERSION)
+        receipt_type_supported = isinstance(receipt_type, str) and bool(receipt_type)
+        envelope_match = False
+        if receipt_type_supported and contract_version_match and envelope_sha256 and created_at is not None:
+            expected_envelope_data = f"{CONTRACT_VERSION}:{receipt_type}:{payload_sha256}:{created_at}"
+            envelope_match = hashlib.sha256(expected_envelope_data.encode("utf-8")).hexdigest() == envelope_sha256
+
+        semantic_valid = False
+        semantic_reason = "semantic verifier unavailable for receipt type"
+        if receipt_type == "ReviewHopTraceReceipt" and payload_match and envelope_match and contract_version_match:
+            try:
+                typed_env = ReceiptEnvelope[ReviewHopTraceReceipt](**envelope_data)
+                CouncilReceiptVerifier.verify_envelope(typed_env, ReviewHopTraceReceipt)
+                semantic_valid = True
+                semantic_reason = "ReviewHopTraceReceipt semantic checks passed"
+            except (VerificationError, ValueError, TypeError) as err:
+                semantic_reason = str(err)
+        elif receipt_type != "ReviewHopTraceReceipt":
+            semantic_valid = payload_match and envelope_match and contract_version_match
+            semantic_reason = "generic envelope checksum checks passed" if semantic_valid else "generic envelope checksum checks failed"
+
+        is_valid = payload_match and envelope_match and contract_version_match and semantic_valid
         return {
             "verified": is_valid,
-            "contract_version": envelope_data.get("contract_version", "unknown"),
-            "payload_sha256_match": is_valid,
+            "contract_version": contract_version or "unknown",
+            "receipt_type": receipt_type or "unknown",
+            "payload_sha256_match": payload_match,
+            "envelope_sha256_match": envelope_match,
+            "contract_version_match": contract_version_match,
+            "semantic_valid": semantic_valid,
+            "semantic_reason": semantic_reason,
+            "authenticated_provenance": False,
             "remote_execution_permitted": False,
             "timestamp": time.time(),
         }
@@ -270,7 +353,8 @@ class ExternalA2AAdapter:
         receipt_envelope = PBMFraudFormalInvariantEngine().prove_all()
         receipt = receipt_envelope.payload
         attestation = {
-            "attestation_status": "PROVED" if receipt.all_invariants_proved else "REVIEW_REQUIRED",
+            "attestation_status": "LOCAL_Z3_AND_SCHEMA_CHECKS_PASSED" if receipt.all_invariants_proved else "REVIEW_REQUIRED",
+            "external_business_truth_status": "UNASSESSED_NO_REAL_WORLD_FRAUD_OR_REGULATORY_TRUTH_READ",
             "proof_suite_id": receipt.proof_suite_id,
             "proof_digest_sha256": receipt.proof_digest_sha256,
             "receipt_payload_sha256": receipt_envelope.payload_sha256,

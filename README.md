@@ -111,7 +111,7 @@ This repository includes an off-chain Council Engine lane for local formal check
 | Surface | What it checks | Boundary |
 |---------|----------------|----------|
 | `tools/council/pbm_fraud_formal_invariants.py` | MME hard-stop bounds, refill-too-soon timing, HHI concentration bounds, and Benford anomaly scoping | Local Python/Z3/schema proofs over project model logic only |
-| `tools/council/formal_theorem_prover_engine.py` | Non-negative rebate arithmetic and formal proof certificate exercises | Off-chain proof harness; not chain authority or market truth |
+| `tools/council/formal_theorem_prover_engine.py` | Z3 rebate arithmetic helper plus generated Lean/Dafny-shaped scaffolds | Z3 evidence only where the solver is invoked; Lean/Dafny scaffolds are unverified unless checker execution is captured |
 | `test/PBMFraudFormalInvariants.test.js` | Hardhat bridge into the Python formal-invariant suite | Local/CI evidence; not a mainnet safety certificate |
 
 Generate Merkle roots and proofs:
@@ -199,7 +199,7 @@ flowchart LR
 
 - records rebate deposits on-chain with depositor identity, amount, timestamp, and a free-form source string (which may encode quarter and drug class);
 - routes captured funds to independent pharmacies through Merkle-proof claims;
-- allocates 10% of every gross claim to a dedicated patient fund at claim time;
+- allocates a configurable patient share of every gross claim to a dedicated patient fund at claim time, with a 10% default;
 - makes ledger absences visible when paired with independently sourced expected-deposit records;
 - separates treasury custody from adjacent prototypes such as mutual credit, vouchers, dashboard tooling, and participatory budgeting.
 
@@ -222,14 +222,14 @@ This is infrastructure for transparent rebate pass-through. It is not legal, fin
 
 | Bucket | Allocation | Purpose |
 |--------|------------|---------|
-| Distribution pool | 99% | Pharmacy Merkle claims |
-| Governance reserve | 1% | Council operations through `EXECUTOR_ROLE` |
+| Distribution pool | 99% default, adjustable if governance reserve changes | Pharmacy Merkle claims |
+| Governance reserve | 1% default, executor-governed from 0-5% | Council operations through `EXECUTOR_ROLE` |
 
 ## Patient Fund
 
 | Source | Amount |
 |--------|--------|
-| Every gross claim | 10% routed to `patientFund` |
+| Every gross claim | 10% default routed to `patientFund`; executor-governed from 5-30% |
 | Unclaimed epoch funds after recall delay | 100% routed to `patientFund` |
 | Non-payout token sweeps | 100% routed to `patientFund` |
 

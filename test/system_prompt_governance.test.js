@@ -6,6 +6,24 @@ describe("System prompt pruning governance", function () {
   const repoRoot = path.resolve(__dirname, "..");
   const agentsPath = path.join(repoRoot, ".agents", "AGENTS.md");
   const governancePath = path.join(repoRoot, "docs", "design", "system_prompt_pruning_and_governance.md");
+  const routingHeader = [
+    "Routing policy:",
+    "- Route by capability, not by aspirational name.",
+    "- Use the best available model on this surface.",
+    "- Canonical reference: `review-context/SURFACE_CAPABILITY_ROUTING_SPEC.md`",
+  ];
+  const capabilityPromptFiles = [
+    "fresh-reviewer-prompt.txt",
+    "grok-review-prompt.txt",
+    "kimi-long-context-review-prompt.txt",
+    "zero-zk-review-prompt.txt",
+    path.join("reviews", "prompts", "advocate-prompt.txt"),
+    path.join("reviews", "prompts", "grok-council-prompt.txt"),
+    path.join("reviews", "prompts", "guardrail-prompt.txt"),
+    path.join("reviews", "prompts", "openclaude-pbm-solvency-public-handoff-review.md"),
+    path.join("reviews", "prompts", "skeptic-prompt.txt"),
+    path.join("reviews", "prompts", "strategist-prompt.txt"),
+  ];
 
   it("keeps AGENTS.md below the local standing-brief line budget", function () {
     const lines = fs.readFileSync(agentsPath, "utf8").split(/\r?\n/);
@@ -31,5 +49,14 @@ describe("System prompt pruning governance", function () {
     expect(governance).to.include("45 raw lines / 30 nonblank lines");
     expect(governance).to.not.include("100% PASS");
     expect(governance).to.not.include("Zero Token Waste");
+  });
+
+  it("keeps active reviewer prompts aligned to the capability-routing spec", function () {
+    for (const relativePath of capabilityPromptFiles) {
+      const prompt = fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+      for (const fragment of routingHeader) {
+        expect(prompt, `${relativePath} missing ${fragment}`).to.include(fragment);
+      }
+    }
   });
 });

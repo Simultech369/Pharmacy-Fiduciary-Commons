@@ -927,15 +927,6 @@ function createApp(supabaseClient, config = {}) {
       try {
         verifyVoucherSagaSignature({ config, ...parsedPayload });
       } catch (err) {
-        await supabaseClient.rpc("voucher_saga_dead_letter", {
-          p_saga_key: sagaKey,
-          p_request_hash: sha256(stableStringify(canonicalVoucherSagaRequest(parsedPayload))),
-          p_voucher_id: parsedPayload.voucherId,
-          p_pharmacy_address: parsedPayload.pharmacyAddress,
-          p_amount: parsedPayload.amount,
-          p_client_nonce: parsedPayload.clientNonce,
-          p_error_code: "invalid_signature"
-        }).catch(() => {});
         return res.status(401).json({ error: "Invalid voucher reconciliation payload" });
       }
 

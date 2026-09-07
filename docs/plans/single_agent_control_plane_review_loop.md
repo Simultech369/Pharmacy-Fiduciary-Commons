@@ -8,7 +8,9 @@
 
 ## 1. Core Paradigm: Swarm as Sensors, Agent as Control Plane
 
-To prevent context degradation, token blowout, and hallucinated action plans across model boundaries, this repository adopts Codex's refined control-plane architecture:
+To prevent context degradation, token blowout, and hallucinated action plans across model boundaries, this repository adopts a capability-based control-plane architecture. Surface names are labels, not guarantees; the selected model and any downgrade reason must stay visible in the receipt.
+
+Canonical routing copy lives in `review-context/SURFACE_CAPABILITY_ROUTING_SPEC.md`.
 
 $$\text{Upstream Deterministic Signals} \longrightarrow \text{Parallel OSS Model Sensors} \longrightarrow \text{Single Reasoning Control Plane} \longrightarrow \text{Human Approval Gate}$$
 
@@ -20,10 +22,10 @@ graph TD
         S3[Rehearsal Risk Evaluator]
     end
 
-    subgraph Parallel OSS Model Sensors (Evidence Only)
-        M1[Gemma / DeepSeek-R1: Race Sensor]
-        M2[Qwen-Coder / Kimi: Contradiction Sensor]
-        M3[Nemotron / Grok: Spec Boundary Sensor]
+    subgraph Parallel Capability-Matched Review Sensors (Evidence Only)
+        M1[Reviewer Surface A: Race Sensor]
+        M2[Reviewer Surface B: Contradiction Sensor]
+        M3[Reviewer Surface C: Spec Boundary Sensor]
     end
 
     subgraph Single Coherent Control Plane
@@ -46,8 +48,8 @@ graph TD
 | Component | Architecture Role | Authority & Boundary |
 | :--- | :--- | :--- |
 | **Deterministic Engine** (`npx hardhat test`, `index_dossier_tree.py`, `rehearse_proposal.py`) | **Upstream Deterministic Authority** | Computes signal breaches, mathematical invariants, schema rules, and PageIndex contradictions before model invocation. |
-| **OSS Model Swarm** (Gemma, Qwen, DeepSeek-R1, Kimi, Nemotron) | **Parallel Disagreement & Evidence Sensors** | Bound to narrow tasks ("Find contradictions in this doc", "List 2 plausible races in this diff"). **Never** decides implementation. |
-| **Centralized Reasoning Engine** (Codex / Antigravity / Operator Session) | **Single Coherent Control Plane** | Holds unified context, traverses repo Knowledge Graph edges, weights evidence, and synthesizes action recommendations. |
+| **Capability-Matched Review Sensors** (best available reviewer surface on the current capability registry) | **Parallel Disagreement & Evidence Sensors** | Bound to narrow tasks ("Find contradictions in this doc", "List 2 plausible races in this diff"). **Never** decides implementation. |
+| **Centralized Reasoning Engine** (current best available reasoning surface) | **Single Coherent Control Plane** | Holds unified context, traverses repo Knowledge Graph edges, weights evidence, and synthesizes action recommendations. |
 | **Human Operator** | **Level 3 Approval Gate** | Reviews advisory receipts (`dizzy.rehearsal_receipt.v1`) and authorizes irreversible actions (commit, push, deployment). |
 
 ---
@@ -58,6 +60,6 @@ graph TD
 2. **Neighborhood Discovery**: The main agent queries `review-context/repo_knowledge_graph.json` to extract connected domain nodes and proof invariants.
 3. **Candidate Hypothesis Generation**: Edges connected to the signal node form the explicit set of testable candidate hypotheses.
 4. **Deterministic Verification**: Code, test, or schema checks run to confirm or reject hypotheses.
-5. **Parallel Model Disagreement Pass**: OSS model sensors perform narrow, evidence-cited passes to detect hidden edge cases or spec contradictions.
+5. **Parallel Capability Disagreement Pass**: Reviewer surfaces perform narrow, evidence-cited passes to detect hidden edge cases or spec contradictions.
 6. **Unified Synthesis & Receipt Generation**: Main agent evaluates model findings against graph edges and generates a `dizzy.rehearsal_receipt.v1` advisory receipt (`execution_claimed: false`).
 7. **Human Approval & Execution Gate**: Human operator inspects the receipt and authorizes execution.

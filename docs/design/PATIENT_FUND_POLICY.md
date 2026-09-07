@@ -13,7 +13,7 @@ The fund operates on the principle that keeping people healthy and providing acc
 ## 2. Funding Sources
 
 The Patient Fund accumulates resources from:
-1. **Gross Claim Routing**: 10% of every gross rebate claim (`patientClaimBP`) is automatically routed to the `patientFund` at claim time.
+1. **Gross Claim Routing**: 10% by default of every gross rebate claim (`patientClaimBP`) is automatically routed to the `patientFund` at claim time. The executor-governed range is 5% to 30%.
 2. **Unclaimed Recall**: 100% of unclaimed epoch funds are recalled to the `patientFund` after the 30-day delay.
 3. **Non-Payout Sweep**: 100% of non-payout ERC-20 tokens swept from the contract are directed to the `patientFund`.
 
@@ -25,7 +25,7 @@ To prevent centralized control, the Patient Fund is allocated via a participator
 * **Submissions**: Pharmacies, community organizations, and patients submit local projects, medication needs, or service expansions.
 * **Credential-Gated Voting**: Registered community members cast one vote per project.
 * **Squared Vote Weighting**: The prototype allocates the matching pool in proportion to each project's squared vote count. It is not canonical contribution-based quadratic funding.
-* **Council Role**: The Council acts strictly as an eligibility and fraud gate (e.g., verifying that a project does not violate medical safety laws). The Council cannot direct matching funds or override community votes.
+* **Council Role**: The Council acts as an eligibility, fraud, finalization, and matching-cap gate (e.g., verifying that a project does not violate medical safety laws). It cannot arbitrarily rewrite cast votes, but its registration, project approval, finalization timing, and matching-cap decisions materially affect which projects can receive funds.
 * **Deadlines & Circulation**: Finalized project shares are claimable by the project recipient for a 90-day grace period. After that deadline, the Council may reclaim unclaimed shares into an internal recycled matching pool that is applied by `startRound` when the Council opens the next round. This makes a finalized share a deadline-bounded claim, not a perpetual debt, while keeping reclaimed funds inside participatory budgeting rather than council custody.
 
 ---

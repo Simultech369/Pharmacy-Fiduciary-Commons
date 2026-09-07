@@ -40,10 +40,12 @@ function createMockSagaSupabase() {
 
   const client = {
     _mockDb: mockDb,
+    _rpcCalls: [],
     _shouldFail: false,
     _voucherCompleteFailuresRemaining: 0,
     _testSkipVoucherLeaseCheck: false,
     rpc: async (func, args) => {
+      client._rpcCalls.push({ func, args });
       if (client._shouldFail) {
         return { data: null, error: new Error("PostgreSQL voucher saga outage at supabase.internal") };
       }
@@ -317,7 +319,7 @@ describe("Phase 4: Durable Voucher Settlement Saga Queue", function () {
     expect(saga.last_error).to.equal("transient_commit_failure");
   });
 
-  it("routes schema-valid signature failures to dead_letter without exposing internals", async function () {
+  it("rejects schema-valid signature failures before saga mutation", async function () {
     const payload = await getValidVoucherPayload();
     payload.signature = await ethers.Wallet.createRandom().signMessage("wrong domain");
 
@@ -328,10 +330,47 @@ describe("Phase 4: Durable Voucher Settlement Saga Queue", function () {
       .expect(401);
 
     expect(res.body).to.deep.equal({ error: "Invalid voucher reconciliation payload" });
-    const saga = mockSupabase._mockDb.voucher_settlement_saga[0];
-    expect(saga.status).to.equal("dead_letter");
-    expect(saga.last_error).to.equal("invalid_signature");
+    expect(mockSupabase._mockDb.voucher_settlement_saga).to.have.lengthOf(0);
+    expect(mockSupabase._rpcCalls.map(call => call.func)).to.not.include("voucher_saga_dead_letter");
+    expect(mockSupabase._rpcCalls.map(call => call.func)).to.not.include("voucher_saga_start");
     expect(JSON.stringify(res.body)).to.not.contain("wrong domain");
+  });
+
+  it("does not dead-letter an existing saga when a matching tuple has an invalid signature", async function () {
+    const payload = await getValidVoucherPayload();
+    const normalized = canonicalVoucherSagaRequest(payload);
+    const sagaKey = deriveVoucherSagaKey(normalized);
+    const requestHash = sha256(stableStringify(normalized));
+    mockSupabase._mockDb.voucher_settlement_saga.push({
+      saga_key: sagaKey,
+      request_hash: requestHash,
+      voucher_id: normalized.voucherId,
+      pharmacy_address: normalized.pharmacyAddress,
+      amount: normalized.amount,
+      client_nonce: normalized.clientNonce,
+      payload_json: normalized,
+      result_json: null,
+      status: "pending",
+      retry_count: 0,
+      last_error: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
+
+    payload.signature = await ethers.Wallet.createRandom().signMessage("wrong domain");
+
+    const res = await request(app)
+      .post("/api/vouchers/reconcile")
+      .set("Origin", "http://localhost:3000")
+      .send(payload)
+      .expect(401);
+
+    expect(res.body).to.deep.equal({ error: "Invalid voucher reconciliation payload" });
+    expect(mockSupabase._mockDb.voucher_settlement_saga).to.have.lengthOf(1);
+    expect(mockSupabase._mockDb.voucher_settlement_saga[0].status).to.equal("pending");
+    expect(mockSupabase._mockDb.voucher_settlement_saga[0].last_error).to.equal(null);
+    expect(mockSupabase._rpcCalls.map(call => call.func)).to.not.include("voucher_saga_dead_letter");
+    expect(mockSupabase._rpcCalls.map(call => call.func)).to.not.include("voucher_saga_start");
   });
 
   it("fails closed during saga RPC outage with sanitized response payload", async function () {

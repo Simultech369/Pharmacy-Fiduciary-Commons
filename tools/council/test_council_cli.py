@@ -127,7 +127,7 @@ class TestCouncilCLI(unittest.TestCase):
         res = self.run_cli(["proof"])
         self.assertEqual(res.returncode, 0)
         self.assertIn("P3 NEURO-SYMBOLIC JOINT PROGRAM & PROOF PLANNER", res.stdout)
-        self.assertIn("Proof Verified : PASSED (Z3/SMT BOUNDED)", res.stdout)
+        self.assertIn("Z3 Check       : PASSED (LOCAL SMT BOUNDED)", res.stdout)
 
     def test_redteam_subcommand(self):
         res = self.run_cli(["redteam"])
@@ -138,8 +138,10 @@ class TestCouncilCLI(unittest.TestCase):
     def test_formal_subcommand(self):
         res = self.run_cli(["formal"])
         self.assertEqual(res.returncode, 0)
-        self.assertIn("DUAL-ENGINE LEAN4 & DAFNY FORMAL THEOREM PROVER", res.stdout)
-        self.assertIn("Dafny Method   : SumFirstN -> VERIFIED", res.stdout)
+        self.assertIn("LEAN4 & DAFNY SCAFFOLD BOUNDARY REPORTER", res.stdout)
+        self.assertIn("Dafny Method   : SumFirstN -> GENERATED_UNVERIFIED", res.stdout)
+        self.assertIn("Dafny Checker  : invoked=False", res.stdout)
+        self.assertIn("Lean Checker   : invoked=False", res.stdout)
 
     def test_autotune_subcommand(self):
         res = self.run_cli(["autotune", "--target", "auth_engine"])

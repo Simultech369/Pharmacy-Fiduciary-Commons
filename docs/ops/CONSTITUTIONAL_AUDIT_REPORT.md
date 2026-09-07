@@ -32,7 +32,7 @@ This section analyzes the structural implementation of the smart contracts again
 * **Code References**: `contracts/PBMRebateTreasury.sol` (reserves partitioning)
 * **Status**: **Partially protocol-enforced**.
 * **Analysis**:
-  * The contract divides rebate inflows strictly: 99% to the distribution pool/escrow and 1% to the governance reserve.
+  * The contract divides rebate inflows at deposit time using a 99% distribution-pool / 1% governance-reserve default. The executor-governed governance reserve is capped at 5%.
   * `exclusionRemediationReserve` is explicitly funded via `fundExclusionRemediation` and is the *only* source of funds for approved exclusion claims, preventing old errors from depleting active pools.
 * **Gaps**:
   * The broader promise that experimental features or governance failures will not shift losses to pharmacies and patients is not contract-enforced.

@@ -923,6 +923,64 @@ describe("PBMRebateTreasury security baseline", function () {
     expect(stats.rootTotal).to.equal(gross);
     expect(stats.claimed).to.equal(0n);
     expect(stats.unclaimed).to.equal(gross);
+
+    await treasury.connect(pharmacy).claim(gross, gross, []);
+
+    expect(await treasury.epochClaimedTotal(0)).to.equal(gross * 2n);
+    expect(await treasury.epochRootClaimedTotal(0)).to.equal(gross);
+    expect(await treasury.epochExclusionPaidTotal(0)).to.equal(gross);
+    expect(await treasury.epochVolume()).to.equal(gross * 2n);
+    expect(await treasury.unclaimedForEpoch(0)).to.equal(0n);
+  });
+
+  it("keeps exclusion payouts separate from root total after root claims settle first", async function () {
+    await seedDeposit(toWei("1000"));
+    const rootClaim = toWei("100");
+    const exclusionClaim = toWei("50");
+    await publishSingleLeafRoot(rootClaim, rootClaim);
+    await treasury.connect(council2).confirmRoot(0);
+
+    await treasury.connect(pharmacy).claim(rootClaim, rootClaim, []);
+
+    await treasury.connect(attacker).flagExclusion(0, exclusionClaim, evidenceHash("exclusion-after-root-claim"));
+    await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
+    await token.connect(depositor).approve(await treasury.getAddress(), exclusionClaim);
+    await treasury.connect(depositor).fundExclusionRemediation(exclusionClaim);
+    await treasury.connect(council).resolveClaim(0, attacker.address, 0, evidenceHash("release-after-root-claim"));
+
+    expect(await treasury.epochClaimedTotal(0)).to.equal(rootClaim + exclusionClaim);
+    expect(await treasury.epochRootClaimedTotal(0)).to.equal(rootClaim);
+    expect(await treasury.epochExclusionPaidTotal(0)).to.equal(exclusionClaim);
+    expect(await treasury.epochVolume()).to.equal(rootClaim + exclusionClaim);
+    expect(await treasury.unclaimedForEpoch(0)).to.equal(0n);
+  });
+
+  it("keeps proof-backed dispute root accounting independent from prior exclusion payouts", async function () {
+    await seedDeposit(toWei("1000"));
+    const rootDispute = toWei("100");
+    const exclusionClaim = toWei("50");
+    await publishSingleLeafRoot(rootDispute, rootDispute);
+    await treasury.connect(council2).confirmRoot(0);
+
+    await treasury.connect(attacker).flagExclusion(0, exclusionClaim, evidenceHash("exclusion-before-root-dispute"));
+    await treasury.connect(council2).approveExclusionClaim(0, attacker.address);
+    await token.connect(depositor).approve(await treasury.getAddress(), exclusionClaim);
+    await treasury.connect(depositor).fundExclusionRemediation(exclusionClaim);
+    await treasury.connect(council).resolveClaim(0, attacker.address, 0, evidenceHash("release-before-root-dispute"));
+
+    await treasury.connect(pharmacy).flagClaim(
+      0,
+      rootDispute,
+      rootDispute,
+      [],
+      evidenceHash("root-dispute-after-exclusion")
+    );
+
+    expect(await treasury.epochClaimedTotal(0)).to.equal(rootDispute + exclusionClaim);
+    expect(await treasury.epochRootClaimedTotal(0)).to.equal(rootDispute);
+    expect(await treasury.epochExclusionPaidTotal(0)).to.equal(exclusionClaim);
+    expect(await treasury.epochVolume()).to.equal(rootDispute + exclusionClaim);
+    expect(await treasury.flaggedAmount(0, pharmacy.address)).to.equal(rootDispute);
   });
 
   it("rejects exclusion claims that exceed epoch caps or request a treasury-funded penalty", async function () {

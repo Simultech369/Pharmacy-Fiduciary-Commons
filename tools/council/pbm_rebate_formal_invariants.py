@@ -188,7 +188,6 @@ class PBMRebateFormalInvariantEngine:
         unclaimed = z3.Real("unclaimed_shares")
         pool = z3.Real("matching_pool")
         balance = z3.Real("token_balance")
-        d_old = z3.Real("total_debt_old")
 
         r_req = z3.Real("required_solvency")
         d_out = z3.Real("outstanding_deficit")
@@ -198,10 +197,9 @@ class PBMRebateFormalInvariantEngine:
             unclaimed >= 0,
             pool >= 0,
             balance >= 0,
-            d_old >= 0,
             r_req == unclaimed + pool,
             d_out == z3.If(r_req > balance, r_req - balance, z3.RealVal(0)),
-            d_new == z3.If(d_out > d_old, d_out, d_old),
+            d_new == d_out,
         ]
 
         return [
@@ -210,14 +208,14 @@ class PBMRebateFormalInvariantEngine:
                 domain="SOLVENCY_DEBT_CONSERVATION",
                 statement="Obligations (unclaimed + pool) are strictly bounded by token balance plus synchronized debt.",
                 assumptions=[
-                    "unclaimed >= 0, pool >= 0, balance >= 0, d_old >= 0",
+                    "unclaimed >= 0, pool >= 0, balance >= 0",
                     "r_req == unclaimed + pool",
                     "d_out == max(0, r_req - balance)",
-                    "d_new == max(d_out, d_old)",
+                    "d_new == d_out, matching PatientFundParticipatoryBudgeting._syncSolvencyDebt",
                 ],
                 constraints=constraints,
                 negated_property=balance + d_new < r_req,
-                lean4_theorem_stub="theorem solvency_conservation (b u p d_old : Real) (h : u >= 0 ∧ p >= 0 ∧ b >= 0) : b + max (max 0 ((u+p) - b)) d_old >= u + p",
+                lean4_theorem_stub="theorem solvency_conservation (b u p : Real) (h : u >= 0 and p >= 0 and b >= 0) : b + max 0 ((u+p) - b) >= u + p",
             )
         ]
 
