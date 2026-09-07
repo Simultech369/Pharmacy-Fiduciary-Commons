@@ -1,273 +1,91 @@
 # Antigravity Current Handoff
 
-> [!CAUTION]
-> Historical handoff only. This file is anchored to an older checkpoint and is not the current patient-fund solvency entry point. For the current solvency handoff, start with `ANTIGRAVITY_HANDOFF_BUNDLE_MANIFEST.md` and verify checkpoint `266016c83d544f86dbb67a49240356852e0498b4`.
+Fresh snapshot for `PBMRebateTreasuryFinal` as of 2026-09-07.
 
-Prepared for Antigravity against live checkout `f1a8f00275b4d3fff1ee993091e02c692faa29cc` on branch `main`.
+This file supersedes the older Antigravity handoff notes for the current branch tip. Treat repo state and Git state below as the source of truth.
 
-## 1. Current Repo State
+## 1. Live Repo State
 
-- Repo: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
-- Branch: `main`
-- Current HEAD: `f1a8f00275b4d3fff1ee993091e02c692faa29cc`
-- Recent relevant ancestor: `a8754e1c32e0fe2b19bbf9d8bb91b0aa3d36d9c9`, which implemented the first mock ZK/nullifier voter-registration milestone.
-- The older `ANTIGRAVITY_ZK_HANDOFF.md` is useful design context, but its snapshot gate is stale. It was anchored to `a8754e1c32e0fe2b19bbf9d8bb91b0aa3d36d9c9`, not the current checkout.
+- Local repo: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
+- Branch: `chore/update-dependencies`
+- HEAD: `fcdf539bdb18177f96b3129631ccb0bf2a333d20`
+- `origin/main`: `cd83fd0`
+- `origin/chore/update-dependencies`: matches `HEAD`
+- Working tree: clean
+- Branch position: 2 commits ahead of `origin/main`
 
-Current dirty working tree expected for this handoff after Kimi/Hunyuan reconciliation and GPT-5.6 follow-up:
+## 2. GitHub State
 
-- Modified tracked files:
-  - `ANTIGRAVITY_CURRENT_HANDOFF.md`
-  - `ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md`
-  - `contracts/PBMRebateTreasury.sol`
-  - `scripts/deploy-timelock-and-treasury.js`
-  - `test/ContinuityAndAdversarialTools.test.js`
-  - `test/DeploymentGovernance.test.js`
-  - `test/PBMRebateTreasury.security.test.js`
-  - `tools/offline/continuity-kit.html`
-  - `tools/resilience/continuity-engine.mjs`
-- Untracked files:
-  - `ANTIGRAVITY_KIMI_REVIEW_HANDOFF.md`
-  - `CODEX_KIMI_RECONCILIATION_HANDOFF.md`
+- The current checkpoint branch is pushed to GitHub as `origin/chore/update-dependencies`.
+- `origin/main` still points at `cd83fd0`.
+- No merge from this branch back to `main` has been made.
+
+## 3. What Landed In The Branch
+
+### Commit 1
+
+- `0f060e9` `chore(deps): bump ethers to 6.17.0`
+- Files:
+  - `.agents/memory/LEARNINGS_QUEUE.md`
+  - `package.json`
+  - `package-lock.json`
+- Practical effect:
+  - Keeps the dependency tree moving without pulling in the larger Hardhat 3 / OpenZeppelin 5 migration set.
+
+### Commit 2
+
+- `fcdf539` `chore: checkpoint capability routing and P7A hardening`
+- Files touched include:
+  - `review-context/SURFACE_CAPABILITY_ROUTING_SPEC.md`
+  - `fresh-reviewer-prompt.txt`
   - `grok-review-prompt.txt`
   - `kimi-long-context-review-prompt.txt`
-  - `review-context/`
-  - `scripts/deployment-policy.js`
-  - `zero-zk-review-prompt.txt`
+  - `reviews/prompts/*.txt` and `reviews/prompts/*.md`
+  - `test/system_prompt_governance.test.js`
+  - `tools/council/council_telemetry.py`
+  - `tools/council/council_verifier.py`
+  - `tools/council/external_a2a_adapter.py`
+  - `tools/council/handoff_reconciliation_daemon.py`
+  - `tools/council/oss_review_planning.py`
+  - `tools/council/pbm_rebate_formal_invariants.py`
+  - `tools/council/*tests`
+  - treasury and voucher/security review fixtures
+- Practical effect:
+  - Makes capability-first routing the canonical repo wording.
+  - Aligns the active reviewer prompts to `use the best available model on this surface`.
+  - Adds governance coverage so the prompt surfaces stay aligned.
+  - Hardens the P7A trace / receipt / adapter layer.
 
-Focused verification after GPT-5.6 follow-up:
+## 4. Verified In This Session
 
-```powershell
-npx.cmd hardhat test test\DeploymentGovernance.test.js test\ContinuityAndAdversarialTools.test.js test\PBMRebateTreasury.security.test.js
-```
+- `git status --short --branch` -> clean
+- `git branch --show-current` -> `chore/update-dependencies`
+- `git rev-parse --short HEAD` -> `fcdf539`
+- `git rev-list --left-right --count origin/main...HEAD` -> `0 2`
+- `npx.cmd --no-install hardhat test test\system_prompt_governance.test.js --no-compile` -> 4 passing
+- `git diff --check` -> no whitespace errors; only Git line-ending warnings
 
-Result: 57 passing tests.
+## 5. Current Project Posture
 
-Full suite verification after GPT-5.6 follow-up:
+- This repository remains a tested prototype, not a mainnet system.
+- The prompt-routing language is now consistent across the repo surfaces that were updated in this branch.
+- The branch is ready as a checkpoint, but the full `python scripts/verify_all.py` master seal was not rerun after `fcdf539`.
+- Any claim of a fresh milestone seal should wait for that full verifier run.
 
-```powershell
-npm.cmd test
-```
+## 6. Antigravity Follow-Up
 
-Result: 220 passing tests.
+Recommended next actions for the next loop:
 
-## 2. Why This Handoff Exists
+1. Review the branch diff against the current treasury, voucher, telemetry, and prompt-surface changes.
+2. Decide whether to run `python scripts/verify_all.py` to seal a fresh receipt for this checkpoint.
+3. If continuing implementation, keep the capability-routing spec as the single wording source for Codex, Astra, and the repo prompts.
+4. If merging toward `main`, confirm the verification receipt first and treat the current branch as the promotion candidate.
 
-The previous handoff lane focused on the ZK/nullifier mock milestone. The repo has now moved one layer outward into resilience and draft governance scaffolding:
+## 7. Reference Files
 
-- README language now distinguishes legacy stable-hash linkage risk, semantic mock ZK registration, and production ZK design status.
-- `CooperativeParticipatoryBudgeting` now requires enough bootstrap participants to avoid a peer-attestation deadlock.
-- `CooperativeParticipatoryBudgeting` now rejects zero-address peer attestations.
-- `ReflexiveFiduciaryManifold` now restricts PID mutation to the deployer/controller, handles a zero matching target, and preserves derivative precision before applying `Kd`.
-- `continuity-engine.mjs` now fails closed without a local MAC secret, refuses bad voucher MACs, omits voter addresses from offline voucher and relay artifacts, rejects duplicate relay nullifiers, and packages relay output as review material rather than on-chain proof material.
-- `adversarial-guard.mjs` now labels tempest fuzzing as simulated local payload classification, not proof of live target defense, and flags synthetic seed-phrase leakage.
-- New tests cover those boundaries.
-
-The next Antigravity task should be no-edits review of this post-reconciliation patch. The task is to review whether these changes honestly preserve the ZK/privacy trust boundary, keep draft governance modules from looking production-ready, and avoid smuggling offline continuity artifacts into live settlement authority.
-
-## 3. Primary Review Direction
-
-Primary review direction: no-edits reconciliation of the current resilience/governance draft layer after the mock ZK milestone.
-
-Antigravity should treat the current changes as a claim set until verified against the live repo. The main question is whether the new language, tools, and tests tighten boundaries or accidentally create new overclaims:
-
-- Offline vouchers are degraded-mode recovery material, not on-chain proof material.
-- Relay batches are review/intake packets, not production submissions.
-- Tempest fuzz output is simulated local classification, not evidence a target blocked an attack.
-- Draft governance/manifold contracts are review sketches, not integrated treasury/PB/mutual-credit runtime mechanisms.
-- Mock ZK/nullifier registration remains semantic only and does not provide production unlinkability.
-
-## 4. Important Live-Repo Facts To Preserve
-
-- Legacy registration still exposes stable credential hashes and public wallet addresses.
-- The mock ZK/nullifier registration slice in `PatientFundParticipatoryBudgeting` remains semantic only.
-- Production privacy is still blocked by `msg.sender`, public voting events, gas source, timing, RPC metadata, and support/helpdesk leakage.
-- Historical public events cannot be made private retroactively.
-- Offline continuity tools must not contain private keys, raw credentials, PHI, witness secrets, or stable wallet-to-pharmacy mappings.
-- Paper/offline voucher preimages are sensitive recovery material and must not be exported as mock ZK proofs.
-- Local MAC verification is an operator-local integrity check, not protocol authorization.
-- Current draft governance modules must not be represented as production mechanisms.
-- Core treasury accounting, patient-fund routing, Merkle claims, dispute accounting, mutual-credit balances, voucher accounting, and existing role separation should not be weakened.
-- No upgradeable-contract pattern is assumed or recommended.
-
-## 5. Files To Review
-
-Current changed files:
-
-- `MIESSLER_INTEGRATION_TRIAGE.md`
-- `PRIVACY_CONTINUITY_INTERVENTION_HANDOFF.md`
-- `README.md`
-- `REVIEW_ITERATION_PROCESS.md`
-- `contracts/CooperativeParticipatoryBudgeting.sol`
-- `contracts/ReflexiveFiduciaryManifold.sol`
-- `tools/resilience/continuity-engine.mjs`
-- `tools/security/adversarial-guard.mjs`
-- `test/ContinuityAndAdversarialTools.test.js`
-- `test/DraftGovernanceModules.test.js`
-
-Roadmap and boundary context:
-
-- `ANTIGRAVITY_ZK_HANDOFF.md`
-- `ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md`
-- `PRIVACY_CONTINUITY_INTERVENTION_HANDOFF.md`
-- `REVIEW_ITERATION_PROCESS.md`
-- `MIESSLER_INTEGRATION_TRIAGE.md`
-- `MECHANISM_COVERAGE.md`
-- `IDENTITY_NULLIFIER_DESIGN.md`
-- `OPEN_DESIGN_DECISIONS.md`
-- `ROADMAP.md`
-- `PRODUCTION_READINESS_CHECKLIST.md`
-- `CARE_CONTINUITY.md`
-- `OPERATIONAL_RUNBOOK.md`
-- `RETALIATION_AND_PRIVACY_THREAT_MODEL.md`
-- `EVIDENCE_METADATA.md`
-
-Baseline runtime files:
-
-- `contracts/PatientFundParticipatoryBudgeting.sol`
-- `contracts/PBMRebateTreasury.sol`
-- `contracts/PharmacyMutualCredit.sol`
-- `test/PatientFundParticipatoryBudgeting.test.js`
-- `test/PharmacyMutualCredit.test.js`
-- `scripts/register-voter-relayer.mjs`
-- `scripts/export-portability.js`
-- `scripts/verify-export.js`
-- `tools/credentials/credential-policy.mjs`
-
-## 6. Do Not Do Yet
-
-- Do not write Circom circuits.
-- Do not import snarkjs or verifier contracts.
-- Do not add upgradeable contracts.
-- Do not change core treasury accounting, patient-fund routing, Merkle claims, dispute accounting, mutual-credit balances, voucher accounting, or existing role separation.
-- Do not claim production privacy.
-- Do not use real participant, patient, pharmacy, credential, witness, helpdesk, or PHI data.
-- Do not implement live proxy relay, live burn registry, live canary response, live paper-voucher redemption, or live retaliation-mode clearing.
-- Do not treat generated offline vouchers, local MACs, or relay batches as settlement authority.
-- Do not treat the draft governance/manifold contracts as integrated production runtime.
-
-## 7. Exact Next Review Prompt For Antigravity
-
-```text
-Review the current local repo as lead planner and no-edits reviewer. Do not modify files, commit, push, open issues, create PRs, or run further implementation.
-
-Snapshot:
-- Repo: C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
-- Branch: main
-- Expected HEAD: f1a8f00275b4d3fff1ee993091e02c692faa29cc
-- Expected modified tracked files:
-  - ANTIGRAVITY_CURRENT_HANDOFF.md
-  - ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md
-  - contracts/PBMRebateTreasury.sol
-  - scripts/deploy-timelock-and-treasury.js
-  - test/ContinuityAndAdversarialTools.test.js
-  - test/DeploymentGovernance.test.js
-  - test/PBMRebateTreasury.security.test.js
-  - tools/offline/continuity-kit.html
-  - tools/resilience/continuity-engine.mjs
-- Expected untracked files:
-  - ANTIGRAVITY_KIMI_REVIEW_HANDOFF.md
-  - CODEX_KIMI_RECONCILIATION_HANDOFF.md
-  - grok-review-prompt.txt
-  - kimi-long-context-review-prompt.txt
-  - review-context/
-  - scripts/deployment-policy.js
-  - zero-zk-review-prompt.txt
-
-First verify branch, HEAD, and git status. If the snapshot differs, report SNAPSHOT_MISMATCH and stop unless the only differences are explicitly listed above.
-
-Primary mission:
-Review the current Kimi/Hunyuan reconciliation plus GPT-5.6 follow-up. Verify whether the deployment preflight now rejects open timelock executors before any non-local deployment transaction, whether continuity voucher MACs cover bearer artifact fields without implying ZK proof, whether `updateSanction` is pause-gated with regression coverage, and whether handoff/ZK docs avoid stale or production-privacy overclaims.
-
-Key changed files:
-- ANTIGRAVITY_CURRENT_HANDOFF.md
-- ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md
-- contracts/PBMRebateTreasury.sol
-- scripts/deploy-timelock-and-treasury.js
-- scripts/deployment-policy.js
-- tools/offline/continuity-kit.html
-- tools/resilience/continuity-engine.mjs
-- test/ContinuityAndAdversarialTools.test.js
-- test/DeploymentGovernance.test.js
-- test/PBMRebateTreasury.security.test.js
-
-Roadmap/boundary files:
-- ANTIGRAVITY_ZK_HANDOFF.md
-- ZK_NULLIFIER_TRANSITION_REQUIREMENTS.md
-- PRIVACY_CONTINUITY_INTERVENTION_HANDOFF.md
-- REVIEW_ITERATION_PROCESS.md
-- MIESSLER_INTEGRATION_TRIAGE.md
-- MECHANISM_COVERAGE.md
-- IDENTITY_NULLIFIER_DESIGN.md
-- OPEN_DESIGN_DECISIONS.md
-- ROADMAP.md
-- PRODUCTION_READINESS_CHECKLIST.md
-- CARE_CONTINUITY.md
-- OPERATIONAL_RUNBOOK.md
-- RETALIATION_AND_PRIVACY_THREAT_MODEL.md
-- EVIDENCE_METADATA.md
-
-Baseline files to verify against:
-- contracts/PatientFundParticipatoryBudgeting.sol
-- contracts/PBMRebateTreasury.sol
-- contracts/PharmacyMutualCredit.sol
-- test/PatientFundParticipatoryBudgeting.test.js
-- test/PharmacyMutualCredit.test.js
-- scripts/register-voter-relayer.mjs
-- scripts/export-portability.js
-- scripts/verify-export.js
-- tools/credentials/credential-policy.mjs
-
-Known verification already run before this prompt:
-- npm.cmd test -- --grep "Continuity and adversarial draft tools|Draft governance modules"
-- Result before review reconciliation: 6 passing tests
-- Result after review reconciliation: 11 passing tests
-- npm.cmd test
-- Result after review reconciliation: 193 passing tests
-
-Before findings:
-List exactly 5 remaining under-asked questions that could derail this resilience/governance layer or corrupt the ZK/nullifier roadmap. For each, include why it matters, who is harmed if ignored, which repo evidence can answer it, and whether it is blocker, roadmap, or product/philosophical.
-
-Then return exactly 8 findings:
-1-2: concrete mismatch, stale claim, or overclaim in README or handoff/roadmap docs.
-3-4: trust-boundary or data-leakage risk in continuity-engine or adversarial-guard.
-5-6: missing tests, invariants, or integration boundaries for CooperativeParticipatoryBudgeting or ReflexiveFiduciaryManifold.
-7: participant-safety risk involving payer retaliation, no stable wallet, helpdesk leakage, issuer/auditor compromise, or power loss.
-8: recommended next correction or implementation slice, scoped to 1-2 weeks, with exact files likely to change.
-
-For each finding include:
-- file/line;
-- verified defect vs design risk;
-- repo evidence;
-- smallest next verification step.
-
-Keep each finding under 140 words. Prioritize exact line references. Do not recommend upgradeable contracts or changes to core accounting/role separation unless explicitly classifying them as rejected/non-goals.
-```
-
-## 8. Expected Output From Antigravity
-
-Antigravity should return:
-
-- whether this current handoff is accurate enough to proceed;
-- whether any docs still must be corrected before implementation continues;
-- whether the current dirty changes should be kept, patched, split, or reverted before commit;
-- whether the accepted findings from the prior Antigravity pass were adequately corrected;
-- whether the new tests cover the highest-risk claims or miss important boundaries;
-- whether the continuity tooling creates any accidental custody, proof, privacy, or settlement-authority confusion;
-- whether the draft governance modules need stronger test-only/non-production fencing;
-- exact files/tests likely involved in the next code step.
-
-## 9. Recommended Decision After Review
-
-If Antigravity confirms the current direction:
-
-1. Patch any language that still overclaims privacy, live target defense, settlement authority, or production readiness.
-2. Add any small missing tests Antigravity identifies around voucher shape, local secret handling, controller access, bootstrap threshold, and zero/edge values.
-3. Run the focused tests again.
-4. Run `npm.cmd test` before committing.
-5. Commit the current resilience/governance reconciliation separately from future ZK circuit or live relay work.
-
-If Antigravity finds a boundary violation:
-
-1. Patch or revert the violating behavior first.
-2. Keep the issue scoped to the changed files above unless the finding proves a broader baseline bug.
-3. Do not expand into real ZK, live proxy relay, or production governance integration without a new snapshot gate.
+- `review-context/SURFACE_CAPABILITY_ROUTING_SPEC.md`
+- `docs/plans/single_agent_control_plane_review_loop.md`
+- `tools/council/handoff_reconciliation_daemon.py`
+- `tools/council/oss_review_planning.py`
+- `test/system_prompt_governance.test.js`
+- `.agents/memory/LEARNINGS_QUEUE.md`
