@@ -14,6 +14,7 @@ ROUTING_POLICY_BLOCK = """
 - If the preferred model is unavailable, choose the best supported fallback and record the downgrade reason.
 - Do not hardcode a model name unless this surface has explicitly confirmed it.
 - Keep user intent, selected surface, selected model, and downgrade reason aligned to the same live capability registry.
+- Treat partial scan excerpts and usage-limit outputs as provisional evidence, not a sealed receipt; refresh live truth before repeating status claims.
 """
 
 ARCHITECTURE_SUMMARY = """

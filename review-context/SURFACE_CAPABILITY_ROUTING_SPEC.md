@@ -33,6 +33,7 @@ Avoid hardcoding a model name unless the surface has explicitly confirmed it.
 - Log `requested_intent`, `selected_surface`, `selected_model`, and `downgrade_reason`.
 - If the capability registry changes, surface the downgrade rather than silently re-labeling it.
 - Keep backend routing, frontend labels, and prompt language aligned to the same live capability registry.
+- Treat partial scan excerpts and usage-limit outputs as provisional evidence, not a sealed receipt; refresh live truth before repeating status claims.
 
 ## Failure Behavior
 
@@ -45,4 +46,3 @@ Avoid hardcoding a model name unless the surface has explicitly confirmed it.
 - Codex: use the best available model for this surface. If the preferred model is unavailable, fall back automatically and report the actual selection.
 - Astra: analyze the live capability of the current surface first. Do not assume model names transfer across surfaces.
 - Repo prompts: all model references are capability-based. Only name a model when the repo has verified that surface can actually expose it.
-

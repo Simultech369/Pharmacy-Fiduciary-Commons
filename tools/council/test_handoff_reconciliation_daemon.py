@@ -36,6 +36,7 @@ class TestHandoffReconciliationDaemon(unittest.TestCase):
         self.assertIn("RULE-SEC-004", prompt)
         self.assertIn("Route by capability, not by aspirational name.", prompt)
         self.assertIn("Use the best available model on this surface.", prompt)
+        self.assertIn("Treat partial scan excerpts and usage-limit outputs as provisional evidence, not a sealed receipt; refresh live truth before repeating status claims.", prompt)
         self.assertIn("SURFACE_CAPABILITY_ROUTING_SPEC.md", prompt)
         self.assertIn("python -m unittest discover", prompt)
 

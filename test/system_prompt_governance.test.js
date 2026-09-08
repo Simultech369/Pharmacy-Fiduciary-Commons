@@ -10,6 +10,7 @@ describe("System prompt pruning governance", function () {
     "Routing policy:",
     "- Route by capability, not by aspirational name.",
     "- Use the best available model on this surface.",
+    "- Treat partial scan excerpts and usage-limit outputs as provisional evidence, not a sealed receipt; refresh live truth before repeating status claims.",
     "- Canonical reference: `review-context/SURFACE_CAPABILITY_ROUTING_SPEC.md`",
   ];
   const capabilityPromptFiles = [

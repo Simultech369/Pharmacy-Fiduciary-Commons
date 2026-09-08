@@ -26,6 +26,7 @@ ROUTING_POLICY_BLOCK = """## Routing Policy
 - If the preferred model is unavailable, choose the best supported fallback and record the downgrade reason.
 - Do not hardcode a model name unless this surface has explicitly confirmed it.
 - Keep user intent, selected surface, selected model, and downgrade reason together in the receipt.
+- Treat partial scan excerpts and usage-limit outputs as provisional evidence, not a sealed receipt; refresh live truth before repeating status claims.
 - Canonical reference: `review-context/SURFACE_CAPABILITY_ROUTING_SPEC.md`
 """
 
