@@ -1046,33 +1046,33 @@
           "level": 2
         },
         {
-          "line": 87,
+          "line": 89,
           "title": "2026-08-24 LLM Engineering Roadmap Reconciliation",
           "level": 2
         },
         {
-          "line": 94,
+          "line": 96,
           "title": "Immediate Build Order",
           "level": 3
         },
         {
-          "line": 128,
+          "line": 130,
           "title": "First Topic List Calibration",
           "level": 3
         },
         {
-          "line": 143,
+          "line": 145,
           "title": "Fifteen Backend Systems Calibration",
           "level": 3
         },
         {
-          "line": 163,
+          "line": 165,
           "title": "Parked By Default",
           "level": 3
         }
       ],
       "findings": [],
-      "line_count": 169
+      "line_count": 171
     },
     {
       "file": "reviews/rotational_swarm_review_dossier.md",

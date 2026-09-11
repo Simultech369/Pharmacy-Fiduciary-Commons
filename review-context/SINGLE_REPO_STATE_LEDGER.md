@@ -7,9 +7,9 @@
 ### Core State Matrix
 
 - **Repo**: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
-- **Current branch baseline**: `main` (`[dirty working tree]`; local PBM hardening changes plus review sidecars pending granular commit slicing)
+- **Current live context**: Execute git status and rev-parse for live positioning.
 - **Current intended slice**: Proof-boundary cleanup, narrow PBM-core commit preparation, and follow-up verification slices.
-- **Working Tree Notice**: Reviewers must evaluate working-tree and untracked control content alongside committed HEAD.
+- **Working Tree Notice**: Reviewers must evaluate working-tree and untracked control content alongside committed HEAD (run `git status --short --branch`).
 
 ---
 
