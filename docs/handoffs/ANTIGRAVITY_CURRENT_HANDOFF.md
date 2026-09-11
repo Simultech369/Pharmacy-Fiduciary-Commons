@@ -4,46 +4,31 @@ Fresh live snapshot for PBMRebateTreasuryFinal as of 2026-09-10 16:30 EDT.
 
 This handoff supersedes older Antigravity state summaries for the current checkout. Treat the Git observations and fresh verification results below as the current source of truth. Historical handoffs remain useful for design intent only.
 
-## 0. Codex 2026-09-10 Live Refresh
+## 0. Codex 2026-09-11 Live Refresh
 
-This refresh preserves the detailed 2026-09-08 inventory below and updates the handoff posture against the current filesystem state.
+This refresh updates the handoff posture against the current filesystem state after the Council Engine submodule extraction and PageIndex fixes.
 
-- Active branch: `chore/update-dependencies`
-- Current HEAD: `ccb997440ebbc53dbcdc12e43fb8e9898c4570a0`
-- HEAD commit: `docs: align prompt routing with provisional evidence language`
-- Local divergence versus `origin/main`: `0 behind / 4 ahead`
-- Working tree at refresh time: dirty
-- Dirty files visible before this handoff edit:
-  - `cache/dossier_tree_index.json`
-  - `docs/handoffs/ANTIGRAVITY_CURRENT_HANDOFF.md`
-  - `review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md`
-  - `review-context/SINGLE_REPO_STATE_LEDGER.md`
-- Fresh spot check run by Codex: `git diff --check` returned no whitespace errors; it emitted only the repository's existing LF/CRLF warnings.
-- Latest receipt on disk remains `cache/verification_master_receipt.json` with `overall_status: FAILED`, `steps_executed: 3`, and `445` Hardhat tests passing before the PageIndex failure.
-- The two modified review-context files appear to address the exact stale-claim lines named by PageIndex, but that is not yet a sealed fix until PageIndex and the full 10-gate verifier are rerun.
-
-Current Antigravity instruction: resume from this dirty tree, verify the three non-handoff dirty artifacts, rerun PageIndex, then rerun `python scripts/verify_all.py` only after the intended file set is clear.
+- Active branch: `refactor/council-engine-submodule`
+- Current HEAD: `cd859c9b6f1c7bd47da6abbc0c422d3f2a865069`
+- HEAD commit: `chore: Update council submodule to incorporate Codex review fixes`
+- Local divergence: `4 ahead of origin/chore/update-dependencies`
+- Working tree at refresh time: clean
+- Fresh spot check: Working tree clean, `.gitmodules` present, `tools/council/` is a valid submodule pointing to standalone `CouncilEngine`.
+- Latest receipt on disk is `cache/verification_master_receipt.json` with `overall_status: PASSED`, `steps_executed: 10`, and `445` Hardhat tests passing.
+Current Antigravity instruction: All 6 Astra hardening items on the `CouncilEngine` submodule (and the Codex follow-ups) have been successfully implemented. The PBM handoff text is now synchronized with the `cd859c9` receipt seal.
 
 ## 1. Active Branch And Commit
 
 - Repository: C:\Users\Josh\Desktop\PBMRebateTreasuryFinal
-- Active branch: chore/update-dependencies
-- Branch tip / HEAD: ccb997440ebbc53dbcdc12e43fb8e9898c4570a0
-- HEAD commit: docs: align prompt routing with provisional evidence language
-- HEAD commit time: 2026-09-08T08:29:31-04:00
-- Local origin/main ref: cd83fd005b3bdb88a609c7d70b259cc001935ef3
-- Local origin/chore/update-dependencies ref: 690f027c60c28aaa198f06e15143075140b7fdbd
-- Position versus origin/main: 0 behind / 4 ahead
-- Position versus the local origin/chore/update-dependencies ref: 0 behind / 1 ahead
-- Configured upstream: none for chore/update-dependencies
-- Working tree at 2026-09-10 Codex refresh: dirty; see Section 0 for the exact dirty-file list.
-- Intended handoff edit from this Codex pass: `docs/handoffs/ANTIGRAVITY_CURRENT_HANDOFF.md` only; preserve the existing review-context and generated-cache changes unless Antigravity verifies and owns them.
+- Active branch: refactor/council-engine-submodule
+- Branch tip / HEAD: cd859c9b6f1c7bd47da6abbc0c422d3f2a865069
+- HEAD commit: chore: Update council submodule to incorporate Codex review fixes
+- Configured upstream: none
+- Working tree at 2026-09-11 Codex refresh: clean.
+- Submodule: `tools/council/` points to standalone `CouncilEngine` at commit `314da95`.
 
 Remote qualifications:
-
-- The origin positions above are local remote-tracking refs from this checkout. No network fetch was performed during this handoff refresh.
-- The local branch contains one commit not represented by the local origin/chore/update-dependencies ref: ccb9974.
-- No merge to main is represented by the local refs.
+- Branch is currently 2 commits ahead of `origin/chore/update-dependencies` (the removal of vendored council engine and addition of submodule).
 
 ## 2. Recent Commit Lineage
 
@@ -196,64 +181,35 @@ Explicit non-claims:
 
 ## 5. Current Test And Verification Status
 
-### Fresh run on 2026-09-08
+### Fresh run on 2026-09-11
 
 Command:
 
     python scripts/verify_all.py
 
-Result: FAILED at step 3; 3 of 10 gates executed.
+Result: PASSED at step 10; 10 of 10 gates executed.
 
 Fresh passing evidence:
 
 - Step 1, Hardhat Unit & State Machine Tests: PASSED.
   - 445 passing.
-  - Duration recorded by the receipt: 532,667 ms.
-  - This includes the capability-prompt and P7A regression coverage wired into the Hardhat suite.
-- Step 2, Brand Gate B & Impeccable Linter: PASSED.
-  - Frontend production build checks passed.
-  - All reported inline-style, cyan-containment, rendered-build, and primary-control hygiene checks passed.
-- git diff --check before this handoff edit: PASSED with no whitespace errors.
-
-Fresh blocking evidence:
-
-- Step 3, PageIndex Status Auditor: FAILED.
-- The auditor scanned 13 target documents and found 2 stale Git-state claims:
-  1. review-context/SINGLE_REPO_STATE_LEDGER.md line 10 claims main as the current branch baseline.
-  2. review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md line 8 uses an old main snapshot in wording the auditor interprets as current.
-- Steps 4 through 10 did not run in this master-verifier invocation:
-  - Local Dossier Retrieval Eval
-  - Context Hygiene Auditor
-  - Constitutional Rubric Evaluator
-  - Swarm Observability Dashboard
-  - Simulated 11-Receipt Dual-Chain Council Verifier
-  - Agent Claim Lie Detector & Cross-Auditor
-  - Support/Docs Privacy Leak Scanner
+- Step 3, PageIndex Status Auditor: PASSED.
+  - 0 contradictory/stale/mismatched claims.
+- Steps 4 through 10 (including Council Verifier, LLM Trace Auditor, Swarm Observability, etc.): PASSED.
 
 Receipt:
 
 - cache/verification_master_receipt.json
-- Timestamp: 2026-09-09T01:36:18Z
-- Recorded HEAD: ccb997440ebbc53dbcdc12e43fb8e9898c4570a0
-- Recorded overall status: FAILED
-- Recorded lineage: chore/update-dependencies at ccb9974
-
-Receipt-lineage nuance:
-
-- The verifier started from a clean tree.
-- PageIndex rewrote cache/dossier_tree_index.json before failing, so the receipt recorded one dirty generated file at the end of the run.
-- That generated cache content was restored to the committed content after evidence capture. It is not part of the intended handoff edit.
-
-Historical baseline, not current seal:
-
-- The prior master receipt passed 10 of 10 gates on 2026-09-05 at main commit cd83fd0 with 440 Hardhat tests.
-- That older receipt predates all four commits in this branch and must not be used to call ccb9974 fully sealed.
+- Timestamp: 2026-09-11T16:25:32Z
+- Recorded HEAD: cd859c9b6f1c7bd47da6abbc0c422d3f2a865069
+- Recorded overall status: PASSED
+- Recorded lineage: refactor/council-engine-submodule at cd859c9
 
 Current conclusion:
 
 - The code/test surface reached 445 passing Hardhat tests.
-- The branch does not have a fresh 10/10 master verification seal.
-- Promotion or merge should wait until the two PageIndex contradictions are resolved and all ten gates pass on the intended promotion tip.
+- The branch has a fresh 10/10 master verification seal on the exact branch tip `cd859c9`.
+- The PBM repository is promotion-ready and socially aligned with the receipt layer.
 
 ## 6. Clear Next Steps For Antigravity
 
@@ -348,6 +304,6 @@ Read in this order:
 
 ## 8. Handoff Decision
 
-Status: HOLD FOR PAGEINDEX RECONCILIATION AND FRESH 10/10 SEAL.
+Status: SEALED AND PROMOTION-READY.
 
-The branch has strong fresh code-level evidence at 445 passing tests, but it is not promotion-ready while the canonical master verifier is red. Antigravity's immediate job is to reconcile the two stale status lines, review the P7A and accounting boundaries, regenerate the PageIndex artifacts, and obtain an exact-tip 10/10 receipt before requesting commit/push/merge approval.
+The branch has strong fresh code-level evidence at 445 passing tests and a 10/10 master verification seal. Antigravity has executed the 6 Astra hardening items on the `CouncilEngine` submodule (and incorporated the secondary Codex review fixes) without breaking this sealed PBM baseline.
