@@ -11,7 +11,7 @@ This refresh updates the handoff posture against the current filesystem state af
 - Active branch: `refactor/council-engine-submodule`
 - Current HEAD: `cd859c9b6f1c7bd47da6abbc0c422d3f2a865069`
 - HEAD commit: `chore: Update council submodule to incorporate Codex review fixes`
-- Local divergence: `4 ahead of origin/chore/update-dependencies`
+- Local divergence: `4 ahead of origin/refactor/council-engine-submodule`
 - Working tree at refresh time: clean
 - Fresh spot check: Working tree clean, `.gitmodules` present, `tools/council/` is a valid submodule pointing to standalone `CouncilEngine`.
 - Latest receipt on disk is `cache/verification_master_receipt.json` with `overall_status: PASSED`, `steps_executed: 10`, and `445` Hardhat tests passing.
@@ -28,7 +28,7 @@ Current Antigravity instruction: All 6 Astra hardening items on the `CouncilEngi
 - Submodule: `tools/council/` points to standalone `CouncilEngine` at commit `314da95`.
 
 Remote qualifications:
-- Branch is currently 2 commits ahead of `origin/chore/update-dependencies` (the removal of vendored council engine and addition of submodule).
+- Branch is currently 2 commits ahead of `origin/refactor/council-engine-submodule` (the removal of vendored council engine and addition of submodule).
 
 ## 2. Recent Commit Lineage
 
@@ -222,7 +222,7 @@ Current conclusion:
        git -C $Repo rev-list --left-right --count origin/main...HEAD
        git -C $Repo diff --name-status origin/main...HEAD
 
-   Expected starting point for this handoff: chore/update-dependencies at ccb997440ebbc53dbcdc12e43fb8e9898c4570a0, four commits ahead of the local origin/main ref. Stop and report SNAPSHOT_MISMATCH if the branch or HEAD differs.
+   Expected starting point for this handoff: refactor/council-engine-submodule at ccb997440ebbc53dbcdc12e43fb8e9898c4570a0, four commits ahead of the local origin/main ref. Stop and report SNAPSHOT_MISMATCH if the branch or HEAD differs.
 
 2. Review the branch delta with priority on:
 
@@ -276,7 +276,7 @@ Current conclusion:
 
 7. Push the branch only after the fresh seal and approval.
 
-       git -C "C:\Users\Josh\Desktop\PBMRebateTreasuryFinal" push -u origin chore/update-dependencies
+       git -C "C:\Users\Josh\Desktop\PBMRebateTreasuryFinal" push -u origin refactor/council-engine-submodule
 
    Because this branch currently has no configured upstream, the -u form is appropriate for the first approved push from this checkout. Re-fetch and re-check remote divergence before opening or updating a merge request.
 
@@ -307,3 +307,4 @@ Read in this order:
 Status: SEALED AND PROMOTION-READY.
 
 The branch has strong fresh code-level evidence at 445 passing tests and a 10/10 master verification seal. Antigravity has executed the 6 Astra hardening items on the `CouncilEngine` submodule (and incorporated the secondary Codex review fixes) without breaking this sealed PBM baseline.
+
