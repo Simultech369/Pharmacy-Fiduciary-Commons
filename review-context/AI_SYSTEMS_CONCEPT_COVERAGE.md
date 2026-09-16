@@ -5,7 +5,7 @@ Status: planning and review-control surface. This file maps recent AI-systems to
 Historical preparation snapshot (August 2026):
 
 - Repo: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
-- Historical reference context when prepared: main ([dirty working tree])
+- Historical reference context when prepared: historical main snapshot (dirty working tree)
 - Worktree after this pass: dirty; latest local check on 2026-08-24 showed
   `34` visible `git status --short` entries (`21` modified, `13` untracked).
 - 2026-08-24 reconciliation note: after the repo-local gateway/Gate 0 promotion
