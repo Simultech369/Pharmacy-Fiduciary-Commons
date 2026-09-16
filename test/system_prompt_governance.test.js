@@ -60,4 +60,18 @@ describe("System prompt pruning governance", function () {
       }
     }
   });
+
+  it("enforces architectural invariant shields in security reviewer prompts", function () {
+    const securityPromptFiles = [
+      path.join("reviews", "prompts", "grok-council-prompt.txt"),
+      path.join("reviews", "prompts", "guardrail-prompt.txt"),
+      path.join("reviews", "prompts", "skeptic-prompt.txt"),
+    ];
+    for (const relativePath of securityPromptFiles) {
+      const prompt = fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+      expect(prompt, `${relativePath} missing _startRound shield`).to.include("_startRound");
+      expect(prompt, `${relativePath} missing registerVoterWithSignature shield`).to.include("registerVoterWithSignature");
+      expect(prompt, `${relativePath} missing updateCreditLimit shield`).to.include("updateCreditLimit");
+    }
+  });
 });
