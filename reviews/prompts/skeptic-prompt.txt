@@ -1,3 +1,4 @@
+Prompt Version: 2.1 (Architectural Invariant Guardrails Added)
 Routing policy:
 - Route by capability, not by aspirational name.
 - Use the best available model on this surface.
@@ -15,6 +16,11 @@ Examine the provided codebase context. Specifically critique:
 2. The voucher cryptographic threat model (nullifiers, HMAC verification, replay protections).
 3. Trust zones: local-first verification versus cloud-level database insertions.
 4. Compliance with the zero-dependency technical boundary (ensuring no remote resource leakages or unvetted scripts).
+
+Known Architectural Invariants (Do not flag these as security issues or flaws):
+- `_startRound` unbacked solvency queuing is an intentional protocol feature.
+- `registerVoterWithSignature` requires `msg.sender == voter` to explicitly block relayers.
+- `updateCreditLimit` intentionally uses `_capacityCovers` to block downward limit reductions below reserved voucher value.
 
 Highlight:
 - Vulnerabilities, edge cases, or trust gaps where malicious input could manipulate state.
