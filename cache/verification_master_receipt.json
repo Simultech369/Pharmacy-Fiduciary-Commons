@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-09-16T23:32:56Z",
+  "timestamp": "2026-09-17T16:41:22Z",
   "overall_status": "PASSED",
   "expected_step_count": 10,
   "steps_executed": 10,
   "git_lineage": {
-    "head_commit": "03e300bd8498a554c5704f63ca651e40f8dbfa95",
+    "head_commit": "36eaba9b1ebe4585571d4956da616e351a5623d3",
     "branch": "refactor/council-engine-submodule",
     "is_dirty": true,
     "dirty_file_count": 3,
@@ -16,7 +16,7 @@
       "command": "npx --no-install hardhat test",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 109022,
+      "duration_ms": 143080,
       "observed_counts": {
         "passing_tests": 446
       }
@@ -26,14 +26,14 @@
       "command": "npm run check:frontend",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 983
+      "duration_ms": 1354
     },
     {
       "step_name": "3. PageIndex Status Auditor",
       "command": "python scripts/index_dossier_tree.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 558,
+      "duration_ms": 378,
       "observed_counts": {
         "dirty_untracked_files_detected": 3,
         "contradictory_claims_identified": 0
@@ -44,7 +44,7 @@
       "command": "python scripts/eval_dossier_rag.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1852,
+      "duration_ms": 2018,
       "observed_counts": {
         "positive_cases": 26,
         "adversarial_no_hit_cases": 8
@@ -55,35 +55,35 @@
       "command": "python scripts/context_hygiene_audit.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 123
+      "duration_ms": 202
     },
     {
       "step_name": "6. Constitutional Rubric Evaluator",
       "command": "python scripts/eval_constitutional_rubric.py --target reviews/rotational_swarm_review_dossier.md",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 344
+      "duration_ms": 123
     },
     {
       "step_name": "7. Swarm Observability Dashboard",
       "command": "python scripts/observability_dashboard.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 1223
+      "duration_ms": 1557
     },
     {
       "step_name": "8. Simulated 11-Receipt Dual-Chain Council Verifier",
       "command": "python scripts/council_orchestrator.py --demo",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 396
+      "duration_ms": 159
     },
     {
       "step_name": "9. Agent Claim Lie Detector & Cross-Auditor",
       "command": "python scripts/verify_agent_claims.py --target reviews/rotational_swarm_review_dossier.md",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 3813,
+      "duration_ms": 4488,
       "observed_counts": {
         "claims_audited": 40,
         "claim_violations": 0
@@ -94,7 +94,7 @@
       "command": "python scripts/privacy_leak_scanner.py",
       "return_code": 0,
       "status": "PASSED",
-      "duration_ms": 230
+      "duration_ms": 233
     }
   ]
 }

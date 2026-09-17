@@ -235,7 +235,7 @@ veto_votes = [
         vote="REJECT",
         confidence_score=1.0,
         rationale="Formal counterexample found",
-        formal_counterexample_sha256="deadbeef12345678"
+        formal_counterexample_sha256="deadbeef12345678deadbeef12345678deadbeef12345678deadbeef12345678"
     ),
 ]
 receipt2 = engine.evaluate_jury_deliberation("case_002", veto_votes)

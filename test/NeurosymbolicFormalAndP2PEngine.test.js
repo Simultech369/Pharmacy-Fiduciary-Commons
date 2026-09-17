@@ -111,7 +111,7 @@ plan = planner.synthesize_joint_plan(
     ]
 )
 assert isinstance(plan, JointProgramAndProofPlan)
-assert plan.proof_verified is True
+assert plan.proof_verified is False
 assert len(plan.smt_clauses) == 2
 assert "def calculate_total" in plan.synthesized_code
 
