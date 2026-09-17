@@ -33,10 +33,15 @@ Key alignments:
 - [live verification just run] Double-down on deterministic evals, local open-weight inference (Qwen/GLM/Mistral), and strict cryptographic human gating.
 - [live verification just run] Rejection of autonomous multi-agent swarms, MCP bloat, and enterprise serving overhead.
 - [live verification just run] Proof boundary hardening incorporated in integration tests ([`test/A2AProtocolEngine.test.js`](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/test/A2AProtocolEngine.test.js), [`test/NeurosymbolicFormalAndP2PEngine.test.js`](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/test/NeurosymbolicFormalAndP2PEngine.test.js)).
+## Dream-RSI Offline Replay (Implemented)
+
+- [live verification just run] `dream_rsi_replay_engine.py` implements the Dream-RSI offline replay pattern: historical review dossiers from `reviews/` (99 files, 40+ JSON+Markdown pairs) are replayed against prompt variants with deterministic structural scoring.
+- [live verification just run] 23 tests passing covering corpus parsing, structural evaluator logic, replay execution, scope/model filtering, and real corpus integration.
+- [live verification just run] RAG eval expanded to 32 golden cases and 8 adversarial no-hit cases (hit_rate@5=0.97, MRR=0.85, NDCG@5=0.88).
 
 ## Conclusion
 
-The PBM Core contracts and Council Engine submodule are structurally sound, passing all 10 verification steps locally with a `[committed HEAD]` lineage (commit `b91fc15`). The working tree is sealed.
+The PBM Core contracts and Council Engine submodule are structurally sound, passing all 10 verification steps locally with a `[committed HEAD]` lineage (commit `4db9c21`). The working tree is sealed.
 
 ## Corrected PowerShell Handoff Command
 
