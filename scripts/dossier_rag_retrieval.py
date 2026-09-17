@@ -50,6 +50,9 @@ TARGET_DOCUMENTS = [
     "docs/ops/SOLVENCY_OWNER_DECISION_WORKSHEET.md",
     "docs/ops/SOLVENCY_REVIEW_AUTHORITY_AND_SAFETY.md",
     "review-context/SINGLE_REPO_STATE_LEDGER.md",
+    "review-context/GROK_STRATEGIC_HARDENING_SYNTHESIS.md",
+    "review-context/ASTRA_PBM_CORE_REVIEW_PACKET.md",
+    "review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md",
 ]
 
 STOPWORDS = {

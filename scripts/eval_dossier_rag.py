@@ -126,6 +126,30 @@ GOLDEN_CASES = [
         "query": "When is the --skip-slither flag used during Solidity security audit execution?",
         "expected_files": ["review-context/SINGLE_REPO_STATE_LEDGER.md", "docs/ops/SCANNER_TRIAGE.md", "docs/ops/SOLIDITYSCAN_TRIAGE.md", "docs/ops/PRODUCTION_READINESS_CHECKLIST.md"],
     },
+    {
+        "query": "Which still-hyped AI engineering items does the Grok strategic synthesis recommend doubling down on?",
+        "expected_files": ["review-context/GROK_STRATEGIC_HARDENING_SYNTHESIS.md", "review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md"],
+    },
+    {
+        "query": "What peaked or anti-pattern AI items are explicitly avoided according to strategic hardening guidance?",
+        "expected_files": ["review-context/GROK_STRATEGIC_HARDENING_SYNTHESIS.md", "review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md"],
+    },
+    {
+        "query": "What is the Dream-RSI offline replay pattern and how does it apply to prompt testing?",
+        "expected_files": ["review-context/GROK_STRATEGIC_HARDENING_SYNTHESIS.md", "review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md"],
+    },
+    {
+        "query": "What is the per-query spend kill-switch dollar limit for model gateway invocations?",
+        "expected_files": ["review-context/GROK_STRATEGIC_HARDENING_SYNTHESIS.md", "review-context/ASTRA_PBM_CORE_REVIEW_PACKET.md"],
+    },
+    {
+        "query": "What is the Weakest Valid Claim Rule and how does it apply to this repository?",
+        "expected_files": ["review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md"],
+    },
+    {
+        "query": "How does the Vitalik privacy orchestrator pattern apply to the Dizzy and Council architecture?",
+        "expected_files": ["review-context/GROK_STRATEGIC_HARDENING_SYNTHESIS.md"],
+    },
 ]
 
 ADVERSARIAL_NO_HIT_CASES = [
