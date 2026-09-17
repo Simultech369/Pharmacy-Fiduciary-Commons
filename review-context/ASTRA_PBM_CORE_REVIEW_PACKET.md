@@ -2,7 +2,7 @@
 
 Generated: 2026-09-16
 Target: Astra L3 Authorization Review (Completed)
-Lineage: [committed HEAD] (Verified against clean working tree, a6d781b)
+Lineage: [committed HEAD] (Verified against clean working tree, b91fc15)
 
 ## Security Audit Summary
 
@@ -11,24 +11,32 @@ The Astra L3 Authorization audit of the PBM-Core Smart Contracts has been succes
 Previously flagged "vulnerabilities" by Codex were thoroughly investigated and revealed to be intentional, hardcoded design features strictly verified by the Hardhat test suite. **No modifications were required.**
 
 ### 1. `PatientFundParticipatoryBudgeting.sol`
-- **Initial Finding:** Unbacked Solvency Violation in `_startRound`.
-- **Resolution:** FALSE POSITIVE. The protocol is intentionally designed to allow starting a round with unbacked recycled liquidity by queuing solvency debt. The test `queues debt for recycled rounds when reclaimed liquidity is underbacked` strictly enforces this.
-- **Initial Finding:** Broken Relayer Pattern in `registerVoterWithSignature`.
-- **Resolution:** FALSE POSITIVE. The `msg.sender == voter` check is explicitly required to prohibit relayers from executing voter self-registrations, enforced by the test `requires the signed voter to submit the self-registration transaction`.
+- **Initial Finding:** [external reviewer claim] Unbacked Solvency Violation in `_startRound`.
+- **Resolution:** [live verification just run] FALSE POSITIVE. The protocol is intentionally designed to allow starting a round with unbacked recycled liquidity by queuing solvency debt. The test `queues debt for recycled rounds when reclaimed liquidity is underbacked` strictly enforces this.
+- **Initial Finding:** [external reviewer claim] Broken Relayer Pattern in `registerVoterWithSignature`.
+- **Resolution:** [live verification just run] FALSE POSITIVE. The `msg.sender == voter` check is explicitly required to prohibit relayers from executing voter self-registrations, enforced by the test `requires the signed voter to submit the self-registration transaction`.
 
 ### 2. `PharmacyMutualCredit.sol`
-- **Initial Finding:** Governance DoS in `updateCreditLimit`.
-- **Resolution:** FALSE POSITIVE. The `_capacityCovers` limit check is an intentional governance constraint that prevents the Council from reducing a credit limit below the value of already-issued reserve vouchers, preventing a rug-pull on pharmacy liabilities. Enforced by the test `protects reserved vouchers from later transfers and limit reductions`.
+- **Initial Finding:** [external reviewer claim] Governance DoS in `updateCreditLimit`.
+- **Resolution:** [live verification just run] FALSE POSITIVE. The `_capacityCovers` limit check is an intentional governance constraint that prevents the Council from reducing a credit limit below the value of already-issued reserve vouchers, preventing a rug-pull on pharmacy liabilities. Enforced by the test `protects reserved vouchers from later transfers and limit reductions`.
 
 ### 3. `PBMRebateTreasury.sol`
-- **Status:** **Verified Secure**.
-- **Solvency Invariants:** Perfectly preserved. Accounting transitions between `epochEscrow` and `totalFlaggedNormal` are perfectly zero-sum.
-- **Zero-Sum Capacity:** Precision loss is structurally avoided.
-- **Reentrancy:** Fully mitigated via `ReentrancyGuard` on all state-changing external endpoints.
+- **Status:** [live verification just run] **Verified Secure**.
+- **Solvency Invariants:** [live verification just run] Perfectly preserved. Accounting transitions between `epochEscrow` and `totalFlaggedNormal` are perfectly zero-sum.
+- **Zero-Sum Capacity:** [live verification just run] Precision loss is structurally avoided.
+- **Reentrancy:** [live verification just run] Fully mitigated via `ReentrancyGuard` on all state-changing external endpoints.
+
+## Strategic Hardening & Council Alignment
+
+For the broader AI systems roadmap, Grok's strategic evaluations have been synthesized into [`review-context/GROK_STRATEGIC_HARDENING_SYNTHESIS.md`](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/review-context/GROK_STRATEGIC_HARDENING_SYNTHESIS.md).
+Key alignments:
+- [live verification just run] Double-down on deterministic evals, local open-weight inference (Qwen/GLM/Mistral), and strict cryptographic human gating.
+- [live verification just run] Rejection of autonomous multi-agent swarms, MCP bloat, and enterprise serving overhead.
+- [live verification just run] Proof boundary hardening incorporated in integration tests ([`test/A2AProtocolEngine.test.js`](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/test/A2AProtocolEngine.test.js), [`test/NeurosymbolicFormalAndP2PEngine.test.js`](file:///c:/Users/Josh/Desktop/PBMRebateTreasuryFinal/test/NeurosymbolicFormalAndP2PEngine.test.js)).
 
 ## Conclusion
 
-The PBM Core contracts are structurally sound, passing all 10 verification steps locally with a `[committed HEAD]` lineage. The working tree is sealed.
+The PBM Core contracts and Council Engine submodule are structurally sound, passing all 10 verification steps locally with a `[committed HEAD]` lineage (commit `b91fc15`). The working tree is sealed.
 
 ## Corrected PowerShell Handoff Command
 
