@@ -129,22 +129,21 @@ production-readiness claim.
 
 ### First Topic List Calibration
 
-| Topic bucket | Project status | Calibration |
+| Topic bucket | Project posture (advisory) | Calibration |
 | --- | --- | --- |
 | Tokenizer, RoPE/ALiBi, hand-wired attention, MHA, Transformer blocks, mini-former training | Park | These are base-model internals. They do not improve fiduciary proof, Solidity solvency, or receipt truthfulness right now. |
 | Embeddings | Implement further | Retrieval applies, but the repo currently uses deterministic lexical/TF-IDF-style retrieval rather than a durable neural embedding lifecycle. Add dense embeddings only behind metadata-filter and no-hit tests. |
-| Objective comparison, SFT/DPO/RLHF/GRPO | Narrowly apply | Scratch `rlvr_ruler_reward_engine.py` models RLVR/RULER-style rewards. `dream_rsi_replay_engine.py` implements Dream-RSI offline replay: historical review dossiers are replayed against prompt variants with deterministic structural scoring (23 tests passing). Use RLVR only for verifiable invariant breaking, compiler/proof checks, or formal verification. Park SFT/RLHF on auditor seats to preserve independent dissent. |
+| Objective comparison, SFT/DPO/RLHF/GRPO | Narrowly apply | Scratch `rlvr_ruler_reward_engine.py` models RLVR/RULER-style rewards. [committed HEAD] `dream_rsi_replay_engine.py` implements Dream-RSI offline replay: historical review dossiers are replayed against prompt variants with deterministic structural scoring (23 tests passing). Use RLVR only for verifiable invariant breaking, compiler/proof checks, or formal verification. Park SFT/RLHF on auditor seats to preserve independent dissent. |
 | Sampling, KV cache, speculative decoding, quantization, serving stacks, hardware budgets | Implement selectively | Gateway sampling controls and local quantized model inventory are relevant. Speculative decoding and KV-cache work should wait for measured local inference bottlenecks; prompt/content dedup is cheaper and safer first. |
 | Long context | Partial / planning | Roster docs name long-context lanes, but a roster entry is not proof. Count this only when a live route produces receipt-backed review output on an allowed disclosure class. |
-| Data pipelines and synthetic data | Addressed / implement further | Repo dossier indexing and review-packet compilation are real. Scratch red-team and PBM fraud specs add synthetic fixtures. Promote only tests tied to active PBM claims. |
-| Eval harnesses, RAG, tool use / agents, red-team suite | Core pillar | These are the strongest fit: `scripts\verify_all.py`, `scripts\verify_agent_claims.py`, `scripts\dossier_rag_retrieval.py`, `scripts\eval_dossier_rag.py` (32 golden cases, 8 adversarial no-hit cases, hit_rate@5=0.97, MRR=0.85), repo `scripts\council_orchestrator.py`, and scratch council/red-team modules. |
+| Eval harnesses, RAG, tool use / agents, red-team suite | Core pillar | These are the strongest fit: `scripts\verify_all.py`, `scripts\verify_agent_claims.py`, `scripts\dossier_rag_retrieval.py`, `scripts\eval_dossier_rag.py` (34 golden cases, 8 adversarial no-hit cases, hit_rate@5=0.94, MRR=0.82), repo `scripts\council_orchestrator.py`, and scratch council/red-team modules. |
 | Vision-language adapters | Start | Needed for scanned PBM evidence, but must begin with sanitized fixtures, OCR/table extraction proof, and prompt-injection gates. |
-| Interpretability | Limited scratch utility | Scratch reasoning-trace extraction can help debug reviewer outputs, but hidden chain-of-thought should not become governance proof. Use only structured, admissible explanations and receipt-backed findings. |
+| Interpretability | Limited scratch utility | strictly advisory: scratch reasoning-trace extraction can help debug reviewer outputs, but hidden chain-of-thought should not become governance proof. Use only structured, admissible explanations and receipt-backed findings. |
 | Full capstone model system | Prototype / control plane | The PBM Treasury plus scratch Council Engine is a capstone-style integrated system, but production status still depends on proof-boundary, deployment, data-retention, and approval-gate completion. |
 
 ### Fifteen Backend Systems Calibration
 
-| # | System | Current status | Next implementation action |
+| # | System | Calibration posture (advisory) | Next implementation action |
 | --- | --- | --- | --- |
 | 1 | LLM gateway / proxy | Scratch implemented; repo-local partial/no-network promotion | Keep the new `ModelGateway.invoke_with_resilience()` simulation receipt-backed, then add retries, circuit breakers, route attestation, and ZDR boundaries only with live provider evidence. |
 | 2 | Token metering / billing | Budget metering scratch; billing parked | Keep SQLite-style budget reservations for paid model dispatch. Do not add Stripe billing unless this becomes a tenant SaaS product. |
@@ -152,14 +151,14 @@ production-readiness claim.
 | 4 | RAG serving pipeline | Repo local prototype | Add incremental indexing, metadata filters, larger evals, and scanned-doc fixtures before calling it production RAG. |
 | 5 | Semantic cache layer | Not yet production | Start with deterministic prompt/content-hash cache and duplicate packet suppression; add embedding cache later. |
 | 6 | Async agent job queue | Scratch implemented | Promote checkpoint + DLQ semantics for long-running council jobs only after gateway proof is repo-local. |
-| 7 | Tool execution sandbox | Scratch implemented; repo proof boundary hardened | Keep negative tests for mock/live isolation, then require live Docker/Podman evidence for production apply. |
-| 8 | Multi-tenant knowledge base | Partial / scratch | Do not overclaim. Add row-level metadata filtering tests before storing tenant-specific vectors or claims. |
+| 7 | Tool execution sandbox | Scratch implemented prototype; repo proof boundary hardened | Keep negative tests for mock/live isolation, then require live Docker/Podman evidence for production apply. |
+| 8 | Multi-tenant knowledge base | Partial prototype / scratch | Do not overclaim. Add row-level metadata filtering tests before storing tenant-specific vectors or claims. |
 | 9 | Prompt and config versioning | Partial | Convert prompt/model/config hashes into a small registry with rollback and receipt linkage. |
 | 10 | Eval pipeline backend | Repo core pillar | Maintain `verify_all.py` as the master gate; keep durable observed counts in receipts. |
 | 11 | Observability for LLM traffic | Repo and scratch local | Keep local receipts and JSON summaries now; add OpenTelemetry-style traces only at service boundaries. |
 | 12 | Webhook and event fan-out | Scratch transport only | Add signed external webhooks later. Current TCP/Merkle gossip is not Ed25519-authenticated webhook infrastructure. |
 | 13 | Context assembly service | Scratch implemented; repo-local partial/no-network promotion | Log-derived reconstruction checks now guard the local gateway demo and qualification probes; extend them before any external model dispatch from repo workflows. |
-| 14 | Guardrails middleware | Scratch implemented; repo-local Gate 0 partial promotion | Gate 0 prompt-injection rejection is covered locally; PII/PHI redaction, domain policy, and L3 lifecycle hooks still need repo CLI/runtime promotion. |
+| 14 | Guardrails middleware | [committed HEAD] Promoted to CouncilEngine submodule | Gate 0 prompt-injection rejection is covered locally; `LocalPrivacyOrchestrator` (`privacy_orchestrator.py`) implements local edge masking of healthcare PII/PHI with zero-leak egress verification; `CouncilSubcommitteeEngine` enforces SecOps PHI guards and LRN-015 architectural invariant shields with deterministic OSS model rotation. |
 | 15 | Model fallback and routing | Scratch implemented; repo fallback not proven | Keep fallback/routing as future work behind disclosure-class and budget checks. No live provider dispatch, hosted ZDR attestation, or paid model call is proven by the repo-local gateway simulation. |
 
 ### Parked By Default
