@@ -150,6 +150,14 @@ GOLDEN_CASES = [
         "query": "How does the Vitalik privacy orchestrator pattern apply to the Dizzy and Council architecture?",
         "expected_files": ["review-context/GROK_STRATEGIC_HARDENING_SYNTHESIS.md"],
     },
+    {
+        "query": "What is the role of the Council Subcommittee Engine and how do OSS models rotate through review seats?",
+        "expected_files": ["review-context/SINGLE_REPO_STATE_LEDGER.md", "review-context/AI_SYSTEMS_CONCEPT_COVERAGE.md"],
+    },
+    {
+        "query": "Where are the confidential operational relayer, database sagas, and off-chain intake proxy housed?",
+        "expected_files": ["review-context/SINGLE_REPO_STATE_LEDGER.md"],
+    },
 ]
 
 ADVERSARIAL_NO_HIT_CASES = [
