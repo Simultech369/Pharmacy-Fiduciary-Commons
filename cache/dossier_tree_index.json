@@ -693,18 +693,18 @@
           "level": 4
         },
         {
-          "line": 70,
+          "line": 72,
           "title": "Claims Still Disputed / Open Non-Claims",
           "level": 4
         },
         {
-          "line": 79,
+          "line": 81,
           "title": "Control & Next Actions",
           "level": 3
         }
       ],
       "findings": [],
-      "line_count": 83
+      "line_count": 85
     },
     {
       "file": "review-context/agent_work_lineage_ledger.md",
@@ -1061,18 +1061,18 @@
           "level": 3
         },
         {
-          "line": 145,
+          "line": 144,
           "title": "Fifteen Backend Systems Calibration",
           "level": 3
         },
         {
-          "line": 165,
+          "line": 164,
           "title": "Parked By Default",
           "level": 3
         }
       ],
       "findings": [],
-      "line_count": 171
+      "line_count": 170
     },
     {
       "file": "reviews/rotational_swarm_review_dossier.md",
