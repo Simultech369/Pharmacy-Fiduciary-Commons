@@ -7,9 +7,9 @@
 ### Core State Matrix
 
 - **Repo**: `C:\Users\Josh\Desktop\PBMRebateTreasuryFinal`
-- **Current live context**: Execute git status and rev-parse for live positioning.
+- **Current live context**: [live verification just run] Execute git status and rev-parse for live positioning.
 - **Current intended slice**: Proof-boundary cleanup, narrow PBM-core commit preparation, and follow-up verification slices.
-- **Working Tree Notice**: Reviewers must evaluate working-tree and untracked control content alongside committed HEAD (run `git status --short --branch`).
+- **Working Tree Notice**: [dirty working tree] Reviewers must evaluate working-tree and untracked control content alongside committed HEAD (run `git status --short --branch`).
 
 ---
 
@@ -57,7 +57,7 @@
 5. **Brand Gate B & Impeccable Visual Compliance**: **100% Passed (0 inline styles, curated motion tokens <= 300ms, curated HSL color tokens)** `[generated cache]`.
 6. **PageIndex Status Auditor**: **0 status contradictions across 13 target documents** `[generated cache]`.
 7. **Swarm Observatory Evidence Gate**: **8 reconciled router metadata receipts, 0 evidence violations, 0.0% violation-derived inconsistency score** `[generated cache]`.
-8. **Local Dossier Retrieval Eval**: **26 golden domain questions and 8 adversarial negative probes pass with hit rate@5 1.0, MRR 0.8731, NDCG@5 0.9063, and no-hit accuracy 1.0** `[generated cache]`.
+8. **Local Dossier Retrieval Eval**: **32 golden domain questions and 8 adversarial negative probes pass with hit rate@5 0.9688, MRR 0.8385, NDCG@5 0.8734, and no-hit accuracy 1.0** `[live verification just run]`.
 9. **Slither Artifact Policy**: Explicitly documented `--skip-slither` static artifact parsing behavior in `scripts/run_solidity_security_audit.py`.
 10. **Dual-Chain Council Verifier**: `scripts/council_orchestrator.py` now verifies 11 receipt invariants for an explicitly simulated demo mode. It does not claim live Docker isolation, live model voting, provider ZDR, or live human authorization. Scratch-engine adversarial-gauntlet counts remain external claims unless freshly rerun or receipt-backed.
 11. **On-Chain Solvency Check**: `PBMRebateTreasury.sol` implements the atomic `solvencyCheck()` view function returning `(isSolvent, delta, expectedBalance, actualBalance)`.
@@ -66,6 +66,8 @@
 14. **Zero-Sum Mutual Credit Property Invariance**: `test/PharmacyMutualCredit.test.js` proves zero-sum balance conservation ($\sum b_i = 0$) and strict capacity adherence under 50-step randomized state transitions and boundary limit edge cases.
 15. **Zero-Database Resilience & Offline Continuity**: `tools/resilience/zero-database-drill.mjs` and `test/ZeroDatabaseLiveness.test.js` exercise local offline-continuity behavior (client-side HMAC vouchers, Merkle proof reconstruction, and on-chain claim paths). This is local drill evidence, not production disaster-recovery proof.
 16. **Agent Claim Lie Detector & Cross-Auditor**: `scripts/verify_agent_claims.py` and `test/AgentClaimVerifier.test.js` parse review dossiers and fail closed against targeted false claims such as fake commit hashes, hallucinated line bounds, ungrounded claims, and test-count inflation patterns.
+17. **Vitalik Privacy Orchestrator**: `tools/council/privacy_orchestrator.py` implements local edge masking of healthcare PII/PHI, zero-leak egress gate, and return unmasking sealed in `ReceiptEnvelope[PrivacyOrchestrationReceipt]`. Verified by 5-test suite and full 360-test council run `[committed HEAD]`.
+18. **Private Backend Repository**: `C:\Users\Josh\Desktop\PBMRebateTreasuryBackend` initialized as a standalone Git repository containing `server/`, `supabase/`, operational tests, and package configuration `[committed HEAD]`.
 
 #### Claims Still Disputed / Open Non-Claims
 1. **Semantic ZK Mock**: `circuits/vote_nullifier.circom` is spec-only/mock ZK. It does NOT provide production-grade zero-knowledge privacy.
@@ -78,6 +80,6 @@
 
 ### Control & Next Actions
 
-- **Latest controlling reviewer verdict**: **Codex 5.6Sol Architecture Review**: proof-boundary-first; do not commit the full 29-file bundle as one baseline.
+- **Latest controlling reviewer verdict**: [external reviewer claim] **Codex 5.6Sol Architecture Review**: proof-boundary-first; do not commit the full 29-file bundle as one baseline.
 - **Next implementation action**: prepare a narrow PBM-core slice after claim cleanup, keeping review sidecars and generated cache separate unless explicitly approved.
 - **Next review action**: staged-manifest review against this compact ledger, exact working-tree manifest, and fresh verification output.
