@@ -105,5 +105,56 @@ print(f"STATEM_EXPORT:nodes={receipt.payload.node_count}:edges={receipt.payload.
     const output = runPython(pyCode);
     expect(output).to.include("STATEM_EXPORT:nodes=4:edges=4");
   });
+
+  it("verifies SovereignSWEBenchBatchRunner enforces static-only invariants, typed envelope receipts, and tamper rejection", () => {
+    const pyCode = `
+import sys, os
+sys.path.insert(0, os.path.join(r"${repoRoot}", "tools", "council"))
+
+from sovereign_swebench_batch_runner import (
+    SovereignSWEBenchBatchRunner,
+    SovereignSWEBenchTask,
+)
+
+runner = SovereignSWEBenchBatchRunner()
+
+# Task 1: Valid clean repair
+clean_task = SovereignSWEBenchTask(
+    task_id="pbm_repair_valid_01",
+    source_label="pbm_consumer_rehearsal",
+    target_file="contracts/math_helper.py",
+    original_code="def sub(a, b):\\n    return a + b\\n",
+    search_block="return a + b",
+    replace_block="return a - b",
+    objective="Fix sub() to return subtraction result",
+)
+
+# Task 2: Tampered repair with mismatched search block (fails closed)
+tampered_task = SovereignSWEBenchTask(
+    task_id="pbm_repair_tampered_02",
+    source_label="pbm_consumer_rehearsal",
+    target_file="contracts/math_helper.py",
+    original_code="def sub(a, b):\\n    return a + b\\n",
+    search_block="NON_EXISTENT_SEARCH_BLOCK",
+    replace_block="return a - b",
+    objective="Attempt invalid search block",
+)
+
+env = runner.run_batch([clean_task, tampered_task], batch_id="pbm_consumer_batch_test")
+payload = env.payload
+
+print(f"RECEIPT_TYPE:{env.receipt_type}")
+print(f"BATCH_COUNTS:total={payload.total_tasks}:accept={payload.static_accept_count}:rejected={payload.rejected_count}")
+print(f"AUTHORITY:{payload.authority_scope}:local={payload.local_only}:prod={payload.production_authority}:network={payload.network_calls_permitted}")
+print(f"TAMPER_REASON:{payload.results[1].rejection_reasons[0]}")
+`;
+
+    const output = runPython(pyCode);
+    expect(output).to.include("RECEIPT_TYPE:SovereignSWEBenchBatchReceipt");
+    expect(output).to.include("BATCH_COUNTS:total=2:accept=1:rejected=1");
+    expect(output).to.include("AUTHORITY:STATIC_REHEARSAL_ONLY:local=True:prod=False:network=False");
+    expect(output).to.include("TAMPER_REASON:SEARCH_BLOCK_NOT_FOUND");
+  });
 });
+
 
