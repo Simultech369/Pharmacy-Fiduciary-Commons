@@ -128,6 +128,7 @@ function main() {
     "ONBOARDING.md",
     "NEXT.md",
     "README.md",
+    "PRIVACY.md",
     "PORTABILITY.md",
     "GOVERNANCE.md",
     "docs/ops/MECHANISM_COVERAGE.md",

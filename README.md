@@ -27,6 +27,7 @@
 | What is this? | Local/testnet infrastructure for verifiable rebate accounting, pharmacy claim proofs, patient-fund allocation, and public proof-boundary review. |
 | What can be verified today? | Solidity tests, Merkle fixtures, export self-consistency checks, static dashboard build checks, and repository verification scripts. |
 | What is synthetic? | Public dashboard PBM names, displayed amounts, onboarding fixtures, and sample receipt payloads. |
+| Privacy posture | Synthetic data only, zero visitor tracking in the static dashboard, and no production privacy guarantee; see [PRIVACY.md](PRIVACY.md). |
 | Is it audited? | No. Independent security audit remains a launch blocker. |
 | Is it deployed? | No mainnet deployment is represented by this repository. |
 | Who should review first? | Solidity/security reviewers, privacy and retaliation-risk reviewers, documentation editors, and dashboard accessibility reviewers. |

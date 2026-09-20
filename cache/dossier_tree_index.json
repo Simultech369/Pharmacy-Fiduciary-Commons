@@ -280,128 +280,128 @@
           "level": 2
         },
         {
-          "line": 36,
+          "line": 37,
           "title": "Credibility Posture",
           "level": 2
         },
         {
-          "line": 49,
+          "line": 50,
           "title": "What This Cannot Do (Adversarial Limitations & Disclaimers)",
           "level": 2
         },
         {
-          "line": 66,
+          "line": 67,
           "title": "Status Summary",
           "level": 2
         },
         {
-          "line": 72,
+          "line": 73,
           "title": "What Runs Today",
           "level": 2
         },
         {
-          "line": 91,
+          "line": 92,
           "title": "Quickstart",
           "level": 2
         },
         {
-          "line": 107,
+          "line": 108,
           "title": "Formal Verification Lane",
           "level": 2
         },
         {
-          "line": 153,
+          "line": 154,
           "title": "Fiduciary Dashboard Interface",
           "level": 2
         },
         {
-          "line": 160,
+          "line": 161,
           "title": "Architecture",
           "level": 2
         },
         {
-          "line": 185,
+          "line": 186,
           "title": "Current Checkpoint",
           "level": 2
         },
         {
-          "line": 196,
+          "line": 197,
           "title": "What This Is",
           "level": 2
         },
         {
-          "line": 210,
+          "line": 211,
           "title": "Core Lifecycle",
           "level": 2
         },
         {
-          "line": 221,
+          "line": 222,
           "title": "Treasury Buckets",
           "level": 2
         },
         {
-          "line": 228,
+          "line": 229,
           "title": "Patient Fund",
           "level": 2
         },
         {
-          "line": 238,
+          "line": 239,
           "title": "Roles",
           "level": 2
         },
         {
-          "line": 249,
+          "line": 250,
           "title": "Security Properties",
           "level": 2
         },
         {
-          "line": 277,
+          "line": 278,
           "title": "Merkle Leaf Encoding",
           "level": 2
         },
         {
-          "line": 296,
+          "line": 297,
           "title": "Deployment Parameters",
           "level": 2
         },
         {
-          "line": 324,
+          "line": 325,
           "title": "Deployment Script",
           "level": 2
         },
         {
-          "line": 374,
+          "line": 375,
           "title": "Audit And Production Status",
           "level": 2
         },
         {
-          "line": 393,
+          "line": 394,
           "title": "Adjacent Designs",
           "level": 2
         },
         {
-          "line": 405,
+          "line": 406,
           "title": "Background",
           "level": 2
         },
         {
-          "line": 411,
+          "line": 412,
           "title": "Contributing",
           "level": 2
         },
         {
-          "line": 425,
+          "line": 426,
           "title": "License",
           "level": 2
         },
         {
-          "line": 431,
+          "line": 432,
           "title": "Mission",
           "level": 2
         }
       ],
       "findings": [],
-      "line_count": 437
+      "line_count": 438
     },
     {
       "file": "GOVERNANCE.md",

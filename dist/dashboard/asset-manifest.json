@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-09-04T17:49:48.839Z",
+  "generatedAt": "2026-09-20T00:32:45.515Z",
   "source": "dashboard",
   "warning": "Static dashboard build only. Do not publish without running check:frontend.",
   "files": [
     {
       "path": "index.html",
-      "bytes": 38009,
-      "sha256": "af5fa1643179e26d185783c41b66c9b219b25847fbab1b529cd269e488e757f2"
+      "bytes": 38372,
+      "sha256": "6e93160da2b32660a90bd2e38477a11e954fa938d38bb3f725cfe403ea702a8b"
     },
     {
       "path": "dashboard-inline.min.js",
@@ -45,8 +45,13 @@
     },
     {
       "path": "README.md",
-      "bytes": 23032,
-      "sha256": "cdbbaa8b6a4ca7c2c41854b2f3241c6ddaecd6c883b2bd4b6181540e7fd79f21"
+      "bytes": 23414,
+      "sha256": "5b348b82f4ed916976825b3cc9890de97afb3520fdc10dbbd2d5ecfc21a5698b"
+    },
+    {
+      "path": "PRIVACY.md",
+      "bytes": 2142,
+      "sha256": "d3523e048c580a24045e26c0f70087e87d7d078765d415f3fb80e82ea5d80456"
     },
     {
       "path": "PORTABILITY.md",
@@ -60,8 +65,8 @@
     },
     {
       "path": "docs/ops/MECHANISM_COVERAGE.md",
-      "bytes": 14277,
-      "sha256": "8c3340ba608d0b3dd43b8449804650eef68fae101df91cfeacc8065a758b5be8"
+      "bytes": 14348,
+      "sha256": "79a595e958352f46521293acc82e5169682f1855371fcdc224d62b88bd9ae33c"
     },
     {
       "path": "docs/ops/OPEN_DESIGN_DECISIONS.md",
