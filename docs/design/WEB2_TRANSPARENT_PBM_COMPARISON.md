@@ -6,7 +6,7 @@ This document provides a comparative analysis between transparent Web2 pharmacy 
 
 ## 1. Market Validation
 
-The growth and rebranding of Judi Health validates a major market demand: employers, plan sponsors, and independent pharmacies are actively seeking an alternative to the opaque, extractiveness of legacy PBMs. By pegging reimbursement to the National Average Drug Acquisition Cost (NADAC) and charging flat administrative fees, Web2 platforms demonstrate that transparency is a viable commercial model.
+Commercial pass-through PBMs such as Judi Health (formerly Capital Rx) illustrate employer and plan-sponsor interest in transparent pharmacy pricing `[unverified market context — cited as architectural benchmark, not empirical endorsement]`. By pegging reimbursement benchmarks to the [CMS National Average Drug Acquisition Cost (NADAC)](https://www.medicaid.gov/medicaid/prescription-drugs/pharmacy-pricing/index.html) and charging flat administrative fees, Web2 pass-through models separate drug-ingredient pricing from spread retention.
 
 However, the Pharmacy Fiduciary Commons is not designed to compete as "another PBM SaaS." Its goals, trust assumptions, and ownership structures differ fundamentally.
 

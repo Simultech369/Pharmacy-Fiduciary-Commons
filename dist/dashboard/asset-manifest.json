@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-20T00:32:45.515Z",
+  "generatedAt": "2026-11-26T12:52:04.506Z",
   "source": "dashboard",
   "warning": "Static dashboard build only. Do not publish without running check:frontend.",
   "files": [
@@ -35,8 +35,8 @@
     },
     {
       "path": "ONBOARDING.md",
-      "bytes": 7461,
-      "sha256": "7d2cbcade803c86ad13861659e599c07e66e661b7db63731c57e7a6b9ebb9d36"
+      "bytes": 7300,
+      "sha256": "9d09c0e1c7afa6d95350ecc6bd99b89692d05461878de36b66ce9827f812b132"
     },
     {
       "path": "NEXT.md",
@@ -45,8 +45,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 23414,
-      "sha256": "5b348b82f4ed916976825b3cc9890de97afb3520fdc10dbbd2d5ecfc21a5698b"
+      "bytes": 25666,
+      "sha256": "a8e3b202a8e1246bdb714da986e9436b25a9eaf876e95b7a373d3dd4d0bdd14c"
     },
     {
       "path": "PRIVACY.md",
@@ -55,48 +55,63 @@
     },
     {
       "path": "PORTABILITY.md",
-      "bytes": 4401,
-      "sha256": "01bc3ade6d21fa8c3cc7ec78b690f71cf56dd195d5e70ca3b83e98e07438d5bd"
+      "bytes": 4289,
+      "sha256": "2680aeca088ed98aa7c1052ab1bce552161ecde08a77e09d6effce2c5fad953a"
     },
     {
       "path": "GOVERNANCE.md",
-      "bytes": 10616,
-      "sha256": "3c4ca324e96472e6e0f47f55857c03aa7285d32b29c010f51e88c2cb61bca0e9"
+      "bytes": 10657,
+      "sha256": "bb56e7e4914877ec98df33f8f587d04e9094cd22a08ffb3ab730dff390b68b0f"
     },
     {
       "path": "docs/ops/MECHANISM_COVERAGE.md",
-      "bytes": 14348,
-      "sha256": "79a595e958352f46521293acc82e5169682f1855371fcdc224d62b88bd9ae33c"
+      "bytes": 14226,
+      "sha256": "f33601bf1cfe95cad67e319597c119f81ccb4279054791f1e2342e5450d40a3a"
     },
     {
       "path": "docs/ops/OPEN_DESIGN_DECISIONS.md",
-      "bytes": 5574,
-      "sha256": "cc8f053b05a66cbb9497741e229fae56d064f91ea82b974e559cb3921e335165"
+      "bytes": 5521,
+      "sha256": "fb2518c781b98544da85e24c47b58598a8454481dd33d913969adc8215061397"
     },
     {
       "path": "docs/ops/PRODUCTION_READINESS_CHECKLIST.md",
-      "bytes": 15756,
-      "sha256": "338f12aea802280e204b328655b13b7ce7bf34f7a87d15f5927f957f79b319aa"
+      "bytes": 15501,
+      "sha256": "def4214fc8f068f2628404d3c74b4ecea7e0d63485686bc75d177c10a64f2dc5"
     },
     {
       "path": "docs/design/CARE_CONTINUITY.md",
-      "bytes": 6707,
-      "sha256": "d4ce6381d828a4b2245b3e00bece0952166665429505651eda7e98850ab4c134"
+      "bytes": 6641,
+      "sha256": "71412bf95c22335d83e64bbc5318b136075e09332b056eeb11dfd6cd34e10733"
     },
     {
       "path": "docs/design/IDENTITY_NULLIFIER_DESIGN.md",
-      "bytes": 7388,
-      "sha256": "a59c8e2b059c0e1550f1c6b7dd904d64605a04b0b0af2e8f2a81d6ff7f349f3e"
+      "bytes": 7289,
+      "sha256": "f2d549df0c2a48827bc15736ff7a8eef8ab1bab8a3f365ea7a1ea566bb49ee98"
     },
     {
       "path": "docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md",
-      "bytes": 6621,
-      "sha256": "78f9e9f5ae6a21fe8623905425f8120bdf6d361e7a9d37896e39d07ad88ecea8"
+      "bytes": 6548,
+      "sha256": "7af201f9cdedc6eb7e5ff26c9f21facd2f3cd89db300c2284fb4e114cf554781"
     },
     {
       "path": "docs/design/SCARCITY_GOVERNANCE.md",
-      "bytes": 7371,
-      "sha256": "65e07ce11708838da2ea96237af947907d517e2dc30a723ab72da70036bf04fa"
+      "bytes": 7254,
+      "sha256": "f9650fcf3e0f9d59697bd1f8faf09858beeb669f6fe6793d9c1f6ebc602c4f06"
+    },
+    {
+      "path": "docs/design/VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md",
+      "bytes": 4976,
+      "sha256": "8a28fe204203fcbe925b13f53cc8b8fe49f3c44846003ec0630453118a55092f"
+    },
+    {
+      "path": "docs/design/TRUST_ASSUMPTIONS.md",
+      "bytes": 6378,
+      "sha256": "bf35a349d41b7910d09af5756171b96778d4cb84da99ca76e1a30353b9dd03a2"
+    },
+    {
+      "path": "docs/design/AGENT_ROUTER_WORKER_WATCHDOG_CONTRACT.md",
+      "bytes": 3551,
+      "sha256": "0bcb54ddf5ee1803854d5d8c862a7a767ed8829eacf65a3689105765f0cb09a6"
     }
   ]
 }

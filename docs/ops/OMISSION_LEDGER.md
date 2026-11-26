@@ -6,7 +6,7 @@ The `PBMRebateTreasury` contract maintains a permanent, on-chain registry of eve
 
 ## 1. Political-Economic Meaning: Silence is Evidence
 
-In the current pharmaceutical supply chain, Pharmacy Benefit Managers (PBMs) capture billions in manufacturer drug rebates. Because these negotiations happen behind closed, proprietary doors, this capture remains invisible. 
+In the pharmaceutical supply chain, Pharmacy Benefit Managers (PBMs) negotiate post-sale manufacturer drug rebates under confidential contracts ([FTC July 2024 Interim Staff Report on PBMs](https://www.ftc.gov/reports/pharmacy-benefit-managers-powerful-middlemen-inflating-drug-costs-threatening-independent-pharmacies); policy context for the model, not an on-chain verified dataset). Because those off-chain negotiations are proprietary, retention and pass-through terms are rarely inspectable by independent pharmacies. For the strict technical boundary of what voluntary deposits and absences can and cannot prove, see [VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md](../design/VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md).
 
 The Ledger of Omissions changes the default:
 * **Measurable Non-Participation**: If a PBM or payer claims they pass through rebates to local communities, but has no recorded deposits in the contract for a given quarter, their non-participation is mathematically measurable on-chain.

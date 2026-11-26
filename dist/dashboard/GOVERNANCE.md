@@ -74,12 +74,12 @@ The Council is a 3/5 multisig address (e.g., Gnosis Safe) representing the trust
 
 ---
 
-## 9. Nested Enterprises (Dizzy as Judgment Layer)
+## 9. Nested Enterprises (Dizzy as Router & Advisory Judgment Layer)
 
-Following Ostrom's Principle of Nested Enterprises, the Pharmacy Fiduciary Commons is a bounded treasury layer, but it does not attempt to solve all cognitive or ideological disputes within its own smart contract code.
-- **Arbitration Layer**: *Dizzy the Polymath* functions as the off-chain judgment and arbitration layer.
-- **Escalation Path**: If a dispute between the Council and a participant pharmacy remains unresolved after the 14-day window, or if a conflict of interest claim is made against the Council, the parties may escalate the case to the Dizzy agent framework.
-- **Judgment Outputs**: Dizzy evaluates the claim against the `LEGAL-GUARDRAILS` and the `MECHANISM_SIEVE` to output a structured recommendation. Because Dizzy is an advisory, off-chain agent framework, its judgments are non-binding recommendations. The Council retains final on-chain execution authority but is expected to align its actions with Dizzy's findings to preserve community trust and public credibility.
+Following Ostrom's Principle of Nested Enterprises, the Pharmacy Fiduciary Commons is a bounded treasury prototype, and does not attempt to solve off-chain disputes inside smart contract bytecode.
+- **Router & Single Human Voice**: Under [AGENT_ROUTER_WORKER_WATCHDOG_CONTRACT.md](docs/design/AGENT_ROUTER_WORKER_WATCHDOG_CONTRACT.md), *Dizzy the Polymath* is the sole component permitted to interact with humans on chat, GitHub, or the operator inbox. Specialist verifier workers (`CouncilEngine`, formal checks, export verifiers) and progress watchdogs report typed receipts upward to the Router and **never** message users directly.
+- **Escalation Path (Planned / Rehearsal Only)**: In future governance rehearsals, unresolved disputes past the 14-day procedural window or conflict-of-interest claims may be routed through Dizzy for structured review.
+- **Non-Binding Prototype Posture**: Neither Dizzy nor CouncilEngine is a live execution layer or custody authority. Any agent output is an off-chain, support-classed recommendation; human multisigs and participants retain sole authority over governance and transactions.
 
 ---
 

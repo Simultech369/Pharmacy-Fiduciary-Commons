@@ -1,5 +1,5 @@
 {
-  "repo_root": "C:\\Users\\Josh\\Desktop\\PBMRebateTreasuryFinal",
+  "repo_root": "/home/antigravity/Simultech369/Pharmacy-Fiduciary-Commons",
   "verified_ground_truth": {
     "hardhat_tests": {
       "passing_tests": 280,
@@ -280,128 +280,123 @@
           "level": 2
         },
         {
-          "line": 37,
+          "line": 38,
           "title": "Credibility Posture",
           "level": 2
         },
         {
-          "line": 50,
+          "line": 52,
           "title": "What This Cannot Do (Adversarial Limitations & Disclaimers)",
           "level": 2
         },
         {
-          "line": 67,
+          "line": 69,
           "title": "Status Summary",
           "level": 2
         },
         {
-          "line": 73,
+          "line": 75,
           "title": "What Runs Today",
           "level": 2
         },
         {
-          "line": 92,
+          "line": 94,
           "title": "Quickstart",
           "level": 2
         },
         {
-          "line": 108,
+          "line": 110,
           "title": "Formal Verification Lane",
           "level": 2
         },
         {
-          "line": 154,
+          "line": 156,
           "title": "Fiduciary Dashboard Interface",
           "level": 2
         },
         {
-          "line": 161,
+          "line": 163,
           "title": "Architecture",
           "level": 2
         },
         {
-          "line": 186,
+          "line": 188,
           "title": "Current Checkpoint",
           "level": 2
         },
         {
-          "line": 197,
+          "line": 199,
           "title": "What This Is",
           "level": 2
         },
         {
-          "line": 211,
+          "line": 213,
           "title": "Core Lifecycle",
           "level": 2
         },
         {
-          "line": 222,
+          "line": 224,
           "title": "Treasury Buckets",
           "level": 2
         },
         {
-          "line": 229,
-          "title": "Patient Fund",
+          "line": 231,
+          "title": "Patient Fund (`immutable`)",
           "level": 2
         },
         {
-          "line": 239,
-          "title": "Roles",
+          "line": 242,
+          "title": "Roles & Agent Control-Plane Boundary",
           "level": 2
         },
         {
-          "line": 250,
-          "title": "Security Properties",
+          "line": 255,
+          "title": "Security Properties & Cap Invariants",
           "level": 2
         },
         {
-          "line": 278,
+          "line": 273,
           "title": "Merkle Leaf Encoding",
           "level": 2
         },
         {
-          "line": 297,
-          "title": "Deployment Parameters",
+          "line": 292,
+          "title": "Deployment & Post-Deploy Audit",
           "level": 2
         },
         {
-          "line": 325,
-          "title": "Deployment Script",
-          "level": 2
-        },
-        {
-          "line": 375,
+          "line": 306,
           "title": "Audit And Production Status",
           "level": 2
         },
         {
-          "line": 394,
+          "line": 326,
           "title": "Adjacent Designs",
           "level": 2
         },
         {
-          "line": 406,
-          "title": "Background",
+          "line": 338,
+          "title": "Background & Policy Context",
           "level": 2
         },
         {
-          "line": 412,
+          "line": 350,
           "title": "Contributing",
           "level": 2
         },
         {
-          "line": 426,
+          "line": 364,
           "title": "License",
           "level": 2
         },
         {
-          "line": 432,
+          "line": 370,
           "title": "Mission",
           "level": 2
         }
       ],
       "findings": [],
-      "line_count": 438
+      "line_count": 376
     },
     {
       "file": "GOVERNANCE.md",
@@ -453,7 +448,7 @@
         },
         {
           "line": 77,
-          "title": "9. Nested Enterprises (Dizzy as Judgment Layer)",
+          "title": "9. Nested Enterprises (Dizzy as Router & Advisory Judgment Layer)",
           "level": 2
         },
         {

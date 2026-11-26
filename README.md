@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**On-chain rebate transparency infrastructure for independent pharmacies and patient funds.**
+**Anti-extractive fiduciary commons prototype reclaiming captured pharmaceutical rebate surplus for independent community pharmacies and patient-governed funds.**
 
 ![CI](https://github.com/Simultech369/Pharmacy-Fiduciary-Commons/actions/workflows/test.yml/badge.svg)
 ![Audit](https://img.shields.io/badge/audit-not%20audited-dc2626?style=flat)
@@ -24,7 +24,8 @@
 
 | Question | Current answer |
 |----------|----------------|
-| What is this? | Local/testnet infrastructure for verifiable rebate accounting, pharmacy claim proofs, patient-fund allocation, and public proof-boundary review. |
+| What is this? | Local/testnet smart-contract prototype for voluntary pharmacy rebate pass-through deposits, Merkle claim proofs, dispute accounting, and patient-fund allocation. |
+| Who deposits & what does an absence prove? | Off-chain rebates originate from drug manufacturers and are negotiated by PBMs/plan intermediaries; on-chain `depositRebate()` is voluntary for any non-sanctioned depositor (PBM, plan sponsor, pass-through administrator, or manufacturer). A missing on-chain deposit proves **only** that zero tokens reached this contract—not that money was owed—unless paired with an independent expected-deposit record ([VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md](docs/design/VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md)). |
 | What can be verified today? | Solidity tests, Merkle fixtures, export self-consistency checks, static dashboard build checks, and repository verification scripts. |
 | What is synthetic? | Public dashboard PBM names, displayed amounts, onboarding fixtures, and sample receipt payloads. |
 | Privacy posture | Synthetic data only, zero visitor tracking in the static dashboard, and no production privacy guarantee; see [PRIVACY.md](PRIVACY.md). |
@@ -41,6 +42,7 @@ This project should be read as a prototype fiduciary commons with tests, receipt
 Public-facing language should preserve these boundaries:
 
 - local formal checks and Council Engine outputs are off-chain verifier evidence, not an audit replacement;
+- only the Router (`Dizzy-the-Polymath`) speaks to humans on chat, GitHub, or the operator inbox—verifier workers (`CouncilEngine`, scripts, backend) and progress watchdogs report typed receipts upward, never message users directly, and hold zero live execution or fund-movement authority ([AGENT_ROUTER_WORKER_WATCHDOG_CONTRACT.md](docs/design/AGENT_ROUTER_WORKER_WATCHDOG_CONTRACT.md));
 - ZK/nullifier work is semantic mock and design-spec evidence unless explicitly marked production-ready;
 - dashboard panels distinguish synthetic fixtures from contract-backed or locally checked evidence;
 - launch, mainnet, real-funds, and public-wallet readiness remain blocked until the production checklist and independent audit requirements are satisfied.
@@ -60,13 +62,13 @@ Public-facing language should preserve these boundaries:
 > * **Participatory Budgeting Solvency Debt (Liveness & Trust Risk):** The contract no longer hard-reverts when round start/finalization finds the patient-fund balance below outstanding obligations. It records the shortfall as `totalDebt`/`roundDeficit` and lets the round lifecycle continue, but actual project claims still require real token liquidity. These names are prototype accounting labels for observed shortfall changes, not a creditor ledger, repayment schedule, funding proof, or guarantee that claimants can be paid.
 > * **No Professional Advice:** All outputs, files, and dashboards are for local prototype demonstration only. None of the contents constitute legal, financial, or medical advice.
 >
-> For deeper documentation on safety, scarcity, and threat boundaries, see [SCARCITY_GOVERNANCE.md](docs/design/SCARCITY_GOVERNANCE.md), [CARE_CONTINUITY.md](docs/design/CARE_CONTINUITY.md), and [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md).
+> For deeper documentation on trust roots, voluntary deposits, scarcity, and threat boundaries, see [TRUST_ASSUMPTIONS.md](docs/design/TRUST_ASSUMPTIONS.md), [VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md](docs/design/VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md), [SCARCITY_GOVERNANCE.md](docs/design/SCARCITY_GOVERNANCE.md), [CARE_CONTINUITY.md](docs/design/CARE_CONTINUITY.md), and [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md).
 
 ---
 
 ## Status Summary
 
-The current checkpoint is a prototype with tested treasury, voting, mutual-credit, portability, and dashboard surfaces, but it is not audited, not mainnet deployed, and not public-wallet ready. Runtime behavior and policy boundaries are tracked in [MECHANISM_COVERAGE.md](docs/ops/MECHANISM_COVERAGE.md); care-continuity and participant-safety boundaries are documented in [CARE_CONTINUITY.md](docs/design/CARE_CONTINUITY.md), [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md), and [SCARCITY_GOVERNANCE.md](docs/design/SCARCITY_GOVERNANCE.md). Public launch remains blocked by [PRODUCTION_READINESS_CHECKLIST.md](docs/ops/PRODUCTION_READINESS_CHECKLIST.md).
+The current checkpoint is a prototype with tested treasury, voting, mutual-credit, portability, and dashboard surfaces, but it is not audited, not mainnet deployed, and not public-wallet ready. Trust assumptions and custody roles are consolidated in [TRUST_ASSUMPTIONS.md](docs/design/TRUST_ASSUMPTIONS.md); runtime behavior and policy boundaries are tracked in [MECHANISM_COVERAGE.md](docs/ops/MECHANISM_COVERAGE.md); care-continuity and participant-safety boundaries are documented in [CARE_CONTINUITY.md](docs/design/CARE_CONTINUITY.md), [RETALIATION_AND_PRIVACY_THREAT_MODEL.md](docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md), and [SCARCITY_GOVERNANCE.md](docs/design/SCARCITY_GOVERNANCE.md). Public launch remains blocked by [PRODUCTION_READINESS_CHECKLIST.md](docs/ops/PRODUCTION_READINESS_CHECKLIST.md).
 
 ---
 
@@ -162,14 +164,14 @@ proof generator.
 
 ```mermaid
 flowchart LR
-  Depositor["PBM / depositor"] --> Treasury["PBMRebateTreasury"]
+  Depositor["Voluntary depositor (PBM / plan / manufacturer)"] --> Treasury["PBMRebateTreasury"]
   Council["Council Safe"] --> Treasury
   Confirmer["Root confirmer"] --> Treasury
   Guardian["Guardian pause key"] --> Treasury
   Timelock["Timelock executor"] --> Treasury
   Remediation["Exclusion remediation reserve"] --> Treasury
   Treasury --> Pharmacy["Merkle pharmacy claims"]
-  Treasury --> PatientFund["Patient fund"]
+  Treasury --> PatientFund["Patient fund (immutable)"]
   PatientFund --> PB["PatientFundParticipatoryBudgeting"]
   Voters["Credentialed voters"] --> PB
   PB --> Projects["Community health projects"]
@@ -196,26 +198,26 @@ flowchart LR
 
 ## What This Is
 
-`PBMRebateTreasury` is an Ethereum smart contract that:
+`PBMRebateTreasury` is an Ethereum smart contract prototype that:
 
-- records rebate deposits on-chain with depositor identity, amount, timestamp, and a free-form source string (which may encode quarter and drug class);
-- routes captured funds to independent pharmacies through Merkle-proof claims;
-- allocates a configurable patient share of every gross claim to a dedicated patient fund at claim time, with a 10% default;
-- makes ledger absences visible when paired with independently sourced expected-deposit records;
+- records **voluntary** rebate pass-through deposits on-chain (`depositRebate()`) from any non-sanctioned caller—whether a Pharmacy Benefit Manager (PBM) passing through manufacturer rebates, a self-insured plan sponsor, a transparent pass-through administrator, or a direct-rebating drug manufacturer—logging `msg.sender`, `amount`, `timestamp`, and an unauthenticated caller `source` memo;
+- routes captured funds to independent pharmacies through Merkle-proof claims (`claim()`);
+- allocates a configurable patient share of every gross claim (`10%` default, bounded `5%–30%`) to an `immutable` `patientFund` address at claim time;
+- makes ledger absences inspectable **only** when paired with independently sourced expected-deposit records (an absent deposit alone does not prove an unpaid obligation; see [VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md](docs/design/VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md));
 - separates treasury custody from adjacent prototypes such as mutual credit, vouchers, dashboard tooling, and participatory budgeting.
 
-This is infrastructure for transparent rebate pass-through. It is not legal, financial, medical, or investment advice.
+This is prototype infrastructure for transparent rebate pass-through. It is not legal, financial, medical, or investment advice.
 
 ---
 
 ## Core Lifecycle
 
-1. PBM or depositor calls `depositRebate()`.
+1. Voluntary depositor (PBM, plan sponsor, pass-through administrator, or manufacturer) calls `depositRebate()`.
 2. The council Safe calls `proposeRoot()` for the current epoch.
 3. A separately configured root-confirmer Safe calls `confirmRoot()`.
-4. Pharmacies claim with Merkle proofs through `claim()`.
+4. Pharmacies claim with Merkle proofs through `claim()` (or contest via `flagClaim()` / `flagExclusion()`).
 5. Council calls `finalizeEpoch()` to close the epoch.
-6. After the 30-day `RECALL_DELAY`, unclaimed funds can be recalled to `patientFund`.
+6. After the 30-day `RECALL_DELAY`, unclaimed funds can be recalled exclusively to the `immutable` `patientFund`.
 
 ---
 
@@ -226,52 +228,45 @@ This is infrastructure for transparent rebate pass-through. It is not legal, fin
 | Distribution pool | 99% default, adjustable if governance reserve changes | Pharmacy Merkle claims |
 | Governance reserve | 1% default, executor-governed from 0-5% | Council operations through `EXECUTOR_ROLE` |
 
-## Patient Fund
+## Patient Fund (`immutable`)
 
 | Source | Amount |
 |--------|--------|
 | Every gross claim | 10% default routed to `patientFund`; executor-governed from 5-30% |
 | Unclaimed epoch funds after recall delay | 100% routed to `patientFund` |
-| Non-payout token sweeps | 100% routed to `patientFund` |
+| Stale unallocated pool recovery (after 180 days) | 100% routed to `patientFund` |
+| Non-payout ERC-20 sweeps | 100% routed to `patientFund` |
 
-If `patientFund` is configured directly as the `PatientFundParticipatoryBudgeting` contract, payout-token inflows and direct payout-token surplus in that contract are treated as patient-bound matching liquidity for the next round and logged with `ExternalPatientFundsApplied`. They are not treated as council-refundable funds.
+`patientFund` is `immutable` after deployment—no admin, council, or timelock can redirect it. If `patientFund` is configured directly as the `PatientFundParticipatoryBudgeting` contract, payout-token inflows and direct payout-token surplus in that contract are treated as patient-bound matching liquidity for the next round and logged with `ExternalPatientFundsApplied`. They are not treated as council-refundable funds.
 
-## Roles
+## Roles & Agent Control-Plane Boundary
 
 | Role | Holder | Permissions |
 |------|--------|-------------|
-| `COUNCIL_ROLE` | 3/5 Gnosis Safe | Epoch management, root proposal, recall, sanctions, unpause |
-| `ROOT_CONFIRMER_ROLE` | Separate Safe or governance address | Independently confirms proposed Merkle roots; rotation is timelocked |
-| `EXECUTOR_ROLE` | TimelockController | Cap changes, governance reserve withdrawal, environment fund update, confirmer rotation |
+| `COUNCIL_ROLE` | 3/5 Gnosis Safe | Epoch management, root proposal, dispute resolution, recall, sanctions, unpause |
+| `ROOT_CONFIRMER_ROLE` | Separate Safe or governance address | Independently confirms proposed Merkle roots and exclusion payout ceilings; rotation is timelocked |
+| `EXECUTOR_ROLE` | TimelockController | Downward-only hard-cap reduction, epoch cap updates, BP bounds (`patientClaimBP`, `governanceBP`), governance reserve withdrawal, confirmer rotation |
 | `GUARDIAN_ROLE` | Separate fast-response address | Emergency pause only; cannot unpause or access funds |
+
+**Off-Chain Agent Voice Rule:** Across sibling tooling ([AGENT_ROUTER_WORKER_WATCHDOG_CONTRACT.md](docs/design/AGENT_ROUTER_WORKER_WATCHDOG_CONTRACT.md)), only the Router (`Dizzy-the-Polymath`) communicates with humans on chat, GitHub, or the operator inbox. Verifier workers (`CouncilEngine`, export/formal scripts, backend sagas) and progress watchdogs report structured receipts upward, **never** message users directly, and hold **zero** on-chain signing or custody authority.
 
 ---
 
-## Security Properties
+## Security Properties & Cap Invariants
 
-- Hard cap enforced at root proposal and claim.
-- Daily cap enforced at root proposal and claim.
-- Root total enforced at claim.
-- Per-pharmacy cap enforced through Merkle leaf encoding.
+- **Permanent downward-only hard cap (`hardAbsoluteVolumeCap`)**: Initialized at `10 * _initialDailyCap` at deployment. `reduceHardCap(newCap)` (`EXECUTOR_ROLE`) enforces `CanOnlyReduce()`—**the hard cap can never increase after deploy.** Raising that ceiling requires deploying a new treasury contract.
+- **Adjustable epoch cap (`dailyVolumeCap`)**: Caps cumulative epoch-wide claim volume; `updateDailyCap(newCap)` (`EXECUTOR_ROLE`) can increase or decrease within `[minimumEpochVolume, hardAbsoluteVolumeCap]` (see [TRUST_ASSUMPTIONS.md](docs/design/TRUST_ASSUMPTIONS.md)).
+- Root total and per-pharmacy `eligibleCap` enforced at root proposal and claim.
 - Double-hash leaf construction for second-preimage protection.
-- Root publication requires proposal by `COUNCIL_ROLE` and approval by a separately configured `ROOT_CONFIRMER_ROLE`.
-- Council and root-confirmer membership are mutually exclusive, including future role rotations.
+- Root publication requires proposal by `COUNCIL_ROLE` and approval by a mutually exclusive `ROOT_CONFIRMER_ROLE`.
 - `EXECUTOR_ROLE` and `ROOT_CONFIRMER_ROLE` administration is controlled by the timelock rather than council default administration.
-- Daily cap remains bounded by hard cap.
-- Recall only after `RECALL_DELAY`, only for unclaimed amount, sent to `patientFund`.
-- Payout token cannot be swept.
-- Non-payout tokens are swept to `patientFund`, not a general fund.
+- Recall only after `RECALL_DELAY`, only for unclaimed amount, sent to the `immutable` `patientFund`.
+- Payout token cannot be swept; stray ERC-20 sweeps go exclusively to `patientFund`.
 - `GUARDIAN_ROLE` is separate from `COUNCIL_ROLE`.
-- `flagClaim` requires a valid Merkle proof.
-- Disputed active-epoch claims update cap and recall accounting consistently.
-- Root-exclusion payouts require independent confirmer approval and remain bounded by epoch caps.
-- Root-exclusion payouts use a separately funded remediation reserve and cannot consume root or future distribution liquidity.
-- Root-backed claims, exclusion payouts, and escrow-backed unclaimed balances are reported separately.
-- Dismissed exclusion claims cannot redirect unreserved treasury funds as a penalty.
-- Sanctioned addresses cannot flag claims.
-- Open dispute flag blocks a parallel claim on the same epoch.
-- ETH is rejected through `receive()` and `fallback()`.
-- No upgradeability.
+- `flagClaim` requires a valid Merkle proof and reserves disputed escrow against active caps.
+- Root-exclusion payouts require independent `ROOT_CONFIRMER_ROLE` approval and draw solely from a separately funded remediation reserve.
+- Sanctioned addresses cannot flag claims; open dispute flag blocks a parallel claim on the same epoch.
+- Direct ETH transfers revert in `receive()` and `fallback()`; no proxy upgradeability.
 
 ---
 
@@ -294,81 +289,17 @@ Each leaf encodes:
 
 ---
 
-## Deployment Parameters
+## Deployment & Post-Deploy Audit
 
-```solidity
-constructor(
-    address _token,
-    address _patientFund,
-    address _environmentalFund,
-    uint256 _initialDailyCap,
-    uint256 _minimumEpochVolume,
-    address _council,
-    address _rootConfirmer,
-    address _executor,
-    address _guardian
-)
-```
-
-Before mainnet deployment:
-
-- complete a formal security audit;
-- configure a 3/5 Gnosis Safe for `_council`;
-- configure a separate Safe or governance address for `_rootConfirmer`;
-- deploy and configure a `TimelockController` for `_executor`;
-- confirm `_guardian` is separate from council;
-- verify every address on the target network.
-- set `_initialDailyCap` and `_minimumEpochVolume` in the payout token's smallest units (for example, six-decimal units for USDC).
-
----
-
-## Deployment Script
-
-This repo includes a convenience Hardhat script:
-
-```text
-scripts/deploy-timelock-and-treasury.js
-```
-
-Required environment variables:
-
-- `TOKEN`
-- `PATIENT_FUND`
-- `ENVIRONMENTAL_FUND`
-- `INITIAL_DAILY_CAP`
-- `MINIMUM_EPOCH_VOLUME`
-- `COUNCIL`
-- `ROOT_CONFIRMER`
-- `GUARDIAN`
-
-Required timelock setup variable:
-
-- `TIMELOCK_ADMIN` - explicit temporary or retained admin; never defaults silently to council
-
-Optional timelock variables:
-
-- `TIMELOCK_MIN_DELAY_SECONDS`
-- `TIMELOCK_PROPOSERS`
-- `TIMELOCK_EXECUTORS` - comma-separated executor addresses; set `ALLOW_OPEN_TIMELOCK_EXECUTOR=true` only if open execution is intentional
-- `ALLOW_OPEN_TIMELOCK_EXECUTOR=true` - explicit acknowledgement that ready timelock operations may be executed by any address
-- `RENOUNCE_TIMELOCK_ADMIN=true` - supported only when `TIMELOCK_ADMIN` is the deployer; removes the temporary human admin after deployment checks
-
-Audit a deployed timelock and treasury against the expected environment configuration:
+Deployment uses `scripts/deploy-timelock-and-treasury.js` and post-deploy verification uses:
 
 ```bash
 npm.cmd run audit:deployment -- --network <network>
 ```
 
-The audit requires the deployment variables above plus `TIMELOCK_ADDRESS` and
-`TREASURY_ADDRESS`. It verifies the deployed constructor bindings, caps, role
-memberships, role administrators, timelock delay, proposers, executors, and
-external-admin state. After legitimate cap ratchets, set
-`EXPECTED_DAILY_VOLUME_CAP` and `EXPECTED_HARD_ABSOLUTE_VOLUME_CAP` to the
-expected current values; otherwise the original deployment cap values are used.
-On non-local networks the audit is strict and also requires `COUNCIL_SAFE_OWNERS`,
-`COUNCIL_SAFE_PROXY_CODE_HASH`, and `COUNCIL_SAFE_SINGLETON`; if any Safe modules
-are intentionally enabled, set `COUNCIL_SAFE_MODULES` and matching
-`COUNCIL_SAFE_MODULE_CODE_HASHES`.
+Before any non-local deployment: complete an independent security audit, configure separate Gnosis Safes for `_council` and `_rootConfirmer`, deploy a `TimelockController` for `_executor` with `RENOUNCE_TIMELOCK_ADMIN=true`, confirm `_guardian` is separate from council, and set `_initialDailyCap` and `_minimumEpochVolume` in the payout token's smallest units.
+
+`audit:deployment` verifies constructor bindings, caps, role memberships/administrators, timelock delay, and Safe code hashes. After timelocked cap adjustments (`updateDailyCap` within bounds, or downward-only `reduceHardCap`), set `EXPECTED_DAILY_VOLUME_CAP` and `EXPECTED_HARD_ABSOLUTE_VOLUME_CAP` accordingly. Full constructor signatures, required environment variables, and accidental-asset recovery procedures are documented in [OPERATIONAL_RUNBOOK.md](docs/ops/OPERATIONAL_RUNBOOK.md#9-deployment-parameters--accidental-asset-sweeps).
 
 ---
 
@@ -376,13 +307,14 @@ are intentionally enabled, set `COUNCIL_SAFE_MODULES` and matching
 
 | Item | Status |
 |------|--------|
-| Internal review | Complete enough for prototype iteration |
-| External audit | Pending |
+| Internal review | Prototype verification only (not a substitute for external audit) |
+| External audit | Pending (launch blocker) |
 | Mainnet deployment | Not deployed |
 | Production frontend build | Build/check scripts present; public deployment still pending |
 | Database/API/RLS surface | Prototype gate present; rerun local checks before relying on any deployment or public-hosting claim |
 | Rate limiting, caching, scaling, observability | Design gate only; not implemented yet |
 | ADA/WCAG production audit | Pending |
+| Trust assumptions & threat model | See `docs/design/TRUST_ASSUMPTIONS.md` and `docs/design/VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md` |
 | Production readiness checklist | See `docs/ops/PRODUCTION_READINESS_CHECKLIST.md` |
 | Mechanism coverage | See `docs/ops/MECHANISM_COVERAGE.md` |
 | Security reporting | See `SECURITY.md` |
@@ -403,9 +335,15 @@ To preserve treasury simplicity, these systems are intentionally decoupled:
 
 ---
 
-## Background
+## Background & Policy Context
 
-The project is motivated by rebate pass-through gaps affecting independent pharmacies and patient access. Policy references in this repository are context for the model, not legal conclusions. Any procurement clause, ERISA-facing language, deployment plan, or real-funds workflow requires qualified legal review.
+The project is motivated by opaque drug-rebate pass-through mechanics, spread pricing, and independent pharmacy reimbursement pressure documented in public regulatory analyses:
+
+- **FTC PBM Inquiry**: [Federal Trade Commission, *Pharmacy Benefit Managers: The Powerful Middlemen Inflating Drug Costs and Threatening Independent Pharmacies* (Interim Staff Report, July 2024)](https://www.ftc.gov/reports/pharmacy-benefit-managers-powerful-middlemen-inflating-drug-costs-threatening-independent-pharmacies).
+- **Benchmark Acquisition Pricing**: [CMS *National Average Drug Acquisition Cost (NADAC)* Methodology and Survey Data](https://www.medicaid.gov/medicaid/prescription-drugs/pharmacy-pricing/index.html).
+- **Plan-Sponsor Fee Disclosure Context**: [Consolidated Appropriations Act, 2021 (Pub. L. 116-260, Div. BB, Title II, § 202 — ERISA § 408(b)(2)(B) compensation disclosure amendments)](https://www.dol.gov/agencies/ebsa/laws-and-regulations/laws/consolidated-appropriations-act).
+
+Policy references and broader industry narratives in this repository are **background context for the prototype**, not verified on-chain datasets or legal conclusions. Any procurement clause, ERISA-facing language, deployment plan, or real-funds workflow requires qualified legal review.
 
 ---
 

@@ -1,7 +1,7 @@
 {
   "name": "pbmrebatetreasuryfinal",
   "version": "1.0.0",
-  "description": "**On-chain rebate transparency for independent pharmacies and patients.**",
+  "description": "Anti-extractive fiduciary commons prototype reclaiming captured pharmaceutical rebate surplus for independent community pharmacies and patient-governed funds (unaudited).",
   "main": "index.js",
   "engines": {
     "node": "20.x || 22.x"

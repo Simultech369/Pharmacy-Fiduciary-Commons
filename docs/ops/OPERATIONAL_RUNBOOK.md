@@ -198,3 +198,32 @@ $$\text{1. Deterministic Rule / Hardhat / Schema Checks} \longrightarrow \text{2
   1. Verify `.gitignore` contains `reviews/model_attempt_ledger.jsonl` and `reviews/model_attempts/`.
   2. Run `git restore --staged reviews/model_attempt_ledger.jsonl` before committing.
   3. Execute `git diff --cached --check` to confirm clean staging snapshot.
+
+---
+
+## 9. Deployment Parameters & Accidental Asset Sweeps
+
+To keep the main README focused on core rebate custody, claims, and patient-fund accounting, operational constructor bindings and forced-ETH / stray-token recovery procedures are maintained here.
+
+### Constructor & Deployment Script Variables (`scripts/deploy-timelock-and-treasury.js`)
+
+```solidity
+constructor(
+    address _token,
+    address _patientFund,
+    address _environmentalFund,
+    uint256 _initialDailyCap,
+    uint256 _minimumEpochVolume,
+    address _council,
+    address _rootConfirmer,
+    address _executor,
+    address _guardian
+)
+```
+
+Required environment variables: `TOKEN`, `PATIENT_FUND` (`immutable` after deploy), `ENVIRONMENTAL_FUND`, `INITIAL_DAILY_CAP`, `MINIMUM_EPOCH_VOLUME`, `COUNCIL`, `ROOT_CONFIRMER`, `GUARDIAN`, and `TIMELOCK_ADMIN` (never defaults silently to council). Optional timelock variables: `TIMELOCK_MIN_DELAY_SECONDS`, `TIMELOCK_PROPOSERS`, `TIMELOCK_EXECUTORS`, `ALLOW_OPEN_TIMELOCK_EXECUTOR=true`, and `RENOUNCE_TIMELOCK_ADMIN=true`.
+
+### Accidental ERC-20 & Forced-ETH Recovery
+- **Payout token**: Cannot be swept under any role.
+- **Stray ERC-20 tokens (`sweep`)**: Any ERC-20 other than the configured payout token sent to the contract can be swept exclusively to the immutable `patientFund` address.
+- **Forced ETH (`sweepETH` / `_environmentalFund`)**: Direct ETH transfers revert in `receive()` and `fallback()`. If ETH is forced into the contract via coinbase or `SELFDESTRUCT`, `EXECUTOR_ROLE` (`TimelockController`) can call `sweepETH()` to clear the ETH balance to `environmentalFund` (an executor-rotatable sink isolated from ERC-20 treasury accounting).

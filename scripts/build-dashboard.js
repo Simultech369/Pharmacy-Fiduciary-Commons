@@ -137,7 +137,10 @@ function main() {
     "docs/design/CARE_CONTINUITY.md",
     "docs/design/IDENTITY_NULLIFIER_DESIGN.md",
     "docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md",
-    "docs/design/SCARCITY_GOVERNANCE.md"
+    "docs/design/SCARCITY_GOVERNANCE.md",
+    "docs/design/VOLUNTARY_DEPOSIT_AND_OMISSION_THREAT_MODEL.md",
+    "docs/design/TRUST_ASSUMPTIONS.md",
+    "docs/design/AGENT_ROUTER_WORKER_WATCHDOG_CONTRACT.md"
   ];
   for (const docFile of docsToCopy) {
     const srcDoc = path.join(rootDir, docFile);
