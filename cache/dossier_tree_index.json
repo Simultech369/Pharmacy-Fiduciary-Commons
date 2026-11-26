@@ -300,103 +300,103 @@
           "level": 2
         },
         {
-          "line": 94,
+          "line": 93,
           "title": "Quickstart",
           "level": 2
         },
         {
-          "line": 110,
+          "line": 109,
           "title": "Formal Verification Lane",
           "level": 2
         },
         {
-          "line": 156,
+          "line": 155,
           "title": "Fiduciary Dashboard Interface",
           "level": 2
         },
         {
-          "line": 163,
+          "line": 162,
           "title": "Architecture",
           "level": 2
         },
         {
-          "line": 188,
+          "line": 187,
           "title": "Current Checkpoint",
           "level": 2
         },
         {
-          "line": 199,
+          "line": 198,
           "title": "What This Is",
           "level": 2
         },
         {
-          "line": 213,
+          "line": 212,
           "title": "Core Lifecycle",
           "level": 2
         },
         {
-          "line": 224,
+          "line": 223,
           "title": "Treasury Buckets",
           "level": 2
         },
         {
-          "line": 231,
+          "line": 230,
           "title": "Patient Fund (`immutable`)",
           "level": 2
         },
         {
-          "line": 242,
+          "line": 241,
           "title": "Roles & Agent Control-Plane Boundary",
           "level": 2
         },
         {
-          "line": 255,
+          "line": 254,
           "title": "Security Properties & Cap Invariants",
           "level": 2
         },
         {
-          "line": 273,
+          "line": 272,
           "title": "Merkle Leaf Encoding",
           "level": 2
         },
         {
-          "line": 292,
+          "line": 291,
           "title": "Deployment & Post-Deploy Audit",
           "level": 2
         },
         {
-          "line": 306,
+          "line": 305,
           "title": "Audit And Production Status",
           "level": 2
         },
         {
-          "line": 326,
+          "line": 325,
           "title": "Adjacent Designs",
           "level": 2
         },
         {
-          "line": 338,
+          "line": 337,
           "title": "Background & Policy Context",
           "level": 2
         },
         {
-          "line": 350,
+          "line": 349,
           "title": "Contributing",
           "level": 2
         },
         {
-          "line": 364,
+          "line": 363,
           "title": "License",
           "level": 2
         },
         {
-          "line": 370,
+          "line": 369,
           "title": "Mission",
           "level": 2
         }
       ],
       "findings": [],
-      "line_count": 376
+      "line_count": 375
     },
     {
       "file": "GOVERNANCE.md",

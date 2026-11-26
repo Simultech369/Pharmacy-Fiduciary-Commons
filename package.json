@@ -30,6 +30,8 @@
     "test:formal": "hardhat test test/PBMRebateFormalInvariants.test.js test/PBMFraudFormalInvariants.test.js",
     "lint:sol": "solhint \"contracts/**/*.sol\"",
     "audit:slither": "python3 scripts/check_slither_ci.py",
+    "audit:mythril": "python3 scripts/run_mythril_ci.py",
+    "check:bytecode": "python3 scripts/run_mythril_ci.py --verify-extraction-only",
     "audit:deps": "npm audit --audit-level=high"
   },
   "keywords": [],

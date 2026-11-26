@@ -253,15 +253,17 @@ Residual lows, excavated:
   - `OZTimelockControllerImport.sol` imports `TimelockController` solely to force a local Hardhat artifact used by deployment scripts and tests.
   - Disposition: accepted shim. Removing it breaks the local artifact lookup pattern unless scripts/tests are refactored to use fully-qualified OpenZeppelin names.
 
-## Next Scanner Work
+## Next Scanner Work & Automated Two-Tier CI Architecture
 
-- Keep Aderyn, Slither, and targeted Mythril artifacts under `C:\tmp` for local review evidence.
-- Before deployment, rerun scanners from a clean checkout and produce release-specific artifacts.
-- Treat new high-confidence production-contract scanner findings as blockers unless fixed or accepted here with a concrete exploitability rationale and, where practical, a regression test.
+- **Draft Contract Extraction (`D-04`)**: Speculative draft contracts (`CooperativeParticipatoryBudgeting.sol` and `ReflexiveFiduciaryManifold.sol`) were removed from `contracts/`, eliminating 308 lines of non-runtime Solidity and reducing the active Slither High/Medium baseline in `scripts/check_slither_ci.py` from 12 entries to 9.
+- **Aderyn Upstream Retirement Notice**: Cyfrin officially retired Aderyn and withdrew prebuilt CLI downloads in `aderyn-v0.6.8` (`aderyn-installer.sh` exits `1` with withdrawal notice). Historical `0.6.8` dispositions remain archived above, and CI does not depend on the withdrawn installer.
+- **Tier 1 — Fast Every-Push CI (`.github/workflows/test.yml`)**: Runs `Solhint`, fail-closed `Slither` (`scripts/check_slither_ci.py`), Python `Z3` formal arithmetic/fraud bridges, `solidity-coverage` (`scripts/publish_coverage_summary.js`), and `Foundry` stateful invariants (`test/foundry/*.t.sol`).
+- **Tier 2 — Deep Symbolic & Fuzz Gate (`.github/workflows/deep-security.yml`)**: Scheduled/manual workflow running bounded **Mythril** runtime-bytecode symbolic execution (`scripts/run_mythril_ci.py` across `PBMRebateTreasury`, `PatientFundParticipatoryBudgeting`, and `PharmacyMutualCredit`, failing on any High/Medium SWC finding) plus extended-depth Foundry and Hardhat stateful fuzz campaigns.
+- Treat any new High/Medium finding on core contracts as a blocker unless fixed or explicitly triaged here with an exploitability rationale and regression test.
 
 ## Roadmap Decisions From Residual Findings
 
 - `PBMRebateTreasury.sweepETH`: no further contract change is needed for the current prototype. Promote the operational side to roadmap/release gates: executor must be a timelock-controlled address, `environmentalFund` rotation must remain executor-gated, and release rehearsals should include a forced-ETH recovery drill.
 - Timestamp dependencies: no current contract patch is recommended because the flagged paths are deadline, expiry, and grace-period mechanics rather than randomness. Promote chain-specific deployment review to roadmap work: document timestamp tolerance, L2 sequencer assumptions, deadline boundary behavior, and operator notice windows before mainnet.
 - `PBMRebateTreasury.resolveClaim` complexity: not a scanner blocker, but worth future readability work before a formal audit. Any refactor should extract internal helpers only after preserving the existing accounting invariant and dispute-resolution regression coverage.
-- Aderyn centralization risk: accepted as a governance surface, not dismissed. Promote real Safe membership, separate root confirmer, separate guardian, timelocked executor ownership, and deployment-audit evidence to release blockers.
+- Centralization risk: accepted as a governance surface, not dismissed. Promote real Safe membership, separate root confirmer, separate guardian, timelocked executor ownership, and deployment-audit evidence to release blockers.

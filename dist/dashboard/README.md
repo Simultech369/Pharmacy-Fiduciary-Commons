@@ -80,8 +80,7 @@ The current checkpoint is a prototype with tested treasury, voting, mutual-credi
 | `PatientFundParticipatoryBudgeting` | Working patient-fund voting prototype with council registration and relayer-assisted voter self-registration |
 | Mock ZK/nullifier registration | Semantic mock only: verifier/root/version-gated registration and nullifier reuse tests exist, but production unlinkability is not implemented |
 | `PharmacyMutualCredit` | Working decoupled mutual-credit prototype with reserved-capacity, recipient-bound vouchers |
-| Experimental governance/manifold drafts | Draft prototypes deployed only in focused tests for review; not integrated into treasury/PB/mutual-credit runtime and not production mechanisms |
-| Tests | Compile and unit tests run in CI; run locally with `npm.cmd test` |
+| Tests & scanners | Hardhat unit/regression/fuzz, Solhint, fail-closed Slither, Z3 formal bridge, and Foundry invariants in CI; Mythril symbolic bytecode workflow in `.github/workflows/deep-security.yml` |
 | Dashboard | Static prototype with local/test Web3 integration, synthetic-data labels, accessibility improvements, and offline verifier panel |
 | Merkle tooling | Allocation root/proof generator |
 | Portability export | Prototype JSON export plus offline self-consistency checks; RPC-backed verification is required for chain provenance |

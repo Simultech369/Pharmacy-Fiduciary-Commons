@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-26T13:07:44.186Z",
+  "generatedAt": "2026-11-26T18:40:33.131Z",
   "source": "dashboard",
   "warning": "Static dashboard build only. Do not publish without running check:frontend.",
   "files": [
@@ -45,8 +45,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 25666,
-      "sha256": "a8e3b202a8e1246bdb714da986e9436b25a9eaf876e95b7a373d3dd4d0bdd14c"
+      "bytes": 25605,
+      "sha256": "2d4029ecfa8d8f26485e71c2c1e3557a285481c492917721f464ec2377242037"
     },
     {
       "path": "PRIVACY.md",
@@ -65,8 +65,8 @@
     },
     {
       "path": "docs/ops/MECHANISM_COVERAGE.md",
-      "bytes": 14226,
-      "sha256": "f33601bf1cfe95cad67e319597c119f81ccb4279054791f1e2342e5450d40a3a"
+      "bytes": 13831,
+      "sha256": "b6a536a027e18805bc7d3b3084c1d686398e7d22ddc3b843665b96910bdf11a1"
     },
     {
       "path": "docs/ops/OPEN_DESIGN_DECISIONS.md",

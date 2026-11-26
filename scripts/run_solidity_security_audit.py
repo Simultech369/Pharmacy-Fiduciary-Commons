@@ -166,10 +166,6 @@ def main():
         f.write("   - `ForceETH.forceSend()` (`contracts/mocks/ForceETH.sol`)\n")
         f.write("   - *Triage*: Contained strictly within test mock harness used to test forced ETH transfers.\n\n")
 
-        f.write("5. **Uninitialized State (`uninitialized-state`, 1 finding)**:\n")
-        f.write("   - `CooperativeParticipatoryBudgeting.projectSupport` mapping\n")
-        f.write("   - *Triage*: `projectSupport` is declared in draft contract `CooperativeParticipatoryBudgeting.sol` without an active write path. Per `MECHANISM_COVERAGE.md`, this contract is quarantined as experimental/draft, bounding production exposure.\n\n")
-
         f.write("## 2. Solhint Linter Summary\n")
         f.write(f"- **Execution Status**: {'SUCCESS' if solhint_ran else 'NOT RUN'}\n")
         f.write(f"- **Configuration**: `.solhint.json` (solhint:recommended)\n")

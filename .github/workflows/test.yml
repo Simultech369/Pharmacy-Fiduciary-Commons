@@ -51,10 +51,11 @@ jobs:
           python -m unittest discover tools/council -p "test_pbm_fraud_formal_invariants.py"
           npm run test:formal
 
-      - name: Run Solhint & fail-closed Slither gate
+      - name: Run Solhint, fail-closed Slither gate & EIP-170 bytecode size check
         run: |
           npm run lint:sol
           npm run audit:slither
+          npm run check:bytecode
 
       - name: Smoke test local deposit/Merkle/export demo & dashboard bundle
         run: |

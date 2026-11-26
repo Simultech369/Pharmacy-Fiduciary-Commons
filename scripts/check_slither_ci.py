@@ -25,14 +25,11 @@ TRIAGED_HIGH_MEDIUM = {
     ("High", "reentrancy-balance", "PBMRebateTreasury", "depositRebate"),
     ("High", "reentrancy-balance", "PBMRebateTreasury", "fundExclusionRemediation"),
     ("High", "reentrancy-balance", "PatientFundParticipatoryBudgeting", "_startRound"),
-    ("High", "uninitialized-state", "CooperativeParticipatoryBudgeting", "projectSupport"),
     ("Medium", "reentrancy-no-eth", "PatientFundParticipatoryBudgeting", "_startRound"),
     ("Medium", "incorrect-equality", "PBMRebateTreasury", "recallEligible"),
     ("Medium", "incorrect-equality", "PBMRebateTreasury", "sweepETH"),
     ("Medium", "incorrect-equality", "PatientFundParticipatoryBudgeting", "_startRound"),
     ("Medium", "incorrect-equality", "PatientFundParticipatoryBudgeting", "requiredSolvencyBalance"),
-    ("Medium", "divide-before-multiply", "ReflexiveFiduciaryManifold", "computeCapacityAdjustment"),
-    ("Medium", "incorrect-equality", "ReflexiveFiduciaryManifold", "computeCapacityAdjustment"),
 }
 
 
