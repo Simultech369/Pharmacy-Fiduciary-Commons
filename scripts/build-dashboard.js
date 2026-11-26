@@ -134,6 +134,7 @@ function main() {
     "docs/ops/MECHANISM_COVERAGE.md",
     "docs/ops/OPEN_DESIGN_DECISIONS.md",
     "docs/ops/PRODUCTION_READINESS_CHECKLIST.md",
+    "docs/ops/ALLOCATION_AND_CONTEST_PIPELINE.md",
     "docs/design/CARE_CONTINUITY.md",
     "docs/design/IDENTITY_NULLIFIER_DESIGN.md",
     "docs/design/RETALIATION_AND_PRIVACY_THREAT_MODEL.md",

@@ -9,13 +9,75 @@ on:
       - main
 
 jobs:
-  hardhat:
-    name: Hardhat test suite
+  hardhat-and-scanners:
+    name: Compile, Unit, Formal, Scanners & Smoke
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout with CouncilEngine submodule
         uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Setup Python for Z3 & Slither
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python formal & static analyzers
+        run: python -m pip install --upgrade pip z3-solver slither-analyzer
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Dependency vulnerability audit (fail on high/critical)
+        run: npm run audit:deps
+
+      - name: Compile contracts
+        run: npm run compile
+
+      - name: Run Hardhat unit & regression suite
+        run: npm test
+
+      - name: Run Python/Z3 formal invariants & Hardhat bridge
+        run: |
+          python -m unittest discover tools/council -p "test_pbm_rebate_formal_invariants.py"
+          python -m unittest discover tools/council -p "test_pbm_fraud_formal_invariants.py"
+          npm run test:formal
+
+      - name: Run Solhint & fail-closed Slither gate
+        run: |
+          npm run lint:sol
+          npm run audit:slither
+
+      - name: Smoke test local deposit/Merkle/export demo & dashboard bundle
+        run: |
+          npm run demo:local
+          node scripts/check-readiness.js --env local
+          npm run check:deployment-template
+
+      - name: Upload Slither JSON report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: slither-ci-report
+          path: cache/slither-ci-report.json
+
+  coverage:
+    name: Solidity Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout with CouncilEngine submodule
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -26,23 +88,38 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Compile contracts
-        run: npm run compile
+      - name: Run coverage & publish summary
+        run: npm run coverage
 
-      - name: Run tests
-        run: npm test
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: solidity-coverage-report
+          path: |
+            coverage/
+            coverage.json
 
-      - name: Run local readiness check
-        run: node scripts/check-readiness.js --env local
+  foundry-invariants:
+    name: Foundry Stateful Invariants
+    runs-on: ubuntu-latest
 
-      - name: Validate deployment templates
-        run: npm run check:deployment-template
+    steps:
+      - name: Checkout with CouncilEngine submodule
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
 
-      - name: Run Solhint linter
-        run: npx --no-install solhint "contracts/**/*.sol"
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "20"
+          cache: npm
 
-      - name: Build frontend dashboard
-        run: npm run build:dashboard
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run frontend & brand compliance linter
-        run: node scripts/check-frontend-build.js
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Foundry stateful invariant suite
+        run: forge test --match-path "test/foundry/*.t.sol" -vv

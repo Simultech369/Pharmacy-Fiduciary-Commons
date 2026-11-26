@@ -1,5 +1,10 @@
 require("@nomicfoundation/hardhat-ethers");
 require("@nomicfoundation/hardhat-verify");
+try {
+  require("solidity-coverage");
+} catch (_err) {
+  // Optional when running outside coverage mode
+}
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [];
 

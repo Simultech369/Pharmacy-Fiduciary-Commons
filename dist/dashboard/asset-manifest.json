@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-26T12:52:04.506Z",
+  "generatedAt": "2026-11-26T13:07:44.186Z",
   "source": "dashboard",
   "warning": "Static dashboard build only. Do not publish without running check:frontend.",
   "files": [
@@ -77,6 +77,11 @@
       "path": "docs/ops/PRODUCTION_READINESS_CHECKLIST.md",
       "bytes": 15501,
       "sha256": "def4214fc8f068f2628404d3c74b4ecea7e0d63485686bc75d177c10a64f2dc5"
+    },
+    {
+      "path": "docs/ops/ALLOCATION_AND_CONTEST_PIPELINE.md",
+      "bytes": 5470,
+      "sha256": "e0813267adf176159a460a1335f5fe607430a208ef4580551712b5b472dfe3de"
     },
     {
       "path": "docs/design/CARE_CONTINUITY.md",

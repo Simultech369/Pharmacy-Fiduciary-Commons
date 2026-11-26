@@ -23,7 +23,14 @@
     "check:readiness": "node scripts/check-readiness.js",
     "audit:deployment": "hardhat run scripts/audit-deployment.js",
     "merkle:allocations": "node tools/merkle/allocations.js",
-    "dev:server": "node server/server.js"
+    "dev:server": "node server/server.js",
+    "coverage": "hardhat coverage && node scripts/publish_coverage_summary.js",
+    "test:fuzz": "hardhat test test/PBMRebateTreasury.fuzz.test.js",
+    "test:regressions": "hardhat test test/PBMRebateTreasury.regressions.test.js",
+    "test:formal": "hardhat test test/PBMRebateFormalInvariants.test.js test/PBMFraudFormalInvariants.test.js",
+    "lint:sol": "solhint \"contracts/**/*.sol\"",
+    "audit:slither": "python3 scripts/check_slither_ci.py",
+    "audit:deps": "npm audit --audit-level=high"
   },
   "keywords": [],
   "author": "",
@@ -32,11 +39,12 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@nomicfoundation/hardhat-verify": "^2.1.3",
-    "@openzeppelin/contracts": "^4.9.6",
+    "@openzeppelin/contracts": "4.9.6",
     "chai": "^6.2.2",
     "ethers": "^6.17.0",
     "hardhat": "^2.22.16",
     "solhint": "^5.0.5",
+    "solidity-coverage": "^0.8.17",
     "supertest": "^7.2.2"
   },
   "volta": {
@@ -47,5 +55,9 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.1.3",
+    "tmp": "^0.2.6"
   }
 }

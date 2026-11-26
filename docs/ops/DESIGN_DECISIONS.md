@@ -27,3 +27,13 @@ Rationale:
 - Transferability is not needed for the current emergency-pharmacy-credit use case.
 
 Changing the recipient requires cancellation and reissuance in a future workflow; this checkpoint does not implement mutable recipients or transferable vouchers.
+
+## OpenZeppelin Contracts Pinned Exactly to `4.9.6` (v4 Retention Over v5 Churn)
+
+`@openzeppelin/contracts` is pinned to exact version `"4.9.6"` in `package.json` (no `^` or `~` range) rather than migrating to OpenZeppelin `5.x` prior to external audit.
+
+Rationale:
+
+- **Deterministic Audit Surface**: Exact version pinning guarantees identical dependency bytecode across local builds, CI, Slither, and external auditor checkouts.
+- **Solidity `0.8.20` & `evmVersion: "paris"` Alignment**: All core custody and budgeting contracts (`PBMRebateTreasury`, `PatientFundParticipatoryBudgeting`, `PharmacyMutualCredit`) target Solidity `0.8.20` (`paris`) and rely on OpenZeppelin `4.9.6` `AccessControl`, `Pausable`, `ReentrancyGuard`, `SafeERC20`, `MerkleProof`, `EIP712`, and `TimelockController`.
+- **Avoiding Unnecessary Pre-Audit Custody Churn (`LRN-014`)**: Migrating to OpenZeppelin `5.x` alters custom error signatures (replacing revert strings verified throughout the security/regression suites), removes `SafeMath`/legacy hooks, and changes `TimelockController` / `Pausable` import paths and constructor admin semantics without improving any treasury solvency invariant. Re-evaluating `5.x` is deferred until a future major protocol version is intentionally scoped.
