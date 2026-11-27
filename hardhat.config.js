@@ -31,6 +31,16 @@ module.exports = {
       url: process.env.SEPOLIA_RPC_URL || "https://rpc.ankr.com/eth_sepolia",
       accounts: PRIVATE_KEY,
     },
+    optimismSepolia: {
+      url: process.env.OP_SEPOLIA_RPC_URL || "https://sepolia.optimism.io",
+      chainId: 11155420,
+      accounts: PRIVATE_KEY,
+    },
+    optimism: {
+      url: process.env.OP_MAINNET_RPC_URL || "https://mainnet.optimism.io",
+      chainId: 10,
+      accounts: PRIVATE_KEY,
+    },
     arbitrumSepolia: {
       url: process.env.ARBITRUM_SEPOLIA_RPC_URL || "https://sepolia-rollup.arbitrum.io/rpc",
       accounts: PRIVATE_KEY,
@@ -39,8 +49,20 @@ module.exports = {
   etherscan: {
     apiKey: {
       sepolia: process.env.ETHERSCAN_API_KEY || "",
+      optimisticEthereum: process.env.OP_ETHERSCAN_API_KEY || "",
+      optimismSepolia: process.env.OP_ETHERSCAN_API_KEY || "",
       arbitrumSepolia: process.env.ARBISCAN_API_KEY || "",
     },
+    customChains: [
+      {
+        network: "optimismSepolia",
+        chainId: 11155420,
+        urls: {
+          apiURL: "https://api-sepolia-optimistic.etherscan.io/api",
+          browserURL: "https://sepolia-optimism.etherscan.io",
+        },
+      },
+    ],
   },
   mocha: {
     timeout: 600000,

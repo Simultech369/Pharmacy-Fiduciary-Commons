@@ -454,6 +454,69 @@ describe("PharmacyMutualCredit", function () {
         "VoucherExpiryTooLong"
       );
     });
+
+    it("namespaces salted voucher IDs by issuer so a rival issuer cannot front-run them (Anti-Spam #5)", async function () {
+      await credit.connect(council).registerParticipant(attacker.address, 200n);
+      await credit.connect(council).updateIssuerStatus(attacker.address, true);
+
+      const salt = ethers.keccak256(ethers.toUtf8Bytes("advocate-salt-1"));
+      const expectedId = await credit.computeVoucherId(advocate.address, salt);
+      expect(expectedId).to.equal(
+        ethers.solidityPackedKeccak256(["address", "bytes32"], [advocate.address, salt])
+      );
+
+      // A rival authorized issuer observing the mempool reuses the same salt:
+      // it lands in the attacker's namespace, not the advocate's.
+      await credit.connect(attacker).createSaltedVoucher(salt, pharmacyA.address, 10n, expiry);
+      const attackerId = await credit.computeVoucherId(attacker.address, salt);
+      expect(attackerId).to.not.equal(expectedId);
+      expect((await credit.vouchers(attackerId)).issuer).to.equal(attacker.address);
+
+      await credit.connect(advocate).createSaltedVoucher(salt, pharmacyA.address, amount, expiry);
+      const v = await credit.vouchers(expectedId);
+      expect(v.issuer).to.equal(advocate.address);
+      expect(v.amount).to.equal(amount);
+
+      // Reusing a salt within one's own namespace is still rejected.
+      await expectRevert(
+        credit.connect(advocate).createSaltedVoucher(salt, pharmacyA.address, 1n, expiry),
+        "AlreadyRegistered"
+      );
+    });
+
+    it("salted vouchers keep the same issuer authorization checks (Anti-Spam #5)", async function () {
+      await credit.connect(council).registerParticipant(attacker.address, 200n);
+      const salt = ethers.keccak256(ethers.toUtf8Bytes("unauthorized-salt"));
+      await expectRevert(
+        credit.connect(attacker).createSaltedVoucher(salt, pharmacyA.address, 10n, expiry),
+        "Unauthorized"
+      );
+    });
+
+    it("skips already-released entries so a front-run release cannot poison a batch (Anti-Spam #6)", async function () {
+      const voucherId1 = ethers.keccak256(ethers.toUtf8Bytes("voucher-pp-001"));
+      const voucherId2 = ethers.keccak256(ethers.toUtf8Bytes("voucher-pp-002"));
+      await credit.connect(advocate).createVoucher(voucherId1, pharmacyA.address, 80n, expiry);
+      await credit.connect(advocate).createVoucher(voucherId2, pharmacyA.address, 100n, expiry);
+
+      await ethers.provider.send("evm_setNextBlockTimestamp", [Number(expiry + 1n)]);
+      await ethers.provider.send("evm_mine", []);
+
+      // Griefer front-runs by releasing one item of the maintainer's batch.
+      await credit.connect(attacker).releaseExpiredVoucher(voucherId1);
+      expect(await credit.reservedVoucherCredit(advocate.address)).to.equal(100n);
+
+      // The batch still succeeds and releases the remaining item exactly once.
+      await credit.connect(pharmacyA).releaseExpiredVouchersBatch([voucherId1, voucherId2]);
+      expect(await credit.reservedVoucherCredit(advocate.address)).to.equal(0n);
+      expect(await credit.voucherReservationReleased(voucherId2)).to.be.true;
+
+      // A batch where nothing is newly released still reverts (LRN-015 behavior kept).
+      await expectRevert(
+        credit.connect(pharmacyA).releaseExpiredVouchersBatch([voucherId1, voucherId2]),
+        "VoucherAlreadyReleased"
+      );
+    });
   });
 
   describe("Pausable & Sweep Enhancements", function () {

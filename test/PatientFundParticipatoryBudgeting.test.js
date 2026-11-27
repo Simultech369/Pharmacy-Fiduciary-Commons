@@ -1561,6 +1561,81 @@ describe("PatientFundParticipatoryBudgeting", function () {
         "AccessControl"
       );
     });
+
+    it("rejects a zero support threshold (Anti-Spam #4)", async function () {
+      await expectRevert(
+        pb.connect(council).setProjectSupportThreshold(0n),
+        "InvalidSupportThreshold"
+      );
+    });
+
+    it("rejects project titles longer than MAX_PROJECT_TITLE_LENGTH (Anti-Spam #4)", async function () {
+      const maxLen = Number(await pb.MAX_PROJECT_TITLE_LENGTH());
+      await pb.connect(voters[0]).proposeProject(1n, "x".repeat(maxLen), recipientA.address);
+      await expectRevert(
+        pb.connect(voters[0]).proposeProject(1n, "x".repeat(maxLen + 1), recipientA.address),
+        "TitleTooLong"
+      );
+    });
+
+    it("caps proposals per voter per round, without blocking other voters (Anti-Spam #4)", async function () {
+      const perVoter = await pb.maxProposalsPerVoter();
+      expect(perVoter).to.equal(5n);
+      for (let i = 0n; i < perVoter; i++) {
+        await pb.connect(voters[0]).proposeProject(1n, `Spam ${i}`, recipientA.address);
+      }
+      await expectRevert(
+        pb.connect(voters[0]).proposeProject(1n, "One too many", recipientA.address),
+        "ProposalLimitExceeded"
+      );
+      await pb.connect(voters[1]).proposeProject(1n, "Honest proposal", recipientB.address);
+      expect(await pb.roundProposalCount(1n)).to.equal(perVoter + 1n);
+    });
+
+    it("caps total proposals per round (Anti-Spam #4)", async function () {
+      await pb.connect(council).setProposalLimits(2n, 3n, 40n);
+      await pb.connect(voters[0]).proposeProject(1n, "A", recipientA.address);
+      await pb.connect(voters[0]).proposeProject(1n, "B", recipientA.address);
+      await pb.connect(voters[1]).proposeProject(1n, "C", recipientA.address);
+      await expectRevert(
+        pb.connect(voters[2]).proposeProject(1n, "D", recipientA.address),
+        "ProposalLimitExceeded"
+      );
+    });
+
+    it("caps community-registered projects per round (Anti-Spam #4)", async function () {
+      await pb.connect(council).setProjectSupportThreshold(1n);
+      await pb.connect(council).setProposalLimits(5n, 200n, 1n);
+      await pb.connect(voters[0]).proposeProject(1n, "First", recipientA.address);
+      await pb.connect(voters[1]).proposeProject(1n, "Second", recipientB.address);
+
+      await pb.connect(voters[0]).supportProposal(1n, 0n);
+      expect((await pb.roundProposals(1n, 0n)).registered).to.be.true;
+
+      await expectRevert(
+        pb.connect(voters[1]).supportProposal(1n, 1n),
+        "CommunityProjectLimitReached"
+      );
+      expect((await pb.roundProposals(1n, 1n)).registered).to.be.false;
+    });
+
+    it("validates and restricts setProposalLimits (Anti-Spam #4)", async function () {
+      await expectRevert(pb.connect(council).setProposalLimits(0n, 200n, 40n), "InvalidProposalLimits");
+      await expectRevert(pb.connect(council).setProposalLimits(51n, 200n, 40n), "InvalidProposalLimits");
+      await expectRevert(pb.connect(council).setProposalLimits(10n, 5n, 40n), "InvalidProposalLimits");
+      await expectRevert(pb.connect(council).setProposalLimits(5n, 501n, 40n), "InvalidProposalLimits");
+      const maxProjects = await pb.MAX_PROJECTS_PER_ROUND();
+      await expectRevert(
+        pb.connect(council).setProposalLimits(5n, 200n, maxProjects + 1n),
+        "InvalidProposalLimits"
+      );
+      await expectRevert(pb.connect(attacker).setProposalLimits(5n, 200n, 40n), "AccessControl");
+
+      await pb.connect(council).setProposalLimits(7n, 100n, 20n);
+      expect(await pb.maxProposalsPerVoter()).to.equal(7n);
+      expect(await pb.maxProposalsPerRound()).to.equal(100n);
+      expect(await pb.maxCommunityProjectsPerRound()).to.equal(20n);
+    });
   });
 
   describe("Patient Fund Balance Verification & Dry-Run Preview", function () {
@@ -1760,7 +1835,10 @@ describe("PatientFundParticipatoryBudgeting", function () {
       const voter = voters[0];
       await pb.connect(council).registerVoter(roundId, voter.address, true);
 
-      // Propose 20 projects to verify gas loops scale safely
+      // Propose 20 projects to verify gas loops scale safely.
+      // Anti-Spam #4 defaults to 5 proposals per voter; this gas-bound test
+      // deliberately raises that cap so a single voter can fill 20 slots.
+      await pb.connect(council).setProposalLimits(25n, 200n, 40n);
       for (let i = 0; i < 20; i++) {
         await pb.connect(voter).proposeProject(roundId, `Project Sybil ${i}`, recipientA.address);
       }
