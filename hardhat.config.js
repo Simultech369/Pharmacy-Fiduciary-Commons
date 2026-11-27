@@ -53,6 +53,16 @@ module.exports = {
       optimismSepolia: process.env.OP_ETHERSCAN_API_KEY || "",
       arbitrumSepolia: process.env.ARBISCAN_API_KEY || "",
     },
+    customChains: [
+      {
+        network: "optimismSepolia",
+        chainId: 11155420,
+        urls: {
+          apiURL: "https://api-sepolia-optimistic.etherscan.io/api",
+          browserURL: "https://sepolia-optimism.etherscan.io",
+        },
+      },
+    ],
   },
   mocha: {
     timeout: 600000,

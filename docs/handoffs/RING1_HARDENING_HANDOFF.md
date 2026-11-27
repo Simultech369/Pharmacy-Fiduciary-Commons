@@ -18,6 +18,9 @@ Last updated: 2026-11-27 (Antigravity session handoff, from Gemini to Opus).
 
 Files: `contracts/PBMRebateTreasury.sol` (heavy rewrite), `contracts/libraries/TreasuryVerifier.sol` (new), `hardhat.config.js` + `foundry.toml` (`optimizer.runs` 100 → 1, to save bytecode).
 
+> [!NOTE]
+> The WIP branch was cut from the same dirty tree before the mergeable PB/PMC slice was split out. After that slice merged, `main` was merged back into the WIP branch, so picking up means: `git fetch && git checkout wip/ring1-treasury-hardening && git merge origin/main`. Keep `optimizer.runs = 1` only if `PBMRebateTreasury` still needs it to fit EIP-170. `main` intentionally stays at `runs = 100`.
+
 What the treasury changes are meant to do:
 
 - **D-01:** `MIN_EPOCH_DURATION` goes from 1 day to 3 days and `ROOT_PROPOSAL_EXPIRY` from 3 days to 7 days.
