@@ -23,12 +23,15 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { fileURLToPath } from 'url';
 
 function getLocalMacSecret() {
   return process.env.LOCAL_MAC_SECRET;
 }
 
-const command = process.argv[2];
+const isCliEntry =
+  Boolean(process.argv[1]) && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const command = isCliEntry ? process.argv[2] : undefined;
 const MIN_MAC_SECRET_LENGTH = 16;
 const REQUIRED_VOUCHER_FIELDS = [
   'roundId',

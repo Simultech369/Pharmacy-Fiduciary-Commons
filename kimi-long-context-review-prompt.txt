@@ -68,10 +68,7 @@ Focus areas:
    - `deployment/*.json`
    - `RELEASE_CHECKLIST.md`
    - `README.md`
-5. Draft-governance and resilience overclaims:
-   - `contracts/CooperativeParticipatoryBudgeting.sol`
-   - `contracts/ReflexiveFiduciaryManifold.sol`
-   - `test/DraftGovernanceModules.test.js`
+5. Resilience and continuity overclaims:
    - `test/ContinuityAndAdversarialTools.test.js`
    - `PRIVACY_CONTINUITY_INTERVENTION_HANDOFF.md`
    - `REVIEW_ITERATION_PROCESS.md`

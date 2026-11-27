@@ -80,7 +80,7 @@ function main() {
   }
 
   lines.push(
-    `| **Total (Protocol & Drafts)** | **${pct(totals.sCovered, totals.sTotal)}** | **${pct(totals.bCovered, totals.bTotal)}** | **${pct(totals.fCovered, totals.fTotal)}** | **${pct(totals.lCovered, totals.lTotal)}** |`
+    `| **Total (Core Protocol)** | **${pct(totals.sCovered, totals.sTotal)}** | **${pct(totals.bCovered, totals.bTotal)}** | **${pct(totals.fCovered, totals.fTotal)}** | **${pct(totals.lCovered, totals.lTotal)}** |`
   );
 
   const md = lines.join("\n").concat("\n");

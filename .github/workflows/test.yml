@@ -30,8 +30,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Python formal & static analyzers
-        run: python -m pip install --upgrade pip z3-solver slither-analyzer
+      - name: Install Python formal, council & static analyzers
+        run: python -m pip install --upgrade pip z3-solver slither-analyzer pydantic requests PyNaCl
 
       - name: Install Node dependencies
         run: npm ci
@@ -85,6 +85,14 @@ jobs:
         with:
           node-version: "20"
           cache: npm
+
+      - name: Setup Python for Council & Z3 test bridges
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python council & formal bridge dependencies
+        run: python -m pip install --upgrade pip z3-solver pydantic requests PyNaCl
 
       - name: Install dependencies
         run: npm ci
