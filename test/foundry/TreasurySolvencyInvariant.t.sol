@@ -104,9 +104,8 @@ contract TreasuryFuzzHandler {
 
         vm.prank(council);
         try treasury.proposeRoot(root, amtA + amtB) {
-            uint256 proposalId = treasury.proposalCount() - 1;
             vm.prank(rootConfirmer);
-            treasury.confirmRoot(proposalId);
+            treasury.confirmRoot(epoch);
             epochLeafAmountA[epoch] = amtA;
             epochLeafAmountB[epoch] = amtB;
             epochSiblingForA[epoch] = lB;

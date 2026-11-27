@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install dependencies & compile contracts
@@ -53,7 +53,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       - name: Install Foundry
@@ -66,4 +66,4 @@ jobs:
         run: npm run test:fuzz
 
       - name: Run high-depth Foundry stateful invariant campaign
-        run: forge test --match-path "test/foundry/*.t.sol" --fuzz-runs 512 -vv
+        run: FOUNDRY_INVARIANT_RUNS=512 forge test --match-path "test/foundry/*.t.sol" -vv
