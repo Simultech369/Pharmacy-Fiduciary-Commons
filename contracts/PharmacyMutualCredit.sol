@@ -179,9 +179,33 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
     // =========================================================
 
     /**
+     * @notice Deterministically derives an issuer-namespaced voucher ID immune to cross-issuer front-running.
+     */
+    function computeVoucherId(address issuer, bytes32 salt) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(issuer, salt));
+    }
+
+    /**
+     * @notice Registers a new voucher using an issuer-scoped salt so no other issuer can front-run the ID.
+     */
+    function createSaltedVoucher(
+        bytes32 salt,
+        address recipient,
+        uint256 amount,
+        uint256 expiry
+    ) external whenNotPaused returns (bytes32 voucherId) {
+        voucherId = computeVoucherId(msg.sender, salt);
+        _createVoucher(voucherId, recipient, amount, expiry);
+    }
+
+    /**
      * @notice Registers a new voucher that can be redeemed at a pharmacy.
      */
     function createVoucher(bytes32 voucherId, address recipient, uint256 amount, uint256 expiry) external whenNotPaused {
+        _createVoucher(voucherId, recipient, amount, expiry);
+    }
+
+    function _createVoucher(bytes32 voucherId, address recipient, uint256 amount, uint256 expiry) internal {
         if (!registered[msg.sender]) revert NotRegistered();
         if (!authorizedIssuers[msg.sender]) revert Unauthorized();
         if (recipient == address(0)) revert InvalidAddress();
@@ -262,23 +286,29 @@ contract PharmacyMutualCredit is AccessControl, Pausable, ReentrancyGuard {
     /**
      * @notice Releases capacity reserved by multiple expired, unredeemed vouchers in batch.
      * @dev Anyone may perform expiry cleanup; no value is transferred.
+     *      Already-released entries in a multi-item batch are skipped idempotently so a
+     *      single front-run release cannot poison-pill batch maintenance; reverts with
+     *      VoucherAlreadyReleased if zero items in the batch were newly released.
      */
     function releaseExpiredVouchersBatch(bytes32[] calldata voucherIds) external whenNotPaused {
         uint256 count = voucherIds.length;
         if (count > MAX_VOUCHER_RELEASE_BATCH) revert BatchTooLarge();
 
+        uint256 releasedCount = 0;
         for (uint256 i = 0; i < count; i++) {
             bytes32 voucherId = voucherIds[i];
             Voucher storage v = vouchers[voucherId];
             if (v.issuer == address(0)) revert VoucherDoesNotExist();
             if (v.redeemed) revert VoucherAlreadyRedeemed();
             if (block.timestamp <= v.expiry) revert VoucherNotExpired();
-            if (voucherReservationReleased[voucherId]) revert VoucherAlreadyReleased();
+            if (voucherReservationReleased[voucherId]) continue;
 
             voucherReservationReleased[voucherId] = true;
             reservedVoucherCredit[v.issuer] -= v.amount;
+            releasedCount += 1;
             emit VoucherReservationReleased(voucherId, v.issuer, v.amount);
         }
+        if (releasedCount == 0) revert VoucherAlreadyReleased();
     }
 
     function _capacityCovers(address participant, uint256 additional, uint256 limit)
