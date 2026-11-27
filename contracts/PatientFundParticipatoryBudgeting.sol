@@ -25,6 +25,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     uint256 public constant MAX_PROJECTS_PER_ROUND = 50;
     uint256 public constant MAX_VOTERS_PER_BATCH = 200;
     uint256 public constant MATCH_RECLAIM_GRACE_PERIOD = 90 days;
+    uint256 public constant MAX_PROJECT_TITLE_LENGTH = 160;
 
     uint256 public projectMatchingCapBps = 10000; // 100% default maximum share of the pool per project
     uint256 public constant MAX_BPS = 10000;
@@ -112,11 +113,18 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     mapping(address => bool) public trustedCredentialIssuers;
 
     uint256 public projectSupportThreshold = 3;
+    uint256 public maxProposalsPerVoter = 5;
+    uint256 public maxProposalsPerRound = 200;
+    uint256 public maxCommunityProjectsPerRound = 40;
 
     // roundId => proposalId => ProjectProposal details
     mapping(uint256 => mapping(uint256 => ProjectProposal)) public roundProposals;
     // roundId => proposalCount
     mapping(uint256 => uint256) public roundProposalCount;
+    // roundId => voter => proposals submitted in round
+    mapping(uint256 => mapping(address => uint256)) public voterProposalCount;
+    // roundId => self-registered community projects in round
+    mapping(uint256 => uint256) public communityProjectCount;
     // roundId => proposalId => voter => hasSupported
     mapping(uint256 => mapping(uint256 => mapping(address => bool))) public hasSupportedProposal;
 
@@ -148,6 +156,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     event ProjectProposed(uint256 indexed roundId, uint256 indexed proposalId, string title, address indexed recipient);
     event ProposalSupported(uint256 indexed roundId, uint256 indexed proposalId, address indexed supporter, uint256 currentSupport);
     event ProjectSupportThresholdUpdated(uint256 newThreshold);
+    event ProposalLimitsUpdated(uint256 maxPerVoter, uint256 maxPerRound, uint256 maxCommunityProjects);
     event ProjectMatchingCapUpdated(uint256 newCapBps);
     event ProjectMatchingCapSurplusRecycled(uint256 indexed roundId, uint256 amount);
     event LowBalanceDetected(uint256 requested, uint256 actual);
@@ -185,6 +194,11 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     error NullifierAlreadyUsed();
     error InvalidProof();
     error InvalidCap();
+    error TitleTooLong();
+    error ProposalLimitExceeded();
+    error CommunityProjectLimitReached();
+    error InvalidSupportThreshold();
+    error InvalidProposalLimits();
 
     // =========================================================
     // CONSTRUCTOR
@@ -476,8 +490,29 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
     }
 
     function setProjectSupportThreshold(uint256 threshold) external onlyRole(COUNCIL_ROLE) whenNotPaused {
+        if (threshold == 0) revert InvalidSupportThreshold();
         projectSupportThreshold = threshold;
         emit ProjectSupportThresholdUpdated(threshold);
+    }
+
+    function setProposalLimits(
+        uint256 _maxPerVoter,
+        uint256 _maxPerRound,
+        uint256 _maxCommunityProjects
+    ) external onlyRole(COUNCIL_ROLE) whenNotPaused {
+        if (
+            _maxPerVoter == 0 ||
+            _maxPerVoter > 50 ||
+            _maxPerRound < _maxPerVoter ||
+            _maxPerRound > 500 ||
+            _maxCommunityProjects > MAX_PROJECTS_PER_ROUND
+        ) {
+            revert InvalidProposalLimits();
+        }
+        maxProposalsPerVoter = _maxPerVoter;
+        maxProposalsPerRound = _maxPerRound;
+        maxCommunityProjectsPerRound = _maxCommunityProjects;
+        emit ProposalLimitsUpdated(_maxPerVoter, _maxPerRound, _maxCommunityProjects);
     }
 
     /**
@@ -487,9 +522,16 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         if (!registeredVoters[roundId][msg.sender]) revert Unauthorized();
         if (rounds[roundId].state != RoundState.Active) revert WrongRoundState();
         if (recipient == address(0)) revert InvalidAddress();
-        if (bytes(title).length == 0) revert InvalidAddress();
+        uint256 titleLen = bytes(title).length;
+        if (titleLen == 0) revert InvalidAddress();
+        if (titleLen > MAX_PROJECT_TITLE_LENGTH) revert TitleTooLong();
 
         uint256 proposalId = roundProposalCount[roundId];
+        if (proposalId >= maxProposalsPerRound) revert ProposalLimitExceeded();
+        uint256 voterCount = voterProposalCount[roundId][msg.sender];
+        if (voterCount >= maxProposalsPerVoter) revert ProposalLimitExceeded();
+
+        voterProposalCount[roundId][msg.sender] = voterCount + 1;
         roundProposals[roundId][proposalId] = ProjectProposal({
             title: title,
             recipient: recipient,
@@ -497,7 +539,7 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
             registered: false
         });
 
-        roundProposalCount[roundId] += 1;
+        roundProposalCount[roundId] = proposalId + 1;
 
         emit ProjectProposed(roundId, proposalId, title, recipient);
     }
@@ -521,9 +563,13 @@ contract PatientFundParticipatoryBudgeting is AccessControl, EIP712, Pausable, R
         emit ProposalSupported(roundId, proposalId, msg.sender, prop.supportCount);
 
         if (prop.supportCount >= projectSupportThreshold) {
+            if (communityProjectCount[roundId] >= maxCommunityProjectsPerRound) {
+                revert CommunityProjectLimitReached();
+            }
             string memory title = prop.title;
             address recipient = prop.recipient;
             prop.registered = true;
+            communityProjectCount[roundId] += 1;
             _registerProject(roundId, title, recipient);
         }
     }

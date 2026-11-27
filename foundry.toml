@@ -7,7 +7,7 @@ cache_path = "cache/forge-cache"
 solc_version = "0.8.20"
 evm_version = "paris"
 optimizer = true
-optimizer_runs = 100
+optimizer_runs = 1
 remappings = [
   "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/"
 ]
